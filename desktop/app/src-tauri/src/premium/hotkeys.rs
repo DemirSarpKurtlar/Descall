@@ -1,0 +1,215 @@
+//! Global hotkey manager shared by the Descall+ hotkey features (port of
+//! electron/premium/hotkeys.cjs) on tauri-plugin-global-shortcut. A feature switches an action
+//! on with set_handler(action, fn); only those actions are registered, and only Descall's own
+//! registrations are released. With every action off nothing is registered.
+//! Custom bindings (features.custom_hotkeys.bindings) apply only while custom_hotkeys runs.
+//! The compat features (command_center, workspace_profiles, instant_clip) register free-form
+//! accelerators per owner with register_extra / unregister_owner.
+
+use std::collections::{BTreeMap, HashMap};
+use std::sync::{Arc, Mutex};
+
+use serde_json::{json, Map, Value};
+use tauri::{AppHandle, Wry};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+
+use super::lock;
+use super::logic::hotkey_logic::{find_conflicts, is_mouse_binding, normalize_accelerator, resolve_bindings, to_plugin_accel, Issue, ACTIONS, RESERVED};
+
+pub type Handler = Arc<dyn Fn() + Send + Sync>;
+
+#[derive(Default)]
+struct State {
+    handlers: HashMap<String, Handler>,
+    /// plugin accelerator -> (action, Electron accelerator)
+    owned: HashMap<String, (String, String)>,
+    failures: Vec<Issue>,
+    custom_allowed: bool,
+    /// owner -> plugin accelerators
+    extras: HashMap<String, Vec<String>>,
+}
+
+pub struct HotkeyManager {
+    app: AppHandle,
+    st: Mutex<State>,
+}
+
+impl HotkeyManager {
+    pub fn new(app: AppHandle) -> Self {
+        Self { app, st: Mutex::new(State::default()) }
+    }
+
+    fn gs(&self) -> &tauri_plugin_global_shortcut::GlobalShortcut<Wry> {
+        self.app.global_shortcut()
+    }
+
+    /// Register `accel` (plugin syntax) so `f` runs on key-down, off the UI thread.
+    fn register(&self, accel: &str, f: Handler) -> bool {
+        self.gs()
+            .on_shortcut(accel, move |_app, _sc, ev| {
+                if ev.state == ShortcutState::Pressed {
+                    let f = f.clone();
+                    std::thread::spawn(move || f());
+                }
+            })
+            .is_ok()
+    }
+
+    fn bindings_with(&self, custom: &Map<String, Value>, allow: bool) -> BTreeMap<String, String> {
+        resolve_bindings(custom, allow)
+    }
+
+    pub fn bindings(&self, custom: &Map<String, Value>) -> BTreeMap<String, String> {
+        let allow = lock(&self.st).custom_allowed;
+        self.bindings_with(custom, allow)
+    }
+
+    pub fn status(&self, custom: &Map<String, Value>) -> Value {
+        let st = lock(&self.st);
+        let b = self.bindings_with(custom, st.custom_allowed);
+        json!({
+            "bindings": b,
+            "customAllowed": st.custom_allowed,
+            "active": st.handlers.keys().collect::<Vec<_>>(),
+            "registered": st.owned.values().map(|(action, accel)| json!({ "action": action, "accel": accel })).collect::<Vec<_>>(),
+            "failures": st.failures.iter().map(Issue::to_json).collect::<Vec<_>>(),
+        })
+    }
+
+    /// Re-register every action that has a handler. Returns the status.
+    pub fn apply(&self, custom: &Map<String, Value>) -> Value {
+        {
+            let mut st = lock(&self.st);
+            for accel in st.owned.keys() {
+                let _ = self.gs().unregister(accel.as_str());
+            }
+            st.owned.clear();
+            st.failures.clear();
+            let map = self.bindings_with(custom, st.custom_allowed);
+            let active: Vec<(String, String)> = ACTIONS
+                .iter()
+                .filter_map(|a| {
+                    let accel = map.get(a.id).cloned().unwrap_or_default();
+                    (st.handlers.contains_key(a.id) && !accel.is_empty()).then(|| (a.id.to_string(), accel))
+                })
+                .collect();
+            let issues = find_conflicts(&active, None, "win32");
+            let blocked: Vec<String> = issues.iter().map(|i| i.action.clone()).collect();
+            st.failures = issues;
+            for (action, accel) in active {
+                if blocked.contains(&action) || is_mouse_binding(&accel) {
+                    continue;
+                }
+                let Some(plugin) = to_plugin_accel(&accel) else {
+                    st.failures.push(Issue { action, accel, reason: "taken", other: None });
+                    continue;
+                };
+                let handler = st.handlers.get(&action).cloned();
+                let ok = handler.is_some_and(|h| self.register(&plugin, h));
+                if ok {
+                    st.owned.insert(plugin, (action, accel));
+                } else {
+                    st.failures.push(Issue { action, accel, reason: "taken", other: None });
+                }
+            }
+            if !st.failures.is_empty() {
+                log::info!("[premium:hotkeys] not registered: {}", st.failures.iter().map(|f| format!("{}={} ({})", f.action, f.accel, f.reason)).collect::<Vec<_>>().join(", "));
+            }
+        }
+        self.status(custom)
+    }
+
+    pub fn set_handler(&self, custom: &Map<String, Value>, action: &str, f: Option<Handler>) {
+        if !ACTIONS.iter().any(|a| a.id == action) {
+            return;
+        }
+        let changed = {
+            let mut st = lock(&self.st);
+            let had = st.handlers.contains_key(action);
+            match f {
+                Some(f) => {
+                    st.handlers.insert(action.to_string(), f);
+                }
+                None => {
+                    st.handlers.remove(action);
+                }
+            }
+            had || st.handlers.contains_key(action)
+        };
+        if changed {
+            self.apply(custom);
+        }
+    }
+
+    pub fn set_custom_allowed(&self, custom: &Map<String, Value>, on: bool) {
+        let changed = {
+            let mut st = lock(&self.st);
+            let c = st.custom_allowed != on;
+            st.custom_allowed = on;
+            c
+        };
+        if changed {
+            self.apply(custom);
+        }
+    }
+
+    /// Validate a proposed map (settings UI). Descall's own registrations are not "taken".
+    pub fn check(&self, custom: &Map<String, Value>, proposed: &BTreeMap<String, String>) -> Vec<Issue> {
+        let mut merged = self.bindings(custom);
+        for (k, v) in proposed {
+            merged.insert(k.clone(), v.clone());
+        }
+        let ordered: Vec<(String, String)> = merged.into_iter().collect();
+        let owned: Vec<String> = lock(&self.st).owned.keys().cloned().collect();
+        let gs = self.gs();
+        let is_reg = |accel: &str| to_plugin_accel(accel).is_some_and(|p| !owned.contains(&p) && gs.is_registered(p.as_str()));
+        find_conflicts(&ordered, Some(&is_reg), "win32")
+    }
+
+    /// Does another app hold this accelerator? Register and release it at once.
+    pub fn probe(&self, accel: &str) -> Value {
+        let a = normalize_accelerator(accel);
+        if a.is_empty() {
+            return json!({ "accel": "", "free": false, "invalid": true });
+        }
+        if is_mouse_binding(&a) {
+            return json!({ "accel": a, "free": true, "mouse": true });
+        }
+        let Some(p) = to_plugin_accel(&a) else { return json!({ "accel": a, "free": false }) };
+        if lock(&self.st).owned.contains_key(&p) {
+            return json!({ "accel": a, "free": true, "ours": true });
+        }
+        if self.gs().is_registered(p.as_str()) {
+            return json!({ "accel": a, "free": false });
+        }
+        let free = self.gs().register(p.as_str()).is_ok();
+        if free {
+            let _ = self.gs().unregister(p.as_str());
+        }
+        json!({ "accel": a, "free": free })
+    }
+
+    /// compat registerHotkey: free-form accelerator for one owner feature.
+    pub fn register_extra(&self, owner: &str, accel: &str, f: Handler) -> bool {
+        let Some(p) = to_plugin_accel(accel) else { return false };
+        if self.gs().is_registered(p.as_str()) {
+            let _ = self.gs().unregister(p.as_str());
+        }
+        let ok = self.register(&p, f);
+        if ok {
+            lock(&self.st).extras.entry(owner.to_string()).or_default().push(p);
+        }
+        ok
+    }
+
+    pub fn unregister_owner(&self, owner: &str) {
+        let list = lock(&self.st).extras.remove(owner).unwrap_or_default();
+        for p in list {
+            let _ = self.gs().unregister(p.as_str());
+        }
+    }
+
+    pub fn reserved() -> Value {
+        json!(RESERVED)
+    }
+}

@@ -13,6 +13,7 @@ import {
   countdownParts,
   currentLook,
   filterRecipients,
+  giftWhen,
   isRetiredItem,
   markWishlist,
   messageCount,
@@ -94,7 +95,10 @@ assert.deepEqual(toggleLock(moved, "b").map((s) => s.locked), [false, false, fal
 assert.equal(markWishlist(sf.slots, [{ id: "d" }])[3].wishlisted, true);
 
 // ---------- sets (GET /sets/:key) ----------
-const pieces = SET_PIECE_ORDER.map((category, i) => ({ category, item: item(`p${i}`, category, [900, 720, 380, 420, 840, 420, 640, 300][i]), owned: i === 2 || i === 3 }));
+// 9 pieces (the profile aura is third); the name colour + badge (800) are owned.
+assert.equal(SET_PIECE_ORDER.length, 9);
+assert.equal(SET_PIECE_ORDER[2], "profile_aura", "every set carries a profile aura");
+const pieces = SET_PIECE_ORDER.map((category, i) => ({ category, item: item(`p${i}`, category, [900, 720, 400, 380, 420, 840, 420, 240, 300][i]), owned: i === 3 || i === 4 }));
 const raw = { key: "gece-limani", name: { tr: "Gece Limanı" }, palette: ["#0b1b3a", "#1e4b8f", "#35d0e0", "#e8f6ff"], pieces: [...pieces].reverse(), sum: 4620, setPrice: 3470, discountPct: 25, yourPrice: null, priceHistory30d: [{ day: "a", price: 3900 }, { day: "b", price: 3470 }], title: { name: { tr: "Liman Ustası" } }, lookingNow: 12, friendOwners: [{ id: 1 }] };
 const set = normalizeSet(raw);
 assert.deepEqual(set.pieces.map((p) => p.item.category), SET_PIECE_ORDER, "pieces in set order");
@@ -107,7 +111,7 @@ assert.equal(pr.setPrice, 3470);
 assert.equal(pr.ownedCount, 2);
 assert.equal(pr.ownedDeduction, Math.round(800 * (3470 / 4620)), "owned pieces deducted at the set rate");
 assert.equal(pr.yourPrice, 3470 - pr.ownedDeduction);
-assert.equal(pr.missingCount, 6);
+assert.equal(pr.missingCount, 7);
 assert.equal(pr.missingSingles, 4620 - 800);
 assert.ok(pr.savingVsSingles > 0, "the set beats buying the rest one by one");
 assert.ok(pr.discountPct >= 20 && pr.discountPct <= 30, "set price 20-30 % below the pieces");
@@ -123,7 +127,7 @@ const partial = setPricing({ ...set, partialPriceUntil: T0 + 86400000 }, { selec
 assert.equal(partial.partialActive, true);
 assert.equal(partial.selectedTotal, Math.round((1620 * (3470 / 4620)) / 10) * 10, "partial price: list sum at the set rate, rounded to 10 like the server");
 assert.equal(setPricing(set, { selectedIds: pieces.filter((p) => !p.owned).map((p) => p.item.id) }).selectedTotal, pr.yourPrice, "choosing every missing piece is the set price");
-assert.deepEqual(setProgress(set), { owned: 2, total: 8, left: 6, pct: 0.25 });
+assert.deepEqual(setProgress(set), { owned: 2, total: 9, left: 7, pct: 2 / 9 });
 
 // price history
 const hs = priceHistoryStats([{ price: 3900 }, { price: 3600 }, { price: 3470 }], 3470);
@@ -153,13 +157,14 @@ assert.equal(windowProgress(T0, T0 + 100, T0 + 25), 0.25);
 
 // ---------- try-on ----------
 const me = { id: "me", equippedBanner: { id: "old", category: "banner" }, equippedChatBubble: { id: "b1" } };
-const tryOn = setTryOn(set, new Set(["p5"]));
-assert.equal(Object.keys(tryOn).length, 7, "a hidden piece (eye off) is not tried on");
+const tryOn = setTryOn(set, new Set(["p6"]));
+assert.equal(Object.keys(tryOn).length, 8, "a hidden piece (eye off) is not tried on");
 const user = composeTryOnUser(me, tryOn);
 assert.equal(user.equippedBanner.id, "p1");
 assert.equal(user.equippedAvatarFrame.id, "p0");
-assert.equal(user.equippedVoiceTile.id, "p6");
-assert.equal(user.equippedJoinSound.id, "p7");
+assert.equal(user.equippedVoiceTile.id, "p7");
+assert.equal(user.equippedProfileAura.id, "p2", "the set aura is tried on with the rest");
+assert.equal(user.equippedJoinSound.id, "p8");
 assert.equal(user.equippedChatBubble.id, "b1", "slots the set does not touch keep what is worn");
 assert.equal(me.equippedBanner.id, "old", "the real user object is not changed");
 assert.deepEqual(currentLook(me), { banner: "old", chat_bubble: "b1" });
@@ -212,6 +217,17 @@ assert.deepEqual(filterRecipients(rec, "all").map((f) => f.id), [3, 1, 2], "wish
 assert.deepEqual(filterRecipients(rec, "notOwned").map((f) => f.id), [3, 1]);
 assert.deepEqual(filterRecipients(rec, "online").map((f) => f.id), [1]);
 assert.deepEqual(filterRecipients(rec, "all", "kaa").map((f) => f.id), [3]);
+// "Deliver on their birthday" was removed: no birthday fields, no birthday filter, and a
+// saved draft that still says "birthday" opens on "at a time" with no time picked.
+const bdayRec = normalizeRecipient({ user: { id: 4, displayName: "Deniz" }, birthdayAt: "2026-12-01T00:00:00Z", birthdayInDays: 2 });
+assert.equal(bdayRec.birthdayAt, undefined, "the normaliser no longer lifts birthdayAt");
+assert.equal(bdayRec.birthdayInDays, undefined, "the normaliser no longer lifts birthdayInDays");
+assert.deepEqual(filterRecipients(rec, "birthday").map((f) => f.id), filterRecipients(rec, "all").map((f) => f.id), "no birthday filter");
+assert.equal(giftWhen(undefined), "now");
+assert.equal(giftWhen(""), "now");
+assert.equal(giftWhen("now"), "now");
+assert.equal(giftWhen("at"), "at");
+assert.equal(giftWhen("birthday"), "at", "old birthday drafts are never sent at once");
 assert.equal(messageCount("İyi ki doğdun"), 13);
 
 // ---------- action log (GET /history) ----------

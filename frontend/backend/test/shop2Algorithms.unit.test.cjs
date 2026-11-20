@@ -12,7 +12,7 @@ const time = require("../lib/shop2/time");
 const { generateStorefront, storefrontSeed } = require("../lib/shop2/storefront");
 const pricing = require("../lib/shop2/pricing");
 const { deckFor, defaultWindows, nightState, drawDiscount, discountDistribution } = require("../lib/shop2/nightMarket");
-const { checkGift, detectRing, impactOf } = require("../lib/shop2/giftRules");
+const { checkGift, detectRing, impactOf, deliveryMode, DELIVERY_MODES } = require("../lib/shop2/giftRules");
 const { detectClashes, setLifecycle } = require("../lib/shop2/timeline");
 const { normalizeRules, normalizeLimits, diff, EPIC_PLUS } = require("../lib/shop2/rules");
 const { simulate, paletteScore, colorsIn } = require("../lib/shop2/simulate");
@@ -276,6 +276,21 @@ async function run() {
     assert.equal(checkGift({ ...ok, sendAt: new Date(now + 40 * time.DAY_MS).toISOString() }).code, "gift_too_far");
     assert.equal(checkGift({ ...ok, message: "x".repeat(141) }).code, "gift_message_long");
     assert.equal(checkGift({ ...ok, limits: { frozen: true } }).code, "gifts_paused");
+  });
+
+  await check("gifts: delivery modes (birthday removed, now / at kept)", () => {
+    const now = Date.parse("2026-11-16T10:00:00Z");
+    const ok = { now, senderId: "a", recipientId: "b", senderCreatedAt: "2026-01-01T00:00:00Z", kind: "item" };
+    assert.equal(checkGift({ ...ok, delivery: "birthday" }).code, "gift_birthday_removed");
+    assert.equal(checkGift({ ...ok, delivery: "birthday", sentToday: 3 }).code, "gift_birthday_removed", "the removal reason comes before caps");
+    assert.deepEqual(checkGift({ ...ok, delivery: "now" }), { ok: true });
+    assert.deepEqual(checkGift({ ...ok, delivery: "at", sendAt: new Date(now + time.DAY_MS).toISOString() }), { ok: true });
+    assert.equal(checkGift({ ...ok, delivery: "later" }).code, "gift_bad_time");
+    assert.equal(deliveryMode({ when: "birthday" }), "birthday");
+    assert.equal(deliveryMode({ delivery: "at", when: "now" }), "at");
+    assert.equal(deliveryMode({ sendAt: "2026-11-17T10:00:00Z" }), null, "old clients send only a time");
+    assert.equal(deliveryMode({ delivery: "" }), null);
+    assert.deepEqual([...DELIVERY_MODES], ["now", "at"]);
   });
 
   await check("gifts: ring detection (cycle and ping-pong)", () => {

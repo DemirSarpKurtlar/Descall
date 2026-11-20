@@ -1,0 +1,289 @@
+{
+ "de": {
+  "tray": {
+   "mute": "Stummschalten",
+   "unmute": "Stummschaltung aufheben",
+   "deafen": "Ton aus",
+   "undeafen": "Ton an",
+   "hangup": "Anruf verlassen",
+   "mini": "Minimodus öffnen",
+   "status": "Onlinestatus",
+   "online": "Verfügbar",
+   "idle": "Abwesend",
+   "dnd": "Nicht stören",
+   "invisible": "Unsichtbar",
+   "inCall": "Im Anruf: {title}",
+   "focus": "Fokusmodus",
+   "focusOn": "Fokusmodus: noch {minutes} Min.",
+   "focus30": "30 Minuten",
+   "focus60": "1 Stunde",
+   "focus120": "2 Stunden",
+   "focusOff": "Fokusmodus beenden",
+   "audioProfile": "Audioprofil"
+  },
+  "taskbar": {
+   "unread": "{n} ungelesen"
+  },
+  "window": {
+   "mini": "Descall Minimodus",
+   "call": "Descall Anruf",
+   "sidebar": "Descall Seitenleiste"
+  },
+  "launcher": {
+   "title": "Schnellstarter",
+   "placeholder": "Freunde, Chats, Server oder Aktionen suchen",
+   "empty": "Nichts gefunden",
+   "hint": "Enter zum Öffnen, Pfeiltasten zum Bewegen, Esc zum Schließen",
+   "loading": "Suche läuft"
+  },
+  "quickReply": {
+   "placeholder": "Antworten"
+  }
+ },
+ "en": {
+  "tray": {
+   "mute": "Mute",
+   "unmute": "Unmute",
+   "deafen": "Deafen",
+   "undeafen": "Undeafen",
+   "hangup": "Leave call",
+   "mini": "Open mini mode",
+   "status": "Status",
+   "online": "Online",
+   "idle": "Idle",
+   "dnd": "Do not disturb",
+   "invisible": "Invisible",
+   "inCall": "In a call: {title}",
+   "focus": "Focus mode",
+   "focusOn": "Focus mode: {minutes} min left",
+   "focus30": "30 minutes",
+   "focus60": "1 hour",
+   "focus120": "2 hours",
+   "focusOff": "End focus mode",
+   "audioProfile": "Audio profile"
+  },
+  "taskbar": {
+   "unread": "{n} unread"
+  },
+  "window": {
+   "mini": "Descall mini mode",
+   "call": "Descall call",
+   "sidebar": "Descall sidebar"
+  },
+  "launcher": {
+   "title": "Quick launcher",
+   "placeholder": "Search friends, chats, servers or actions",
+   "empty": "Nothing found",
+   "hint": "Enter to open, arrow keys to move, Esc to close",
+   "loading": "Searching"
+  },
+  "quickReply": {
+   "placeholder": "Reply"
+  }
+ },
+ "es": {
+  "tray": {
+   "mute": "Silenciar",
+   "unmute": "Activar micrófono",
+   "deafen": "Ensordecer",
+   "undeafen": "Dejar de ensordecer",
+   "hangup": "Salir de la llamada",
+   "mini": "Abrir modo mini",
+   "status": "Estado",
+   "online": "En línea",
+   "idle": "Ausente",
+   "dnd": "No molestar",
+   "invisible": "Oculto",
+   "inCall": "En llamada: {title}",
+   "focus": "Modo concentración",
+   "focusOn": "Modo concentración: quedan {minutes} min",
+   "focus30": "30 minutos",
+   "focus60": "1 hora",
+   "focus120": "2 horas",
+   "focusOff": "Terminar modo concentración",
+   "audioProfile": "Perfil de audio"
+  },
+  "taskbar": {
+   "unread": "{n} sin leer"
+  },
+  "window": {
+   "mini": "Descall modo mini",
+   "call": "Descall llamada",
+   "sidebar": "Descall barra lateral"
+  },
+  "launcher": {
+   "title": "Lanzador rápido",
+   "placeholder": "Busca amigos, chats, servidores o acciones",
+   "empty": "No se encontró nada",
+   "hint": "Intro para abrir, flechas para moverte, Esc para cerrar",
+   "loading": "Buscando"
+  },
+  "quickReply": {
+   "placeholder": "Responder"
+  }
+ },
+ "fr": {
+  "tray": {
+   "mute": "Couper le micro",
+   "unmute": "Réactiver le micro",
+   "deafen": "Mettre en sourdine",
+   "undeafen": "Réactiver le son",
+   "hangup": "Quitter l'appel",
+   "mini": "Ouvrir le mode mini",
+   "status": "Statut",
+   "online": "En ligne",
+   "idle": "Absent",
+   "dnd": "Ne pas déranger",
+   "invisible": "Masqué",
+   "inCall": "En appel : {title}",
+   "focus": "Mode concentration",
+   "focusOn": "Mode concentration : encore {minutes} min",
+   "focus30": "30 min",
+   "focus60": "1 heure",
+   "focus120": "2 heures",
+   "focusOff": "Arrêter le mode concentration",
+   "audioProfile": "Profil audio"
+  },
+  "taskbar": {
+   "unread": "{n} non lus"
+  },
+  "window": {
+   "mini": "Descall mode mini",
+   "call": "Descall appel",
+   "sidebar": "Descall barre latérale"
+  },
+  "launcher": {
+   "title": "Lanceur rapide",
+   "placeholder": "Rechercher des amis, discussions, serveurs ou actions",
+   "empty": "Aucun résultat",
+   "hint": "Entrée pour ouvrir, flèches pour naviguer, Échap pour fermer",
+   "loading": "Recherche en cours"
+  },
+  "quickReply": {
+   "placeholder": "Répondre"
+  }
+ },
+ "pt-BR": {
+  "tray": {
+   "mute": "Silenciar",
+   "unmute": "Ativar microfone",
+   "deafen": "Ensurdecer",
+   "undeafen": "Reativar áudio",
+   "hangup": "Sair da chamada",
+   "mini": "Abrir modo mini",
+   "status": "Situação",
+   "online": "Disponível",
+   "idle": "Ausente",
+   "dnd": "Não perturbe",
+   "invisible": "Invisível",
+   "inCall": "Em chamada: {title}",
+   "focus": "Modo foco",
+   "focusOn": "Modo foco: faltam {minutes} min",
+   "focus30": "30 minutos",
+   "focus60": "1 hora",
+   "focus120": "2 horas",
+   "focusOff": "Encerrar modo foco",
+   "audioProfile": "Perfil de áudio"
+  },
+  "taskbar": {
+   "unread": "{n} não lidas"
+  },
+  "window": {
+   "mini": "Descall modo mini",
+   "call": "Descall chamada",
+   "sidebar": "Descall barra lateral"
+  },
+  "launcher": {
+   "title": "Inicializador rápido",
+   "placeholder": "Busque amigos, conversas, servidores ou ações",
+   "empty": "Nada encontrado",
+   "hint": "Enter para abrir, setas para navegar, Esc para fechar",
+   "loading": "Buscando"
+  },
+  "quickReply": {
+   "placeholder": "Responder"
+  }
+ },
+ "ru": {
+  "tray": {
+   "mute": "Выключить микрофон",
+   "unmute": "Включить микрофон",
+   "deafen": "Выключить звук",
+   "undeafen": "Включить звук",
+   "hangup": "Покинуть звонок",
+   "mini": "Открыть мини-режим",
+   "status": "Статус",
+   "online": "В сети",
+   "idle": "Нет на месте",
+   "dnd": "Не беспокоить",
+   "invisible": "Невидимка",
+   "inCall": "В звонке: {title}",
+   "focus": "Режим фокуса",
+   "focusOn": "Режим фокуса: осталось {minutes} мин",
+   "focus30": "30 минут",
+   "focus60": "1 час",
+   "focus120": "2 часа",
+   "focusOff": "Выключить режим фокуса",
+   "audioProfile": "Аудиопрофиль"
+  },
+  "taskbar": {
+   "unread": "Непрочитанных: {n}"
+  },
+  "window": {
+   "mini": "Descall мини-режим",
+   "call": "Descall звонок",
+   "sidebar": "Descall боковая панель"
+  },
+  "launcher": {
+   "title": "Быстрый запуск",
+   "placeholder": "Ищите друзей, чаты, серверы или действия",
+   "empty": "Ничего не найдено",
+   "hint": "Enter — открыть, стрелки — выбрать, Esc — закрыть",
+   "loading": "Поиск"
+  },
+  "quickReply": {
+   "placeholder": "Ответить"
+  }
+ },
+ "tr": {
+  "tray": {
+   "mute": "Sessize al",
+   "unmute": "Sesi aç",
+   "deafen": "Sağırlaştır",
+   "undeafen": "Sesi duy",
+   "hangup": "Aramadan çık",
+   "mini": "Mini modu aç",
+   "status": "Durum",
+   "online": "Çevrimiçi",
+   "idle": "Boşta",
+   "dnd": "Rahatsız etmeyin",
+   "invisible": "Görünmez",
+   "inCall": "Aramada: {title}",
+   "focus": "Odak modu",
+   "focusOn": "Odak modu: {minutes} dk kaldı",
+   "focus30": "30 dakika",
+   "focus60": "1 saat",
+   "focus120": "2 saat",
+   "focusOff": "Odak modunu bitir",
+   "audioProfile": "Ses profili"
+  },
+  "taskbar": {
+   "unread": "{n} okunmamış"
+  },
+  "window": {
+   "mini": "Descall mini mod",
+   "call": "Descall arama",
+   "sidebar": "Descall kenar çubuğu"
+  },
+  "launcher": {
+   "title": "Hızlı başlatıcı",
+   "placeholder": "Arkadaş, sohbet, sunucu veya eylem ara",
+   "empty": "Sonuç bulunamadı",
+   "hint": "Açmak için Enter, gezinmek için ok tuşları, kapatmak için Esc",
+   "loading": "Aranıyor"
+  },
+  "quickReply": {
+   "placeholder": "Yanıtla"
+  }
+ }
+}

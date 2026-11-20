@@ -1,0 +1,255 @@
+# Native screen share (desktop/crates/descall-capture) and its P0 bench.
+# - checks: Linux unit tests, the page-shim tests, and a warning-free clippy build for
+#   x86_64-pc-windows-gnu (the target the owner's toolchain cross-compiles to).
+# - bench: builds DescallCaptureBench on windows-latest, runs the Windows unit tests and
+#   every bench test a hosted runner can run. Hosted runners usually have no interactive
+#   desktop and no audio device: those tests report "skipped (...)" instead of failing.
+#   The exe and the JSON report are uploaded so the owner can run the same exe at home.
+name: Capture bench
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Length of each 60 fps run in seconds
+        default: "6"
+  pull_request:
+    paths:
+      - "desktop/crates/descall-capture/**"
+      - "desktop/tools/**"
+      - "desktop/app/shim/native-screen-share.js"
+      - ".github/workflows/capture-bench.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capture-bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Unit tests + windows-gnu clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (stable + windows-gnu target)
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+          rustup target add x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Portable unit tests (Linux)
+        run: cargo test -p descall-capture -p descall-capture-bench
+      - name: Clippy, no warnings (x86_64-pc-windows-gnu)
+        run: cargo clippy -p descall-capture -p descall-capture-bench --all-targets --target x86_64-pc-windows-gnu -- -D warnings
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Page shim tests
+        run: node --test tools/native-share-shim-test/shim.test.mjs
+
+  bench:
+    name: DescallCaptureBench (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Windows unit tests
+        run: cargo test -p descall-capture -p descall-capture-bench
+      # Diagnostic release build: same optimisation as the owner's exe, but panics unwind
+      # (each test group catches its own panic and reports it as a FAIL row) and the exe
+      # keeps line tables, so backtraces and crash dumps show file:line.
+      - name: Build the bench
+        env:
+          CARGO_PROFILE_RELEASE_PANIC: unwind
+          CARGO_PROFILE_RELEASE_STRIP: none
+          CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
+        run: cargo build --release -p descall-capture-bench -p descall-capture
+      # D3D11 debug layer (Graphics Tools optional feature): with it the bench logs which
+      # call got a capture device removed. Optional: the run works without it.
+      - name: Install the D3D11 debug layer (Graphics Tools)
+        id: gfxtools
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          $cap = Get-WindowsCapability -Online -Name 'Tools.Graphics.DirectX*' | Select-Object -First 1
+          if ($cap -and $cap.State -ne 'Installed') { Add-WindowsCapability -Online -Name $cap.Name | Out-Null }
+          $ok = Test-Path (Join-Path $env:SystemRoot 'System32\d3d11_3SDKLayers.dll')
+          Write-Host "D3D11 debug layer available: $ok"
+          $flag = if ($ok) { '1' } else { '0' }
+          "debug=$flag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      # __fastfail (0xC0000409) bypasses in-process handlers; WER LocalDumps (full dump) and
+      # a run under cdb (below) are the routes that still see it.
+      - name: Collect crash dumps (WER LocalDumps)
+        run: |
+          $dumps = Join-Path $PWD 'bench-out\dumps'
+          New-Item -ItemType Directory -Force -Path $dumps | Out-Null
+          $wer = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting'
+          New-Item -Path $wer -Force | Out-Null
+          New-ItemProperty -Path $wer -Name Disabled -PropertyType DWord -Value 0 -Force | Out-Null
+          New-ItemProperty -Path $wer -Name DontShowUI -PropertyType DWord -Value 1 -Force | Out-Null
+          $key = "$wer\LocalDumps\descall-capture-bench.exe"
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpFolder -PropertyType ExpandString -Value $dumps -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpType -PropertyType DWord -Value 2 -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpCount -PropertyType DWord -Value 5 -Force | Out-Null
+          Set-Service -Name WerSvc -StartupType Manual -ErrorAction SilentlyContinue
+          Start-Service -Name WerSvc -ErrorAction SilentlyContinue
+          Get-Service WerSvc | Format-Table -AutoSize | Out-String | Write-Host
+      # The main run goes under cdb from the start: a __fastfail (0xC0000409, e.g. a CFG
+      # check on a freed callback) never reaches WER LocalDumps on the hosted runner, but a
+      # debugger gets it as an exception and prints the faulting stack. --repeat 3 runs the
+      # video and follow groups three times in one process, which is where it showed up.
+      - name: Run the bench
+        id: run
+        timeout-minutes: 15
+        env:
+          BENCH_SECONDS: ${{ github.event.inputs.seconds || '6' }}
+          RUST_BACKTRACE: "1"
+          DESCALL_D3D_DEBUG: ${{ steps.gfxtools.outputs.debug || '0' }}
+        run: |
+          New-Item -ItemType Directory -Force -Path bench-out | Out-Null
+          Copy-Item target/release/descall-capture-bench.exe bench-out/
+          Copy-Item target/release/*.pdb bench-out/ -ErrorAction SilentlyContinue
+          Copy-Item target/release/descall-capture-host.exe bench-out/ -ErrorAction SilentlyContinue
+          $benchArgs = @('--ci', '--repeat', '3', '--seconds', $env:BENCH_SECONDS, '--out', 'bench-out/descall-capture-report.json')
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($cdb) {
+            $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+            $dump = ".echo DESCALL_CRASH_STACK; .lastevent; .ecxr; kn 80; !analyze -v; q"
+            @(
+              "sxe -c `"$dump`" -c2 `"$dump`" c0000409",
+              "sxd -c2 `"$dump`" av",
+              "g"
+            ) | Set-Content -Path bench-out/cdb-commands.txt -Encoding ascii
+            & $cdb.FullName -G -lines -y $sym -cf bench-out/cdb-commands.txt ./target/release/descall-capture-bench.exe @benchArgs 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
+            $text = Get-Content bench-out/bench-output.txt -Raw
+            # cdb's own exit code is not the bench's: read the verdict line instead. The marker
+            # must be a line of its own (the .echo output): cdb also echoes the sxe commands,
+            # which contain the marker text. Only the bench process is debugged (no -o), so
+            # a helper or in-process child crash is reported by the bench, not here.
+            if ($text -match '(?m)^DESCALL_CRASH_STACK\s*$') { $code = 99 }
+            elseif ($text -match 'P0 OK') { $code = 0 }
+            elseif ($text -match 'P0 FAILED') { $code = 1 }
+            else { $code = 98 }
+          } else {
+            Write-Host "cdb.exe not found; running without a debugger."
+            ./target/release/descall-capture-bench.exe @benchArgs 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
+            $code = $LASTEXITCODE
+          }
+          "exit_code=$code" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "## DescallCaptureBench (exit code $code)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content bench-out/bench-output.txt | Select-String -NotMatch -Pattern '^(ModLoad|Symbol search path|Executable search path|\*\*\*)' | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          exit 0
+      # A crash (any exit code other than 0 = all good, 1 = a FAIL row) ends the whole run.
+      # Rerun every group on its own with backtraces so the log names the failing case.
+      - name: Rerun each group after a crash
+        if: steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '1'
+        env:
+          RUST_BACKTRACE: "1"
+        run: |
+          "## Per-group rerun after a crash" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          foreach ($g in 'echo','picker','video','follow','color') {
+            Write-Host "===== --only $g ====="
+            ./target/release/descall-capture-bench.exe --ci --only $g --seconds 3 --out "bench-out/report-$g.json" 2>&1 | Tee-Object -FilePath "bench-out/rerun-$g.txt"
+            $c = $LASTEXITCODE
+            "- $g : exit code $c" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            if ($c -ne 0 -and $c -ne 1) {
+              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              Get-Content "bench-out/rerun-$g.txt" -Tail 60 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            }
+          }
+          exit 0
+      # Native fail-fasts (0xC0000409 without a Rust panic) leave a WER dump: print its stack.
+      # A debugger sees a fail-fast as a second-chance exception: run the crashing groups
+      # under cdb and print the faulting stack with line numbers.
+      - name: Run crashing groups under cdb
+        if: steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '1'
+        run: |
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found on this runner."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          "## Crashing groups under cdb" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          foreach ($g in 'echo','picker','video','follow','color') {
+            $log = "bench-out/rerun-$g.txt"
+            if (-not (Test-Path $log)) { continue }
+            if ((Select-String -Path $log -Pattern 'P0 OK|P0 FAILED' -Quiet)) { continue }
+            Write-Host "===== cdb --only $g ====="
+            & $cdb.FullName -g -G -lines -y $sym -c ".lastevent; .ecxr; kn 80; !analyze -v; q" ./target/release/descall-capture-bench.exe --ci --only $g --seconds 3 --out "bench-out/cdb-$g.json" 2>&1 | Tee-Object -FilePath "bench-out/cdb-$g.txt"
+            '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content "bench-out/cdb-$g.txt" | Select-String -Pattern 'follow:|Last event|ExceptionCode|FAILURE_BUCKET|FAST_FAIL|descall|^\s*[0-9a-f]{2} ' | Select-Object -First 120 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+          exit 0
+      # Diagnostic only (never fails the job): the in-process lane under cdb with the D3D11
+      # debug layer. The debugger prints the debug layer's messages and, if Windows' capture
+      # code takes the process down, the faulting stack: why the device goes away on this
+      # runner. Helper mode (the product) is what the main run judges.
+      - name: In-process lane under cdb (diagnostic)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          DESCALL_D3D_DEBUG: ${{ steps.gfxtools.outputs.debug || '0' }}
+        run: |
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found on this runner."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          & $cdb.FullName -G -lines -y $sym -cf bench-out/cdb-commands.txt ./target/release/descall-capture-bench.exe --ci --mode inproc --only video,follow --seconds 3 --out bench-out/inproc-report.json 2>&1 | Tee-Object -FilePath bench-out/cdb-inproc.txt | Out-Null
+          $lines = Get-Content bench-out/cdb-inproc.txt
+          $crashed = [bool]($lines | Select-String -Pattern '^DESCALL_CRASH_STACK\s*$' -Quiet)
+          "## In-process lane under cdb (diagnostic): crashed = $crashed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $lines | Select-String -Pattern 'D3D11 (ERROR|CORRUPTION|WARNING)|DXGI ERROR|device lost|follow:|DESCALL_CRASH_STACK|ExceptionCode|FAILURE_BUCKET|^\s*[0-9a-f]{2} [0-9a-f`]+ ' | Select-Object -First 150 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          exit 0
+      - name: Analyse crash dumps
+        if: always()
+        run: |
+          $dumps = @(Get-ChildItem bench-out/dumps -Filter *.dmp -ErrorAction SilentlyContinue)
+          if ($dumps.Count -eq 0) { Write-Host "No crash dump."; exit 0 }
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found; the dumps are in the artifact."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          foreach ($d in $dumps) {
+            Write-Host "===== $($d.Name) ====="
+            & $cdb.FullName -z $d.FullName -y $sym -lines -c ".ecxr; kn 60; !analyze -v; q" 2>&1 | Tee-Object -FilePath "bench-out/dumps/$($d.BaseName).txt"
+          }
+          "## Crash dump stack" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content "bench-out/dumps/$($dumps[0].BaseName).txt" | Select-String -Pattern 'descall|FAILURE_BUCKET|EXCEPTION_CODE|STACK_TEXT|ExceptionCode' | Select-Object -First 80 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          exit 0
+      - name: Upload the exe and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: descall-capture-bench
+          path: desktop/bench-out/
+          retention-days: 30
+      - name: Fail on a FAIL row
+        if: steps.run.outputs.exit_code != '0'
+        run: |
+          Write-Host "The bench reported FAIL or crashed (exit code ${{ steps.run.outputs.exit_code }}). See the job summary and the artifact (report, reruns, dumps)."
+          exit 1

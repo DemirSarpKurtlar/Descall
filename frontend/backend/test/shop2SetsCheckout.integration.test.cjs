@@ -28,10 +28,10 @@ async function run() {
   try {
     await check("last piece bought alone completes the set: completion row, completed in the answer, titleUnlocked", async () => {
       const pieces = setPieces("bakir-kervan");
-      const first = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", body: { pieceIds: pieces.slice(0, 7).map((p) => p.id), holdToken: "hold-seven-0001" } });
+      const first = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", body: { pieceIds: pieces.slice(0, -1).map((p) => p.id), holdToken: "hold-seven-0001" } });
       assert.equal(first.status, 200, JSON.stringify(first.body));
       assert.deepEqual(first.body.completed, []);
-      const last = await call(`/shop2/items/${pieces[7].id}/buy`, { method: "POST", body: { idempotencyKey: "item-last-piece-01" } });
+      const last = await call(`/shop2/items/${pieces[pieces.length - 1].id}/buy`, { method: "POST", body: { idempotencyKey: "item-last-piece-01" } });
       assert.equal(last.status, 200, JSON.stringify(last.body));
       assert.equal(last.body.completed.length, 1);
       assert.equal(last.body.completed[0].setKey, "bakir-kervan");
@@ -98,13 +98,13 @@ async function run() {
 
     await check("batch equip: one request wears every owned piece, keeps the previous look, one undo restores it", async () => {
       const pieces = setPieces("bakir-kervan");
-      const cols = ["equipped_avatar_frame_id", "equipped_banner_id", "equipped_badge_id", "equipped_chat_bubble_id", "equipped_profile_color_id", "equipped_avatar_effect_id", "equipped_voice_tile_id", "equipped_join_sound_id"];
+      const cols = ["equipped_avatar_frame_id", "equipped_banner_id", "equipped_badge_id", "equipped_chat_bubble_id", "equipped_profile_color_id", "equipped_avatar_effect_id", "equipped_voice_tile_id", "equipped_join_sound_id", "equipped_profile_aura_id"];
       const u1 = rows("users").find((u) => u.id === U(1));
       for (const c of cols) u1[c] = null;
       const stranger = setPieces("gece-limani").find((p) => !rows("user_inventory").some((i) => i.user_id === U(1) && i.item_id === p.id));
       const r = await call("/shop2/equip", { method: "POST", body: { itemIds: [...pieces.map((p) => p.id), ...(stranger ? [stranger.id] : [])] } });
       assert.equal(r.status, 200, JSON.stringify(r.body));
-      assert.equal(Object.keys(r.body.applied).length, 8, JSON.stringify({ applied: r.body.applied, owned: pieces.map((p) => [p.category, rows("user_inventory").some((i) => i.user_id === U(1) && i.item_id === p.id)]) }));
+      assert.equal(Object.keys(r.body.applied).length, 9, JSON.stringify({ applied: r.body.applied, owned: pieces.map((p) => [p.category, rows("user_inventory").some((i) => i.user_id === U(1) && i.item_id === p.id)]) }));
       for (const c of cols) assert.ok(pieces.some((p) => p.id === u1[c]), `${c} worn`);
       if (stranger) assert.ok(!Object.values(r.body.applied).includes(stranger.id), "an item not owned is never worn");
       assert.ok(r.body.actionId && r.body.previousOutfitId);

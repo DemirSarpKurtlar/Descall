@@ -1,0 +1,75 @@
+[package]
+name = "descall-desktop"
+description = "Descall desktop shell (Tauri 2, Windows x64). Loads the existing frontend/dist build."
+version = "4.0.0"
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "Descall"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-deep-link = "2.6"
+tauri-plugin-global-shortcut = "2.4"
+tauri-plugin-notification = "2.8"
+tauri-plugin-clipboard-manager = "2.5"
+tauri-plugin-updater = "2.14"
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+# download-file: same HTTP stack as tauri-plugin-updater (rustls + ring, system proxy).
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream", "system-proxy", "json"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+futures-util = "0.3"
+tokio = { version = "1", features = ["time"] }
+base64 = "0.22"
+descall-shell = { path = "../../crates/descall-shell" }
+descall-capture = { path = "../../crates/descall-capture" }
+descall-migrate = { path = "../../crates/descall-migrate" }
+# Descall+ (src/premium): gate check (reqwest json), PIN records (scrypt), account ids.
+getrandom = "0.3"
+scrypt = { version = "0.11", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+# Same major as wry's own webview2-com, so the COM types from PlatformWebview line up.
+webview2-com = "0.39"
+windows = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_Globalization",
+  "Win32_System_Com",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Registry",
+  "Win32_System_StationsAndDesktops",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
+  "Win32_System_Time",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+  # Descall+ (src/premium): Raw Input PTT, idle time, opacity, taskbar buttons, session
+  # lock, save dialog, process metrics, reply toasts, the instant-clip encoder.
+  "Win32_UI_Input",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_Common",
+  "Win32_UI_Controls",
+  "Win32_Graphics_Gdi",
+  "Win32_System_LibraryLoader",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_ProcessStatus",
+  "Data_Xml_Dom",
+  "Foundation",
+  "Foundation_Collections",
+  "UI_Notifications",
+  "Win32_UI_Notifications",
+  "Win32_Media_MediaFoundation",
+  "Win32_System_Variant",
+  "Win32_Graphics_Dxgi_Common",
+] }
+windows-core.workspace = true
+windows-registry = "0.6"

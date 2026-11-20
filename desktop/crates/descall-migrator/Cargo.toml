@@ -1,0 +1,16 @@
+[package]
+name = "descall-migrator"
+description = "DescallMigrator.exe: the signed one-time bootstrapper that moves an Electron install to the Tauri app (no window; every step is logged to disk and reported by the app that runs next)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "DescallMigrator"
+path = "src/main.rs"
+
+[dependencies]
+descall-migrate = { path = "../descall-migrate" }
+serde_json.workspace = true
+zeroize = "1"

@@ -1,0 +1,13 @@
+[package]
+name = "descall-shell"
+description = "Platform-independent rules of the Descall desktop shell, ported from frontend/electron: update deferral, launch visibility, app origin trust, safe downloads, main-process i18n, notification stack, window occlusion, boot watchdog, process filter. Unit-tested on any host; the Tauri app calls these."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+url = "2"
+png = "0.18"
+unicode-normalization = "0.1"

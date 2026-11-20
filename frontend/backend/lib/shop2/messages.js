@@ -49,6 +49,7 @@ const MESSAGES = {
   gift_receive_cap: "This person cannot receive more gifts today.",
   gift_message_long: "The message can be up to {max} characters.",
   gift_bad_time: "Choose a valid delivery time.",
+  gift_birthday_removed: "Birthday delivery is no longer available. Send the gift now or pick a time.",
   gift_too_far: "Gifts can be scheduled up to {days, plural, one {# day} other {# days}} ahead.",
   recipient_not_found: "User not found.",
   recipient_unavailable: "You cannot send a gift to this person.",

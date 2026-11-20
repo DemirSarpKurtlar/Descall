@@ -150,7 +150,7 @@ async function run() {
       assert.equal(r.body.sum, 5000);
       assert.equal(r.body.setPrice, 3750);
       assert.equal(r.body.yourPrice, 3750);
-      assert.equal(r.body.pieces.length, 8);
+      assert.equal(r.body.pieces.length, 9);
       assert.deepEqual(r.body.pieces.map((p) => p.category), PIECES);
       assert.equal(r.body.priceHistory30d.length, 30);
       assert.equal(r.body.partialPriceUntil, null);
@@ -343,7 +343,7 @@ async function run() {
       h.fake._tables.user_inventory.rows.push({ id: "inv-k", user_id: U(5), item_id: kervan[0].id, acquired_via: "purchase", acquired_at: new Date().toISOString() });
       const q = await call("/shop2/gifts/quote", { method: "POST", body: { toUserId: U(5), setKey: "bakir-kervan" }, user: 2 });
       assert.equal(q.body.ok, true, JSON.stringify(q.body));
-      assert.equal(q.body.itemIds.length, 7);
+      assert.equal(q.body.itemIds.length, 8);
       assert.equal(q.body.price, 3230);
       const s = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(5), setKey: "bakir-kervan" }, user: 2 });
       assert.equal(s.status, 200, JSON.stringify(s.body));
@@ -360,7 +360,7 @@ async function run() {
       assert.ok(rows("shop2_gift_flags").length >= 1);
     });
 
-    await check("gift sheet recipients (owned 1/8, wishlist first) and friend feed", async () => {
+    await check("gift sheet recipients (owned 1/9, wishlist first) and friend feed", async () => {
       await call("/shop2/wishlist", { method: "POST", body: { setKey: "bakir-kervan" }, user: 4 });
       const r = await call("/shop2/gifts/recipients?setKey=bakir-kervan");
       assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -369,7 +369,7 @@ async function run() {
       assert.equal(list[0].user.username, "newbie", "wishlist match comes first");
       const third = list.find((x) => x.user.username === "third");
       assert.equal(third.owned, 1);
-      assert.equal(third.total, 8);
+      assert.equal(third.total, 9);
       const feed = await call("/shop2/feed", { user: 2 });
       assert.ok(feed.body.entries.some((e) => e.user.username === "buyer" && e.setKey === "gece-limani"));
     });

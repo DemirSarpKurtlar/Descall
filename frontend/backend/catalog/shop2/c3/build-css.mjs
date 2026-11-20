@@ -83,8 +83,12 @@ for (const fx of AVATAR) {
 sections.push(avatarRules.join("\n"));
 
 /* ── Profile auras ───────────────────────────────────────────────── */
-const { AURA } = require("./aura.js");
-const { ORN } = require("./aura-art.js");
+const { AURA: SINGLE_AURA } = require("./aura.js");
+const { SET_AURA } = require("./aura-set.js");
+const { ORN: SINGLE_ORN } = require("./aura-art.js");
+const { SET_ORN } = require("./aura-set-art.js");
+const AURA = [...SINGLE_AURA, ...SET_AURA];
+const ORN = { ...SINGLE_ORN, ...SET_ORN };
 const auraRules = [];
 auraRules.push(`/* Profile auras (profile card, hover card, shop previews). The glass card
    pins its own box-shadow with !important, so the aura does too (:root lifts
@@ -133,11 +137,16 @@ for (const a of AURA) {
     return `translate(${fx ? 100 : 0} ${fy ? 100 : 0}) scale(${fx ? -1 : 1} ${fy ? -1 : 1})`;
   };
   const pos = { tl: "left top", tr: "right top", bl: "left bottom", br: "right bottom" };
-  const ornLayers = corners.map((c) => {
+  // Each corner image is declared once as a custom property and reused by the
+  // paint and both mask declarations (the data URI used to be written 3 times).
+  const ornVars = [];
+  const ornLayers = corners.map((c, i) => {
     const fl = flipFor(c);
     const docC = fl ? raw.replace(/(<\/defs>|<svg[^>]*>)(?![\s\S]*<\/defs>)/, `$1<g transform='${fl}'>`).replace(/<\/svg>$/, "</g></svg>") : raw;
-    return `${uri(docC)} ${pos[c]} / var(--s2o) var(--s2o) no-repeat`;
+    ornVars.push(`--s2a${i}: ${uri(docC)};`);
+    return `var(--s2a${i}) ${pos[c]} / var(--s2o) var(--s2o) no-repeat`;
   });
+  r.push(...ornVars);
   const rimW = a.rim.shadow ? 4 : (a.rimW || 1.5);
   const rimBg = a.rim.shadow ? "none" : a.rim.bg;
   r.push(`background: ${ornLayers.join(", ")}, ${rimBg};`);

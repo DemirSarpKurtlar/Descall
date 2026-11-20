@@ -24,4 +24,8 @@ paths = [
 regexes = [
   '''lk-test-secret-that-is-long-enough-0123456789''',
   '''tBHItJI5svbpez7KI4CCXg''',
+  # Fake session tokens in the desktop migration tests (descall-migrate fixtures, migrator
+  # unit tests): a JWT whose payload is {"sub":"00000000"} and a truncated dummy.
+  '''eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIwMDAwMDAwMCJ9\.c2lnbmF0dXJl''',
+  '''eyJhbGciOi\.eyJzdWIiOiIx\.c2ln''',
 ]

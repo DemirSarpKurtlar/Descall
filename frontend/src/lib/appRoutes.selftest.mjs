@@ -24,4 +24,19 @@ assert(isAuthenticatedAppPath("/shop/look/set/gece-limani"), "look link is an ap
 assert(!parseAppRoute("/shop/look/set/gece-limani").unknown, "look link is not unknown");
 assert(parseAppRoute("/shop/look/item/abc-1").settingsTab === "shop", "look link opens the shop");
 
+// An invite landing is not server "join": the route guard ("server not in my list" ->
+// /servers) bounced the user off the server they had just joined through the invite.
+{
+  const r = parseAppRoute("/servers/join/GOODCODE");
+  assert(r.view === "servers", "invite path stays in the servers view");
+  assert(r.serverId === null, "invite path has no server id");
+  assert(r.channelId === null, "invite path has no channel id");
+  assert(r.serverInvite === "GOODCODE", "invite path keeps the code");
+  assert(parseAppRoute("/servers/JOIN/abc1").serverInvite === "abc1", "invite path is case-insensitive");
+  assert(parseAppRoute("/servers/join").serverInvite === "", "bare /servers/join is still an invite path");
+  const s = parseAppRoute("/servers/s-1/c-2");
+  assert(s.serverId === "s-1" && s.channelId === "c-2" && s.serverInvite === undefined, "real server routes unchanged");
+  assert(parseAppRoute("/servers").serverId === null && parseAppRoute("/servers").serverInvite === undefined, "servers home unchanged");
+}
+
 console.log("appRoutes.selftest.mjs: ok");

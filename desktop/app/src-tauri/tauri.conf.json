@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Descall",
+  "mainBinaryName": "Descall",
+  "version": "4.0.0",
+  "identifier": "com.descall.app",
+  "build": {
+    "frontendDist": "../../../frontend/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "",
+    "beforeDevCommand": ""
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "connect-src": "'self' ipc: http://ipc.localhost https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com https://api.descall.com wss://rt.descall.com https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://*.posthog.com https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io",
+        "img-src": "'self' asset: http://asset.localhost https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.googleusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com data: blob:",
+        "script-src": "'self' 'wasm-unsafe-eval' 'unsafe-eval' https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com",
+        "style-src": "'self' 'unsafe-inline'",
+        "font-src": "'self' data:",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "worker-src": "'self' blob:",
+        "media-src": "'self' blob: data: https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com"
+      },
+      "freezePrototype": false
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "Descall",
+    "copyright": "Copyright (c) 2026 Demir Sarp Kurtlar",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "createUpdaterArtifacts": false,
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false,
+        "languages": [
+          "Turkish",
+          "English",
+          "German",
+          "French",
+          "Spanish",
+          "Russian",
+          "PortugueseBR"
+        ],
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "nsis/hooks.nsh",
+        "startMenuFolder": ""
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_MINISIGN_PUBLIC_KEY (tauri signer generate)",
+      "endpoints": [
+        "https://api.descall.com/api/desktop/tauri/{{target}}/{{arch}}/{{current_version}}",
+        "https://github.com/DemirSarpKurtlar/Descall/releases/download/desktop-latest/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "descall"
+        ]
+      }
+    }
+  }
+}

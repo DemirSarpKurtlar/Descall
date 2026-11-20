@@ -2,7 +2,7 @@
 
 /**
  * Shared seed + HTTP harness for the Market 2.0 integration tests (not a test file itself).
- * Two complete sets (8 pieces each), 24 singles over 4 rarities, one retired s2 item, one
+ * Two complete sets (9 pieces each, the profile aura included), 24 singles over 4 rarities, one retired s2 item, one
  * inactive s2 item and one active legacy item.
  */
 
@@ -14,17 +14,22 @@ const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const I = (n) => `10000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const iso = (t) => new Date(t).toISOString();
 
-const PIECES = ["avatar_frame", "banner", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"];
-const PIECE_PRICES = [700, 800, 450, 400, 900, 650, 600, 500]; // sum 5000
+/** Set piece categories in catalog order (lib/shop2/themes.js SET_PIECE_CATEGORIES). */
+const PIECES = ["avatar_frame", "banner", "profile_aura", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"];
+// Seed order: the 8 original pieces keep their ids (I(1..16)) and sort_order 0..7; the profile
+// aura joined the sets later and is the last piece of each set (sort_order 8, ids I(80), I(81)).
+const SEED_PIECES = ["avatar_frame", "banner", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound", "profile_aura"];
+const PIECE_PRICES = [700, 800, 450, 400, 900, 450, 400, 500, 400]; // by SEED_PIECES, sum 5000
 const SINGLE_CATS = ["banner", "avatar_frame", "chat_bubble", "name_effect", "profile_aura", "theme"];
 const RARITY_PRICE = { common: 200, rare: 420, epic: 700, legendary: 1200 };
 
 function seedItems(now) {
   const items = [];
   let n = 1;
+  let aura = 80;
   for (const setKey of ["gece-limani", "bakir-kervan"]) {
-    PIECES.forEach((cat, i) => {
-      items.push({ id: I(n++), sku: `s2-${cat}-${setKey}`, name: `${setKey} ${cat}`, category: cat, price_descoin: PIECE_PRICES[i], rarity: i % 3 === 0 ? "legendary" : "epic", active: true, sort_order: i, set_key: setKey, created_at: iso(now - 40 * DAY), asset_url: cat === "banner" ? "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200'><rect fill='#1e4b8f' width='600' height='200'/><circle fill='#35d0e0' cx='300' cy='100' r='40'/></svg>" : null });
+    SEED_PIECES.forEach((cat, i) => {
+      items.push({ id: cat === "profile_aura" ? I(aura++) : I(n++), sku: `s2-${cat}-${setKey}`, name: `${setKey} ${cat}`, category: cat, price_descoin: PIECE_PRICES[i], rarity: i % 3 === 0 ? "legendary" : "epic", active: true, sort_order: i, set_key: setKey, created_at: iso(now - 40 * DAY), asset_url: cat === "banner" ? "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200'><rect fill='#1e4b8f' width='600' height='200'/><circle fill='#35d0e0' cx='300' cy='100' r='40'/></svg>" : null });
     });
   }
   const rarities = ["common", "rare", "epic", "legendary"];

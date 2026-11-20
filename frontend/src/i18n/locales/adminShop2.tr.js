@@ -87,7 +87,8 @@ export const ADMIN_SHOP2_TR = {
     "avatar_effect": "Efekt",
     "chat_bubble": "Balon",
     "voice_tile": "Ses",
-    "join_sound": "Katılma"
+    "join_sound": "Katılma",
+    "profile_aura": "Aura"
   },
   "status": {
     "draft": "Taslak",

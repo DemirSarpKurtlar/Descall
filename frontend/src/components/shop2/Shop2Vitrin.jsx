@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
-import { lastDays, refreshPlan, setPricing, setProgress, undoLeft, mmss, countdownParts } from "../../lib/shop2Logic.js";
+import { SET_PIECE_ORDER, lastDays, refreshPlan, setPricing, setProgress, undoLeft, mmss, countdownParts } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
 import { Chip, Coin, Layer, Num, Price, RollingClock, Seg, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
@@ -314,7 +314,7 @@ function SetBanner({ sets }) {
       aria-roledescription={t("shop2.banner.carousel")}
     >
       <div className="s2-banner-slots" key={cur.key}>
-        {(pieces.length ? pieces : Array.from({ length: 8 }, () => null)).slice(0, 8).map((p, k) => (
+        {(pieces.length ? pieces : Array.from({ length: SET_PIECE_ORDER.length }, () => null)).slice(0, SET_PIECE_ORDER.length).map((p, k) => (
           <span key={p?.item?.id ?? k} className={`s2-slot${p?.owned ? " is-owned" : ""}`} style={{ "--i": k }}>
             {p ? <Shop2Art item={p.item} size="slot" me={s2.me} /> : null}
             {p?.owned ? <em>{t("shop2.common.owned")}</em> : null}
