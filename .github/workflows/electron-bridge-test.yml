@@ -1,0 +1,83 @@
+# Owner-only Electron -> Tauri migration test build (docs/desktop/gecis-testi.md).
+# Builds the Electron setup with MIGRATION_BRIDGE_ENABLED = true and a prerelease version
+# (default 4.0.1-bridgetest.1, above the published 4.0.0, so the Electron updater never
+# replaces it with a build that has the bridge off). It is uploaded as a workflow artifact
+# only: never published, never a GitHub release, no latest.yml. The bridge acts only for
+# accounts the backend plan allows (allowlist), so installing it on another account is inert.
+name: Electron bridge test build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Prerelease version for the test build (must stay above the published Electron version)"
+        required: false
+        default: "4.0.1-bridgetest.1"
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: Test version and bridge switch
+        working-directory: frontend
+        shell: pwsh
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+-[0-9A-Za-z.]+$') { throw "version must be a prerelease like 4.0.1-bridgetest.1" }
+          npm pkg set version=$env:VERSION
+          Push-Location electron; npm pkg set version=$env:VERSION; Pop-Location
+          $cfg = "electron/migrationBridgeConfig.cjs"
+          $text = Get-Content $cfg -Raw
+          if ($text -notmatch "MIGRATION_BRIDGE_ENABLED: false") { throw "${cfg}: switch not found" }
+          if ($text -notmatch "PLAN_PUBLIC_KEYS: Object.freeze\(\['MCow") { throw "${cfg}: no plan public key pinned" }
+          $text.Replace("MIGRATION_BRIDGE_ENABLED: false", "MIGRATION_BRIDGE_ENABLED: true") | Set-Content $cfg -NoNewline
+          Select-String -Path $cfg -Pattern "MIGRATION_BRIDGE_ENABLED"
+          node -p "require('./package.json').version"
+      - name: Build Windows setup (unsigned, not published)
+        working-directory: frontend
+        shell: pwsh
+        env:
+          ELECTRON_BUILD: "1"
+          ELECTRON_BUILDER_7Z_FILTER: BCJ
+        run: |
+          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
+          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
+          npm run build:prod
+          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
+          Remove-Item Env:WIN_CSC_LINK, Env:WIN_CSC_KEY_PASSWORD, Env:CSC_LINK, Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+          $napiPrebuilt = @('uiohook-napi')
+          $native = Get-ChildItem -Path node_modules -Filter binding.gyp -Recurse -File -ErrorAction SilentlyContinue |
+            ForEach-Object { Split-Path -Leaf $_.DirectoryName } |
+            Where-Object { $napiPrebuilt -notcontains $_ } | Sort-Object -Unique
+          if ($native) {
+            npx --yes @electron/rebuild@3.7.2 -f -a x64 -o ($native -join ',')
+            if ($LASTEXITCODE -ne 0) { throw "electron-rebuild failed with $LASTEXITCODE" }
+          }
+          npx electron-builder --win --publish=never
+          if ($LASTEXITCODE -ne 0) { throw "electron-builder failed with $LASTEXITCODE" }
+      - name: The packaged app carries the bridge switch on
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          node electron/peArch.cjs --dir release/win-unpacked --expect 34404 --require Descall.exe,ffmpeg.dll
+          $asar = "release/win-unpacked/resources/app.asar"
+          if (-not (Test-Path $asar)) { throw "no app.asar" }
+          npx --yes @electron/asar@3.2.17 extract-file $asar electron/migrationBridgeConfig.cjs
+          if (-not (Select-String -Path migrationBridgeConfig.cjs -Pattern "MIGRATION_BRIDGE_ENABLED: true" -Quiet)) { throw "bridge switch is not on in the packaged app" }
+          Write-Host "bridge switch on in app.asar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: electron-bridge-test
+          path: frontend/release/Descall-Setup-*.exe
+          retention-days: 14
