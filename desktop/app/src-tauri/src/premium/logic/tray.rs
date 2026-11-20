@@ -100,10 +100,85 @@ pub fn accounts(menu: &str, main: &str, add: &str, unnamed: &str, list: &[(Strin
     vec![TrayItem::Submenu { label: menu.into(), items }]
 }
 
+/// Entries the tray panel already has its own rows for (status, call mute / deafen).
+fn panel_duplicate(it: &TrayItem) -> bool {
+    match it {
+        TrayItem::Item { id, .. } => id == "premium|action|mute" || id == "premium|action|deafen",
+        TrayItem::Submenu { items, .. } => !items.is_empty() && items.iter().all(|i| matches!(i, TrayItem::Radio { id, .. } if id.starts_with("premium|status|"))),
+        _ => false,
+    }
+}
+
+/// The items as plain data for the tray panel page (same shape as Electron's
+/// trayMenuModel.cjs serializeMenuTemplate), plus the ids the panel may click.
+/// Duplicates of the panel's own rows, empty submenus and stray separators are dropped.
+pub fn panel_items(items: &[TrayItem]) -> (Value, Vec<String>) {
+    fn walk(list: &[TrayItem], ids: &mut Vec<String>) -> Vec<Value> {
+        let mut out: Vec<Value> = Vec::new();
+        for it in list {
+            if panel_duplicate(it) {
+                continue;
+            }
+            match it {
+                TrayItem::Separator => {
+                    if out.last().is_some_and(|v| v["type"] != "separator") {
+                        out.push(serde_json::json!({ "type": "separator" }));
+                    }
+                }
+                TrayItem::Item { id, label, enabled } => {
+                    if *enabled {
+                        ids.push(id.clone());
+                    }
+                    out.push(serde_json::json!({ "type": "item", "id": id, "label": label, "enabled": enabled }));
+                }
+                TrayItem::Radio { id, label, checked } => {
+                    ids.push(id.clone());
+                    out.push(serde_json::json!({ "type": "radio", "id": id, "label": label, "enabled": true, "checked": checked }));
+                }
+                TrayItem::Submenu { label, items } => {
+                    let kids = walk(items, ids);
+                    if !kids.is_empty() {
+                        out.push(serde_json::json!({ "type": "submenu", "id": format!("sub|{label}"), "label": label, "enabled": true, "items": kids }));
+                    }
+                }
+            }
+        }
+        while out.last().is_some_and(|v| v["type"] == "separator") {
+            out.pop();
+        }
+        out
+    }
+    let mut ids = Vec::new();
+    let list = walk(items, &mut ids);
+    (Value::Array(list), ids)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn panel_items_for_the_tray_panel() {
+        let mut items = call_controls("en", &json!({"active": true, "muted": true, "title": "Ada"}), "dnd");
+        items.push(TrayItem::Separator);
+        items.extend(focus("en", 0, 0));
+        items.push(TrayItem::Separator);
+        items.push(TrayItem::Submenu { label: "Empty".into(), items: vec![] });
+        let (v, ids) = panel_items(&items);
+        let types: Vec<&str> = v.as_array().unwrap().iter().map(|i| i["type"].as_str().unwrap()).collect();
+        assert_eq!(types, ["item", "item", "separator", "submenu"], "mute / deafen / status are the panel's own rows");
+        assert_eq!(v[0]["enabled"], false, "the 'In a call' line stays a label");
+        assert_eq!(v[1]["id"], "premium|action|leave");
+        assert_eq!(v[3]["label"], "Focus mode");
+        assert_eq!(v[3]["items"].as_array().unwrap().len(), 5);
+        assert!(ids.contains(&"premium|action|leave".to_string()));
+        assert!(ids.contains(&"premium|focus|30".to_string()));
+        assert!(!ids.contains(&"premium|focus|0".to_string()), "a disabled entry cannot be clicked");
+        assert!(!ids.contains(&"premium|noop".to_string()));
+        assert!(!ids.iter().any(|i| i.starts_with("premium|status|")));
+        assert_eq!(panel_items(&[]).0, json!([]));
+    }
 
     #[test]
     fn menus() {
