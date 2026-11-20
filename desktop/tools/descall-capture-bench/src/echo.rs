@@ -169,6 +169,14 @@ fn capture(mode: Mode, buf: Arc<Mutex<Vec<f32>>>, skip_until: Instant) -> Result
     .map_err(|e| e.to_string())
 }
 
+/// Progress line plus the crash reporter's "last step", so a native crash names the step.
+fn step(s: &str) {
+    use std::io::Write as _;
+    println!("    echo: {s}...");
+    let _ = std::io::stdout().flush();
+    crate::crash::set_step(&format!("echo: {s}"));
+}
+
 pub fn run(env: &Env) -> Vec<TestResult> {
     const OWN: (&str, &str) = ("echo.own_tone", "Echo: own 1 kHz tone in loopback");
     const CHILD: (&str, &str) = ("echo.child_tone", "Echo: child process tone (tree)");
@@ -182,14 +190,19 @@ pub fn run(env: &Env) -> Vec<TestResult> {
         return vec![TestResult::new(OWN.0, OWN.1, Status::Fail).note(format!("process loopback needs Windows 10 2004+, this is build {}: shares would be video-only", env.caps.build))];
     }
     let pid = unsafe { GetCurrentProcessId() };
-    let (other, other_err) = match explorer_pid() {
+    step("find explorer.exe");
+    let explorer = explorer_pid();
+    step("start the other-app tone (440 Hz, under explorer.exe)");
+    let (other, other_err) = match explorer {
         Some(ep) => match spawn_tone(OTHER_HZ, 8, Some(ep)) {
             Ok(c) => (Some(c), None),
             Err(e) => (None, Some(e)),
         },
         None => (None, Some("no explorer.exe in this session".to_string())),
     };
+    step("start the child-process tone (1250 Hz)");
     let child = spawn_tone(CHILD_HZ, 8, None);
+    step("start our own tone (1000 Hz)");
     let stop = Arc::new(AtomicBool::new(false));
     let st = stop.clone();
     let own = std::thread::spawn(move || play_tone(OWN_HZ, TONE_AMP, Duration::from_secs(8), st));
@@ -198,21 +211,29 @@ pub fn run(env: &Env) -> Vec<TestResult> {
     let excl = Arc::new(Mutex::new(Vec::new()));
     let ctrl = Arc::new(Mutex::new(Vec::new()));
     let skip_until = Instant::now() + Duration::from_millis(300);
+    step("start the loopback capture (everything except our process tree)");
     let c_excl = capture(Mode::ExcludeTree(pid), excl.clone(), skip_until);
+    step("start the control capture (only our process tree)");
     let c_ctrl = capture(Mode::IncludeTree(pid), ctrl.clone(), skip_until);
+    step("capture for 3.3 s");
     std::thread::sleep(Duration::from_millis(3300));
     let excl_err = c_excl.as_ref().err().cloned();
+    step("stop the loopback capture");
     if let Ok(c) = c_excl {
         c.stop();
     }
+    step("stop the control capture");
     if let Ok(c) = c_ctrl {
         c.stop();
     }
+    step("stop our own tone");
     stop.store(true, Ordering::Release);
     let own_err = own.join().ok().and_then(|r| r.err());
     let child_err = child.as_ref().err().cloned();
+    step("stop the child and other-app tones");
     drop(child);
     drop(other);
+    step("measure the tones");
 
     if let Some(e) = excl_err {
         return vec![TestResult::new(OWN.0, OWN.1, Status::Fail).note(format!("process loopback failed to start: {e} (the share would be video-only)"))];
@@ -255,6 +276,7 @@ pub fn guard(env: &Env) -> TestResult {
     if !env.audio_device {
         return TestResult::skip("echo.guard", "Echo guard audit (info)", NO_AUDIO);
     }
+    step("audit the audio sessions (echo guard)");
     match descall_capture::echo_guard::audit() {
         Ok(a) => TestResult::new("echo.guard", "Echo guard audit (info)", if a.safe() { Status::Info } else { Status::Fail })
             .measured(format!("{} sessions, tree {}", a.sessions.len(), a.tree_size))

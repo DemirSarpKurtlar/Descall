@@ -235,7 +235,11 @@ fn activate(mode: Mode) -> crate::Result<IAudioClient> {
         ActivationType: AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
         Anonymous: AUDIOCLIENT_ACTIVATION_PARAMS_0 { ProcessLoopbackParams: AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS { TargetProcessId: pid, ProcessLoopbackMode: loopback_mode } },
     };
-    let pv = PROPVARIANT {
+    // ManuallyDrop: windows-rs implements Drop for PROPVARIANT as PropVariantClear, which
+    // would CoTaskMemFree the VT_BLOB data, here a pointer to `params` on this stack frame.
+    // That free corrupted the process heap (0xC0000374) on the first real audio device the
+    // echo test met. This PROPVARIANT owns nothing, so it must never be cleared.
+    let pv = std::mem::ManuallyDrop::new(PROPVARIANT {
         Anonymous: PROPVARIANT_0 {
             Anonymous: std::mem::ManuallyDrop::new(PROPVARIANT_0_0 {
                 vt: VT_BLOB,
@@ -245,7 +249,7 @@ fn activate(mode: Mode) -> crate::Result<IAudioClient> {
                 Anonymous: PROPVARIANT_0_0_0 { blob: BLOB { cbSize: std::mem::size_of::<AUDIOCLIENT_ACTIVATION_PARAMS>() as u32, pBlobData: &mut params as *mut _ as *mut u8 } },
             }),
         },
-    };
+    });
     let done = unsafe { CreateEventW(None, true, false, None)? };
     // The completion handler runs on an MTA worker thread; IAudioClient is free-threaded
     // there even though windows-rs does not mark it Send.
@@ -253,7 +257,7 @@ fn activate(mode: Mode) -> crate::Result<IAudioClient> {
     let slot: Arc<Mutex<Option<windows::core::Result<IAudioClient>>>> = Arc::new(Mutex::new(None));
     let handler: IActivateAudioInterfaceCompletionHandler = Activation { done, result: slot.clone() }.into();
     let result = (|| -> crate::Result<IAudioClient> {
-        let _op = unsafe { ActivateAudioInterfaceAsync(VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK, &IAudioClient::IID, Some(&pv), &handler)? };
+        let _op = unsafe { ActivateAudioInterfaceAsync(VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK, &IAudioClient::IID, Some(&*pv), &handler)? };
         if unsafe { WaitForSingleObject(done, 5_000) } != WAIT_OBJECT_0 {
             return Err(crate::CaptureError::LoopbackTimeout);
         }

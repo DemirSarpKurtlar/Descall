@@ -10,8 +10,9 @@
 //! - Cursor on/off: IsCursorCaptureEnabled (Windows 10 2004+), switchable mid-share.
 //! - No yellow border: IsBorderRequired = false (Windows 11, after a one-time
 //!   GraphicsCaptureAccess::RequestAccessAsync(Borderless)).
-//! - Frame pacing: MinUpdateInterval when present, and always a software pacer in the
-//!   callback (frames closer than 90 % of the period are dropped), switchable mid-share.
+//! - Frame pacing: a deadline-grid pacer in the callback (pacer.rs) caps the rate without
+//!   losing frames to the compositor's refresh grid; MinUpdateInterval, when present, is set
+//!   to half the period only as a coarse upper bound. Switchable mid-share.
 //! - HDR: the pool is created in R16G16B16A16Float (scRGB) and hdr.rs tone-maps.
 
 use std::mem::ManuallyDrop;
@@ -126,7 +127,7 @@ impl WgcSession {
         let i = crate::presets::frame_interval_100ns(fps);
         self.interval_100ns.store(i, Ordering::Release);
         if session_property_present("MinUpdateInterval") {
-            let _ = self.session.SetMinUpdateInterval(TimeSpan { Duration: i });
+            let _ = self.session.SetMinUpdateInterval(TimeSpan { Duration: crate::pacer::min_update_interval_100ns(i) });
         }
     }
 
@@ -257,7 +258,7 @@ where
     }
     let interval = Arc::new(AtomicI64::new(crate::presets::frame_interval_100ns(opts.max_fps)));
     if session_property_present("MinUpdateInterval") {
-        let _ = session.SetMinUpdateInterval(TimeSpan { Duration: interval.load(Ordering::Relaxed) });
+        let _ = session.SetMinUpdateInterval(TimeSpan { Duration: crate::pacer::min_update_interval_100ns(interval.load(Ordering::Relaxed)) });
     }
 
     let latch = Arc::new(EndLatch::new());
@@ -282,10 +283,10 @@ where
     let device = windows::core::AgileReference::new(&d3d.winrt)?;
     struct State<F> {
         pool_size: SizeInt32,
-        last_ts: i64,
+        pacer: crate::pacer::Pacer,
         on_frame: F,
     }
-    let state = Mutex::new(State { pool_size: size, last_ts: i64::MIN, on_frame });
+    let state = Mutex::new(State { pool_size: size, pacer: crate::pacer::Pacer::new(), on_frame });
     let interval_cb = interval.clone();
     let hdr = opts.hdr;
     let (latch_cb, inflight_cb) = (latch.clone(), inflight.clone());
@@ -305,6 +306,7 @@ where
         // drop this frame (the next one arrives at the new size).
         if cw != st.pool_size.Width || ch != st.pool_size.Height {
             st.pool_size = SizeInt32 { Width: cw, Height: ch };
+            st.pacer.reset();
             let _ = frame.Close();
             pool.Recreate(&device.resolve()?, format, buffers, st.pool_size)?;
             if let Some(s) = &stats {
@@ -313,14 +315,13 @@ where
             return Ok(());
         }
         let min = interval_cb.load(Ordering::Acquire);
-        if st.last_ts != i64::MIN && ts - st.last_ts < min * 9 / 10 {
+        if !st.pacer.admit(ts, min) {
             if let Some(s) = &stats {
                 ShareStats::add(&s.frames_paced_out, 1);
             }
             let _ = frame.Close();
             return Ok(());
         }
-        st.last_ts = ts;
         if let Ok(texture) = frame.Surface().map_err(crate::CaptureError::from).and_then(|s| texture_of(&s)) {
             (st.on_frame)(Frame { texture: &texture, width: cw as u32, height: ch as u32, time_100ns: ts, arrival_100ns: arrival, hdr });
         }

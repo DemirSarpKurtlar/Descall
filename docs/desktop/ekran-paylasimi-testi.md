@@ -90,3 +90,22 @@ Pencerenin altında yazan JSON dosyasını (varsayılan olarak exe ile aynı kla
 | Colour / HDR | Raporu gönder. Windows HDR ayarındaki "SDR içerik parlaklığı" değerini de yaz. |
 
 P0 kararı (plan bölüm 6): bütün kabul satırları geçmeli. Biri kalırsa uygulama o bilgisayarlarda WebView2'nin kendi ekran paylaşımına (L4) düşer ve sorun yeniden değerlendirilir. Yankı kuralı L4'te de geçerlidir: yankısız ses garanti edilemiyorsa ses hiç paylaşılmaz.
+
+## 7. Test sessizce kapanırsa (çökme)
+
+Test bir grubun başlığını yazıp hiçbir şey söylemeden kapanırsa yerel bir çökme olmuştur. Test aracı artık çökme anında `NATIVE EXCEPTION 0x...` ile başlayan bir blok yazar: hata kodu, son adım (`step:`), çöken modül ve çağrı yığını. Bu bloğun tamamını gönder.
+
+Kod `0xC0000374` (bellek bozulması) ise bozan satırı yakalamak için "tam sayfa yığını" (page heap) açılır. Bunun için Komut İstemi'ni **yönetici olarak** aç ve sırayla çalıştır:
+
+```bat
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\descall-capture-bench.exe" /v GlobalFlag /t REG_DWORD /d 0x02000000 /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\descall-capture-bench.exe" /v PageHeapFlags /t REG_DWORD /d 0x3 /f
+```
+
+Sonra testi yalnızca o grupla çalıştır (ör. `descall-capture-bench.exe --only echo`). Çökme bu kez `0xC0000005` (erişim ihlali) olarak, bozan satırın yığınıyla görünür. Bitince ayarı mutlaka geri al:
+
+```bat
+reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\descall-capture-bench.exe" /f
+```
+
+Bu ayar yalnızca `descall-capture-bench.exe` adlı programı etkiler; Descall'a ve diğer programlara dokunmaz. `.pdb` dosyası exe ile aynı klasörde dursun, yığın satır numaralarıyla çıkar.
