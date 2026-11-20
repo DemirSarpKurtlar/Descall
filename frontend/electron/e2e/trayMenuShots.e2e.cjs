@@ -109,7 +109,7 @@ async function main() {
   const browser = await playwright.chromium.launch();
   const avatarPng = await (async () => {
     const p = await browser.newPage({ viewport: { width: 96, height: 96 } });
-    await p.setContent('<div style="width:96px;height:96px;background:radial-gradient(circle at 35% 30%,#ffd8a8,#f59f5a 45%,#b94e7c 100%);display:grid;place-items:center;font:700 44px system-ui;color:#fff">D</div>');
+    await p.setContent('<body style="margin:0"><div style="width:96px;height:96px;background:radial-gradient(circle at 35% 30%,#ffd8a8,#f59f5a 45%,#b94e7c 100%);display:grid;place-items:center;font:700 44px system-ui;color:#fff">D</div></body>');
     const buf = await p.screenshot();
     await p.close();
     return `data:image/png;base64,${buf.toString('base64')}`;
