@@ -247,3 +247,21 @@ fn main() {
         }
     });
 }
+
+#[cfg(test)]
+mod config_tests {
+    /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
+    /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,
+    /// 'unsafe-inline' stops counting and all of those are blocked: the app opens as bare,
+    /// unstyled HTML (owner's PC, desktop-v4.0.0). style-src must stay unmodified.
+    #[test]
+    fn style_src_is_not_modified_by_tauri() {
+        let conf: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).expect("tauri.conf.json");
+        let sec = &conf["app"]["security"];
+        let style = sec["csp"]["style-src"].as_str().unwrap_or_default();
+        assert!(style.contains("'unsafe-inline'"), "style-src needs 'unsafe-inline' for the runtime <style> elements");
+        let off = &sec["dangerousDisableAssetCspModification"];
+        let disabled = off.as_bool() == Some(true) || off.as_array().is_some_and(|a| a.iter().any(|v| v == "style-src"));
+        assert!(disabled, "dangerousDisableAssetCspModification must include style-src");
+    }
+}

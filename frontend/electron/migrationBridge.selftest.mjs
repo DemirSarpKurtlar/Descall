@@ -153,6 +153,12 @@ function world(over = {}) {
 
 test("shipped builds have the bridge switched off; pinned keys are Ed25519 public keys", () => {
   assert.equal(config.MIGRATION_BRIDGE_ENABLED, false);
+  // Same origin the app talks to (frontend/.env.production VITE_API_BASE_URL): the bridge
+  // used api.descall.com, which has no DNS record, so it could never fetch a plan.
+  const envProd = fs.readFileSync(path.join(dir, "..", ".env.production"), "utf8");
+  const apiBase = /^VITE_API_BASE_URL=(\S+)/m.exec(envProd)?.[1];
+  assert.ok(apiBase, "VITE_API_BASE_URL in .env.production");
+  assert.equal(config.API_BASE, apiBase.replace(/\/+$/, ""));
   for (const k of config.PLAN_PUBLIC_KEYS) {
     const key = crypto.createPublicKey({ key: Buffer.from(k, "base64"), format: "der", type: "spki" });
     assert.equal(key.asymmetricKeyType, "ed25519");
