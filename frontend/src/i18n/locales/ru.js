@@ -3274,6 +3274,8 @@ export const nested = {
       "retryPollingFirst": "Повторное подключение: переход в режим polling-first…",
       "retryPollingOnly": "Повторное подключение: переход в режим polling-only…",
       "socketAuthFailed": "Ошибка аутентификации сокета",
+      "sessionExpired": "Срок действия сессии истёк. Войдите снова, чтобы продолжить.",
+      "sessionSignedOut": "Вы вышли из аккаунта. Войдите снова, чтобы продолжить.",
       "socketConnectFailed": "Не удалось подключить сокет. Проверьте статус деплоя бэкенда, URL бэкенда и настройки CORS.",
       "socketReconnectFailed": "Не удалось переподключить сокет. Проверьте URL бэкенда и CORS."
     },

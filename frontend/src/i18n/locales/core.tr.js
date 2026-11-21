@@ -20,6 +20,8 @@ export const CORE_TR = {
     retryPollingOnly: "Bağlantı yeniden deneniyor: yalnızca polling…",
     socketConnectFailed: "Anlık bağlantı kurulamadı. Sunucunun çalıştığını, sunucu adresini ve CORS ayarlarını kontrol et.",
     socketAuthFailed: "Oturum doğrulanamadı",
+    sessionExpired: "Oturumunun süresi doldu. Devam etmek için tekrar giriş yap.",
+    sessionSignedOut: "Oturumun kapatıldı. Devam etmek için tekrar giriş yap.",
     acceptFailed: "Kabul edilemedi",
     declineFailed: "Reddedilemedi",
     serverFallback: "Sunucu",

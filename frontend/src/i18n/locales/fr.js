@@ -3274,6 +3274,8 @@ export const nested = {
       "retryPollingFirst": "Nouvelle tentative de connexion : passage en mode polling d'abord…",
       "retryPollingOnly": "Nouvelle tentative de connexion : passage en mode polling uniquement…",
       "socketAuthFailed": "Échec de l'authentification du socket",
+      "sessionExpired": "Ta session a expiré. Reconnecte-toi pour continuer.",
+      "sessionSignedOut": "Tu as été déconnecté. Reconnecte-toi pour continuer.",
       "socketConnectFailed": "Échec de la connexion du socket. Vérifie l'état du déploiement du backend, l'URL du backend et les paramètres CORS.",
       "socketReconnectFailed": "Échec de la reconnexion du socket. Vérifie l'URL du backend et les CORS."
     },
