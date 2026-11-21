@@ -375,6 +375,35 @@ fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
 }
 
+/// Same file name as main.cjs (userData/background-notice-shown).
+const BACKGROUND_NOTICE: &str = "background-notice-shown";
+
+/// True the first time only: writes the marker in `dir` and answers whether it was new.
+/// A marker that cannot be written still answers true once per run of the caller.
+pub fn background_notice_due(dir: &std::path::Path) -> bool {
+    let marker = dir.join(BACKGROUND_NOTICE);
+    if marker.exists() {
+        return false;
+    }
+    let _ = std::fs::write(&marker, crate::state::now_ms().to_string());
+    true
+}
+
+/// First close to the tray: "Descall keeps running in the background" (main.cjs showed it
+/// once; the Tauri shell hid the window without a word). Off the event-loop thread, since
+/// the capsule is a new window.
+fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
+    let Some(dir) = crate::state::data_dir(app) else { return };
+    if !background_notice_due(&dir) {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let body = crate::state::et(&app, "notice.background", &[]);
+        let _ = crate::commands::notify::show_capsule(&app, "Descall", &json!({ "body": body, "tag": "descall-background", "data": { "type": "announcement" } }));
+    });
+}
+
 pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     let win = w.clone();
     w.on_window_event(move |e| {
@@ -389,6 +418,7 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 save_window_state(&win);
                 if crate::state::shell(app).has_tray.load(std::sync::atomic::Ordering::Acquire) {
                     let _ = win.hide();
+                    background_notice_once(app);
                 } else {
                     let _ = win.minimize();
                 }
@@ -536,6 +566,15 @@ mod window_state_tests {
         let top = Screen { x: 0, y: -2100, width: 3840, height: 2100, scale: 1.5 };
         let (_, corner) = restore_physical(-12, -2112, Some(1400.0), Some(900.0), &[LAPTOP, top]).expect("slack on the upper screen");
         assert_eq!(corner, (0, -2100));
+    }
+
+    #[test]
+    fn the_background_notice_shows_once() {
+        let dir = std::env::temp_dir().join(format!("descall-bg-notice-{}-{}", std::process::id(), crate::state::now_ms()));
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(super::background_notice_due(&dir), "first close to the tray");
+        assert!(!super::background_notice_due(&dir), "never again");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
