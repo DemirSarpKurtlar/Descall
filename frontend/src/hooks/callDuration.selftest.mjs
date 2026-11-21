@@ -12,12 +12,14 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, "..");
 const out = mkdtempSync(join(tmpdir(), "call-duration-"));
+// The bundle is about 11 MB; remove it however the run ends (pass, assert, exit).
+process.on("exit", () => rmSync(out, { recursive: true, force: true }));
 
 // ---- minimal hook runtime standing in for "react" ----
 const shim = `
