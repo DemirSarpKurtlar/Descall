@@ -57,6 +57,8 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
     }
     if report.phase == "app-mounted" {
         crate::migration::on_app_mounted(&app);
+        // Main-process errors queued so far (and the previous run's crash) to Sentry.
+        crate::errors::attach();
     }
     if report.phase == "inline-missing" {
         log::error!("[boot] index.html inline boot scripts did not run (CSP hash mismatch?)");
@@ -90,4 +92,14 @@ pub fn activity_set_busy<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     if shell(&app).user_busy.swap(busy, Ordering::AcqRel) != busy {
         crate::commands::updates::note_busy(&app);
     }
+}
+
+/// The pending descall:// link (cold start or second launch), taken once: the page routes it
+/// with frontend/src/lib/deepLinks.js. Main window only.
+#[tauri::command]
+pub fn deep_link_take<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> Option<String> {
+    if window.label() != state::MAIN {
+        return None;
+    }
+    shell(&app).deep_link.lock().unwrap().take()
 }

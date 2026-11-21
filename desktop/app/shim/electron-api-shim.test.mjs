@@ -118,6 +118,36 @@ for (const [label, shim, ref] of [["main", mainShim, electronMain], ["admin", ad
 assert.ok(mainShim.premium && typeof mainShim.premium.invoke === "function", "descallPremium in the main window");
 assert.equal(Boolean(adminShim.premium), Boolean(electronAdmin.premium), "no descallPremium in admin windows, as Electron");
 assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable flag");
+// descall:// links (src/lib/desktopDeepLinks.js): extras, so the Electron key set stays equal.
+{
+  const s = loadShim({ responses: { deep_link_take: "descall://dm/ayse" } });
+  assert.equal(await s.api.takeDeepLink(), "descall://dm/ayse");
+  deq(s.invokes.at(-1), ["deep_link_take", undefined], "takeDeepLink -> deep_link_take");
+  const got = [];
+  const off = s.api.onDeepLink((...a) => got.push(a));
+  await tick();
+  s.emit("app:deep-link", null);
+  deq(got, [[undefined]], "onDeepLink is a bare signal: the page takes the link");
+  off();
+  assert.ok(s.unlistened.includes("app:deep-link"));
+  const none = loadShim({ responses: { deep_link_take: null } });
+  assert.equal(await none.api.takeDeepLink(), null);
+  const failing = loadShim({ fail: ["deep_link_take"] });
+  assert.equal(await failing.api.takeDeepLink(), null, "a failing command answers null");
+  const admin = loadShim({ boot: { mode: "admin" } });
+  assert.equal(await admin.api.takeDeepLink(), null);
+  assert.equal(typeof admin.api.onDeepLink(() => {}), "function");
+  await tick();
+  deq(admin.invokes, [], "admin windows never take links");
+}
+// Update errors carry main.cjs's phase ('check' stays quiet in ElectronUpdateToast, 'download'
+// shows the retry card) and check-for-updates answers `available` like Electron.
+{
+  const updatesRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "updates.rs"), "utf8");
+  assert.match(updatesRs, /"update:error", json!\(\{ "message": message, "phase": phase \}\)/);
+  assert.match(updatesRs, /map_err\(\|e\| \("download", e\.to_string\(\)\)\)/);
+  assert.match(updatesRs, /"available": available/);
+}
 const memberCount = Object.keys(electronMain.api).length - 2 + 2 + 3; // -zoom -secureToken objects, +2 zoom, +3 token
 console.log(`electronAPI members checked: ${memberCount}`);
 

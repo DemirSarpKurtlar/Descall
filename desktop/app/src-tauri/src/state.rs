@@ -26,6 +26,8 @@ pub struct Shell {
     pub has_tray: AtomicBool,
     pub boot: Mutex<BootWatch>,
     pub last_maximized: Mutex<Option<bool>>,
+    /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
+    pub deep_link: Mutex<Option<String>>,
 }
 
 #[derive(Default)]
@@ -74,6 +76,14 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
 /// Send an event to the main page only (Electron: mainWindow.webContents.send).
 pub fn to_main<R: Runtime, S: Serialize + Clone>(app: &AppHandle<R>, event: &str, payload: S) {
     let _ = app.emit_to(MAIN, event, payload);
+}
+
+/// A descall:// link for the page: kept until the page takes it (deep_link_take), and
+/// announced with `app:deep-link` for a page that is already running.
+pub fn deliver_deep_link<R: Runtime>(app: &AppHandle<R>, url: String) {
+    log::info!("[deep-link] {} chars", url.len());
+    *shell(app).deep_link.lock().unwrap() = Some(url);
+    to_main(app, "app:deep-link", ());
 }
 
 pub fn data_dir<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {

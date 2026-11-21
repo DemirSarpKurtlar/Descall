@@ -10,8 +10,8 @@ pub const SCHEME: &str = "descall";
 pub const MAX_LEN: usize = 2048;
 
 /// The first `descall:` URL in argv (argv[0], the exe, is skipped). None when there is none
-/// or it is malformed: control characters, too long, or Electron's own app origin
-/// (`descall://app/...`, never a link).
+/// or it is malformed (control characters, too long). `descall://app/<path>` is a link too:
+/// deepLinks.js reads the `app` host as an alias of the app root.
 pub fn from_args<S: AsRef<str>>(argv: &[S]) -> Option<String> {
     argv.iter().skip(1).map(|a| a.as_ref().trim()).find_map(accept)
 }
@@ -28,10 +28,6 @@ pub fn accept(raw: &str) -> Option<String> {
         return None;
     }
     if raw.chars().any(|c| c.is_control()) {
-        return None;
-    }
-    let lower = rest.to_ascii_lowercase();
-    if lower == "//app" || lower.starts_with("//app/") || lower.starts_with("//app?") || lower.starts_with("//app#") {
         return None;
     }
     Some(format!("descall:{rest}"))
@@ -60,10 +56,7 @@ mod tests {
         assert_eq!(from_args(&[EXE, "descallx://dm/x"]), None);
         assert_eq!(from_args(&[EXE, "descall://dm/x\u{0}y"]), None);
         assert_eq!(from_args(&[EXE, &format!("descall://dm/{}", "a".repeat(MAX_LEN))]), None);
-        for app in ["descall://app", "descall://app/index.html", "DESCALL://APP/settings", "descall://app?x=1"] {
-            assert_eq!(from_args(&[EXE, app]), None, "{app}: Electron's app origin is not a link");
-        }
-        assert_eq!(from_args(&[EXE, "descall://apps"]).as_deref(), Some("descall://apps"));
+        assert_eq!(from_args(&[EXE, "DESCALL://APP/settings"]).as_deref(), Some("descall://APP/settings"), "deepLinks.js resolves the app host");
         assert_eq!(from_args(&[EXE, "çağrı://dm/x"]), None, "multi-byte prefix does not panic");
     }
 }

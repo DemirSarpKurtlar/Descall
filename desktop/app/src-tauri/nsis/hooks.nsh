@@ -34,6 +34,13 @@
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
-  DeleteRegKey HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}"
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${DESCALL_AUMID}"
+  ; An update (the updater runs the new installer with /UPDATE, which runs this uninstaller
+  ; with /UPDATE first) must keep the user's "Start with Windows" choice and the toast
+  ; activator: before, every update silently turned auto-start off. Only a real uninstall
+  ; removes them.
+  ${If} $UpdateMode <> 1
+    DeleteRegKey HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${DESCALL_AUMID}"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "${DESCALL_AUMID}"
+  ${EndIf}
 !macroend
