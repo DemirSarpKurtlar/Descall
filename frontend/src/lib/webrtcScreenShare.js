@@ -2,6 +2,7 @@
  * Screen-share capture + RTP sender tuning for WebRTC mesh calls.
  * DM (1:1) uses a higher-quality profile; group mesh stays conservative.
  */
+import { isDesktopShell } from "./desktopShell.js";
 import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
 import { t } from "../i18n/runtime.js";
 import { processScreenShareAudio } from "../premium/audio/streamAudio.js";
@@ -142,8 +143,9 @@ export function buildDisplayMediaConstraints({ width, height, fps, preferTab } =
   };
 }
 
+/** Either desktop app (Electron or Tauri: both expose the electronAPI capture members). */
 export function isElectronRuntime() {
-  return typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  return typeof window !== "undefined" && isDesktopShell();
 }
 
 /** True when we have at least one viable capture path (Electron desktopCapturer or getDisplayMedia). */

@@ -2,6 +2,7 @@
  * Personal friend-invite attribution (viral loop).
  * URL: /register?ref=USERNAME  or  /?ref=USERNAME&auth=register
  */
+import { isDesktopRuntime } from "./desktopShell.js";
 
 const STORAGE_KEY = "descall:inviteRef";
 const USERNAME_RE = /^[a-zA-Z0-9_.-]{2,24}$/;
@@ -58,15 +59,12 @@ export const PUBLIC_SITE_ORIGIN = "https://descall.com";
 /** Origin for copy/share links. Electron loads from file:// which is not shareable. */
 function isElectronRuntime() {
   if (typeof window === "undefined") return false;
-  if (window.electronAPI?.isElectron) return true;
   try {
-    if (typeof navigator !== "undefined" && /Electron/i.test(navigator.userAgent || "")) {
-      return true;
-    }
+    // Electron or Tauri (https://tauri.localhost is not shareable either), or the Electron UA.
+    return isDesktopRuntime(window);
   } catch {
-    /* ignore */
+    return false;
   }
-  return false;
 }
 
 export function publicAppOrigin(origin) {

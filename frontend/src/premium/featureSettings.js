@@ -10,13 +10,15 @@
  * Web / mobile: localStorage "descall:premium:<key>" (per device).
  */
 import { useCallback, useEffect, useState } from "react";
+import { premiumBridge } from "../lib/desktopShell.js";
 
 const LS_PREFIX = "descall:premium:";
 const cache = new Map();
 const listeners = new Set();
 
 function bridge() {
-  return typeof window !== "undefined" ? window.descallPremium || null : null;
+  // window.descallPremium in either desktop shell (Electron preload or Tauri premium-shim.js).
+  return premiumBridge();
 }
 
 export function isDesktopApp() {

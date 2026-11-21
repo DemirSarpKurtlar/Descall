@@ -7,9 +7,11 @@
  *  - premium events: a capped local log of key events for the activity timeline
  */
 import { useCallback, useSyncExternalStore } from "react";
+import { premiumBridge as desktopPremiumBridge } from "../../lib/desktopShell.js";
 
+/** window.descallPremium in either desktop shell (Electron or Tauri), else null. */
 export function premiumBridge() {
-  return typeof window !== "undefined" && window.descallPremium ? window.descallPremium : null;
+  return desktopPremiumBridge();
 }
 
 export function isDesktop() {
