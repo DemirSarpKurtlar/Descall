@@ -95,12 +95,30 @@ export function applyAppVisibility(root, { backgrounded } = {}) {
   return root.classList.contains(BACKGROUNDED_CLASS);
 }
 
+/**
+ * Input or focus that reaches the page proves the window is on screen. A missed "shown"
+ * message (Tauri sends backgrounded:false only on focus: a window restored without being
+ * activated, or shown from the tray while another app keeps the foreground) left
+ * html.app-backgrounded on for good, every CSS animation paused at its first frame, and
+ * the market's tiles and cards (s2-rise ... both) stayed at opacity 0: Settings > Mağaza
+ * showed its header and tabs over an empty body (owner report, Tauri 4.0.1).
+ */
+const VISIBLE_PROOF_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "focus"];
+
 export function installAppVisibility(win = typeof window !== "undefined" ? window : undefined) {
   const api = win?.electronAPI;
   if (!api || typeof api.onAppVisibility !== "function") return () => {};
   const root = win.document?.documentElement;
   const off = api.onAppVisibility((payload) => applyAppVisibility(root, payload));
-  return typeof off === "function" ? off : () => {};
+  const onSeen = () => {
+    if (root?.classList?.contains(BACKGROUNDED_CLASS)) applyAppVisibility(root, { backgrounded: false });
+  };
+  const canListen = typeof win.addEventListener === "function";
+  if (canListen) for (const ev of VISIBLE_PROOF_EVENTS) win.addEventListener(ev, onSeen, { passive: true, capture: true });
+  return () => {
+    if (typeof off === "function") off();
+    if (canListen) for (const ev of VISIBLE_PROOF_EVENTS) win.removeEventListener(ev, onSeen, { capture: true });
+  };
 }
 
 /**

@@ -68,6 +68,9 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        // Shown again (tray, second instance, notification click): Electron's 'show' event.
+        // Focused(true) does not come when Windows refuses the foreground switch.
+        to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
     }
 }
 

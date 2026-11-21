@@ -21,6 +21,40 @@ off();
 assert.equal(handler, null);
 assert.equal(typeof mod.installAppVisibility({}), "function", "web / iOS: no-op");
 
+// Tauri 4.0.1 empty market: a missed backgrounded:false (window restored or shown from the
+// tray without being activated) kept every CSS animation paused at frame 0. Input or focus
+// on the page proves the window is on screen and clears the stale class.
+{
+  const cls = new Set();
+  const root = { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) } };
+  const listeners = {};
+  let shell;
+  const fakeWin = {
+    electronAPI: { onAppVisibility: (cb) => { shell = cb; return () => { shell = null; }; } },
+    document: { documentElement: root },
+    addEventListener: (ev, fn) => { (listeners[ev] ||= []).push(fn); },
+    removeEventListener: (ev, fn) => { listeners[ev] = (listeners[ev] || []).filter((f) => f !== fn); },
+  };
+  const fire = (ev) => (listeners[ev] || []).forEach((f) => f());
+  const off = mod.installAppVisibility(fakeWin);
+  shell({ backgrounded: true });
+  assert.ok(cls.has("app-backgrounded"));
+  fire("pointerdown");
+  assert.equal(cls.has("app-backgrounded"), false, "a click on the page clears a stale backgrounded");
+  shell({ backgrounded: true });
+  fire("keydown");
+  assert.equal(cls.has("app-backgrounded"), false, "a key press clears it too");
+  shell({ backgrounded: true });
+  fire("focus");
+  assert.equal(cls.has("app-backgrounded"), false, "window focus clears it");
+  shell({ backgrounded: true });
+  fire("pointermove");
+  assert.equal(cls.has("app-backgrounded"), true, "a hover alone (pointer over a hidden window's area) does not");
+  off();
+  assert.equal(shell, null);
+  assert.equal(Object.values(listeners).flat().length, 0, "cleanup removes the listeners");
+}
+
 // Idle / blur pause with a fake window, timers and voice-busy flag.
 {
   const cls = new Set();
