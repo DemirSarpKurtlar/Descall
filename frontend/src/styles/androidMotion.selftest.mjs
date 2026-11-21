@@ -20,7 +20,8 @@ assert.match(read("styles.css"), /@import '\.\/styles\/android-motion\.css';/, "
 
 // The class is set for the Capacitor Android shell only.
 const main = read("main.jsx");
-assert.match(main, /getPlatform\?\.\(\) === "android"\) document\.documentElement\.classList\.add\("native-android"\)/, "native-android comes from the Android bridge");
+assert.match(main, /isNativeApp && window\.Capacitor\?\.getPlatform\?\.\(\) === "android"/, "native-android comes from the Android bridge");
+assert.match(main, /if \(isNativeAndroid\) document\.documentElement\.classList\.add\("native-android"\)/, "native-android is set for the Android shell");
 
 // Every selector list starts at html.native-android (no global leak).
 const selectors = [...css.matchAll(/(^|\})\s*([^{}@]+)\{/g)].map((m) => m[2].trim()).filter((s) => !/^(from|to|\d+%)/.test(s));

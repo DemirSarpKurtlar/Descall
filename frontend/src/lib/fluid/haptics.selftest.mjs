@@ -47,7 +47,7 @@ assert.match(androidPlugin, /@JavascriptInterface/);
 assert.match(androidPlugin, /performHapticFeedback\(constant\)/);
 assert.doesNotMatch(androidPlugin, /import android\.os\.Vibrat/);
 assert.match(mainActivity, /registerPlugin\(DescallHapticsPlugin\.class\)/);
-assert.match(mainActivity, /onBackPressed\(\);\s*setEnabled\(true\);/, "back callback is re-armed after handing one press to the system");
+assert.match(mainActivity, /onBackPressed\(\);\s*(?:\}\s*finally\s*\{\s*)?setEnabled\(true\);/, "back callback is re-armed after handing one press to the system");
 assert.match(compat, /from "\.\/fluid\/haptics"/);
 assert.match(main, /installIosHapticHints\(\)/);
 

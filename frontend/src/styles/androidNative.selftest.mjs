@@ -52,7 +52,7 @@ assert.match(launch, /windowSplashScreenBackground">@color\/splash_background</,
 
 // System font scale must not multiply the glass chrome (the iPhone WebView does not either).
 const mainActivity = readFileSync(join(here, "..", "..", "android", "app", "src", "main", "java", "com", "descall", "app", "MainActivity.java"), "utf8");
-assert.match(mainActivity, /getWebView\(\)\.getSettings\(\)\.setTextZoom\(100\);/, "Android WebView text zoom pinned to 100");
+assert.match(mainActivity, /(?:getWebView\(\)\.getSettings\(\)|settings)\.setTextZoom\(100\);/, "Android WebView text zoom pinned to 100");
 assert(mainActivity.indexOf("setTextZoom(100)") > mainActivity.indexOf("super.onCreate("), "after the bridge creates the WebView");
 
 console.log("androidNative.selftest: ok");
