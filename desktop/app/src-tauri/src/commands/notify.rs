@@ -340,8 +340,12 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
 }
 
 /// electronAPI.showNotification(title, options) -> notification:show.
+///
+/// async on purpose: every capsule is a new window, and building a WebView2 from a sync
+/// command (inside WebView2's IPC callback on the UI thread) deadlocks on Windows
+/// (WebviewWindowBuilder::build docs), e.g. on an incoming call's ring capsule.
 #[tauri::command]
-pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: ShowPayload) {
+pub async fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: ShowPayload) {
     // Descall+ pop-outs and admin windows never notify; the main window does.
     if window.label() != state::MAIN {
         return;

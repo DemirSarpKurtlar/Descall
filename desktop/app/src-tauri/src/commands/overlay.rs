@@ -112,8 +112,12 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
 }
 
 /// electronAPI.overlayShow(payload) -> descall:overlay:show.
+///
+/// async on purpose: the first call builds the overlay window. A sync command runs inside
+/// WebView2's IPC request callback on the UI thread, and building a WebView2 there deadlocks
+/// on Windows (WebviewWindowBuilder::build docs): the app froze the moment a call started.
 #[tauri::command]
-pub fn overlay_show<R: Runtime>(app: AppHandle<R>, payload: Value) {
+pub async fn overlay_show<R: Runtime>(app: AppHandle<R>, payload: Value) {
     *app.state::<Overlay>().idle_gen.lock().unwrap() += 1;
     merge(&app, &payload, &[("connected", Value::Bool(true))]);
     if let Some(w) = ensure(&app) {
