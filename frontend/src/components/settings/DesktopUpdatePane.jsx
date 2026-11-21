@@ -83,7 +83,7 @@ export default function DesktopUpdatePane() {
     <div className="s3 s3-desktop-update">
       <S3Sec first>{t("updateToast.settings_title")}</S3Sec>
       <S3Group>
-        <S3Row icon="win" color="blue" title="Descall" value={version ? t("updateToast.settings_version", { version }) : null} />
+        <S3Row icon="win" color="blue" title={version ? t("updateToast.settings_version", { version }) : t("updateToast.settings_title")} />
         {status === "ready" ? (
           <S3Row icon="refresh" color="green" title={t("updateToast.restart")} sub={statusText} tone="blue" onClick={restart} />
         ) : (
