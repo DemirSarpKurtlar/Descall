@@ -22,11 +22,22 @@
  *
  * Sockets the app disconnected on purpose (logout, transport swap) are never
  * revived: `socket.active` is false for those.
+ *
+ * Network handover (Android): moving between Wi-Fi and mobile data keeps the
+ * page online (no `online` event) and visible, but the old TCP path is gone.
+ * Socket.IO only noticed after pingInterval + pingTimeout (up to 45 s), so
+ * messages sent in that window sat in the buffer. Chromium (the Android
+ * WebView) reports the network type on navigator.connection; when it changes
+ * we probe at once and reconnect if the probe is not answered. Only a real
+ * type change counts (wifi -> cellular), not the frequent rtt / downlink
+ * estimate updates. WebKit (iOS) has no navigator.connection: nothing changes there.
  */
 
 const DEFAULT_PING_INTERVAL_MS = 25_000;
 const PING_GRACE_MS = 5_000;
 const PROBE_TIMEOUT_MS = 1_500;
+// A fresh mobile network can take a moment to carry the ack of a live socket.
+const NETWORK_PROBE_TIMEOUT_MS = 3_000;
 const TICK_MS = 1_000;
 const FROZEN_GAP_MS = 4_000;
 const OPENING_PATIENCE_MS = 3_000;
@@ -102,7 +113,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
    * Make sure the socket is (about to be) usable. Synchronous decisions
    * (down / stale) reconnect immediately; a soft check probes in the background.
    */
-  function ensureFresh(reason = "check") {
+  function ensureFresh(reason = "check", { probe: forceProbe = false } = {}) {
     if (disposed || !socket.active) return false;
     const t = now();
     if (!socket.connected) {
@@ -121,7 +132,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
     }
     // The visibility event can run before the heartbeat catches up.
     const gap = Math.max(frozenGapMs, t - lastTickAt);
-    if (gap < FROZEN_GAP_MS || probing) return true;
+    if ((!forceProbe && gap < FROZEN_GAP_MS) || probing) return true;
     probing = true;
     const sentAt = t;
     let settled = false;
@@ -137,7 +148,9 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
       if (lastRxAt > sentAt) finish(true);
     }, 100);
     try {
-      socket.timeout(PROBE_TIMEOUT_MS).emit("app:ping", (err) => finish(!err || lastRxAt > sentAt));
+      socket
+        .timeout(forceProbe ? NETWORK_PROBE_TIMEOUT_MS : PROBE_TIMEOUT_MS)
+        .emit("app:ping", (err) => finish(!err || lastRxAt > sentAt));
     } catch {
       finish(true);
     }
@@ -159,11 +172,26 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
   const onResume = () => onForeground("resume");
   const onOnline = () => onForeground("online");
 
+  const connection = opts.connection !== undefined
+    ? opts.connection
+    : (typeof navigator !== "undefined" && navigator.connection) || null;
+  const netType = () => (connection && typeof connection.type === "string" ? connection.type : "");
+  let lastNetType = netType();
+  const onNetworkChange = () => {
+    const type = netType();
+    if (!type || type === lastNetType) return;
+    lastNetType = type;
+    // "none": the `offline` / `online` pair and Socket.IO's own reconnect cover it.
+    if (type === "none" || document.visibilityState === "hidden") return;
+    ensureFresh(`network ${type}`, { probe: true });
+  };
+
   // Capture on window so this runs before document-level visibility handlers
   // (e.g. the CallKit bridge's resume request), they then see the real state.
   window.addEventListener("visibilitychange", onVisibility, true);
   document.addEventListener("resume", onResume); // Capacitor native resume
   window.addEventListener("online", onOnline);
+  connection?.addEventListener?.("change", onNetworkChange);
 
   return {
     ensureFresh,
@@ -173,6 +201,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
       window.removeEventListener("visibilitychange", onVisibility, true);
       document.removeEventListener("resume", onResume);
       window.removeEventListener("online", onOnline);
+      connection?.removeEventListener?.("change", onNetworkChange);
       socket.off("connect", onConnect);
       socket.io?.off?.("ping", markRx);
       socket.io?.off?.("open", bindEngine);
