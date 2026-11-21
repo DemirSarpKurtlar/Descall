@@ -4,8 +4,9 @@
    browser fetched and decoded both subsets of every weight it drew: 8 files, about 240 KB.
    With unicode-range an English UI needs only the latin files (about 95 KB) and a Turkish
    UI adds the latin-ext file of a weight only when a character from it is on screen.
-   Inter is only drawn where -apple-system / BlinkMacSystemFont are missing (Android,
-   Windows, Linux); iOS and macOS keep the system font and never fetch these files.
+   Inter is only drawn where the system font names before it in --font-ui do not
+   resolve (Windows, some Android / Linux builds); iOS and macOS keep the system font
+   and never fetch these files.
    font-display: swap as before (no change in first paint). */
 
 @font-face {
