@@ -102,21 +102,40 @@ async fn fetch_to_downloads<R: Runtime>(app: &AppHandle<R>, url: &str, filename:
     if res.content_length().is_some_and(|l| l > download::MAX_DOWNLOAD_BYTES) {
         return Err("file too large".into());
     }
-    let part = target.with_extension("descall-part");
-    let mut file = std::fs::File::create(&part).map_err(|e| e.to_string())?;
+    let part = download::part_path(&target);
+    // create_new: never write into a file that is already there (another download of the
+    // same name, or anything else that appeared since unique_path looked).
+    let mut file = std::fs::OpenOptions::new().write(true).create_new(true).open(&part).map_err(|e| e.to_string())?;
     let mut stream = res.bytes_stream();
     let mut total: u64 = 0;
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| e.to_string())?;
+        let chunk = match chunk {
+            Ok(c) => c,
+            Err(e) => {
+                drop(file);
+                let _ = std::fs::remove_file(&part);
+                return Err(e.to_string());
+            }
+        };
         total += chunk.len() as u64;
         if total > download::MAX_DOWNLOAD_BYTES {
             drop(file);
             let _ = std::fs::remove_file(&part);
             return Err("file too large".into());
         }
-        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        if let Err(e) = file.write_all(&chunk) {
+            drop(file);
+            let _ = std::fs::remove_file(&part);
+            return Err(e.to_string());
+        }
     }
     drop(file);
-    std::fs::rename(&part, &target).map_err(|e| e.to_string())?;
+    // rename replaces an existing file on Windows: a same-name download that finished first
+    // keeps its file, this one takes the next free name.
+    let target = if target.exists() { download::unique_path(&dir, &safe, |p| p.exists()) } else { target };
+    if let Err(e) = std::fs::rename(&part, &target) {
+        let _ = std::fs::remove_file(&part);
+        return Err(e.to_string());
+    }
     Ok(target)
 }

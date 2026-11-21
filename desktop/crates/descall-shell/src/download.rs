@@ -110,6 +110,15 @@ pub fn unique_path(dir: &Path, name: &str, exists: impl Fn(&Path) -> bool) -> Pa
     first
 }
 
+/// The temporary file of a download in progress: the whole target name plus a suffix, so
+/// "a.zip" and "a.pdf" downloading at once never share one part file (with_extension
+/// gave both "a.descall-part").
+pub fn part_path(target: &Path) -> PathBuf {
+    let mut name = target.file_name().map(|n| n.to_os_string()).unwrap_or_default();
+    name.push(".descall-part");
+    target.with_file_name(name)
+}
+
 #[cfg(test)]
 mod tests {
     //! safeDownload.selftest.mjs.
@@ -195,5 +204,8 @@ mod tests {
         let taken = [dir.join("a.zip"), dir.join("a (1).zip")];
         assert_eq!(unique_path(dir, "a.zip", |p| taken.contains(&p.to_path_buf())), dir.join("a (2).zip"));
         assert_eq!(unique_path(dir, "b", |_| false), dir.join("b"));
+        assert_eq!(part_path(&dir.join("a.zip")), dir.join("a.zip.descall-part"));
+        assert_ne!(part_path(&dir.join("a.zip")), part_path(&dir.join("a.pdf")), "one part file per target");
+        assert_eq!(part_path(&dir.join("b")), dir.join("b.descall-part"));
     }
 }
