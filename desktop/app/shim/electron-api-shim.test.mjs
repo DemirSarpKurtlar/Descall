@@ -419,4 +419,36 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
 }
 
+// HUD bridge (premium-hud-shim.js): an unsubscribe before listen() resolved must still unlisten.
+{
+  const hudSrc = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  let resolveListen;
+  const unlistened = [];
+  const handlers = [];
+  const window = {
+    __TAURI__: {
+      core: { invoke: () => Promise.resolve(null) },
+      event: { listen: (event, h) => { handlers.push(h); return new Promise((r) => { resolveListen = () => r(() => unlistened.push(event)); }); } },
+    },
+  };
+  window.top = window;
+  const ctx = { window, document: { addEventListener() {} }, Promise, Set, String, Array };
+  vm.createContext(ctx);
+  vm.runInContext(hudSrc, ctx, { filename: "premium-hud-shim.js" });
+  const seen = [];
+  const off = window.descallHud.onState((s) => seen.push(s));
+  off();
+  resolveListen();
+  await tick();
+  deq(unlistened, ["descall:hud:state"], "early unsubscribe still removes the listener");
+  const off2 = window.descallHud.onState((s) => seen.push(s));
+  resolveListen();
+  await tick();
+  handlers[1]({ payload: { a: 1 } });
+  deq(seen, [{ a: 1 }]);
+  off2();
+  deq(unlistened, ["descall:hud:state", "descall:hud:state"]);
+  assert.equal(typeof window.descallHud.onState(null), "function", "a non-function callback gets a no-op unsubscribe");
+}
+
 console.log("electron-api-shim.test: ok");
