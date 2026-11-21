@@ -76,6 +76,40 @@ html.glass-ui.g-fx-lean .g-head-search .g-edge-top {
   backdrop-filter: blur(14px);
 }
 
+/* Full-screen scrims and alerts: a 40px blur over the whole viewport is the
+   single most expensive pass on a phone GPU, and it runs for every frame of
+   the menu / alert spring. A denser dim with a smaller radius reads the same. */
+html.glass-ui.g-fx-lean .g-scrim.g-msg-scrim {
+  background: rgba(5, 6, 10, 0.7);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+html.glass-ui.g-fx-lean .g-scrim {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+html.g-fx-lean .g-alert-scrim {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+html.g-fx-lean .g-alert {
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+}
+
+/* Buttons and chips inside an alert / report sheet sit on the sheet's own
+   frost: no second pass. */
+html.g-fx-lean .g-alert-btn,
+html.g-fx-lean .report-reason-chip,
+html.g-fx-lean .report-modal-close,
+html.g-fx-lean .report-btn.ghost {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 /* Chat list rows: a permanent will-change on every row and swipe track
    promoted hundreds of compositor layers (and a ~27k px tall scroller layer).
    The track is promoted by its own translate3d while it moves. */
