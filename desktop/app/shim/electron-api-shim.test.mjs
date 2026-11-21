@@ -533,6 +533,16 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
     const src = readFileSync(join(srcDir, "premium", "features", f), "utf8");
     assert.match(src, /if platform::mouse_button_down\(\)[^{]*\{\s*h\.tick\(/, `${f}: waits for the drop`);
   }
+  // app_lock (appLockRedact.cjs + hideOtherWindows): while locked, toasts show no sender or
+  // preview, and pop-outs / account windows hide until the PIN is entered.
+  const premiumRs = readFileSync(join(srcDir, "premium", "mod.rs"), "utf8");
+  assert.match(premiumRs, /features::app_lock::is_locked\(\) && h\.is_running\("app_lock"\)[\s\S]{0,160}features::app_lock::redact\(&out, &text\)/, "locked toasts are redacted after quick reply");
+  const notifyRs = readFileSync(join(srcDir, "commands", "notify.rs"), "utf8");
+  assert.match(notifyRs, /let title = filtered\.get\("title"\)/, "the capsule shows the filtered title");
+  assert.doesNotMatch(notifyRs, /show_capsule\(&app, &payload\.title/, "not the sender's name while locked");
+  const lockRs = readFileSync(join(srcDir, "premium", "features", "app_lock.rs"), "utf8");
+  assert.match(lockRs, /matches!\(e\.kind\.as_str\(\), "popout" \| "account"\)/, "the lock hides pop-outs and account windows");
+  assert.doesNotMatch(lockRs, /self\.locked\.store\(/, "every lock change goes through set_locked");
   const platRs = readFileSync(join(srcDir, "premium", "platform.rs"), "utf8");
   assert.equal((platRs.match(/pub fn mouse_button_down\(\) -> bool/g) || []).length, 2, "mouse_button_down on Windows and the stub");
   assert.match(platRs, /if ex & WS_EX_TRANSPARENT\.0 as isize == 0 \{\s*SetWindowLongPtrW\(h, GWL_EXSTYLE, ex & !\(WS_EX_LAYERED/, "a click-through HUD at 100 % keeps WS_EX_LAYERED");

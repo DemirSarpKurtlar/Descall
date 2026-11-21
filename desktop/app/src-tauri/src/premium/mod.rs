@@ -823,7 +823,15 @@ pub fn on_new_window(app: &AppHandle, url: &tauri::Url, features: tauri::webview
 #[allow(dead_code)]
 pub fn notify_filter(payload: Value) -> Option<Value> {
     match host() {
-        Some(h) => features::quick_reply::filter(h, payload),
+        Some(h) => {
+            let out = features::quick_reply::filter(h, payload)?;
+            // Final filter (notifyHooks.registerFinal): app_lock redacts whatever came before.
+            if features::app_lock::is_locked() && h.is_running("app_lock") {
+                let text = crate::state::et(&h.app, "notif.locked", &[]);
+                return Some(features::app_lock::redact(&out, &text));
+            }
+            Some(out)
+        }
         None => Some(payload),
     }
 }
