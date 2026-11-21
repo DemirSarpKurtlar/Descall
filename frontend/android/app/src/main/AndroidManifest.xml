@@ -19,7 +19,7 @@
             android:value="descall_default" />
 
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale|fontWeightAdjust"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
@@ -31,7 +31,10 @@
                  SystemBars insets listener pads the decor view by the IME inset and the
                  web app follows the visual viewport (src/lib/mobileViewport.js); with the
                  old unspecified mode a pan could stack on top of that and the whole page
-                 jumped up. -->
+                 jumped up.
+                 fontScale / fontWeightAdjust are handled in place: the WebView text zoom
+                 is fixed (MainActivity), and recreating the activity for a system font
+                 size or bold-text change reloaded the whole web app (and dropped a call). -->
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
