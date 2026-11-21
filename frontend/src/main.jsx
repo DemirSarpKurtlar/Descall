@@ -367,6 +367,15 @@ async function boot() {
     isElectron: isElectronDesktop,
     isNativeApp,
   });
+  // Signed-in app: /auth/me, the friends list and the DM previews go out now,
+  // in parallel with the App chunk; App's own calls take these promises
+  // (lib/bootPrefetch.js, one request each, a plain request on any miss).
+  if (!preferMarketingShell && hasSession && !isAdminWindow) {
+    const token = getToken();
+    import("./api/bootPrefetch.js")
+      .then((m) => m.startBootPrefetch(token))
+      .catch(() => {});
+  }
   scheduleAnalytics({ preferMarketing: preferMarketingShell });
   // Warm-ups only (noise-suppression WASM + worklets, game CSS): after the first
   // screen, not while the App chunk evaluates (cold start is CPU bound on Android).

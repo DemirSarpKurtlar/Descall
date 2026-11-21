@@ -685,19 +685,21 @@ function MessageList({
   }, [searchedMessages, unreadCount, isSearching, t]);
 
   // Roving focus over the bubbles (DOM only, so no bubble re-renders): one bubble is in
-  // the Tab order, the newest unless focus is already in the list.
+  // the Tab order, the newest unless focus is already in the list. Runs only when the
+  // rendered bubbles can change (not on every typing / hover / presence render, where it
+  // walked every bubble of a long chat).
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
-    if (!bubbles.length) return;
     const current = list.querySelector('.message-bubble[tabindex="0"]');
     if (current && list.contains(document.activeElement)) return;
+    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
+    if (!bubbles.length) return;
     const newest = bubbles[bubbles.length - 1];
     if (current === newest) return;
     if (current) current.tabIndex = -1;
     newest.tabIndex = 0;
-  });
+  }, [groupedMessages, revealedBlocked, loading]);
   const onBubbleArrows = useCallback((e) => {
     const bubble = e.target;
     if (!bubble?.classList?.contains("message-bubble") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
