@@ -40,7 +40,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     if let Some((label, _)) = popouts(h).into_iter().find(|(_, e)| e.meta.get("route").and_then(Value::as_str) == Some(r.as_str())) {
         if let Some(w) = h.app.get_webview_window(&label) {
             let _ = w.unminimize();
-            let _ = w.show();
+            wins::show(h, &w, "popout");
             let _ = w.set_focus();
         }
         return ok(json!({ "reused": true }));
@@ -98,7 +98,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     crate::webview::install_browser_guards(&w);
     wins::track(h, &label, "popout", "multi_window", json!({ "route": r }));
     wins::apply_behaviour(h, &label, "popout");
-    let _ = w.show();
+    wins::show(h, &w, "popout");
     ok(json!({}))
 }
 

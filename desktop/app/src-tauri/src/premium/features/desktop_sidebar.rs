@@ -38,7 +38,7 @@ fn reveal(h: &Host, point: Option<(i32, i32)>) {
         return;
     };
     dock(h, point);
-    let _ = w.show();
+    wins::show(h, &w, "sidebar");
     let _ = w.set_focus();
 }
 

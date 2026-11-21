@@ -82,7 +82,7 @@ fn restore_others(h: &Host) {
     let labels = std::mem::take(&mut *lock(&HIDDEN));
     for label in &labels {
         if let Some(w) = h.app.get_webview_window(label) {
-            let _ = w.show();
+            wins::show(h, &w, &wins::kind_of(h, label).unwrap_or_default());
         }
     }
     if !labels.is_empty() {

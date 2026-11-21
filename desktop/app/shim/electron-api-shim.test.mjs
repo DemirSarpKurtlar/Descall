@@ -528,6 +528,13 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   const winsRs = readFileSync(join(srcDir, "premium", "wins.rs"), "utf8");
   assert.match(winsRs, /crate::webview::install_browser_guards\(&w\);\s*track\(h, label, kind, portal_feature\(kind\)/, "portal windows: no browser menu / reload keys");
   assert.match(winsRs, /run_on_main_thread\(move \|\| platform::set_opacity\(hw, alpha\)\)/, "opacity is queued behind tao's style changes");
+  // tao rewrites the extended style on every visibility change: pop-outs (built hidden), the
+  // auto-hidden sidebar and windows hidden by app_lock get their opacity again after show().
+  assert.match(winsRs, /pub fn show\([^)]*\) \{\s*let _ = w\.show\(\);[\s\S]{0,120}set_opacity\(w, opacity_for\(h, kind\)\)/, "wins::show re-applies the opacity");
+  for (const f of ["multi_window.rs", "desktop_sidebar.rs", "app_lock.rs"]) {
+    const src = readFileSync(join(srcDir, "premium", "features", f), "utf8");
+    assert.doesNotMatch(src, /\bw\.show\(\)/, `${f}: shows windows through wins::show (opacity)`);
+  }
   const ovRs = readFileSync(join(srcDir, "premium", "overlay.rs"), "utf8");
   assert.ok(ovRs.indexOf("w.set_ignore_cursor_events(o.click_through)") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after click-through");
   // HUDs never take the focus from the game: created visible + unfocused (SW_SHOWNOACTIVATE),

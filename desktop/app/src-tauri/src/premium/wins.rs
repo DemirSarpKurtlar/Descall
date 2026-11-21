@@ -144,6 +144,16 @@ pub fn apply_behaviour(h: &Host, label: &str, kind: &str) {
     set_opacity(&w, opacity_for(h, kind));
 }
 
+/// Show a Descall+ window. tao rewrites GWL_EXSTYLE when the visibility changes, so an
+/// opacity set while the window was hidden (a new pop-out, the auto-hidden sidebar, windows
+/// hidden by app_lock) is gone once it shows: set it again behind the show.
+pub fn show(h: &Host, w: &WebviewWindow, kind: &str) {
+    let _ = w.show();
+    if matches!(kind, "call" | "sidebar" | "popout") {
+        set_opacity(w, opacity_for(h, kind));
+    }
+}
+
 /// Main window plus every tracked app window, as (label, kind).
 pub fn all(h: &Host) -> Vec<(String, String)> {
     let mut out = Vec::new();
