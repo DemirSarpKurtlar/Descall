@@ -18,6 +18,7 @@ export default function PullToRefresh({ onRefresh, enabled = true, children, cla
   const rootRef = useRef(null);
   const trackRef = useRef(null);
   const indicatorRef = useRef(null);
+  const sentinelRef = useRef(null);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export default function PullToRefresh({ onRefresh, enabled = true, children, cla
     return attachPullToRefresh(scroller, {
       track: trackRef.current,
       indicator: indicatorRef.current,
+      sentinel: sentinelRef.current,
       onRefresh: () => refreshRef.current?.(),
       // Same feedback as UIRefreshControl when it starts refreshing.
       onHaptic: hapticImpactMedium,
@@ -38,6 +40,7 @@ export default function PullToRefresh({ onRefresh, enabled = true, children, cla
 
   return (
     <div ref={rootRef} className={`ptr${className ? ` ${className}` : ""}`}>
+      {enabled ? <span ref={sentinelRef} className="ptr-sentinel" aria-hidden="true" /> : null}
       {enabled ? (
         <div ref={indicatorRef} className="ptr-indicator" aria-hidden="true" data-spokes="0" data-state="idle">
           <span className="ptr-spinner">

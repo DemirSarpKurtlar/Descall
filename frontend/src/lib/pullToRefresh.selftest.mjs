@@ -212,4 +212,30 @@ const touch = (y, x = 50) => ({ touches: [{ clientX: x, clientY: y }], cancelabl
   cleanup();
 }
 
+{
+  // Sentinel gate: scrolled away from the top (sentinel out of view) there is
+  // no non-passive touchmove and no scrollTop read; back at the top it returns.
+  let ioCb = null;
+  let observed = null;
+  let disconnected = false;
+  const ioWin = { ...win, IntersectionObserver: class { constructor(cb) { ioCb = cb; } observe(n) { observed = n; } disconnect() { disconnected = true; } } };
+  const scroller = new El(), track = new El(), indicator = new El(), sentinel = new El();
+  let reads = 0;
+  Object.defineProperty(scroller, "scrollTop", { get() { reads++; return 0; } });
+  const cleanup = attachPullToRefresh(scroller, { track, indicator, sentinel, win: ioWin, options: { minSpinMs: 0 }, onRefresh: () => Promise.resolve() });
+  assert.equal(observed, sentinel);
+  assert.equal((scroller.l.touchmove || []).length, 1, "before the first IO answer the exact check stays on");
+  ioCb([{ isIntersecting: false }]);
+  assert.equal((scroller.l.touchmove || []).length, 0, "away from the top: no blocking touchmove");
+  reads = 0;
+  scroller.fire("touchstart", touch(100));
+  scroller.fire("touchend", { touches: [] });
+  assert.equal(reads, 0, "no layout-forcing scrollTop read while away from the top");
+  ioCb([{ isIntersecting: true }]);
+  assert.equal((scroller.l.touchmove || []).length, 1, "at the top the pull gesture is armed again");
+  assert.equal(scroller.l.touchmove[0].o.passive, false);
+  cleanup();
+  assert.equal(disconnected, true);
+}
+
 console.log("pullToRefresh.selftest: ok");

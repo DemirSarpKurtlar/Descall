@@ -156,7 +156,7 @@ function defaultAtTop(scroller, win) {
  * Wire one scroller. `track` moves, `indicator` is the spinner slot above it.
  * `onRefresh` returns a promise (the real refetch). Returns a cleanup.
  */
-export function attachPullToRefresh(scroller, { track, indicator, onRefresh, onHaptic, onState, isAtTop, win = typeof window !== "undefined" ? window : null, options } = {}) {
+export function attachPullToRefresh(scroller, { track, indicator, sentinel, onRefresh, onHaptic, onState, isAtTop, win = typeof window !== "undefined" ? window : null, options } = {}) {
   if (!scroller || !track) return () => {};
   const machine = createPullMachine(options);
   const { threshold, hold, minSpinMs } = machine.options;
@@ -215,7 +215,18 @@ export function attachPullToRefresh(scroller, { track, indicator, onRefresh, onH
     });
   };
 
-  const atTop = () => (isAtTop ? isAtTop() : defaultAtTop(scroller, win));
+  // `sentinel` (a 1px node at the top of the list content) lets an
+  // IntersectionObserver say "nowhere near the top" without reading
+  // scrollTop: that read forces a layout of the whole list on every touch,
+  // and while the list is scrolled away there is no non-passive touchmove
+  // at all, so the list scrolls on the compositor with no main-thread wait.
+  // Near the top the exact check below still decides.
+  const IO = win?.IntersectionObserver;
+  let nearTop = true;
+  const atTop = () => {
+    if (!nearTop) return false;
+    return isAtTop ? isAtTop() : defaultAtTop(scroller, win);
+  };
 
   const onStart = (e) => {
     if (e.touches?.length !== 1) return;
@@ -247,13 +258,32 @@ export function attachPullToRefresh(scroller, { track, indicator, onRefresh, onH
     if (!touching) return;
     touching = false;
     const { target, wasPulling } = machine.end();
+    syncMove();
     if (!wasPulling) return;
     if (!machine.refreshing) setState("idle");
     settle(target);
   };
 
+  let moveOn = false;
+  const syncMove = () => {
+    const want = nearTop || touching || machine.phase === "pulling" || machine.refreshing;
+    if (want === moveOn) return;
+    moveOn = want;
+    if (want) scroller.addEventListener("touchmove", onMove, { passive: false });
+    else scroller.removeEventListener("touchmove", onMove);
+  };
+  let io = null;
+  if (sentinel && typeof IO === "function") {
+    io = new IO((entries) => {
+      const last = entries[entries.length - 1];
+      if (!last) return;
+      nearTop = Boolean(last.isIntersecting);
+      syncMove();
+    }, { root: null, threshold: 0 });
+    io.observe(sentinel);
+  }
   scroller.addEventListener("touchstart", onStart, { passive: true });
-  scroller.addEventListener("touchmove", onMove, { passive: false });
+  syncMove();
   scroller.addEventListener("touchend", onEnd, { passive: true });
   scroller.addEventListener("touchcancel", onEnd, { passive: true });
   setState("idle");
@@ -261,6 +291,7 @@ export function attachPullToRefresh(scroller, { track, indicator, onRefresh, onH
 
   return () => {
     anim.stop();
+    io?.disconnect();
     scroller.removeEventListener("touchstart", onStart);
     scroller.removeEventListener("touchmove", onMove);
     scroller.removeEventListener("touchend", onEnd);
