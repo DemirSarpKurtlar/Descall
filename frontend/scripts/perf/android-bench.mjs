@@ -588,7 +588,10 @@ const READY = {
   // The list is back when a chat row is really on top under its own centre
   // (hit test), not when the chat DOM is gone: an exit animation or a kept
   // mounted chat panel must not count as "still closing".
-  chatClosed: "() => [...document.querySelectorAll('.dm-item')].some((e) => { const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.left >= 0 && r.left < innerWidth / 2 && r.top > 0 && r.bottom < innerHeight)) return false; const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })",
+  // Only the first rows: rect + hit test on all 300 rows every frame cost
+  // more than the transition itself under 4x CPU (16 s of
+  // getBoundingClientRect in one profile) and inflated the number.
+  chatClosed: "() => [...document.querySelectorAll('.dm-item')].slice(0, 3).some((e) => { const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.left >= 0 && r.left < innerWidth / 2 && r.top > 0 && r.bottom < innerHeight)) return false; const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })",
   chatUnmounted: "() => !document.querySelector('.message-bubble')",
   sheetOpen: "() => { const e = document.querySelector('.g-msg-pop, .g-msg-menu, .message-context-menu, [role=menu]'); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; }",
 };
