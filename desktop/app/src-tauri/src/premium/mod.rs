@@ -397,6 +397,10 @@ impl Host {
         let size = bytes.len();
         let mut b = lock(&self.blobs);
         b.retain(|_, x| x.at.elapsed() < Duration::from_secs(120));
+        let held: Vec<(u64, usize)> = b.iter().map(|(k, x)| (*k, x.bytes.len())).collect();
+        for old in rules::blobs_to_evict(&held, size) {
+            b.remove(&old);
+        }
         b.insert(id, Blob { bytes, at: Instant::now() });
         json!({ "__blob": id, "size": size })
     }
