@@ -6572,6 +6572,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "App para computador",
+    "settings_hint": "Versão e atualizações",
+    "settings_version": "Versão {version}",
+    "settings_check": "Verificar atualizações",
+    "settings_checking": "Verificando atualizações…",
+    "settings_upToDate": "O Descall está atualizado",
+    "settings_checkFailed": "Não foi possível verificar atualizações. Tente de novo em instantes.",
+    "settings_downloading": "O Descall {version} está sendo baixado em segundo plano",
+    "settings_unavailable": "As atualizações automáticas estão desativadas nesta versão",
+    "settings_lastChecked": "Última verificação {time}",
     "confirmBody": "Você está em um chat de voz. Reiniciar agora vai encerrá-lo. O Descall {version} também pode ser instalado sozinho depois que você sair.",
     "confirmLater": "Agora não",
     "confirmRestart": "Encerrar chamada e reiniciar",

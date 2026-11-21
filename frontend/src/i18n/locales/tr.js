@@ -266,6 +266,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Masaüstü uygulaması",
+    "settings_hint": "Sürüm ve güncellemeler",
+    "settings_version": "Sürüm {version}",
+    "settings_check": "Güncellemeleri denetle",
+    "settings_checking": "Güncellemeler denetleniyor…",
+    "settings_upToDate": "Descall güncel",
+    "settings_checkFailed": "Güncellemeler denetlenemedi. Birazdan yeniden dene.",
+    "settings_downloading": "Descall {version} arka planda indiriliyor",
+    "settings_unavailable": "Bu yapıda otomatik güncelleme kapalı",
+    "settings_lastChecked": "Son denetim {time}",
     "titleDownloading": "Descall {version} indiriliyor",
     "titleInstalling": "Descall {version} kuruluyor",
     "subDownloading": "Arka planda · %{percent}",

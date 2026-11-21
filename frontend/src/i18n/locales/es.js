@@ -6572,6 +6572,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Aplicación de escritorio",
+    "settings_hint": "Versión y actualizaciones",
+    "settings_version": "Versión {version}",
+    "settings_check": "Buscar actualizaciones",
+    "settings_checking": "Buscando actualizaciones…",
+    "settings_upToDate": "Descall está actualizado",
+    "settings_checkFailed": "No se pudieron buscar actualizaciones. Inténtalo de nuevo en un momento.",
+    "settings_downloading": "Descall {version} se está descargando en segundo plano",
+    "settings_unavailable": "Las actualizaciones automáticas están desactivadas en esta compilación",
+    "settings_lastChecked": "Última comprobación {time}",
     "confirmBody": "Estás en un chat de voz. Si reinicias ahora, terminará. Descall {version} también puede instalarse solo cuando salgas.",
     "confirmLater": "Ahora no",
     "confirmRestart": "Finalizar llamada y reiniciar",

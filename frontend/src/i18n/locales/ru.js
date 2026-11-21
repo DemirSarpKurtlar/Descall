@@ -6572,6 +6572,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Приложение для компьютера",
+    "settings_hint": "Версия и обновления",
+    "settings_version": "Версия {version}",
+    "settings_check": "Проверить обновления",
+    "settings_checking": "Проверка обновлений…",
+    "settings_upToDate": "У вас последняя версия Descall",
+    "settings_checkFailed": "Не удалось проверить обновления. Попробуйте ещё раз чуть позже.",
+    "settings_downloading": "Descall {version} загружается в фоне",
+    "settings_unavailable": "Автообновление отключено в этой сборке",
+    "settings_lastChecked": "Последняя проверка {time}",
     "confirmBody": "Вы в голосовом чате. Перезапуск сейчас завершит его. Descall {version} также может установиться сам, когда вы выйдете.",
     "confirmLater": "Не сейчас",
     "confirmRestart": "Завершить звонок и перезапустить",
