@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
-import { statusFromCheck, statusFromEvent, statusFromStatus } from "../../lib/desktopUpdateState.js";
+import { mergeCheck, startCheck, statusFromCheck, statusFromEvent, statusFromStatus } from "../../lib/desktopUpdateState.js";
 import { S3Foot, S3Group, S3Row, S3Sec } from "./SettingsV3";
 
 export default function DesktopUpdatePane() {
@@ -46,7 +46,7 @@ export default function DesktopUpdatePane() {
 
   const check = useCallback(async () => {
     if (!api?.checkForUpdates) return;
-    setState((prev) => ({ ...prev, status: "checking" }));
+    setState(startCheck);
     let next;
     try {
       next = statusFromCheck(await api.checkForUpdates());
@@ -56,7 +56,7 @@ export default function DesktopUpdatePane() {
     if (!alive.current) return;
     setCheckedAt(new Date());
     // An update:downloading / progress event may already have moved the status on.
-    setState((prev) => (prev.status === "downloading" && next.status === "downloading" ? prev : { ...prev, ...next }));
+    setState((prev) => mergeCheck(prev, next));
   }, [api]);
 
   const restart = useCallback(() => {

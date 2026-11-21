@@ -1,7 +1,18 @@
 // node src/lib/desktopUpdateState.selftest.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { hasDesktopUpdater, statusFromCheck, statusFromEvent, statusFromStatus } from "./desktopUpdateState.js";
+import { hasDesktopUpdater, mergeCheck, startCheck, statusFromCheck, statusFromEvent, statusFromStatus } from "./desktopUpdateState.js";
+
+// Check while a download runs: the shells answer "nothing new" (in flight); the download stays.
+{
+  const dl = { status: "downloading", version: "4.1.0", percent: 40 };
+  assert.equal(startCheck(dl), dl);
+  assert.equal(startCheck({ status: "upToDate", version: null }).status, "checking");
+  assert.equal(mergeCheck(dl, { status: "upToDate", version: null }), dl);
+  assert.equal(mergeCheck(dl, { status: "error", version: null }).status, "error");
+  assert.equal(mergeCheck({ status: "ready", version: "4.1.0" }, { status: "upToDate", version: null }).status, "ready");
+  assert.deepEqual(mergeCheck({ status: "checking", version: null }, { status: "upToDate", version: null }), { status: "upToDate", version: null });
+}
 
 // Only desktop shells (Electron preload or the Tauri shim) show the pane.
 assert.equal(hasDesktopUpdater(undefined), false);

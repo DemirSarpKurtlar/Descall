@@ -28,6 +28,21 @@ export function statusFromCheck(res) {
   return { status: "upToDate", version: null };
 }
 
+/** The user pressed Check: a download or a staged update already on screen stays. */
+export function startCheck(prev) {
+  return prev.status === "downloading" || prev.status === "ready" ? prev : { ...prev, status: "checking" };
+}
+
+/**
+ * The check answer arrived. While a download runs, both shells answer "nothing new"
+ * (the check is skipped as in flight): the download on screen wins over that.
+ */
+export function mergeCheck(prev, next) {
+  if (prev.status === "downloading" && (next.status === "upToDate" || next.status === "downloading")) return prev;
+  if (prev.status === "ready" && next.status !== "ready") return prev;
+  return { ...prev, ...next };
+}
+
 /** get-update-status at mount: a staged update shows as ready, anything else stays idle. */
 export function statusFromStatus(res, prev = { status: "idle", version: null }) {
   if (res && res.updateReady) return { status: "ready", version: cleanVersion(res.updateVersion) };
