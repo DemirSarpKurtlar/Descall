@@ -15,7 +15,15 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
-    captureInput: true,
+    // The WebView's own input connection, as in Chrome. captureInput: true
+    // (on since the first import, no recorded reason) swapped it for a dummy
+    // BaseInputConnection: the keyboard saw a TYPE_NULL field, so no
+    // suggestions, autocorrect, auto-capitalization, glide or voice typing,
+    // and text it could not map to keys (emoji) was appended to
+    // activeElement.value by injected JS, past React's input events and not at
+    // all in contenteditable. The composer already handles real IME
+    // composition (isComposing / keyCode 229, src/lib/composerGrow.js).
+    captureInput: false,
     // Same dark surface as the Android 12+ splash (values/colors.xml
     // splash_background) and the in-app boot splash.
     backgroundColor: "#1E1F22",
