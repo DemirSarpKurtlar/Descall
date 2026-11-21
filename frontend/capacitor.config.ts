@@ -36,9 +36,16 @@ const config: CapacitorConfig = {
     // navigation bar icons start light (DARK = light content). The in-app light
     // theme flips them at runtime (src/lib/androidSystemBars.js). viewport-fit
     // is cover in index.html; the hint avoids a first-frame inset jump.
+    // insetsHandling "native" (Capacitor's recommended mode): same insets
+    // handling as the default "css", minus re-writing four --safe-area-inset-*
+    // custom properties on <html> through evaluateJavascript on every insets
+    // change (keyboard open / close, rotation). Nothing reads those variables
+    // (the CSS uses env(safe-area-inset-*)), but each write restyled the whole
+    // document right as the keyboard animation started.
     SystemBars: {
       style: "DARK",
       initialViewportFitValueHint: "cover",
+      insetsHandling: "native",
     },
     PushNotifications: {
       // Foreground: banner without the system sound; the open app already
