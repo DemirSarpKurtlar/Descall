@@ -87,6 +87,25 @@ fn icon_rect(rect: &tauri::Rect) -> descall_shell::tray_panel::Rect {
     descall_shell::tray_panel::Rect::new(p.x, p.y, s.width, s.height)
 }
 
+/// The tray draws the small icon size (16 px at 100 %, 20 / 24 / 32 px when scaled). Tauri's
+/// default window icon is the 32 px large one, which the shell shrinks into the tray without
+/// filtering (a jagged, lopsided logo); Electron gave the tray icon.ico, from which Windows
+/// takes the entry of the right size. Same here: the embedded app icon at the small size.
+#[cfg(windows)]
+fn small_icon() -> Option<tauri::image::Image<'static>> {
+    use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSMICON};
+    let size = match unsafe { GetSystemMetrics(SM_CXSMICON) } {
+        n if n > 0 => n as u32,
+        _ => 16,
+    };
+    tauri::image::Image::from_app_icon_resource(size).ok()
+}
+
+#[cfg(not(windows))]
+fn small_icon() -> Option<tauri::image::Image<'static>> {
+    None
+}
+
 pub fn create<R: Runtime>(app: &AppHandle<R>) {
     let Ok(menu) = build_menu(app) else { return };
     let mut b = TrayIconBuilder::with_id(ID).tooltip("Descall").show_menu_on_left_click(false).on_menu_event(on_menu).on_tray_icon_event(|tray, e| {
@@ -119,8 +138,8 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
     if !PANEL {
         b = b.menu(&menu);
     }
-    if let Some(icon) = app.default_window_icon() {
-        b = b.icon(icon.clone());
+    if let Some(icon) = small_icon().or_else(|| app.default_window_icon().map(|i| i.clone().to_owned())) {
+        b = b.icon(icon);
     }
     match b.build(app) {
         Ok(_) => shell(app).has_tray.store(true, Ordering::Release),

@@ -9,6 +9,7 @@
 // 3. Window rules from the Rust sources: capsules and the voice overlay are shown without
 //    activation (Electron showInactive): born visible and unfocused, never show() later.
 // 4. notification_show keeps main.cjs order: "Descall in front" before the reply toast.
+// 5. The tray icon is the embedded app icon at the small icon size, not the 32 px one.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -151,6 +152,17 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   for (const cmd of ["notif_action", "notification_show", "notification_close", "overlay_show", "overlay_hide", "overlay_update", "overlay_action", "tray_menu_state", "tray_menu_act", "tray_set_state"]) {
     assert.match(mainRs, new RegExp(`::${cmd}\\b`), `${cmd} registered`);
   }
+}
+
+// ---- 5: tray icon drawn at the tray's own size ---------------------------------------------------
+{
+  // Electron gave the tray icon.ico (Windows picks the 16 / 20 / 24 px entry); Tauri's default
+  // window icon is the 32 px large one, shrunk into the tray without filtering.
+  const tray = codeOnly(read("desktop/app/src-tauri/src/tray.rs"));
+  const create = tray.slice(tray.indexOf("pub fn create"), tray.indexOf("pub fn rebuild"));
+  assert.match(tray, /SM_CXSMICON/, "small icon metric");
+  assert.match(tray, /from_app_icon_resource\(size\)/, "embedded app icon at that size");
+  assert.ok(create.indexOf("small_icon()") >= 0 && create.indexOf("small_icon()") < create.indexOf("default_window_icon"), "small icon first, window icon as fallback");
 }
 
 console.log("shell-notif.test: ok");
