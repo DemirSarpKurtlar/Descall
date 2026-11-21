@@ -104,7 +104,11 @@ export default function TitleBar() {
           aria-label={isMaximized ? t("Restore") : t("Maximize")}
         >
           {isMaximized ? (
-            <Square size={12} strokeWidth={2} />
+            // Restore: two stacked windows, like the Windows caption button.
+            <svg className="win-restore-glyph" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+              <rect x="1.75" y="4.25" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M4.25 4.25V3.25c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
           ) : (
             <Square size={14} strokeWidth={2} />
           )}

@@ -148,7 +148,7 @@ export default function AppLockScreen({ me = null }) {
     >
       <div className="pgl-aurora" aria-hidden="true" />
       {winApi ? (
-        <div className="pgl-bar">
+        <div className="pgl-bar" data-tauri-drag-region="deep">
           <div className="pgl-bar-brand" aria-hidden="true"><DescallBrand /></div>
           <div className="pgl-bar-controls">
             <button type="button" className="pgl-winbtn" onClick={() => winApi.minimizeWindow?.()} title={t("Minimize")} aria-label={t("Minimize")}><Minus size={16} strokeWidth={2} /></button>

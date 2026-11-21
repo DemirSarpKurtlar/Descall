@@ -17,4 +17,40 @@ assert.match(css, /html\.tauri-app \.titlebar::after \{[^}]*backdrop-filter:\s*n
 // Electron keeps its drag region.
 assert.match(css, /^\.titlebar \{[^}]*-webkit-app-region:\s*drag;/m, "Electron still drags through -webkit-app-region");
 assert.match(shim, /classList\.add\("tauri-app"\)/, "the Tauri shim sets html.tauri-app");
+
+// Every other window bar (admin panel, its loading / sign-in screens, signup stats window,
+// app lock) had the same CSS drag region and so the same dead buttons in Tauri.
+const read = (...p) => readFileSync(join(here, "..", ...p), "utf8");
+const adminShell = read("components", "admin", "AdminShell.jsx");
+const adminPage = read("components", "admin", "AdminPanelPage.jsx");
+const stats = read("components", "admin", "signupStats", "SignupStatsWindow.jsx");
+const lock = read("premium", "gaming", "AppLockScreen.jsx");
+assert.match(adminShell, /className="adm-titlebar" data-tauri-drag-region="deep" onDoubleClick=\{titleBarDoubleClick\(/, "admin bar drags in Tauri, no double toggle");
+assert.equal((adminPage.match(/adm-state" data-tauri-drag-region="deep"/g) || []).length, 3, "admin loading / error screens drag in Tauri");
+assert.match(stats, /className="st-tb" \{\.\.\.\(electron \? \{ "data-tauri-drag-region": "deep" \} : \{\}\)\}/, "signup stats window bar drags in Tauri (only as its own window)");
+assert.match(stats, /onDoubleClick=\{electron \? titleBarDoubleClick\(/);
+assert.match(lock, /className="pgl-bar" data-tauri-drag-region="deep"/, "app lock bar drags in Tauri");
+assert.match(css, /html\.tauri-app \[data-tauri-drag-region\],\s*html\.tauri-app \[data-tauri-drag-region\] \*,\s*html\.tauri-app \.st3 \.st-tb,\s*html\.tauri-app \.st3 \.st-tb \* \{[^}]*-webkit-app-region:\s*no-drag !important;[^}]*app-region:\s*no-drag !important;/, "no native caption under any Tauri drag bar");
+// Restore glyph while maximized (was the same square, smaller).
+assert.match(jsx, /isMaximized \? \([\s\S]{0,120}<svg className="win-restore-glyph"/, "restore glyph while maximized");
+
+// titleBarDoubleClick: maximizes in Electron, does nothing in Tauri (the drag script did it).
+const { titleBarDoubleClick, inTauriShell } = await import("../lib/windowDrag.js");
+let calls = 0;
+const handler = titleBarDoubleClick(() => { calls += 1; });
+globalThis.window = { electronAPI: { isElectron: true } };
+globalThis.document = { documentElement: { classList: { contains: () => false } } };
+assert.equal(inTauriShell(), false);
+handler({});
+assert.equal(calls, 1, "Electron: double-click maximizes");
+globalThis.window = { electronAPI: { isElectron: true, isTauri: true } };
+assert.equal(inTauriShell(), true);
+handler({});
+assert.equal(calls, 1, "Tauri: no second toggle");
+globalThis.window = {};
+globalThis.document = { documentElement: { classList: { contains: (c) => c === "tauri-app" } } };
+assert.equal(inTauriShell(), true, "html.tauri-app also counts");
+delete globalThis.window;
+delete globalThis.document;
+
 console.log("tauriTitlebar.selftest: ok");
