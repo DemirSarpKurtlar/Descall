@@ -144,7 +144,11 @@ export const ATOK_DE = {
     "countryBodyPrev": "{token} hat sich zum ersten Mal aus diesem Land verbunden. Die vorherigen {prevCount} Anfragen kamen aus {prevCountry} ({prevIp}).",
     "burstTitle": "Plötzlicher Anstieg: {count} Anfragen in {min} Minuten",
     "burstBody": "Normal sind im Schnitt {baseline} Anfragen in {min} Minuten ({times}-fach).",
-    "burstBodyNoBase": "{token} hat in den letzten {min} Minuten weit mehr Anfragen als üblich gestellt."
+    "burstBodyNoBase": "{token} hat in den letzten {min} Minuten weit mehr Anfragen als üblich gestellt.",
+    "untrustedTitle": "Nicht bestätigte Adresse: {ip}",
+    "reasonFirstUse": "Erste Nutzung, von einer anderen Adresse als der beim Erstellen.",
+    "reasonIdleReturn": "Nach {days} Tagen von einer neuen Adresse zurückgekehrt.",
+    "reasonUntrusted": "Die Adresse konnte nicht bestätigt werden (Verbindung außerhalb von Cloudflare)."
   },
   "hero": {
     "created": "Erstellt",
@@ -456,6 +460,15 @@ export const ATOK_DE = {
     "reason": "Wähle einen gültigen Grund.",
     "grace": "Ungültige Übergangszeit.",
     "action": "Ungültige Warnungsaktion.",
-    "alertNotFound": "Warnung nicht gefunden; die Liste wurde aktualisiert."
+    "alertNotFound": "Warnung nicht gefunden; die Liste wurde aktualisiert.",
+    "selfManagement": "Diese Aktion ist mit einem Admin-Token nicht möglich; melde dich mit der Inhabersitzung an.",
+    "limit": "Höchstens 50 Tokens können aktiv sein. Widerrufe zuerst ein ungenutztes Token.",
+    "authRate": "Zu viele ungültige Token-Versuche; versuche es etwas später erneut.",
+    "mcpStreams": "Die MCP-Sitzung hat zu viele offene Streams; versuche es etwas später erneut."
+  },
+  "tokenSession": {
+    "title": "Token-Sitzung",
+    "body": "Dieser Bereich wurde mit einem Admin-Token geöffnet. Ein Token kann nur pausieren und widerrufen; Erstellen, Erneuern, Wiederherstellen, die IP-Liste und Warnungseinstellungen erfordern die Inhabersitzung.",
+    "blocked": "Erfordert die Inhabersitzung"
   }
 };

@@ -65,7 +65,7 @@ import {
 
 /* ---------------- identity card ---------------- */
 
-export function TokenHero({ token, usage, now, busy, onPause, onResume, onRotate, onIp, onAudit, onRevoke, onReplay, onRestore }) {
+export function TokenHero({ token, usage, now, busy, onPause, onResume, onRotate, onIp, onAudit, onRevoke, onReplay, onRestore, limited = false }) {
   const f = useFmt();
   const { t } = f;
   const split = shareSplit(usage?.mcpShare, usage?.restShare);
@@ -146,19 +146,19 @@ export function TokenHero({ token, usage, now, busy, onPause, onResume, onRotate
                   {t("atok.act.pause")}
                 </button>
               ) : (
-                <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onResume} data-testid="atk-act-resume">
+                <button type="button" className="atk-btn is-sm" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onResume} data-testid="atk-act-resume">
                   <Play size={13} />
                   {t("atok.act.resume")}
                 </button>
               )}
-              <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onRotate} data-testid="atk-act-rotate">
+              <button type="button" className="atk-btn is-sm" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onRotate} data-testid="atk-act-rotate">
                 <RefreshCw size={13} />
                 {t("atok.act.rotate")}
               </button>
             </div>
             <div className="atk-grp" role="group" aria-label={t("atok.act.access")}>
               <span className="atk-grp-l">{t("atok.act.access")}</span>
-              <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onIp} data-testid="atk-act-ip">
+              <button type="button" className="atk-btn is-sm" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onIp} data-testid="atk-act-ip">
                 <Globe size={13} />
                 {t("atok.act.ip")}
               </button>
@@ -177,12 +177,12 @@ export function TokenHero({ token, usage, now, busy, onPause, onResume, onRotate
         ) : (
           <div className="atk-grp">
             {left > 0 ? (
-              <button type="button" className="atk-btn is-sm is-pri" disabled={busy} onClick={onRestore} data-testid="atk-act-restore">
+              <button type="button" className="atk-btn is-sm is-pri" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onRestore} data-testid="atk-act-restore">
                 <RotateCcw size={13} />
                 {t("atok.act.restore", { t: clock(left) })}
               </button>
             ) : null}
-            <button type="button" className={`atk-btn is-sm${left > 0 ? "" : " is-pri"}`} onClick={onReplay} data-testid="atk-act-replay">
+            <button type="button" className={`atk-btn is-sm${left > 0 ? "" : " is-pri"}`} onClick={onReplay} disabled={limited} title={limited ? t("atok.tokenSession.blocked") : undefined} data-testid="atk-act-replay">
               <Plus size={13} />
               {t("atok.act.replay")}
             </button>
@@ -199,7 +199,7 @@ export function TokenHero({ token, usage, now, busy, onPause, onResume, onRotate
 
 /* ---------------- strips ---------------- */
 
-export function StateBanner({ token, now, busy, onResume, onRestore }) {
+export function StateBanner({ token, now, busy, onResume, onRestore, limited = false }) {
   const f = useFmt();
   const { t } = f;
   if (token.status === "revoked") {
@@ -214,7 +214,7 @@ export function StateBanner({ token, now, busy, onResume, onRestore }) {
           {left > 0 ? ` ${t("atok.banner.restoreHint", { t: clock(left) })}` : ""}
         </div>
         {left > 0 ? (
-          <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onRestore}>
+          <button type="button" className="atk-btn is-sm" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onRestore}>
             <RotateCcw size={13} />
             {t("atok.undo")}
           </button>
@@ -242,7 +242,7 @@ export function StateBanner({ token, now, busy, onResume, onRestore }) {
             <b>{t("atok.banner.paused")}</b>
             {autoPaused(token) ? t("atok.banner.pausedAuto") : t("atok.banner.pausedBody")}
           </div>
-          <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onResume}>
+          <button type="button" className="atk-btn is-sm" disabled={busy || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} onClick={onResume}>
             <Play size={13} />
             {t("atok.act.resume")}
           </button>
@@ -261,7 +261,7 @@ export function StateBanner({ token, now, busy, onResume, onRestore }) {
   );
 }
 
-export function TokenAlertBanner({ alert, token, busy, onAction }) {
+export function TokenAlertBanner({ alert, token, busy, onAction, limited = false }) {
   const f = useFmt();
   const { t } = f;
   if (!alert) return null;
@@ -272,6 +272,7 @@ export function TokenAlertBanner({ alert, token, busy, onAction }) {
       <div className="atk-banner-t">
         <b>{t(copy.title.key, { ...copy.title.vars, count: f.n(copy.title.vars.count || 0) })}</b>
         {t(copy.body.key, { ...copy.body.vars, prevCount: f.n(copy.body.vars.prevCount || 0) })}
+        {copy.reason ? ` ${t(copy.reason.key, copy.reason.vars)}` : ""}
       </div>
       <div className="atk-grp is-plain">
         {token.status === "active" ? (
@@ -279,14 +280,16 @@ export function TokenAlertBanner({ alert, token, busy, onAction }) {
             {t("atok.alerts.pause")}
           </button>
         ) : null}
-        {alert.kind !== "burst" && alert.ip ? (
+        {alert.kind !== "burst" && alert.ip && !limited ? (
           <button type="button" className="atk-btn is-sm" disabled={busy} onClick={() => onAction(alert, "allow_ip")}>
             {allowIpMode(token) === "add" ? t("atok.alerts.allowIpShort") : t("atok.alerts.trustIp")}
           </button>
         ) : null}
-        <button type="button" className="atk-btn is-sm is-ghost" disabled={busy} onClick={() => onAction(alert, "dismiss")}>
-          {t("atok.dismiss")}
-        </button>
+        {limited ? null : (
+          <button type="button" className="atk-btn is-sm is-ghost" disabled={busy} onClick={() => onAction(alert, "dismiss")}>
+            {t("atok.dismiss")}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -439,14 +442,14 @@ export function UsageCard({ token, usage, loading }) {
 
 /* ---------------- endpoints + IP allowlist ---------------- */
 
-export function EndpointsCard({ token, usage, loading, onEditIp, onAddSeen }) {
+export function EndpointsCard({ token, usage, loading, onEditIp, onAddSeen, limited = false }) {
   const f = useFmt();
   const { t } = f;
   const eps = usage?.topEndpoints || [];
   const max = Math.max(1, ...eps.map((e) => Number(e.count) || 0));
   const ips = token.ipAllowlist || [];
   const seen = usage?.ips7d || [];
-  const live = isLive(token);
+  const live = isLive(token) && !limited;
   return (
     <section className="atk-glass atk-card atk-eps-card" aria-label={t("atok.ep.title")} data-testid="atk-endpoints">
       <div className="atk-card-h">

@@ -144,7 +144,11 @@ export const ATOK_EN = {
     "countryBodyPrev": "{token} connected from this country for the first time. The previous {prevCount} requests came from {prevCountry} ({prevIp}).",
     "burstTitle": "Sudden spike: {count} requests in {min} minutes",
     "burstBody": "The usual average is {baseline} requests in {min} minutes ({times}x).",
-    "burstBodyNoBase": "{token} made far more requests than usual in the last {min} minutes."
+    "burstBodyNoBase": "{token} made far more requests than usual in the last {min} minutes.",
+    "untrustedTitle": "Unverified address: {ip}",
+    "reasonFirstUse": "First use, from an address other than the one it was created from.",
+    "reasonIdleReturn": "Came back from a new address after {days} days.",
+    "reasonUntrusted": "The address could not be verified (connection outside Cloudflare)."
   },
   "hero": {
     "created": "Created",
@@ -456,6 +460,15 @@ export const ATOK_EN = {
     "reason": "Pick a valid reason.",
     "grace": "Invalid grace period.",
     "action": "Invalid alert action.",
-    "alertNotFound": "Alert not found; the list was refreshed."
+    "alertNotFound": "Alert not found; the list was refreshed.",
+    "selfManagement": "This action cannot be done with an admin token; sign in with the owner session.",
+    "limit": "At most 50 tokens can be active. Revoke an unused token first.",
+    "authRate": "Too many invalid token attempts; try again a bit later.",
+    "mcpStreams": "The MCP session has too many open streams; try again a bit later."
+  },
+  "tokenSession": {
+    "title": "Token session",
+    "body": "This panel was opened with an admin token. A token can only pause and revoke; creating, rotating, restoring, the IP list and alert settings need the owner session.",
+    "blocked": "Needs the owner session"
   }
 };

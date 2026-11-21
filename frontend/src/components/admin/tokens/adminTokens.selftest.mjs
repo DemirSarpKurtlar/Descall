@@ -179,6 +179,18 @@ const burst = M.alertCopy({ kind: "burst", tokenName: "Claude Code", detail: { c
 assert.deepEqual([burst.title.key, burst.title.vars.count, burst.body.vars.times, burst.tone], ["atok.alert.burstTitle", 412, 19, "med"], "19 kat like the draft");
 assert.equal(M.alertCopy({ kind: "burst", detail: { count: 50 } }).body.key, "atok.alert.burstBodyNoBase");
 assert.equal(M.alertCopy({ kind: "new_country", ip: "1.1.1.1", country: "X", detail: {} }).title.key, "atok.alert.countryTitle");
+/* new-address reasons (detail.reason) */
+assert.deepEqual(M.alertReason({ reason: "first_use" }), { key: "atok.alert.reasonFirstUse", vars: {} });
+assert.deepEqual(M.alertReason({ reason: "idle_return", idleDays: 12 }), { key: "atok.alert.reasonIdleReturn", vars: { days: 12 } }, "12 gün sonra yeni bir adresten döndü");
+assert.equal(M.alertReason({ reason: "idle_return" }), null, "no day count, no line");
+assert.equal(M.alertReason({ reason: "untrusted_address" }).key, "atok.alert.reasonUntrusted");
+assert.equal(M.alertReason({}), null);
+const untrusted = M.alertCopy({ kind: "new_country", ip: "10.0.0.5", country: null, detail: { reason: "untrusted_address", previousIp: "1.2.3.4" } });
+assert.deepEqual([untrusted.title.key, untrusted.reason.key], ["atok.alert.untrustedTitle", "atok.alert.reasonUntrusted"], "unverified address, not a country");
+assert.equal(M.alertCopy({ kind: "new_ip", ip: "1.1.1.1", detail: { reason: "first_use", previousIp: "2.2.2.2" } }).reason.key, "atok.alert.reasonFirstUse");
+for (const r of ["reasonFirstUse", "reasonIdleReturn", "reasonUntrusted", "untrustedTitle"]) assert.ok(r, r);
+/* token session */
+assert.ok(M.isTokenSession("dsk_admin_abc") && !M.isTokenSession("eyJhbGciOi") && !M.isTokenSession(null));
 const AL = [{ id: 1, kind: "new_ip", status: "open" }, { id: 2, kind: "burst", status: "open" }, { id: 3, kind: "new_country", status: "dismissed" }];
 assert.deepEqual(M.openAlerts(AL).map((a) => a.id), [1, 2]);
 assert.deepEqual(M.alertKinds(AL), ["ip", "burst"], "Yeni IP ve ani artış");
@@ -214,7 +226,7 @@ assert.equal(M.errorKey({ code: "CONFIRM_MISMATCH" }), "atok.err.confirm");
 assert.equal(M.errorKey({ status: 404 }), "atok.err.notDeployed");
 assert.equal(M.errorKey({ code: "TOKEN_NOT_FOUND", status: 404 }), "atok.err.notFound");
 assert.equal(M.errorKey(new Error("x")), "atok.err.generic");
-for (const code of ["TOKENS_UNAVAILABLE", "TOKEN_NOT_FOUND", "NAME_REQUIRED", "BAD_EXPIRY", "BAD_IP", "CONFIRM_MISMATCH", "RESTORE_EXPIRED", "OWNER_ONLY", "TOKEN_REVOKED", "BAD_REASON", "BAD_GRACE", "BAD_ACTION", "ALERT_NOT_FOUND"]) assert.ok(M.ERROR_CODES.includes(code), `contract error ${code}`);
+for (const code of ["TOKENS_UNAVAILABLE", "TOKEN_NOT_FOUND", "NAME_REQUIRED", "BAD_EXPIRY", "BAD_IP", "CONFIRM_MISMATCH", "RESTORE_EXPIRED", "OWNER_ONLY", "TOKEN_REVOKED", "BAD_REASON", "BAD_GRACE", "BAD_ACTION", "ALERT_NOT_FOUND", "TOKEN_SELF_MANAGEMENT", "TOKEN_LIMIT", "TOKEN_AUTH_RATE_LIMITED", "MCP_TOO_MANY_STREAMS"]) assert.ok(M.ERROR_CODES.includes(code), `contract error ${code}`);
 
 /* ---- locale parity ---- */
 const LOCALES = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];
@@ -316,6 +328,11 @@ assert.match(page, /available === false/, "migration-not-applied state");
 assert.match(page, /CALLS_POLL_MS/);
 assert.match(page, /socket\.on\("admin:token-alert", onAlert\)/, "new alerts arrive live");
 assert.match(page, /socket\.on\("admin:update", soon\)/);
+assert.match(page, /const limited = useMemo\(\(\) => isTokenSession\(getToken\(\)\), \[\]\)/, "token sessions are detected");
+for (const [f, re] of [["AdminTokens.jsx", /disabled=\{!data\.available \|\| data\.loading \|\| limited\}/], ["TokenWorkspace.jsx", /disabled=\{busy \|\| limited\}[^>]*onClick=\{onRotate\}/], ["TokenWorkspace.jsx", /disabled=\{busy \|\| limited\}[^>]*onClick=\{onIp\}/], ["TokenWorkspace.jsx", /disabled=\{busy \|\| limited\}[^>]*onClick=\{onRestore\}/], ["TokenWorkspace.jsx", /disabled=\{busy \|\| limited\}[^>]*onClick=\{onResume\}/], ["TokenList.jsx", /disabled=\{autoBusy \|\| loading \|\| limited\}/], ["TokenList.jsx", /\{limited \? null : \(\s*<button[^\n]*onAction\(alert, "dismiss"\)/]]) {
+  assert.match(read(f), re, `${f}: token session control off (${re})`);
+}
+assert.ok(!/disabled=\{busy \|\| limited\}[^>]*onClick=\{onPause\}/.test(read("TokenWorkspace.jsx")) && !/disabled=\{[^}]*limited[^}]*\}[^>]*onClick=\{onRevoke\}/.test(read("TokenWorkspace.jsx")), "pause and revoke stay available to a token session");
 assert.match(panel, /<AdminTokens\s+socket=\{socket\}/);
 for (const f of files) assert.ok(!/\.serverText|err(?:or)?\.message\b/.test(read(f)), `${f}: never shows the server's raw error text`);
 assert.match(page, /if \(!visible \|\| !selectedId/, "live calls pause on a hidden tab");

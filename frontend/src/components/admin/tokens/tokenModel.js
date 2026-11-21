@@ -501,16 +501,27 @@ export function snippetText(kind, mcpUrl, secret = null) {
 
 /* ---------- alerts ---------- */
 
-/** Title and body keys of an alert (contract Alert), with their values. */
+/** Extra line for why an address counts as new (detail.reason), or null. */
+export function alertReason(detail) {
+  const d = detail || {};
+  if (d.reason === "first_use") return { key: "atok.alert.reasonFirstUse", vars: {} };
+  if (d.reason === "idle_return") return d.idleDays != null ? { key: "atok.alert.reasonIdleReturn", vars: { days: Number(d.idleDays) || 0 } } : null;
+  if (d.reason === "untrusted_address") return { key: "atok.alert.reasonUntrusted", vars: {} };
+  return null;
+}
+
+/** Title and body keys of an alert (contract Alert), with their values; `reason` may add a line. */
 export function alertCopy(alert) {
   const a = alert || {};
   const d = a.detail || {};
+  const reason = alertReason(d);
   const base = { token: a.tokenName || "", ip: a.ip || "-", country: a.country || "-" };
   if (a.kind === "burst") {
     const times = d.baseline ? Math.max(1, Math.round((Number(d.count) || 0) / Number(d.baseline))) : null;
     return {
       icon: "burst",
       tone: "med",
+      reason,
       title: { key: "atok.alert.burstTitle", vars: { count: Number(d.count) || 0, min: Number(d.windowMin) || 5 } },
       body: times
         ? { key: "atok.alert.burstBody", vars: { ...base, baseline: Number(d.baseline) || 0, min: Number(d.windowMin) || 5, times } }
@@ -519,10 +530,12 @@ export function alertCopy(alert) {
   }
   const isCountry = a.kind === "new_country";
   const hasPrev = d.previousCount != null && (d.previousIp || d.previousCountry);
+  const untrusted = d.reason === "untrusted_address";
   return {
     icon: "globe",
     tone: "high",
-    title: { key: isCountry ? "atok.alert.countryTitle" : "atok.alert.ipTitle", vars: base },
+    reason,
+    title: { key: untrusted ? "atok.alert.untrustedTitle" : isCountry ? "atok.alert.countryTitle" : "atok.alert.ipTitle", vars: base },
     body: hasPrev
       ? { key: isCountry ? "atok.alert.countryBodyPrev" : "atok.alert.ipBodyPrev", vars: { ...base, prevCount: Number(d.previousCount) || 0, prevIp: d.previousIp || "-", prevCountry: d.previousCountry || "-" } }
       : { key: isCountry ? "atok.alert.countryBody" : "atok.alert.ipBody", vars: base },
@@ -563,6 +576,14 @@ export function autoPaused(token) {
 
 /** "allow_ip" adds the address only when the token has an allowlist; otherwise it approves it. */
 export const allowIpMode = (token) => ((token?.ipAllowlist || []).length ? "add" : "approve");
+
+/**
+ * The panel opened with an admin token instead of the owner's session: the server only lets
+ * a token reduce power (pause, revoke, revoke-all, pause from an alert), so the rest is off.
+ */
+export function isTokenSession(sessionToken) {
+  return String(sessionToken || "").startsWith(TOKEN_PREFIX);
+}
 
 /* ---------- forms ---------- */
 
@@ -629,6 +650,10 @@ const ERR = {
   BAD_GRACE: "atok.err.grace",
   BAD_ACTION: "atok.err.action",
   ALERT_NOT_FOUND: "atok.err.alertNotFound",
+  TOKEN_SELF_MANAGEMENT: "atok.err.selfManagement",
+  TOKEN_LIMIT: "atok.err.limit",
+  TOKEN_AUTH_RATE_LIMITED: "atok.err.authRate",
+  MCP_TOO_MANY_STREAMS: "atok.err.mcpStreams",
   STEP_UP_REQUIRED: "atok.err.stepUp",
   STEP_UP_CANCELLED: "atok.err.stepUpCancelled",
 };

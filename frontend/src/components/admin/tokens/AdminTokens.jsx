@@ -24,6 +24,7 @@ import { AuditCard, CallsCard, ConnectionCard, EndpointsCard, StateBanner, Token
 import { CreateDrawer, IpDialog, PanicDialog, RestoreDialog, RevokeDialog, RotateDialog } from "./TokenDialogs.jsx";
 import { Skel, Toast, useFmt } from "./TokenUi.jsx";
 import { tokenApi } from "./tokenApi.js";
+import { getToken } from "../../../lib/storage";
 import {
   CALLS_POLL_MS,
   FRESH_SECRET_MS,
@@ -37,6 +38,7 @@ import {
   errorKey,
   expiringSoon,
   isLive,
+  isTokenSession,
   mergeCalls,
   newestAt,
   openAlerts,
@@ -62,6 +64,9 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
   const f = useFmt();
   const { t } = f;
   const visible = usePageVisible();
+  // Opened with an admin token (not the owner's session): the server only lets a token pause
+  // and revoke, so the other controls are off instead of answering 403 TOKEN_SELF_MANAGEMENT.
+  const limited = useMemo(() => isTokenSession(getToken()), []);
   const rootRef = useRef(null);
   const workRef = useRef(null);
   const alertsRef = useRef(null);
@@ -319,7 +324,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
       try {
         const r = await tokenApi.patch(tok.id, { paused });
         patchToken(r?.token || { ...tok, status: paused ? "paused" : "active" });
-        notify(t(paused ? "atok.act.paused" : "atok.act.resumed", { name: tok.name }), undoable ? { undo: { kind: paused ? "resume" : "pause", token: tok } } : {});
+        notify(t(paused ? "atok.act.paused" : "atok.act.resumed", { name: tok.name }), undoable && !(limited && paused) ? { undo: { kind: paused ? "resume" : "pause", token: tok } } : {});
       } catch (e) {
         fail(e);
       } finally {
@@ -356,7 +361,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
         setData((p) => ({ ...p, alerts: p.alerts.map((a) => (a.id === alert.id ? { ...a, ...(r?.alert || { status: action === "dismiss" ? "dismissed" : "resolved" }) } : a)) }));
         if (r?.token) patchToken(r.token);
         const tok = data.tokens.find((x) => x.id === alert.tokenId);
-        if (action === "pause") notify(t("atok.alerts.paused", { name: tok?.name || alert.tokenName }), tok ? { undo: { kind: "resume", token: tok } } : {});
+        if (action === "pause") notify(t("atok.alerts.paused", { name: tok?.name || alert.tokenName }), tok && !limited ? { undo: { kind: "resume", token: tok } } : {});
         else if (action === "allow_ip") notify(t(tok && allowIpMode(tok) === "add" ? "atok.alerts.allowed" : "atok.alerts.trusted", { ip: alert.ip }));
         else notify(t("atok.alerts.dismissed"));
         loadList();
@@ -438,13 +443,23 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
           <AlertCircle size={15} />
           {t("atok.panicBtn")}
         </button>
-        <button type="button" className="atk-btn is-pri" onClick={() => setCreate({ open: true, preset: null })} disabled={!data.available || data.loading} data-testid="atk-create-open">
+        <button type="button" className="atk-btn is-pri" onClick={() => setCreate({ open: true, preset: null })} disabled={!data.available || data.loading || limited} title={limited ? t("atok.tokenSession.blocked") : undefined} data-testid="atk-create-open">
           <Plus size={15} />
           {t("atok.newToken")}
         </button>
       </div>
     </header>
   );
+
+  const sessionNote = limited ? (
+    <div className="atk-banner is-info" role="note" data-testid="atk-token-session">
+      <Lock size={20} aria-hidden="true" />
+      <div className="atk-banner-t">
+        <b>{t("atok.tokenSession.title")}</b>
+        {t("atok.tokenSession.body")}
+      </div>
+    </div>
+  ) : null;
 
   let body;
   if (!data.available) {
@@ -498,7 +513,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
             {t("atok.empty.p3")}
           </li>
         </ul>
-        <button type="button" className="atk-btn is-pri" onClick={() => setCreate({ open: true, preset: null })} data-testid="atk-empty-cta">
+        <button type="button" className="atk-btn is-pri" onClick={() => setCreate({ open: true, preset: null })} disabled={limited} title={limited ? t("atok.tokenSession.blocked") : undefined} data-testid="atk-empty-cta">
           <Plus size={15} />
           {t("atok.empty.cta")}
         </button>
@@ -564,9 +579,11 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
               onQuery={setQuery}
               onSelect={select}
               onCreate={() => setCreate({ open: true, preset: null })}
+              limited={limited}
               now={now}
             />
             <AlertsPanel
+              limited={limited}
               panelRef={alertsRef}
               alerts={data.alerts}
               tokens={tokens}
@@ -597,6 +614,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
             ) : (
               <>
                 <TokenHero
+                  limited={limited}
                   token={selected}
                   usage={detailFor.usage}
                   now={now}
@@ -610,8 +628,8 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
                   onReplay={() => setCreate({ open: true, preset: sameSettings(selected) })}
                   onRestore={() => setRestoreFor(selected)}
                 />
-                <StateBanner token={selected} now={now} busy={busy} onResume={() => setPaused(selected, false)} onRestore={() => setRestoreFor(selected)} />
-                {isLive(selected) ? <TokenAlertBanner alert={tokenAlert} token={selected} busy={busyAlert === tokenAlert?.id} onAction={alertAction} /> : null}
+                <StateBanner limited={limited} token={selected} now={now} busy={busy} onResume={() => setPaused(selected, false)} onRestore={() => setRestoreFor(selected)} />
+                {isLive(selected) ? <TokenAlertBanner limited={limited} alert={tokenAlert} token={selected} busy={busyAlert === tokenAlert?.id} onAction={alertAction} /> : null}
                 {detailFor.err ? (
                   <p className="atk-err" role="alert">
                     {t(errorKey(detailFor.err))}
@@ -622,7 +640,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
                 ) : null}
                 <div className="atk-row">
                   <UsageCard token={selected} usage={detailFor.usage} loading={detailFor.loading} />
-                  <EndpointsCard token={selected} usage={detailFor.usage} loading={detailFor.loading} onEditIp={() => setIpFor({ token: selected, add: null })} onAddSeen={(ip) => setIpFor({ token: selected, add: ip })} />
+                  <EndpointsCard limited={limited} token={selected} usage={detailFor.usage} loading={detailFor.loading} onEditIp={() => setIpFor({ token: selected, add: null })} onAddSeen={(ip) => setIpFor({ token: selected, add: ip })} />
                 </div>
                 <div className="atk-row" ref={callsRef}>
                   <CallsCard calls={calls} loading={detailFor.loading} live={isLive(selected)} hidden={!visible} freshIds={freshIds} onOpenAudit={(id) => gotoAudit({ entry: id })} />
@@ -649,6 +667,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
   return (
     <div className="atk" ref={rootRef} data-testid="admin-tokens">
       {header}
+      {sessionNote}
       {body}
 
       <CreateDrawer
@@ -689,7 +708,7 @@ export default function AdminTokens({ socket, viewerUsername, onGoto }) {
           patchToken(tok);
           if (fresh?.id === tok.id) setFresh(null);
           setRevokeFor(null);
-          notify(t("atok.revoke.done", { name: tok.name }), { undo: { kind: "restore", token: tok } });
+          notify(t("atok.revoke.done", { name: tok.name }), limited ? {} : { undo: { kind: "restore", token: tok } });
           setTimeout(loadList, 600);
         }}
       />

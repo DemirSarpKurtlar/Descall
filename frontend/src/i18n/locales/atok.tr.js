@@ -144,7 +144,11 @@ export const ATOK_TR = {
     "countryBodyPrev": "{token} ilk kez bu ülkeden bağlandı. Önceki {prevCount} istek {prevCountry} konumundan ({prevIp}) geldi.",
     "burstTitle": "Ani artış: {min} dakikada {count} istek",
     "burstBody": "Normal ortalama {min} dakikada {baseline} istek ({times} kat).",
-    "burstBodyNoBase": "{token} son {min} dakikada olağanın çok üstünde istek yaptı."
+    "burstBodyNoBase": "{token} son {min} dakikada olağanın çok üstünde istek yaptı.",
+    "untrustedTitle": "Doğrulanamayan adres: {ip}",
+    "reasonFirstUse": "İlk kullanım, oluşturulduğu adresten farklı.",
+    "reasonIdleReturn": "{days} gün sonra yeni bir adresten döndü.",
+    "reasonUntrusted": "Adres doğrulanamadı (Cloudflare dışı bağlantı)."
   },
   "hero": {
     "created": "Oluşturuldu",
@@ -456,6 +460,15 @@ export const ATOK_TR = {
     "reason": "Geçerli bir sebep seç.",
     "grace": "Geçersiz geçiş süresi.",
     "action": "Geçersiz uyarı işlemi.",
-    "alertNotFound": "Uyarı bulunamadı; liste yenilendi."
+    "alertNotFound": "Uyarı bulunamadı; liste yenilendi.",
+    "selfManagement": "Bu işlem admin token ile yapılamaz; sahip oturumuyla giriş yap.",
+    "limit": "En fazla 50 aktif token olabilir. Önce kullanılmayan bir tokenı iptal et.",
+    "authRate": "Çok fazla hatalı token denemesi; biraz sonra tekrar dene.",
+    "mcpStreams": "MCP oturumunda çok fazla açık akış var; biraz sonra tekrar dene."
+  },
+  "tokenSession": {
+    "title": "Token oturumu",
+    "body": "Bu panel bir admin token ile açıldı. Token yalnızca duraklatabilir ve iptal edebilir; oluşturma, yenileme, geri alma, IP listesi ve uyarı ayarları sahip oturumu ister.",
+    "blocked": "Sahip oturumu gerekir"
   }
 };

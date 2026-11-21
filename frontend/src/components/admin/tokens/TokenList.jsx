@@ -7,7 +7,7 @@ import { Activity, Check, Clock, Globe, Pause, Plus, RefreshCw, Search, Zap } fr
 import { LiveBadge, Pill, Skel, Spark, Toggle, TokenIcon, useFmt } from "./TokenUi.jsx";
 import { allowIpMode, AUTO_PAUSE_RULES, FILTERS, agoLabel, alertCopy, countByFilter, expiryKey, filterTokens, isLive, leftLabel, maskToken, openAlerts, colorOf } from "./tokenModel.js";
 
-export function TokenList({ tokens, loading, selectedId, filter, query, onFilter, onQuery, onSelect, onCreate, now }) {
+export function TokenList({ tokens, loading, selectedId, filter, query, onFilter, onQuery, onSelect, onCreate, now, limited = false }) {
   const f = useFmt();
   const { t } = f;
   const list = filterTokens(tokens, { filter, query });
@@ -18,7 +18,7 @@ export function TokenList({ tokens, loading, selectedId, filter, query, onFilter
         <h3>
           {t("atok.list.title")} <span className="atk-sub tnum">{loading ? "" : f.n(tokens.length)}</span>
         </h3>
-        <button type="button" className="atk-btn is-sm is-pri" onClick={onCreate} data-testid="atk-list-new">
+        <button type="button" className="atk-btn is-sm is-pri" onClick={onCreate} disabled={limited} title={limited ? t("atok.tokenSession.blocked") : undefined} data-testid="atk-list-new">
           <Plus size={13} />
           {t("atok.new")}
         </button>
@@ -91,7 +91,7 @@ export function TokenList({ tokens, loading, selectedId, filter, query, onFilter
   );
 }
 
-function AlertItem({ alert, token, busy, onAction, onInspect }) {
+function AlertItem({ alert, token, busy, onAction, onInspect, limited }) {
   const f = useFmt();
   const { t } = f;
   const copy = alertCopy({ ...alert, country: f.country(alert.country) || alert.country, detail: { ...(alert.detail || {}), previousCountry: f.country(alert.detail?.previousCountry) || alert.detail?.previousCountry } });
@@ -108,6 +108,7 @@ function AlertItem({ alert, token, busy, onAction, onInspect }) {
         </div>
         <p className="atk-al-d">
           {t(copy.body.key, { ...copy.body.vars, prevCount: f.n(copy.body.vars.prevCount || 0), count: f.n(copy.body.vars.count || 0) })}
+          {copy.reason ? ` ${t(copy.reason.key, copy.reason.vars)}` : ""}
           {alert.autoPaused ? ` ${t("atok.alerts.autoPaused")}` : ""}
         </p>
         {token ? (
@@ -124,7 +125,7 @@ function AlertItem({ alert, token, busy, onAction, onInspect }) {
               {t("atok.alerts.pauseToken")}
             </button>
           ) : null}
-          {alert.kind !== "burst" && alert.ip && live ? (
+          {alert.kind !== "burst" && alert.ip && live && !limited ? (
             <button type="button" className="atk-btn is-sm" disabled={busy} onClick={() => onAction(alert, "allow_ip")} data-testid="atk-alert-allow">
               <Check size={13} />
               {allowIpMode(token) === "add" ? t("atok.alerts.allowIp") : t("atok.alerts.trustIp")}
@@ -136,16 +137,18 @@ function AlertItem({ alert, token, busy, onAction, onInspect }) {
               {t("atok.alerts.inspect")}
             </button>
           ) : null}
-          <button type="button" className="atk-btn is-sm is-ghost" disabled={busy} onClick={() => onAction(alert, "dismiss")} data-testid="atk-alert-dismiss">
-            {t("atok.dismiss")}
-          </button>
+          {limited ? null : (
+            <button type="button" className="atk-btn is-sm is-ghost" disabled={busy} onClick={() => onAction(alert, "dismiss")} data-testid="atk-alert-dismiss">
+              {t("atok.dismiss")}
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, autoBusy, onAction, onInspect, onAutoPause, onRotate, now, loading, panelRef }) {
+export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, autoBusy, onAction, onInspect, onAutoPause, onRotate, now, loading, panelRef, limited = false }) {
   const f = useFmt();
   const { t } = f;
   const open = openAlerts(alerts);
@@ -175,7 +178,8 @@ export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, au
                   type="button"
                   className={`atk-rule${on ? " is-on" : ""}`}
                   aria-pressed={on}
-                  disabled={autoBusy || loading}
+                  disabled={autoBusy || loading || limited}
+                  title={limited ? t("atok.tokenSession.blocked") : undefined}
                   onClick={() => onAutoPause({ enabled: ap.enabled, rules: { ...ap.rules, [r]: !on } }, "rules")}
                   data-testid={`atk-rule-${r}`}
                 >
@@ -186,7 +190,7 @@ export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, au
             })}
           </div>
         </div>
-        <Toggle checked={Boolean(ap.enabled)} disabled={autoBusy || loading} label={t("atok.alerts.autoLabel")} onChange={(v) => onAutoPause({ enabled: v, rules: ap.rules || {} }, "switch")} testId="atk-autopause" />
+        <Toggle checked={Boolean(ap.enabled)} disabled={autoBusy || loading || limited} label={t("atok.alerts.autoLabel")} onChange={(v) => onAutoPause({ enabled: v, rules: ap.rules || {} }, "switch")} testId="atk-autopause" />
       </div>
       {loading ? (
         <div className="atk-alert" aria-hidden="true">
@@ -198,7 +202,7 @@ export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, au
           </div>
         </div>
       ) : open.length ? (
-        open.map((a) => <AlertItem key={a.id} alert={a} token={byId.get(a.tokenId)} busy={busyAlert === a.id} onAction={onAction} onInspect={onInspect} />)
+        open.map((a) => <AlertItem key={a.id} alert={a} token={byId.get(a.tokenId)} busy={busyAlert === a.id} onAction={onAction} onInspect={onInspect} limited={limited} />)
       ) : (
         <div className="atk-empty-ok">
           <Check size={15} />
@@ -216,12 +220,14 @@ export function AlertsPanel({ alerts, tokens, autoPause, expiring, busyAlert, au
               <span className="atk-al-time">{f.label(leftLabel(tok.expiresAt, now))}</span>
             </div>
             <p className="atk-al-d">{t("atok.alerts.expBody", { exp: t(expiryKey(tok.expiresIn)), time: f.time(tok.expiresAt) })}</p>
-            <div className="atk-al-a">
-              <button type="button" className="atk-btn is-sm" onClick={() => onRotate(tok)}>
-                <RefreshCw size={13} />
-                {t("atok.alerts.rotate")}
-              </button>
-            </div>
+            {limited ? null : (
+              <div className="atk-al-a">
+                <button type="button" className="atk-btn is-sm" onClick={() => onRotate(tok)}>
+                  <RefreshCw size={13} />
+                  {t("atok.alerts.rotate")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ))}

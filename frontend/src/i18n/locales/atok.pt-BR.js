@@ -144,7 +144,11 @@ export const ATOK_PT_BR = {
     "countryBodyPrev": "{token} se conectou deste país pela primeira vez. As {prevCount} requisições anteriores vieram de {prevCountry} ({prevIp}).",
     "burstTitle": "Pico repentino: {count} requisições em {min} minutos",
     "burstBody": "A média normal é de {baseline} requisições em {min} minutos ({times}x).",
-    "burstBodyNoBase": "{token} fez muito mais requisições do que o normal nos últimos {min} minutos."
+    "burstBodyNoBase": "{token} fez muito mais requisições do que o normal nos últimos {min} minutos.",
+    "untrustedTitle": "Endereço não verificado: {ip}",
+    "reasonFirstUse": "Primeiro uso, de um endereço diferente do de criação.",
+    "reasonIdleReturn": "Voltou de um endereço novo depois de {days} dias.",
+    "reasonUntrusted": "Não foi possível verificar o endereço (conexão fora da Cloudflare)."
   },
   "hero": {
     "created": "Criado",
@@ -456,6 +460,15 @@ export const ATOK_PT_BR = {
     "reason": "Escolha um motivo válido.",
     "grace": "Período de transição inválido.",
     "action": "Ação de alerta inválida.",
-    "alertNotFound": "Alerta não encontrado; a lista foi atualizada."
+    "alertNotFound": "Alerta não encontrado; a lista foi atualizada.",
+    "selfManagement": "Esta ação não pode ser feita com um token de administração; entre com a sessão do proprietário.",
+    "limit": "Pode haver no máximo 50 tokens ativos. Revogue antes um token sem uso.",
+    "authRate": "Tentativas demais com tokens inválidos; tente de novo daqui a pouco.",
+    "mcpStreams": "A sessão MCP tem fluxos abertos demais; tente de novo daqui a pouco."
+  },
+  "tokenSession": {
+    "title": "Sessão por token",
+    "body": "Este painel foi aberto com um token de administração. Um token só pode pausar e revogar; criar, renovar, restaurar, a lista de IP e as configurações de alerta exigem a sessão do proprietário.",
+    "blocked": "Exige a sessão do proprietário"
   }
 };

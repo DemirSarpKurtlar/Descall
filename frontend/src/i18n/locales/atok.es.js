@@ -144,7 +144,11 @@ export const ATOK_ES = {
     "countryBodyPrev": "{token} se conectó desde este país por primera vez. Las {prevCount} solicitudes anteriores llegaron desde {prevCountry} ({prevIp}).",
     "burstTitle": "Pico repentino: {count} solicitudes en {min} minutos",
     "burstBody": "La media habitual es de {baseline} solicitudes en {min} minutos ({times} veces más).",
-    "burstBodyNoBase": "{token} hizo muchas más solicitudes de lo normal en los últimos {min} minutos."
+    "burstBodyNoBase": "{token} hizo muchas más solicitudes de lo normal en los últimos {min} minutos.",
+    "untrustedTitle": "Dirección no verificada: {ip}",
+    "reasonFirstUse": "Primer uso, desde una dirección distinta de la de creación.",
+    "reasonIdleReturn": "Volvió desde una dirección nueva tras {days} días.",
+    "reasonUntrusted": "No se pudo verificar la dirección (conexión fuera de Cloudflare)."
   },
   "hero": {
     "created": "Creado",
@@ -456,6 +460,15 @@ export const ATOK_ES = {
     "reason": "Elige un motivo válido.",
     "grace": "Periodo de transición no válido.",
     "action": "Acción de alerta no válida.",
-    "alertNotFound": "No se encontró la alerta; la lista se actualizó."
+    "alertNotFound": "No se encontró la alerta; la lista se actualizó.",
+    "selfManagement": "Esta acción no se puede hacer con un token de administración; inicia sesión con la cuenta propietaria.",
+    "limit": "Puede haber como máximo 50 tokens activos. Revoca primero uno que no uses.",
+    "authRate": "Demasiados intentos con tokens no válidos; inténtalo de nuevo en un rato.",
+    "mcpStreams": "La sesión MCP tiene demasiados flujos abiertos; inténtalo de nuevo en un rato."
+  },
+  "tokenSession": {
+    "title": "Sesión con token",
+    "body": "Este panel se abrió con un token de administración. Un token solo puede pausar y revocar; crear, renovar, restaurar, la lista de IP y los ajustes de alertas requieren la sesión propietaria.",
+    "blocked": "Requiere la sesión propietaria"
   }
 };

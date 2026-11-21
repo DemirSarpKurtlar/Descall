@@ -144,7 +144,11 @@ export const ATOK_FR = {
     "countryBodyPrev": "{token} s'est connecté depuis ce pays pour la première fois. Les {prevCount} requêtes précédentes venaient de {prevCountry} ({prevIp}).",
     "burstTitle": "Pic soudain : {count} requêtes en {min} minutes",
     "burstBody": "La moyenne habituelle est de {baseline} requêtes en {min} minutes ({times} fois plus).",
-    "burstBodyNoBase": "{token} a fait bien plus de requêtes que d'habitude ces {min} dernières minutes."
+    "burstBodyNoBase": "{token} a fait bien plus de requêtes que d'habitude ces {min} dernières minutes.",
+    "untrustedTitle": "Adresse non vérifiée : {ip}",
+    "reasonFirstUse": "Première utilisation, depuis une autre adresse que celle de création.",
+    "reasonIdleReturn": "Revenu depuis une nouvelle adresse après {days} jours.",
+    "reasonUntrusted": "L'adresse n'a pas pu être vérifiée (connexion hors Cloudflare)."
   },
   "hero": {
     "created": "Créé",
@@ -456,6 +460,15 @@ export const ATOK_FR = {
     "reason": "Choisis un motif valide.",
     "grace": "Période de transition non valide.",
     "action": "Action d'alerte non valide.",
-    "alertNotFound": "Alerte introuvable ; la liste a été actualisée."
+    "alertNotFound": "Alerte introuvable ; la liste a été actualisée.",
+    "selfManagement": "Cette action est impossible avec un jeton d'administration ; connecte-toi avec la session propriétaire.",
+    "limit": "50 jetons actifs au maximum. Révoque d'abord un jeton inutilisé.",
+    "authRate": "Trop de tentatives avec des jetons non valides ; réessaie un peu plus tard.",
+    "mcpStreams": "La session MCP a trop de flux ouverts ; réessaie un peu plus tard."
+  },
+  "tokenSession": {
+    "title": "Session par jeton",
+    "body": "Ce panneau a été ouvert avec un jeton d'administration. Un jeton peut seulement mettre en pause et révoquer ; la création, le renouvellement, la restauration, la liste d'IP et les réglages d'alerte exigent la session propriétaire.",
+    "blocked": "Exige la session propriétaire"
   }
 };
