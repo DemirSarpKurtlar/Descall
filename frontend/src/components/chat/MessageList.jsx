@@ -98,6 +98,7 @@ import {
   reactBarWidth,
 } from "../../lib/glassMessageMenu";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
+import { motionBlur } from "../../lib/motionBlur.js";
 
 /** Parts of a message's own toolbar; a press inside them does not close it. */
 const MESSAGE_TOOLBAR_SURFACES = ".message-hover-bar, .reaction-picker, .mhb-more, .message-inline-picker";
@@ -1031,9 +1032,9 @@ function MessageList({
               type="button"
               className="msg-jump-btn g-glass g-heavy"
               aria-label={jump.unseen > 0 ? t("chatx.newMessagesJump", { count: jump.unseen }) : t("Scroll to bottom")}
-              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...motionBlur(6) }}
+              animate={{ opacity: 1, scale: 1, y: 0, ...motionBlur(0) }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...motionBlur(6) }}
               transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
               whileTap={{ scale: 0.96 }}
               onClick={() => {
