@@ -11,6 +11,7 @@ mod admin;
 mod assets;
 mod boot;
 mod commands;
+mod logging;
 mod migration;
 mod platform;
 mod premium;
@@ -78,6 +79,7 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    logging::init();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".

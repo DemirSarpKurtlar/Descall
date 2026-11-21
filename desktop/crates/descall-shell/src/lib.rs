@@ -21,6 +21,7 @@
 //! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
 //! | `dist_path`         | appProtocolPath.cjs resolveDistFile     | (nested ./assets URLs)                |
 //! | `crash`             | (new) panic text for the page           | no paths, no source locations         |
+//! | `logfile`           | electron-log main.log (layout, 1 MB)    | line format, filter, rotation         |
 //! | `ipc_policy`        | per-window preloads (notif, overlay...) | commands per window, capabilities     |
 
 pub mod clipboard;
@@ -32,6 +33,7 @@ pub mod download;
 pub mod i18n;
 pub mod ipc_policy;
 pub mod launch;
+pub mod logfile;
 pub mod notif;
 pub mod occlusion;
 pub mod pages;
