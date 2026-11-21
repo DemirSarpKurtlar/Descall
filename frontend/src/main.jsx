@@ -12,6 +12,7 @@ import { installDragClickGuard } from "./lib/dragClickGuard.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 import { installWaapiCommitOnCancel } from "./lib/waapiCommitOnCancel.js";
+import { afterFirstScreen } from "./lib/afterFirstScreen.js";
 
 // framer-motion WAAPI hand-off: no one-frame flash when a menu, modal or
 // Settings finishes fading (lib/waapiCommitOnCancel.js). Before any render.
@@ -366,7 +367,9 @@ async function boot() {
     isNativeApp,
   });
   scheduleAnalytics({ preferMarketing: preferMarketingShell });
-  if (!preferMarketingShell) preloadAppStyles();
+  // Warm-ups only (noise-suppression WASM + worklets, game CSS): after the first
+  // screen, not while the App chunk evaluates (cold start is CPU bound on Android).
+  if (!preferMarketingShell) afterFirstScreen(preloadAppStyles);
 
   if (preferMarketingShell) {
     scheduleMarketingHydration(() => {
