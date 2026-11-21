@@ -140,6 +140,28 @@ assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable fl
   await tick();
   deq(admin.invokes, [], "admin windows never take links");
 }
+// Installer hooks: the Start Menu shortcut gets the toast activator CLSID (installer.nsh
+// Descall_SetToastClsid), the same CLSID as src/premium/toast.rs and the Electron installer.
+{
+  const hooks = readFileSync(join(here, "..", "src-tauri", "nsis", "hooks.nsh"), "utf8");
+  const toastRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "toast.rs"), "utf8");
+  const electronNsh = readFileSync(join(here, "..", "..", "..", "frontend", "electron", "installer.nsh"), "utf8");
+  const clsid = (src, re) => (src.match(re) || [])[1];
+  const ours = clsid(hooks, /!define DESCALL_TOAST_CLSID "(\{[0-9A-F-]+\})"/i);
+  assert.equal(ours, clsid(toastRs, /TOAST_CLSID: &str = "(\{[0-9A-F-]+\})"/i), "hooks.nsh and toast.rs share the CLSID");
+  assert.equal(ours, clsid(electronNsh, /!define DESCALL_TOAST_CLSID "(\{[0-9A-F-]+\})"/i), "same CLSID as the Electron installer");
+  const post = hooks.slice(hooks.indexOf("!macro NSIS_HOOK_POSTINSTALL"), hooks.indexOf("!macroend", hooks.indexOf("!macro NSIS_HOOK_POSTINSTALL")));
+  assert.match(post, /!insertmacro DESCALL_SET_TOAST_CLSID "\$SMPROGRAMS\\Descall\.lnk"/, "post-install stamps the Start Menu shortcut");
+  const macro = hooks.slice(hooks.indexOf("!macro DESCALL_SET_TOAST_CLSID"), hooks.indexOf("!macroend", hooks.indexOf("!macro DESCALL_SET_TOAST_CLSID")));
+  // PKEY_AppUserModel_ToastActivatorCLSID = {9F4C2855-...}, 26 as VT_CLSID (72), then Commit and Save.
+  assert.match(macro, /\{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3\}", i 26/);
+  assert.match(macro, /&i2 72/);
+  assert.match(macro, /\$3->7\(\)/);
+  assert.match(macro, /\$2->6\(p 0, i 1\)/);
+  const pushes = (macro.match(/^\s*Push \$\d/gm) || []).length;
+  const pops = (macro.match(/^\s*Pop \$\d/gm) || []).length;
+  assert.equal(pushes, pops, "registers restored");
+}
 // Update errors carry main.cjs's phase ('check' stays quiet in ElectronUpdateToast, 'download'
 // shows the retry card) and check-for-updates answers `available` like Electron.
 {
