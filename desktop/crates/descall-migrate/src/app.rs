@@ -82,6 +82,16 @@ impl Reporter {
     }
 }
 
+/// The health handshake of `migration_id` already ended (`ready` or `failed`). A later
+/// start with the same `--migrated --migration-id` arguments is not the migrated first start:
+/// the Tauri updater relaunches the app with its original arguments (NSIS `/ARGS`), and so
+/// does `app.restart()`. Such a start must not write `started` over the final verdict or
+/// redo the handshake.
+pub fn handshake_finished(health: Option<&[u8]>, migration_id: &str) -> bool {
+    let Some(r) = health.and_then(|b| serde_json::from_slice::<HealthReport>(b).ok()) else { return false };
+    r.migration_id == migration_id && matches!(r.stage.as_str(), "ready" | "failed")
+}
+
 /// `migration/imported` in the app's data folder: written after the one-time import.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -320,6 +330,18 @@ mod tests {
     }
     fn judge(r: &HealthReport, launched: u64) -> Verdict {
         evaluate(Some(&serde_json::to_vec(r).unwrap()), ID, launched)
+    }
+
+    #[test]
+    fn relaunch_after_the_handshake_is_a_normal_start() {
+        let bytes = |r: &HealthReport| serde_json::to_vec(r).unwrap();
+        assert!(!handshake_finished(None, ID));
+        assert!(!handshake_finished(Some(b"garbage"), ID));
+        assert!(!handshake_finished(Some(&bytes(&rep().started(10))), ID), "still the migrated first start");
+        assert!(handshake_finished(Some(&bytes(&rep().ready(10, false))), ID), "updater relaunch after ready");
+        assert!(handshake_finished(Some(&bytes(&rep().failed(10, "x"))), ID));
+        let other = Reporter { migration_id: "mig-9999-y".into(), ..rep() };
+        assert!(!handshake_finished(Some(&bytes(&other.ready(10, false))), ID), "another migration's verdict");
     }
 
     #[test]

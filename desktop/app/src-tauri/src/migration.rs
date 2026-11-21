@@ -74,6 +74,11 @@ static PROGRESS: Mutex<Progress> = Mutex::new(Progress { import: None, checking:
 pub fn begin<S: AsRef<str>>(argv: &[S]) {
     let Some(id) = descall_migrate::app::migration_id_from_args(argv) else { return };
     let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) else { return };
+    let health = std::fs::read(descall_migrate::health::health_path(&appdata)).ok();
+    if descall_migrate::app::handshake_finished(health.as_deref(), &id) {
+        log::info!("[migration] relaunch with the migrator's arguments after the handshake: normal start");
+        return;
+    }
     let reporter = Reporter { migration_id: id, pid: std::process::id(), version: env!("CARGO_PKG_VERSION").to_string() };
     if RUN.set(Run { reporter, appdata }).is_ok() {
         log::info!("[migration] started by the migrator");
