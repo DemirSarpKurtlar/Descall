@@ -128,3 +128,17 @@ html.glass-ui.native-android {
 html.native-android ::selection {
   background-color: rgba(88, 122, 246, 0.4);
 }
+
+/* Bottom-docked glass (tab bar, composer, call bar). The iPhone rule floats
+   it 10 px into the home-indicator inset, which also suits Android gesture
+   navigation (24 px inset -> 14 px). With three-button navigation the inset
+   is 48 px of buttons, so the bar sat on top of them: above a 32 px inset it
+   floats 8 px over the navigation bar instead. */
+html.glass-ui.native-android .app-root.g-shell {
+  --g-bar-bottom: max(
+    12px,
+    calc(env(safe-area-inset-bottom, 0px) - 10px),
+    min(calc(env(safe-area-inset-bottom, 0px) + 8px), calc((env(safe-area-inset-bottom, 0px) - 32px) * 100)),
+    calc(var(--g-vv-lift, 0px) + 8px)
+  );
+}

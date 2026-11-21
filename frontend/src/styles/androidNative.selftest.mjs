@@ -30,6 +30,8 @@ for (const w of [400, 500, 600, 700]) {
 
 // Status bar: the toolbar starts below it, with a gap when the WebView pads instead (inset 0).
 assert.match(css, /html\.glass-ui\.native-android\s*\{\s*--g-chrome-top: max\(8px, calc\(env\(safe-area-inset-top, 0px\) \+ 4px\)\);/);
+// Three-button navigation (48 px inset): the bar floats above it, gesture navigation keeps the iPhone rule.
+assert.match(css, /html\.glass-ui\.native-android \.app-root\.g-shell \{\s*--g-bar-bottom: max\(\s*12px,\s*calc\(env\(safe-area-inset-bottom, 0px\) - 10px\),\s*min\(calc\(env\(safe-area-inset-bottom, 0px\) \+ 8px\), calc\(\(env\(safe-area-inset-bottom, 0px\) - 32px\) \* 100\)\),\s*calc\(var\(--g-vv-lift, 0px\) \+ 8px\)\s*\);/);
 // Nothing here may leak to iOS / web: every rule outside @font-face is scoped to native-android.
 const rules = css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@font-face\s*\{[^}]*\}/g, "");
 for (const m of rules.matchAll(/([^{}]+)\{/g)) assert.match(m[1], /native-android/, `scoped: ${m[1].trim()}`);
