@@ -88,11 +88,17 @@ const files = rustFiles(srcRoot).map((p) => {
   return { path: p, stem, code, fns: functions(code) };
 });
 
-/** Fns that build a window, directly or by calling one that does (same file or module::fn). */
-function windowBuilders() {
+/** Code that runs in the fn itself, not in a task it spawns. */
+const ownCode = (body) => body.split(/\b(?:async_runtime|thread)::spawn(?:_blocking)?\s*\(/)[0];
+
+/**
+ * Fns that match `direct` in their own code, or call one that does (same file or module::fn).
+ * Default: build a window.
+ */
+function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   const key = (f, fn) => `${f.stem}::${fn.name}`;
   const creators = new Set();
-  for (const f of files) for (const fn of f.fns) if (/\bWebview(?:Window)?Builder::new\b/.test(fn.body)) creators.add(key(f, fn));
+  for (const f of files) for (const fn of f.fns) if (direct.test(ownCode(fn.body))) creators.add(key(f, fn));
   let grew = true;
   while (grew) {
     grew = false;
@@ -100,7 +106,7 @@ function windowBuilders() {
       for (const fn of f.fns) {
         const k = key(f, fn);
         if (creators.has(k)) continue;
-        const calls = [...fn.body.matchAll(/(?:(\w+)::)?(\w+)\s*(?:::<[^>]*>)?\s*\(/g)];
+        const calls = [...ownCode(fn.body).matchAll(/(?:(\w+)::)?(\w+)\s*(?:::<[^>]*>)?\s*\(/g)];
         const hit = calls.some(([, mod, name]) => {
           if (!mod || mod === "self" || mod === "Self" || mod === "super") return creators.has(`${f.stem}::${name}`);
           return creators.has(`${mod}::${name}`);
@@ -128,6 +134,17 @@ function windowBuilders() {
   }
   assert.ok(commands > 30, "commands found");
   assert.deepEqual(bad, [], `sync commands that build a window (deadlock on Windows; make them async): ${bad.join(", ")}`);
+
+  // Same rule for destroying a window: a capsule's Accept / Decline destroyed that capsule's
+  // WebView2 from inside its own IPC callback. Tauri's own window destroy / close commands are
+  // async for this reason.
+  const destroyers = windowBuilders(/\.destroy\(\)/);
+  assert.ok(destroyers.has("notify::dismiss"), "notify::dismiss destroys the capsule");
+  const badDestroy = [];
+  for (const f of files) {
+    for (const fn of f.fns) if (fn.isCommand && !fn.isAsync && destroyers.has(`${f.stem}::${fn.name}`)) badDestroy.push(`${f.stem}::${fn.name}`);
+  }
+  assert.deepEqual(badDestroy, [], `sync commands that destroy a window (make them async): ${badDestroy.join(", ")}`);
 }
 
 // ---- 2. one WebView2 environment: every builder passes BROWSER_ARGS or shares the opener ------
