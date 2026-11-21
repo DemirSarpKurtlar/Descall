@@ -714,6 +714,18 @@ for (const label of ["popout-1", "acct-42"]) {
   }
   const mainRsSrc = readFileSync(join(src, "main.rs"), "utf8");
   assert.match(mainRsSrc, /"app:main-error", descall_shell::bridge::panic_summary\(/, "panics reach onMainError as a mainErrors.cjs summary");
+  // will-navigate (main.cjs): a non-app URL is cancelled and a web or mail link goes to the browser.
+  assert.match(mainRsSrc, /\.on_navigation\(\{\s*let app = handle\.clone\(\);\s*move \|url\| boot::main_navigation\(&app, url\)/, "main window navigation goes through main_navigation");
+  const navAt = bootRs.indexOf("pub fn main_navigation");
+  const nav = bootRs.slice(navAt, bootRs.indexOf("\n}\n", navAt));
+  assert.match(nav, /if is_app_url\(url\) \{\s*return true;/, "the app navigates in place");
+  assert.match(nav, /is_safe_external_url\(url\.as_str\(\)\)[\s\S]{0,120}open_url\(url\.as_str\(\)/, "a safe external URL opens in the default browser");
+  assert.match(nav, /\n    false$/, "and the window itself never leaves the app");
+  // nativeTheme 'updated' reached every window (getAllWindows), admin and Descall+ windows too.
+  const watchAt = bootRs.indexOf("pub fn watch_reduced_transparency");
+  const watch = bootRs.slice(watchAt, bootRs.indexOf("\n}\n", watchAt));
+  assert.match(watch, /app\.emit\("native-theme:reduced-transparency-changed", now\)/, "reduced transparency change goes to every window");
+  assert.ok(!/to_main\(&app, "native-theme/.test(watch), "not to the main window only");
 }
 
 // 4. Commands exist in main.rs -----------------------------------------------------------------

@@ -128,7 +128,10 @@ fn main() {
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
-                .on_navigation(boot::is_app_url)
+                .on_navigation({
+                    let app = handle.clone();
+                    move |url| boot::main_navigation(&app, url)
+                })
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {

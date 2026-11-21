@@ -336,6 +336,22 @@ pub fn is_app_url(url: &tauri::Url) -> bool {
     descall_shell::trust::is_app_url(url.as_str(), crate::state::is_dev())
 }
 
+/// Main window will-navigate (main.cjs): only the app navigates in place. A web or mail link
+/// the page navigates to by itself (location.assign, a form, a link the shim's click handler
+/// did not see) opens in the default browser, as openExternalSafely did; it used to do nothing.
+pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool {
+    if is_app_url(url) {
+        return true;
+    }
+    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    } else {
+        log::warn!("[nav] not opening will-navigate: {}", url.as_str().chars().take(120).collect::<String>());
+    }
+    false
+}
+
 // ---- window events ---------------------------------------------------------------------------
 
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
@@ -464,7 +480,10 @@ pub fn watch_reduced_transparency<R: Runtime>(app: &AppHandle<R>) {
             let now = crate::platform::reduced_transparency();
             if now != last {
                 last = now;
-                crate::state::to_main(&app, "native-theme:reduced-transparency-changed", now);
+                // Every window, as nativeTheme 'updated' did (BrowserWindow.getAllWindows): the
+                // admin and Descall+ windows follow the switch too.
+                use tauri::Emitter;
+                let _ = app.emit("native-theme:reduced-transparency-changed", now);
             }
         }
     });
