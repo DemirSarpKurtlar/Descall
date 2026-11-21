@@ -570,6 +570,9 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-shell-header {
   background: transparent !important;
   border: 0 !important;
   min-height: 0;
+  /* min-height 0 let the long channel list squeeze the header to one line,
+     so "40 üye · Sahip" drew under the first category row (iPhone and Android). */
+  flex-shrink: 0;
   gap: 8px;
 }
 
