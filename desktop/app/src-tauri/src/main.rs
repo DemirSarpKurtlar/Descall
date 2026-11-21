@@ -51,7 +51,11 @@ fn install_panic_hook() {
     std::panic::set_hook(Box::new(move |info| {
         log::error!("[main] panic: {info}");
         if let Some(app) = APP.get() {
-            state::to_main(app, "app:main-error", serde_json::json!({ "message": info.to_string() }));
+            // mainErrors.cjs summary shape { kind, name, message, stack }, paths scrubbed.
+            let p = info.payload();
+            let message = p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "panic".into());
+            let location = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()));
+            state::to_main(app, "app:main-error", descall_shell::bridge::panic_summary(&message, location.as_deref()));
         }
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
