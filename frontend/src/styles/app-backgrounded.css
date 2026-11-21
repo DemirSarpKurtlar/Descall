@@ -2,10 +2,15 @@
    whole-window redraw at 60 fps (~24% of a core). Paused, not removed, so it
    resumes where it was:
    - app-backgrounded: Electron window minimized / hidden to the tray;
-   - app-idle: window not focused, or no input for 15 s (never during a call). */
+   - app-idle: window not focused, or no input for 15 s (5 s in Low Power Mode,
+     when hot or with Reduce Motion; never during a call);
+   - app-hidden: page hidden (iOS / Android app in the background, phone locked). */
 html.app-backgrounded *,
 html.app-backgrounded *::before,
 html.app-backgrounded *::after,
+html.app-hidden *,
+html.app-hidden *::before,
+html.app-hidden *::after,
 html.app-idle *,
 html.app-idle *::before,
 html.app-idle *::after {

@@ -282,8 +282,9 @@ async function bootApp() {
       // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).
       import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {}),
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
-      // 3.7.15: Electron minimized / tray → pause animations (no-op elsewhere).
-      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); }).catch(() => {}),
+      // 3.7.15: Electron minimized / tray → pause animations; idle / hidden page
+      // (iOS background, locked phone in a call) → pause them too.
+      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause(); }).catch(() => {}),
     ]);
 
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
