@@ -240,6 +240,8 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
     };
     set_bounds(&w, b);
     set_opacity(&w, opacity_for(h, kind));
+    // No browser menu / accelerator keys (Reload would empty the portal), as in the main window.
+    crate::webview::install_browser_guards(&w);
     track(h, label, kind, portal_feature(kind), json!({}));
     Some(NewWindowResponse::Create { window: w })
 }

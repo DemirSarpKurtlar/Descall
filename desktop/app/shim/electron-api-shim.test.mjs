@@ -518,6 +518,7 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   }
   // Opacity survives tao's style rewrites (show, pin, click-through, restore).
   const winsRs = readFileSync(join(srcDir, "premium", "wins.rs"), "utf8");
+  assert.match(winsRs, /crate::webview::install_browser_guards\(&w\);\s*track\(h, label, kind, portal_feature\(kind\)/, "portal windows: no browser menu / reload keys");
   assert.match(winsRs, /run_on_main_thread\(move \|\| platform::set_opacity\(hw, alpha\)\)/, "opacity is queued behind tao's style changes");
   const ovRs = readFileSync(join(srcDir, "premium", "overlay.rs"), "utf8");
   assert.ok(ovRs.indexOf("let _ = w.show();") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after show");

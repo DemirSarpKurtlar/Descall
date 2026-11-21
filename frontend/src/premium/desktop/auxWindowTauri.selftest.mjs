@@ -66,10 +66,29 @@ assert.match(out, /url\("https:\/\/tauri\.localhost\/direct\/assets\/inter-400\.
 assert.match(out, /url\(data:font\/woff2;base64,AA\)/);
 assert.doesNotMatch(out, /color: red/);
 
+// Browser menu and reload keys off in the portal document (no electron-api-shim there).
+const attachTauriGuards = fn("attachTauriGuards");
+const gl = [];
+const gdoc = { addEventListener: (t, f, c) => gl.push([t, f, Boolean(c)]), removeEventListener: (t, f) => { const i = gl.findIndex((l) => l[1] === f); if (i >= 0) gl.splice(i, 1); } };
+const offG = attachTauriGuards(gdoc);
+const fire = (type, ev) => { let p = false; for (const [t, f] of gl) if (t === type) f({ ...ev, preventDefault: () => { p = true; } }); return p; };
+const plain = { nodeType: 1, tagName: "DIV", parentElement: null };
+const input = { nodeType: 1, tagName: "INPUT", parentElement: null };
+assert.equal(fire("contextmenu", { target: plain }), true, "no browser menu on the bar / video");
+assert.equal(fire("contextmenu", { target: input }), false, "cut / copy / paste menu kept in fields");
+assert.equal(fire("keydown", { key: "F5" }), true);
+assert.equal(fire("keydown", { key: "r", ctrlKey: true }), true);
+assert.equal(fire("keydown", { key: "ArrowLeft", altKey: true }), true);
+assert.equal(fire("keydown", { key: "c", ctrlKey: true }), false, "copy stays");
+assert.equal(fire("keydown", { key: "m" }), false);
+assert.equal(fire("mouseup", { button: 3 }), true, "mouse back button");
+offG();
+assert.equal(gl.length, 0);
+
 // Wiring in the component and the stylesheet.
 assert.match(jsx, /if \(isTauriShell\(document\)\) doc\.documentElement\.classList\.add\("tauri-app"\);/, "portal document marked html.tauri-app");
 assert.match(jsx, /const detachDrag = invoke \? attachTauriDrag\(doc, kind, invoke\) : \(\) => \{\};/);
-assert.match(jsx, /try \{ detachDrag\(\); \}/);
+assert.match(jsx, /try \{ detachDrag\(\); detachGuards\(\); \}/);
 assert.match(css, /html\.tauri-app \.ax-bar,\s*html\.tauri-app \.ax-bar \* \{ -webkit-app-region: no-drag; app-region: no-drag; \}/, "no CSS drag region in Tauri");
 assert.match(css, /^\.ax-bar \{\s*-webkit-app-region: drag;/m, "Electron keeps its drag region");
 console.log("auxWindowTauri.selftest: ok");
