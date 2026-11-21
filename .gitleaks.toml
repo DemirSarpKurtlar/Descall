@@ -28,4 +28,7 @@ regexes = [
   # unit tests): a JWT whose payload is {"sub":"00000000"} and a truncated dummy.
   '''eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIwMDAwMDAwMCJ9\.c2lnbmF0dXJl''',
   '''eyJhbGciOi\.eyJzdWIiOiIx\.c2ln''',
+  # The placeholder admin token in docs/admin-token.md examples (commit 5b981cac). A real
+  # dsk_admin_ token is 43 base64url characters and never contains "...".
+  '''^dsk_admin_\.\.\.$''',
 ]
