@@ -171,6 +171,13 @@
   const early = new Map(); // share id -> ArrayBuffer that arrived before invoke() returned
   const sessions = new Map(); // share id -> Session
 
+  function isMainWebview() {
+    try {
+      const m = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+      const label = m && m.currentWebview && m.currentWebview.label;
+      return !label || label === "main";
+    } catch (_) { return true; }
+  }
   const tr = () => /^tr\b/i.test(document.documentElement.lang || navigator.language || "");
   function announce(lane, extra) {
     api.lane = lane;
@@ -498,7 +505,10 @@
   }
 
   const api = {
-    supported: Boolean(wv) && hasVideoFrame,
+    // screen_share_start serves the main window only (commands/screen.rs). Descall+ pop-outs
+    // and account windows carry this script too: there the lane is off, so the page opens
+    // WebView2's picker once instead of ours and then WebView2's.
+    supported: Boolean(wv) && hasVideoFrame && isMainWebview(),
     lane: null,
     async getSources() {
       const list = await invoke("screen_sources", { thumbnails: true }).catch(() => []);

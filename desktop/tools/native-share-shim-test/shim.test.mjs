@@ -236,6 +236,19 @@ test("a failing native start falls back to L4 for the same call", async () => {
   assert.equal(p.window.__descallNativeShare.lane, "L4");
 });
 
+test("the native lane is the main window's only (pop-outs and account windows use WebView2's picker)", () => {
+  for (const [label, expected] of [["main", true], [undefined, true], ["popout-3", false], ["acct-ab12", false]]) {
+    const w = new FakeTarget();
+    Object.assign(w, {
+      __TAURI__: { core: { invoke: async () => null } }, chrome: { webview: new FakeTarget() }, VideoFrame: class {},
+      __TAURI_INTERNALS__: { metadata: label ? { currentWebview: { label } } : undefined },
+    });
+    w.top = w;
+    load({ window: w, document: { documentElement: {}, images: [] }, navigator: { mediaDevices: { getDisplayMedia: async () => null } } });
+    assert.equal(w.__descallNativeShare.supported, expected, String(label));
+  }
+});
+
 test("picker tiles refresh live; a window that closed is dimmed and disabled", async () => {
   const p = fakePage({ startInfo: START });
   let tick = 0;
