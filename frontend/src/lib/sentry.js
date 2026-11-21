@@ -123,7 +123,16 @@ function loadSdk() {
         integrations: (defaults) =>
           defaults
             // Errors only: no release-health session pings.
-            .filter((i) => i.name !== "BrowserSession" && i.name !== "Breadcrumbs")
+            // No BrowserApiErrors: it wraps every requestAnimationFrame,
+            // setTimeout / setInterval and addEventListener callback in a
+            // try/catch closure (plus a mechanism object per call). On the
+            // scroll and gesture paths that run a rAF every frame this was the
+            // top third-party cost (scripts/perf/android-bench.mjs, Pixel 7 4x
+            // CPU: vendor-sentry wrap() 50-150 ms per scroll scenario and the
+            // largest item while idle). Errors thrown in those callbacks still
+            // reach window.onerror / unhandledrejection, which GlobalHandlers
+            // reports with the full same-origin stack.
+            .filter((i) => i.name !== "BrowserSession" && i.name !== "Breadcrumbs" && i.name !== "BrowserApiErrors")
             .concat(Sentry.breadcrumbsIntegration({ console: false })),
         ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications"],
         initialScope: { tags: { platform: sentryPlatform(isNativeIOS) } },
