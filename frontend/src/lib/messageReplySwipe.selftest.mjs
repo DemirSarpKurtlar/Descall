@@ -295,6 +295,43 @@ function touchEvent(type, clientX, clientY, extra = {}) {
   assert.equal(claimed, 0, "presses on buttons stay clicks");
 }
 
+/* Freeze instead of preventDefault: the list under a recognised reply drag
+   stops being user-scrollable until the finger lifts; a vertical scroll never
+   touches it. */
+{
+  const hadWindow = "window" in globalThis;
+  const hadDocument = "document" in globalThis;
+  const body = { tag: "body" };
+  globalThis.document = { body, documentElement: { tag: "html" } };
+  globalThis.window = { getComputedStyle: (n) => ({ overflowY: n.cssOverflowY || "visible" }) };
+  const list = { scrollHeight: 4000, clientHeight: 800, cssOverflowY: "auto", style: { overflowY: "" }, parentElement: body };
+  const row = { scrollHeight: 60, clientHeight: 60, style: {}, parentElement: list };
+  const run = (moves, opts = {}) => {
+    const el = Object.assign(fakeBubble(), { parentElement: row });
+    const seen = { during: null };
+    attachReplySwipe(el, {
+      getDirection: () => "right",
+      getEdgeWidth: () => 28,
+      onMove: () => { seen.during = list.style.overflowY; },
+      ...opts,
+    });
+    el.fire("touchstart", touchEvent("touchstart", 120, 500));
+    for (const [x, y] of moves) el.fire("touchmove", touchEvent("touchmove", x, y));
+    el.fire("touchend", touchEvent("touchend", 200, 500));
+    return seen;
+  };
+  const reply = run([[140, 502], [190, 504]]);
+  assert.equal(reply.during, "hidden", "list frozen while the reply drag runs");
+  assert.equal(list.style.overflowY, "", "and restored on touchend");
+  const scroll = run([[121, 560], [122, 620]]);
+  assert.equal(scroll.during, null);
+  assert.equal(list.style.overflowY, "", "a vertical scroll never freezes the list");
+  const android = run([[140, 502], [190, 504]], { freezeScroll: false });
+  assert.equal(android.during, "", "freezeScroll: false (Chromium pan-y) leaves the list alone");
+  if (!hadWindow) delete globalThis.window;
+  if (!hadDocument) delete globalThis.document;
+}
+
 /* Wiring: bubble yields the edge, claims by cancelling a pending back only. */
 {
   const list = read("../components/chat/MessageList.jsx");
