@@ -103,6 +103,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .focusable(o.focusable)
                 .visible(false)
                 .visible_on_all_workspaces(true)
+                .additional_browser_args(crate::BROWSER_ARGS) // one WebView2 environment, or the HUD never opens
                 .initialization_script(HUD_SHIM)
                 .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
                 .build();

@@ -138,6 +138,28 @@ function windowBuilders() {
   assert.match(args, /--autoplay-policy=no-user-gesture-required/, "ringtones and join sounds play without a gesture");
   assert.match(args, /--disable-background-timer-throttling/, "call timers keep running in the background");
   assert.match(args, /--disable-renderer-backgrounding/, "a minimised call keeps its renderer priority");
+
+  // WebView2 refuses a second environment on the same user data folder with other options
+  // (HRESULT_FROM_WIN32(ERROR_INVALID_STATE)): a builder without BROWSER_ARGS does not open at
+  // all next to the main window. window_features() reuses the opener's environment instead.
+  const missing = [];
+  for (const f of files) {
+    for (const m of f.code.matchAll(/WebviewWindowBuilder::new\(/g)) {
+      const chain = f.code.slice(m.index, f.code.indexOf(".build()", m.index));
+      if (!/\.additional_browser_args\(\s*(?:crate::)?BROWSER_ARGS\s*\)/.test(chain) && !/\.window_features\(/.test(chain)) {
+        const line = f.code.slice(0, m.index).split("\n").length;
+        missing.push(`${f.stem}.rs:${line}`);
+      }
+    }
+  }
+  assert.deepEqual(missing, [], `window builders without BROWSER_ARGS (fail to open, or ring without autoplay): ${missing.join(", ")}`);
+
+  // Windows that can hold a call grant the microphone / camera without WebView2's prompt,
+  // like the main window (Electron: the session permission handlers covered every window).
+  for (const [file, label] of [["premium/features/multi_window.rs", "pop-out"], ["premium/features/multi_account.rs", "account window"]]) {
+    const code = stripRust(readFileSync(join(srcRoot, file), "utf8"));
+    assert.match(code, /install_permission_handler\(/, `${label}: media permission handler`);
+  }
 }
 
 // ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)

@@ -107,12 +107,17 @@ fn open(h: &Host, id: &str) -> Value {
         .decorations(false)
         .data_directory(dir(h, id).join("webview"))
         .use_https_scheme(true)
+        // Own data folder, so any options would open; the main window's keep calls the same
+        // (ringtones without a gesture, no background throttling).
+        .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .build();
     match built {
-        Ok(_) => {
+        Ok(w) => {
+            // Calls from the second account: microphone / camera without WebView2's prompt.
+            crate::webview::install_permission_handler(&w);
             wins::track(h, &label, "account", "multi_account", json!({ "id": id }));
             ok(json!({ "id": id }))
         }

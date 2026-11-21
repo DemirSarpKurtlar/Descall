@@ -66,6 +66,9 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        // Same WebView2 environment options as the main window, or the pop-out never opens
+        // (one user data folder); also keeps ringtones and call timers working in it.
+        .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {
@@ -85,6 +88,8 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
             return json!({ "ok": false, "error": "failed" });
         }
     };
+    // Calls in a pop-out: microphone / camera without WebView2's prompt, like the main window.
+    crate::webview::install_permission_handler(&w);
     if let Some(b) = b {
         wins::set_bounds(&w, b);
     }
