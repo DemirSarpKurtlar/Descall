@@ -10,6 +10,11 @@
   const T = window.__TAURI__;
   if (!T || !T.core || !T.event) return;
   const ACTIONS = new Set(["ready", "drop", "open", "close", "moved", "pick", "size"]);
+  // Only this window's state: the global listen() also hears the state sent to every other
+  // HUD / widget window (emit_to narrows nothing for it).
+  const meta = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+  const label = String((meta && meta.currentWebview && meta.currentWebview.label) || "");
+  const own = label ? { target: { kind: "WebviewWindow", label } } : undefined;
   const send = (kind, payload) => T.core.invoke("premium_hud_action", { kind, payload: payload == null ? null : payload }).catch(() => {});
 
   async function dropFiles(payload) {
@@ -26,9 +31,11 @@
   Object.defineProperty(window, "descallHud", {
     value: Object.freeze({
       onState: (cb) => {
+        if (typeof cb !== "function") return () => {};
         let un = null;
-        T.event.listen("descall:hud:state", (e) => cb(e.payload || {})).then((u) => { un = u; });
-        return () => { if (un) un(); };
+        let dead = false;
+        T.event.listen("descall:hud:state", (e) => cb(e.payload || {}), own).then((u) => { if (dead) u(); else un = u; }).catch(() => {});
+        return () => { dead = true; if (un) un(); un = null; };
       },
       action: (type, payload) => {
         if (!ACTIONS.has(type)) return;

@@ -43,13 +43,16 @@
     return Promise.reject(new Error("tauri ipc unavailable"));
   }
 
+  // Events sent to this window only (ipcRenderer.on): a global listen() also hears the
+  // premium:* events the shell sends to the main window from a pop-out or account window.
+  const own = label ? { kind: "WebviewWindow", label } : { kind: "Any" };
   /** event.listen as @tauri-apps/api does it, for a call before the global bundle exists. */
   function listen(event, handler) {
     const T = tauri();
-    if (T && T.event && typeof T.event.listen === "function") return T.event.listen(event, handler);
+    if (T && T.event && typeof T.event.listen === "function") return T.event.listen(event, handler, { target: own });
     const I = internals();
     if (!I || typeof I.transformCallback !== "function") return Promise.reject(new Error("tauri events unavailable"));
-    return I.invoke("plugin:event|listen", { event, target: { kind: "Any" }, handler: I.transformCallback(handler) }).then((eventId) => () => {
+    return I.invoke("plugin:event|listen", { event, target: own, handler: I.transformCallback(handler) }).then((eventId) => () => {
       const reg = window.__TAURI_EVENT_PLUGIN_INTERNALS__;
       if (reg && typeof reg.unregisterListener === "function") reg.unregisterListener(event, eventId);
       return I.invoke("plugin:event|unlisten", { event, eventId }).catch(() => {});

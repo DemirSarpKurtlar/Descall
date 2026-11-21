@@ -49,6 +49,15 @@
     });
   };
 
+  // Tauri's global event.listen() hears an event emitted to ANY window: emit_to("main", ...)
+  // also reached the Descall+ pop-out and extra-account windows (they run this shim too), so a
+  // notification click or a call accept ran there as well, and the main window's maximize,
+  // content box and visibility leaked into them. ipcRenderer.on only ever heard its own
+  // webContents: listen for events sent to this window only.
+  const META = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+  const LABEL = String((META && META.currentWebview && META.currentWebview.label) || "");
+  const OWN = LABEL ? { target: { kind: "WebviewWindow", label: LABEL } } : undefined;
+
   /** ipcRenderer.on(channel) -> unsubscribe function, like the preload's on* helpers. */
   const on = (event, cb, map = (p) => p) => {
     if (typeof cb !== "function") return noop;
@@ -56,16 +65,20 @@
     let dead = false;
     T.event.listen(event, (e) => {
       try { cb(map(e.payload)); } catch (err) { console.error(err); }
-    }).then((u) => { if (dead) u(); else un = u; }).catch(noop);
+    }, OWN).then((u) => { if (dead) u(); else un = u; }).catch(noop);
     return () => { dead = true; if (un) { un(); un = null; } };
   };
-  /** Legacy listeners that got (event, info) and are removed with removeAllListeners. */
+  /**
+   * The two legacy update channels (useElectron.js): callback(data) and an unsubscribe
+   * function like every other on* member of preload.cjs, plus removeAllListeners(channel).
+   */
   const legacy = new Map();
   const onLegacy = (event, cb) => {
-    if (typeof cb !== "function") return;
-    const off = on(event, (p) => cb({ sender: null }, p));
-    if (!legacy.has(event)) legacy.set(event, []);
-    legacy.get(event).push(off);
+    if (typeof cb !== "function") return noop;
+    const off = on(event, cb);
+    if (!legacy.has(event)) legacy.set(event, new Set());
+    legacy.get(event).add(off);
+    return () => { off(); const set = legacy.get(event); if (set) set.delete(off); };
   };
 
   // One-time Electron import of localStorage (descall://app -> https://tauri.localhost).
@@ -87,9 +100,30 @@
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
 
-  let zoomFactor = 1;
+  // zoom.get() is synchronous (webFrame.getZoomFactor). WebView2 keeps the controller's zoom
+  // across a reload (boot retry) while this script starts again at 1, so the factor last set is
+  // kept in sessionStorage and re-applied: get() and the real zoom agree after a reload too.
+  const ZOOM_KEY = "__descall_zoom";
+  const okZoom = (f) => Number.isFinite(f) && f >= 0.5 && f <= 2;
+  let zoomFactor = (() => {
+    try { const z = Number(sessionStorage.getItem(ZOOM_KEY)); if (okZoom(z)) return z; } catch (_) { /* ignore */ }
+    return 1;
+  })();
+  if (zoomFactor !== 1) fire("window_set_zoom", { factor: zoomFactor });
+
+  // getPrefersReducedTransparency() is synchronous (sendSync). The boot snapshot is written
+  // once per window, so after a reload it can be stale: ask the shell once at start and tell
+  // the page's listeners when the answer differs, as the change event would have.
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
-  on("native-theme:reduced-transparency-changed", (v) => { reducedTransparency = Boolean(v); });
+  const transparencyListeners = new Set();
+  const setReducedTransparency = (v) => {
+    const next = Boolean(v);
+    if (next === reducedTransparency) return;
+    reducedTransparency = next;
+    transparencyListeners.forEach((cb) => { try { cb(next); } catch (err) { console.error(err); } });
+  };
+  on("native-theme:reduced-transparency-changed", setReducedTransparency);
+  invoke("app_reduced_transparency").then((v) => { if (typeof v === "boolean") setReducedTransparency(v); }, noop);
 
   const nativeShare = () => window.__descallNativeShare || null;
   const toElectronSource = (s) => ({
@@ -102,23 +136,36 @@
   const api = {
     getVersion: () => (BOOT.version ? Promise.resolve(BOOT.version) : invoke("app_version")),
     setLocale: (locale) => fire("app_set_locale", { locale: String(locale || "").slice(0, 16) }),
+    // PNG bytes or null; never rejects (clipboardImage.cjs returns null on any failure).
     readClipboardImage: ADMIN
       ? () => Promise.resolve(null)
       : async () => {
-        const buf = await invoke("clipboard_read_image");
-        const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf || []);
-        return bytes.length ? bytes : null;
+        try {
+          const buf = await invoke("clipboard_read_image");
+          const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : ArrayBuffer.isView(buf) ? new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) : new Uint8Array(Array.isArray(buf) ? buf : []);
+          return bytes.length ? bytes : null;
+        } catch (_) {
+          return null;
+        }
       },
-    writeClipboardText: (text) => (typeof text === "string" ? invoke("clipboard_write_text", { text }) : Promise.resolve({ ok: false })),
+    // Resolves { ok } and never rejects (clipboardText.cjs).
+    writeClipboardText: (text) => (typeof text === "string"
+      ? invoke("clipboard_write_text", { text }).then((r) => (r && typeof r === "object" ? r : { ok: Boolean(r) }), () => ({ ok: false }))
+      : Promise.resolve({ ok: false })),
     zoom: {
       get: () => zoomFactor,
       set: (factor) => {
         const f = Number(factor);
-        if (Number.isFinite(f) && f >= 0.5 && f <= 2) { zoomFactor = f; fire("window_set_zoom", { factor: f }); }
+        if (!okZoom(f)) return;
+        zoomFactor = f;
+        try { sessionStorage.setItem(ZOOM_KEY, String(f)); } catch (_) { /* ignore */ }
+        fire("window_set_zoom", { factor: f });
       },
     },
 
-    checkForUpdates: ADMIN ? () => Promise.resolve({ success: true, skipped: true }) : () => invoke("updates_check"),
+    checkForUpdates: ADMIN
+      ? () => Promise.resolve({ success: true, skipped: true })
+      : () => invoke("updates_check").catch((err) => ({ success: false, error: String((err && err.message) || err || "") })),
     // restart-app: in a call the shell answers needsConfirm and sends update:confirm-restart;
     // restart-app-confirmed is the only mid-call install (updateDeferral rules).
     restartApp: ADMIN ? () => Promise.resolve({ installing: false }) : () => invoke("updates_restart", { confirmed: false }),
@@ -147,7 +194,11 @@
     bootState: (phase, ms) => fire("app_boot_state", { phase: String(phase || ""), ms: Number(ms) || 0 }),
 
     getPrefersReducedTransparency: () => reducedTransparency,
-    onReducedTransparencyChange: (cb) => on("native-theme:reduced-transparency-changed", cb, Boolean),
+    onReducedTransparencyChange: (cb) => {
+      if (typeof cb !== "function") return noop;
+      transparencyListeners.add(cb);
+      return () => { transparencyListeners.delete(cb); };
+    },
 
     downloadFile: ADMIN ? noop : (url, filename) => fire("download_file", { url: String(url || ""), filename: String(filename || "") }),
 
@@ -159,7 +210,7 @@
     onUpdateReady: (cb) => on("update:ready", cb),
     onUpdateError: (cb) => on("update:error", cb),
     removeAllListeners: (channel) => {
-      const offs = legacy.get(String(channel)) || [];
+      const offs = [...(legacy.get(String(channel)) || [])];
       legacy.delete(String(channel));
       offs.forEach((off) => off());
     },
@@ -176,16 +227,21 @@
     getScreenSources: ADMIN
       ? () => Promise.resolve([])
       : async () => {
-        const ns = nativeShare();
-        const list = ns ? await ns.getSources() : await invoke("screen_sources").catch(() => []);
-        return (Array.isArray(list) ? list : []).map(toElectronSource);
+        // main.cjs answers [] on any capture error; the picker never sees a rejection.
+        try {
+          const ns = nativeShare();
+          const list = ns ? await ns.getSources() : await invoke("screen_sources");
+          return (Array.isArray(list) ? list : []).filter((s) => s && typeof s.id === "string").map(toElectronSource);
+        } catch (_) {
+          return [];
+        }
       },
     selectDisplaySource: ADMIN
       ? () => Promise.resolve(false)
       : (sourceId) => {
         const ns = nativeShare();
         if (!ns || typeof sourceId !== "string" || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return Promise.resolve(false);
-        return ns.select(sourceId);
+        return Promise.resolve().then(() => ns.select(sourceId)).then(Boolean, () => false);
       },
 
     isWindowFocused: () => invoke("window_is_focused"),
