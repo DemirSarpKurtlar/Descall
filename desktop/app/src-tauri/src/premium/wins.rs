@@ -229,6 +229,10 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
         .always_on_top(on_top_for(h, kind))
         .visible_on_all_workspaces(kind != "call")
         .background_color(tauri::window::Color(0x14, 0x15, 0x1e, 0xff))
+        // The portal document inherits the main window's origin (https://tauri.localhost), and
+        // the requests it makes (fonts, app images) go through THIS webview's protocol filter.
+        // Without https here the filter is http://tauri.localhost/* and none of them load.
+        .use_https_scheme(true)
         .on_navigation(|u| u.scheme() == "about")
         .build();
     let w = match built {

@@ -505,6 +505,14 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
     const ok = /\.additional_browser_args\((crate::)?BROWSER_ARGS\)/.test(c.chain) || /\.window_features\(features\)/.test(c.chain);
     assert.ok(ok, `${c.file} (${c.label}): same WebView2 environment as the main window`);
   }
+  // The app origin is https://tauri.localhost. A webview only serves its custom protocols on
+  // the scheme it was built with, so a portal (about:blank, the main window's origin) built on
+  // http lost every font and app image it asked for. Only the HUD pages run their own
+  // http://descallhud.localhost origin.
+  for (const c of chains) {
+    if (c.file === "premium/overlay.rs") continue;
+    assert.match(c.chain, /\.use_https_scheme\(true\)/, `${c.file} (${c.label}): served on https like the main window`);
+  }
   // Tauri's own file-drop handler replaces WebView2's drop target and kills HTML5 drag and
   // drop: off in every window that runs the app or the quick drop zone.
   for (const [file, why] of [["main.rs", "main window"], ["premium/features/multi_window.rs", "pop-outs"], ["premium/features/multi_account.rs", "account windows"], ["premium/overlay.rs", "quick drop / HUD windows"]]) {
