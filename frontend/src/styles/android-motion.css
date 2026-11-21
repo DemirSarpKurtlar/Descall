@@ -39,18 +39,7 @@ html.native-android .profile-glass-skeleton {
   to { opacity: 0.55; }
 }
 
-/* 2. Page push (list <-> chat / channel / settings): the list page slides
-   with transform only. Keep it on its own compositor layer so the slide does
-   not start with a full re-raster of the list (the layer already exists).
-   Activity pins the shell with transform: none, so it is left alone. */
-@media (max-width: 768px) {
-  html.native-android .app-root.is-mobile:not([data-view="activity"]) > .app-sidebar-shell {
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-}
-
-/* 3. Behind the Settings sheet the list and chat are visibility: hidden. Any
+/* 2. Behind the Settings sheet the list and chat are visibility: hidden. Any
    descendant with `transition: all` (row swipe actions, toolbar buttons) then
    starts its own visibility transition: ~100 CSS transitions and a style pass
    per frame while the sheet opens. Nothing hidden needs to animate. */
@@ -60,14 +49,14 @@ html.native-android .app-root.g-shell.mobile-settings-open > :is(.app-sidebar-sh
   transition: none !important;
 }
 
-/* 4. The composer grows with its text (MessageComposer sets the height inline)
+/* 3. The composer grows with its text (MessageComposer sets the height inline)
    and the base rule is `transition: all`: keep only the colour feedback, never
    height / padding. */
 html.native-android .composer-input {
   transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* 5b. Message send: the composer glow is a box-shadow loop on a blurred glass
+/* 4. Message send: the composer glow is a box-shadow loop on a blurred glass
    surface (repaint + re-blur per frame) exactly while the new bubble is laid
    out and the list scrolls. The send button ripple (transform / opacity) stays
    as the send feedback. */
