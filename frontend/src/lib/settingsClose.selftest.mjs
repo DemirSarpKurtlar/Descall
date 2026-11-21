@@ -1,7 +1,7 @@
 // node src/lib/settingsClose.selftest.mjs
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { profileDraftDirty, nestedOverlayOpen } from "./settingsClose.js";
+import { profileDraftDirty, nestedOverlayOpen, shellClickClosesSettings } from "./settingsClose.js";
 
 const me = { displayName: "Demir", username: "demir", bio: "hi", customStatus: "" };
 assert.equal(profileDraftDirty({ displayName: "Demir", bio: "hi", customStatus: "" }, me), false);
@@ -40,5 +40,22 @@ const unSrc = fs.readFileSync(new URL("../components/settings/UsernameChangeModa
 assert.match(unSrc, /stopImmediatePropagation/, "the username modal keeps its Escape to itself");
 const cropSrc = fs.readFileSync(new URL("../components/ui/ImageCropModal.jsx", import.meta.url), "utf8");
 assert.match(cropSrc, /Escape/, "the crop dialog closes on Escape");
+
+// Backdrop clicks (owner report Nov 2026): a click on the photo / banner picker's or the crop
+// dialog's own backdrop (portaled to <body>, so outside the shell's DOM but inside its React
+// tree) closed that layer and the whole Settings window with it.
+{
+  const panelEl = el("panel", { children: [el("row")] });
+  const shell = el("shell", { children: [panelEl] });
+  const portalScrim = el("amp-scrim"); // a <body> child, not under the shell
+  const click = (target) => ({ currentTarget: shell, target });
+  assert.equal(shellClickClosesSettings(click(shell), panelEl), true, "the Settings dim closes Settings");
+  assert.equal(shellClickClosesSettings(click(panelEl), panelEl), false, "a click in the panel does not");
+  assert.equal(shellClickClosesSettings(click(portalScrim), panelEl), false, "a portaled picker / crop backdrop never closes Settings");
+  assert.equal(shellClickClosesSettings({ currentTarget: null, target: shell }, panelEl), false);
+  assert.equal(shellClickClosesSettings(null, panelEl), false);
+  assert.match(panelSrc, /shellClickClosesSettings\(e, panelRef\.current\)/, "UserPanel's backdrop click goes through shellClickClosesSettings");
+  assert.doesNotMatch(panelSrc, /if \(panelRef\.current && !panelRef\.current\.contains\(e\.target\)\) requestClose\(\)/, "no target-only check that portaled clicks pass");
+}
 
 console.log("settingsClose selftest ok");
