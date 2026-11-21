@@ -144,7 +144,6 @@ const CASES = [
   ["showNotification", ["Ayşe", { body: "selam", tag: "dm:1", data: { type: "dm" } }], "notification_show", { payload: { title: "Ayşe", options: { body: "selam", tag: "dm:1", data: { type: "dm" } } } }],
   ["closeNotification", [{ tag: "call:1" }], "notification_close", { payload: { tag: "call:1" } }],
   ["closeNotification", [], "notification_close", { payload: {} }],
-  ["getScreenSources", [], "screen_sources", undefined],
   ["isWindowFocused", [], "window_is_focused", undefined],
   ["focusWindow", [], "window_focus", undefined],
   ["scanProcesses", [], "processes_scan", undefined],
@@ -195,10 +194,18 @@ for (const [path, args, cmd, expected] of CASES) {
 {
   // Screen sources keep Electron's field names for the glass picker.
   const s = loadShim({ responses: { screen_sources: [{ id: "screen:0:0", name: "Ekran 1", thumbnailDataUrl: "data:image/jpeg;base64,x" }] } });
+  // No native lane: no list, so the page opens one picker (WebView2's) instead of ours + WebView2's.
+  deq(await s.api.getScreenSources(), []);
+  s.window.__descallNativeShare = { supported: false, getSources: () => Promise.resolve([{ id: "screen:0:0", name: "x" }]) };
+  deq(await s.api.getScreenSources(), [], "native lane without shared buffers: same");
+  const native = { supported: true, getSources: () => s.window.__TAURI_INTERNALS__.invoke("screen_sources") };
+  s.window.__descallNativeShare = native;
   deq(await s.api.getScreenSources(), [{ id: "screen:0:0", name: "Ekran 1", thumbnailDataURL: "data:image/jpeg;base64,x", appIconDataURL: null }]);
+  assert.ok(s.invokes.some((c) => c[0] === "screen_sources"), "the native lane lists through screen_sources");
+  called.add("screen_sources");
   // With the native lane present, selection goes there.
   let picked = null;
-  s.window.__descallNativeShare = { getSources: () => Promise.resolve([]), select: (id) => { picked = id; return Promise.resolve(true); } };
+  s.window.__descallNativeShare = { supported: true, getSources: () => Promise.resolve([]), select: (id) => { picked = id; return Promise.resolve(true); } };
   assert.equal(await s.api.selectDisplaySource("window:1234:0"), true);
   assert.equal(picked, "window:1234:0");
   assert.equal(await s.api.selectDisplaySource("file:///x"), false, "bad ids refused (main.cjs regex)");
