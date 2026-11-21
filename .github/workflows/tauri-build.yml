@@ -38,6 +38,8 @@ jobs:
         run: cargo test
       - name: electronAPI shim parity (+ native screen-share commands registered)
         run: node app/shim/electron-api-shim.test.mjs
+      - name: Notification capsule / overlay shell rules (notifAPI parity, no focus theft)
+        run: node app/shim/shell-notif.test.mjs
       - name: Release helpers (key checks, Tauri updater signature, setup manifest signing)
         run: |
           python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install --quiet cryptography
