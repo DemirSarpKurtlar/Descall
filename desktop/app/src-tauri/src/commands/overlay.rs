@@ -80,6 +80,7 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
     };
     let app_load = app.clone();
     WebviewWindowBuilder::new(app, LABEL, WebviewUrl::CustomProtocol(crate::shell_url("overlay.html")))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title("Descall")
         .inner_size(WIDTH, HEIGHT)
         .position(x, y)

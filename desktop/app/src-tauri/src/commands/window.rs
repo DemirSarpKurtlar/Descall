@@ -18,6 +18,20 @@ pub async fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
     }
 }
 
+/// F12 / Ctrl+Shift+I (windowKeys.cjs): DevTools of the calling window, only when
+/// webview::devtools_allowed (dev run or the support opt-in file); otherwise nothing.
+#[tauri::command]
+pub async fn window_toggle_devtools<R: Runtime>(window: WebviewWindow<R>) {
+    if !crate::webview::devtools_allowed(window.app_handle()) {
+        return;
+    }
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
+}
+
 /// window:close: the main window hides to the tray (CloseRequested in boot.rs); other
 /// windows close.
 #[tauri::command]

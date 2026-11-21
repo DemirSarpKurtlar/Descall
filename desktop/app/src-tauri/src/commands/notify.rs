@@ -302,6 +302,7 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
 
     let app_load = app.clone();
     let built = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html")))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title("Descall")
         .inner_size(width + notif::SHADOW_PAD * 2.0, height + notif::SHADOW_PAD * 2.0)
         .position(x, y)

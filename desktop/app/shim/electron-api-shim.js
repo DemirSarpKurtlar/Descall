@@ -255,6 +255,12 @@
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
     }
+    // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
+    // browser accelerator keys; the shell opens them only in a dev run or with the support
+    // opt-in file (webview::devtools_allowed), otherwise the command does nothing.
+    const devKey = (e.key === "F12" || e.code === "F12") ? !(e.ctrlKey || e.metaKey) && !e.shiftKey
+      : (e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === "KeyI" || String(e.key || "").toLowerCase() === "i");
+    if (devKey && !e.repeat && !e.altKey) fire("window_toggle_devtools");
   }, true);
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };

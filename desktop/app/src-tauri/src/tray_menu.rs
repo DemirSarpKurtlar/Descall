@@ -148,6 +148,7 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<(WebviewWindow<R>, bool)> {
     }
     let w_px = PANEL.pad * 2.0 + PANEL.card + PANEL.gap + PANEL.flyout;
     let built = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App(PAGE.into()))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title("Descall")
         .inner_size(w_px, PANEL.max_height)
         .decorations(false)

@@ -214,6 +214,7 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
     }
     let title = h.et(if kind == "call" { "window.call" } else { "window.sidebar" }, &[]);
     let built = WebviewWindowBuilder::new(&h.app, label, WebviewUrl::External("about:blank".parse().ok()?))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .window_features(features)
         .title(title)
         .decorations(false)

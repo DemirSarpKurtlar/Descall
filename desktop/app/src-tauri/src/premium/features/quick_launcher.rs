@@ -58,6 +58,7 @@ impl F {
                 let Some(url) = super::multi_window::app_url(h, "/premium-launcher/launcher.html") else { return false };
                 let origin = url.origin();
                 let built = WebviewWindowBuilder::new(&h.app, LABEL, tauri::WebviewUrl::External(url))
+                    .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
                     .title("Descall")
                     .inner_size(WIDTH, HEIGHT)
                     .decorations(false)

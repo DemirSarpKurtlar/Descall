@@ -20,6 +20,7 @@
 //! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
 //! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
 //! | `dist_path`         | appProtocolPath.cjs resolveDistFile     | (nested ./assets URLs)                |
+//! | `window_keys`       | windowKeys.cjs devToolsAllowed          | (DevTools opt-in file)                |
 
 pub mod clipboard;
 pub mod csp;
@@ -35,3 +36,4 @@ pub mod processes;
 pub mod tray_panel;
 pub mod trust;
 pub mod watchdog;
+pub mod window_keys;

@@ -90,6 +90,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
         None => {
             let Ok(url) = format!("http://{SCHEME}.localhost/{}", o.kind).parse() else { return };
             let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::CustomProtocol(url))
+                .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
                 .title("Descall")
                 .transparent(true)
                 .decorations(false)

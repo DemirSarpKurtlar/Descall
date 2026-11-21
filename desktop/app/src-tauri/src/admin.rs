@@ -36,6 +36,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
     let script = format!("{boot}\n{}", crate::SHIM);
     let target = format!("{}{}", path.trim_start_matches('/'), url.query().map(|q| format!("?{q}")).unwrap_or_default());
     let built = WebviewWindowBuilder::new(app, label, WebviewUrl::App(target.into()))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title(crate::state::et(app, title_key, &[]))
         .inner_size(w, h)
         .min_inner_size(min_w, min_h)

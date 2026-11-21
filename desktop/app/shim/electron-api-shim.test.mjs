@@ -10,7 +10,7 @@
 //    the same way (including the legacy (event, info) callbacks and removeAllListeners).
 // 4. Every command the shim can call is registered in src-tauri/src/main.rs.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -292,6 +292,28 @@ for (const [path, args, cmd, expected] of CASES) {
   key("F11", { altKey: true });
   key("F11", { ctrlKey: true });
   assert.equal(toggles(), 1, "not on auto-repeat or with a modifier");
+  // F12 / Ctrl+Shift+I ask the shell for DevTools (it opens them only with the opt-in).
+  const devtools = () => s.invokes.filter((c) => c[0] === "window_toggle_devtools").length;
+  assert.equal(devtools(), 2, "F12 and Ctrl+Shift+I (pressed above) ask for DevTools");
+  key("F12", { repeat: true });
+  key("F12", { ctrlKey: true });
+  key("I", { ctrlKey: true, shiftKey: true, altKey: true });
+  key("i", { ctrlKey: true });
+  assert.equal(devtools(), 2, "not on repeat, with Ctrl on F12, with Alt, or without Shift");
+  const windowRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "window.rs"), "utf8");
+  assert.match(windowRs, /fn window_toggle_devtools[\s\S]*?if !crate::webview::devtools_allowed\(/, "DevTools toggle is gated by the opt-in");
+  assert.match(mainRs, /commands::window::window_toggle_devtools,/, "DevTools toggle registered");
+  const srcDir = join(here, "..", "src-tauri", "src");
+  const rsFiles = readdirSync(srcDir, { recursive: true }).map(String).filter((f) => f.endsWith(".rs"));
+  let builderFiles = 0;
+  for (const f of rsFiles) {
+    const rs = readFileSync(join(srcDir, f), "utf8");
+    if (rs.includes("WebviewWindowBuilder::new(")) builderFiles += 1;
+    const builders = rs.split("WebviewWindowBuilder::new(").length - 1;
+    const set = rs.split(".devtools(crate::webview::devtools_allowed(").length - 1;
+    assert.equal(set, builders, `${f}: every webview sets devtools from the opt-in (the tauri devtools feature defaults to on)`);
+  }
+  assert.ok(builderFiles >= 10, `window builders found (${builderFiles})`);
   assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");

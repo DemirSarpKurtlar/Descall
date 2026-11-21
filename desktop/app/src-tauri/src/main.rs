@@ -115,6 +115,7 @@ fn main() {
             let nav_app = handle.clone();
             let load_app = handle.clone();
             let w = WebviewWindowBuilder::new(app, state::MAIN, WebviewUrl::App("index.html".into()))
+                .devtools(crate::webview::devtools_allowed(&handle)) // support opt-in only (webview.rs)
                 .title("Descall")
                 .inner_size(ws.width, ws.height)
                 .min_inner_size(ws.min_width, ws.min_height)
@@ -219,6 +220,7 @@ fn main() {
             commands::app::activity_set_busy,
             commands::window::window_minimize,
             commands::window::window_toggle_maximize,
+            commands::window::window_toggle_devtools,
             commands::window::window_close,
             commands::window::window_content_box,
             commands::window::window_is_focused,

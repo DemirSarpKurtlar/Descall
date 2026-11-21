@@ -101,6 +101,7 @@ fn open(h: &Host, id: &str) -> Value {
     let script = format!("{}\n{TOKEN_REDIRECT}", super::multi_window::app_window_script(h, &label, &tok));
     let title = Some(label_for(h, &acct)).filter(|l| !l.is_empty()).unwrap_or_else(|| "Descall".into());
     let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::External(url))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .title(title)
         .inner_size(1200.0, 800.0)
         .min_inner_size(900.0, 600.0)

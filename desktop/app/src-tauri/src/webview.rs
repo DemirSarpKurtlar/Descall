@@ -3,6 +3,19 @@
 
 use tauri::{Runtime, WebviewWindow};
 
+/// DevTools for every webview of the app (windowKeys.cjs canOpenDevTools): dev runs, or a
+/// release build with `<app data>/devtools-enabled` (support opt-in). The tauri `devtools`
+/// feature is on so the opt-in can work in release; without `.devtools(..)` a builder would then
+/// default to on, so every WebviewWindowBuilder sets it from here. Read once per run.
+pub fn devtools_allowed<R: Runtime>(app: &tauri::AppHandle<R>) -> bool {
+    use tauri::Manager;
+    static ALLOWED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ALLOWED.get_or_init(|| {
+        let dir = app.path().app_data_dir().ok();
+        descall_shell::window_keys::devtools_allowed(cfg!(debug_assertions), dir.as_deref(), |p| p.is_file())
+    })
+}
+
 /// Script fallback for a clean reload: drop Service Workers and Cache Storage, reload.
 const CLEAR_JS: &str = "(async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k);}catch(e){}location.reload();})()";
 

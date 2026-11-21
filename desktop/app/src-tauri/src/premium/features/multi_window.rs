@@ -59,6 +59,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     let origin = url.origin();
     let script = app_window_script(h, &label, &h.renderer_token());
     let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::External(url))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .title("Descall")
         .decorations(false)
         .min_inner_size(420.0, 360.0)
