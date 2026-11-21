@@ -9,9 +9,11 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
 import AppLayout from "./components/layout/AppLayout";
-import GroupInviteLanding from "./components/groups/GroupInviteLanding";
-import ServerVanityLanding from "./components/servers/ServerVanityLanding";
-import ServerInviteLanding from "./components/servers/ServerInviteLanding";
+// Invite / vanity landings only render on their deep links: own chunks, so their
+// public-page CSS (glass-public*.css) is not part of every cold start.
+const GroupInviteLanding = lazy(() => import("./components/groups/GroupInviteLanding"));
+const ServerVanityLanding = lazy(() => import("./components/servers/ServerVanityLanding"));
+const ServerInviteLanding = lazy(() => import("./components/servers/ServerInviteLanding"));
 import {
   parseServerInviteFromLocation,
   serverInvitePath,
@@ -24,7 +26,9 @@ import {
   inviteLandingChannel,
 } from "./lib/serverInviteRoute";
 import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js";
-import MarketingApp from "./site/MarketingApp";
+// Logged-out web only: the native app and signed-in boots never render it, so the
+// marketing layout (JS + .mkt CSS) stays out of the App chunk's static graph.
+const MarketingApp = lazy(() => import("./site/MarketingApp"));
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
@@ -5171,14 +5175,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
         <TitleBar />
-        <ServerInviteLanding
-          code={serverInviteCode}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
-          onJoined={handleServerInviteJoined}
-          onNeedAuth={openServerInviteAuth}
-          onDismiss={dismissServerInvite}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <ServerInviteLanding
+            code={serverInviteCode}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
+            onJoined={handleServerInviteJoined}
+            onNeedAuth={openServerInviteAuth}
+            onDismiss={dismissServerInvite}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5189,14 +5195,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
         <TitleBar />
-        <ServerVanityLanding
-          slug={serverVanitySlug}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
-          onJoined={handleServerVanityJoined}
-          onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
-          onDismiss={dismissServerVanity}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <ServerVanityLanding
+            slug={serverVanitySlug}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
+            onJoined={handleServerVanityJoined}
+            onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
+            onDismiss={dismissServerVanity}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5207,14 +5215,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.groupInviteTitle")} description={t("core.seo.groupInviteDesc")} />
         <TitleBar />
-        <GroupInviteLanding
-          code={inviteCode}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
-          onJoined={handleInviteJoined}
-          onNeedLogin={(mode) => openLandingAuth("group", mode)}
-          onDismiss={dismissInvite}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <GroupInviteLanding
+            code={inviteCode}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
+            onJoined={handleInviteJoined}
+            onNeedLogin={(mode) => openLandingAuth("group", mode)}
+            onDismiss={dismissInvite}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5278,14 +5288,16 @@ export default function App() {
     return (
       <>
         <TitleBar />
-        <MarketingApp
-          onLogin={handleLogin}
-          onRegister={handleRegister}
-          onGoogleLogin={handleGoogleLogin}
-          onVerify2fa={handleVerify2fa}
-          authLoading={authLoading}
-          authError={authError}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <MarketingApp
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+            onGoogleLogin={handleGoogleLogin}
+            onVerify2fa={handleVerify2fa}
+            authLoading={authLoading}
+            authError={authError}
+          />
+        </Suspense>
         {banLayer}
       </>
     );
