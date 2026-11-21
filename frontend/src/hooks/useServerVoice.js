@@ -1,3 +1,4 @@
+import { afterFirstScreen } from "../lib/afterFirstScreen.js";
 import { publishActiveSpeakers } from "../lib/activeSpeakers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
@@ -247,8 +248,11 @@ export function useServerVoice(socket) {
   }, []);
 
   useEffect(() => {
-    preloadIceServers().catch(() => {});
-    preloadNoiseSuppression();
+    // Warm-up only: after the first app screen, not during the cold start.
+    afterFirstScreen(() => {
+      preloadIceServers().catch(() => {});
+      preloadNoiseSuppression();
+    });
   }, []);
 
   useEffect(() => {
