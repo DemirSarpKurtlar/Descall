@@ -313,6 +313,13 @@
     return false;
   };
   window.addEventListener("keydown", (e) => {
+    // F11 maximizes / restores this window (windowKeys.cjs, main and admin windows): no
+    // modifier, no auto-repeat, never with Alt (AltGr layouts).
+    if (e.key === "F11" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      winCmd("window_toggle_maximize", "toggle_maximize");
+      return;
+    }
     if (blockedKey(e)) e.preventDefault();
   }, true);
   // Mouse back / forward buttons navigate history in WebView2.

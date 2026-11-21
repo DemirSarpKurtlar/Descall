@@ -283,6 +283,13 @@ for (const [path, args, cmd, expected] of CASES) {
   for (const [k, m] of [["c", { ctrlKey: true }], ["v", { ctrlKey: true }], ["x", { ctrlKey: true }], ["a", { ctrlKey: true }], ["z", { ctrlKey: true }], ["k", { ctrlKey: true }], ["ArrowLeft"], ["Enter"]]) {
     assert.equal(key(k, m), false, `${k} ${JSON.stringify(m || {})} stays with the app`);
   }
+  // F11 toggles maximize like windowKeys.cjs; with a modifier or on auto-repeat it does nothing.
+  s.invokes.length = 0;
+  assert.equal(key("F11"), true, "F11 handled");
+  deq(s.invokes.map((c) => c[0]), ["window_toggle_maximize"], "F11 toggles maximize");
+  s.invokes.length = 0;
+  for (const m of [{ ctrlKey: true }, { shiftKey: true }, { altKey: true }, { repeat: true }]) key("F11", m);
+  deq(s.invokes, [], "F11 with a modifier or auto-repeat does not maximize");
   assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
   assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
