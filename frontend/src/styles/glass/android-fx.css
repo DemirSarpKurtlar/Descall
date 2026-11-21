@@ -119,6 +119,14 @@ html.glass-ui.g-fx-lean .group-swipe-track {
   will-change: auto;
 }
 
+/* At rest the track still carries translate3d(0px, 0, 0) inline, a 3D
+   transform that promotes every visible row. Closed rows (no reveal) take no
+   transform; SwipeRevealRow adds .is-revealing on the same frame the drag
+   moves the track, so the row is promoted only while it is open or moving. */
+html.glass-ui.g-fx-lean .app-root.g-shell .group-swipe-viewport.is-fluid-reveal:not(.is-revealing) .group-swipe-track {
+  transform: none !important;
+}
+
 /* Ambient scenes: keep the first frame, drop the per-frame work. The drift and
    sheen layers sit under every blurred bar, so each frame of motion forced a
    re-blur of all of them; the rim animates background-position (a repaint of
