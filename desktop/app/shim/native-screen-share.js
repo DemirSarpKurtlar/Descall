@@ -539,7 +539,14 @@
       for (const img of imgs) {
         const t = byId.get(this.byUrl.get(img.src));
         if (!t) continue;
-        if (!t.alive) { img.style.opacity = "0.35"; continue; }
+        if (!t.alive) {
+          // The window closed while the picker is open: dim the tile and take it out of the
+          // picker (a dead source would fail to start and drop to WebView2's own picker).
+          img.style.opacity = "0.35";
+          const tile = img.closest ? img.closest("button") : null;
+          if (tile) { tile.disabled = true; tile.setAttribute("aria-disabled", "true"); }
+          continue;
+        }
         if (t.thumbnailDataURL && t.thumbnailDataURL !== img.src) {
           this.byUrl.set(t.thumbnailDataURL, t.id);
           this.byUrl.delete(img.src);
