@@ -105,6 +105,7 @@ import {
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline, applyPresenceDelta } from "./lib/onlineRoster";
+import { setTypingDm, setTypingGroups, setTypingChannels } from "./lib/typingStore";
 import { fetchPublic, rememberEdgeApiBase } from "./lib/edgeApi";
 import { chooseRealtimeUrl, rememberRealtimeAdvice, parkEdgeRealtime, createEdgeFailureCounter } from "./lib/edgeRealtime";
 import { reportDiagnostic } from "./lib/sentry";
@@ -629,14 +630,15 @@ export default function App() {
   const [friendNotice, setFriendNotice] = useState("");
   const [notifPermission, setNotifPermission] = useState(() => notificationService.getPermissionState());
   const [socketApi, setSocketApi] = useState(null);
-  const [typingDmUser, setTypingDmUser] = useState(null);
-  // groupId -> Map<userId, {id, username}>
-  const [typingGroupUsers, setTypingGroupUsers] = useState({});
-  // channelId -> Map<userId, {id, username}>
-  const [typingChannelUsers, setTypingChannelUsers] = useState({});
-  // Every chat's typing (the state above only follows the open chat, see typing:update).
-  const typingGroupAllRef = useRef(typingGroupUsers);
-  const typingChannelAllRef = useRef(typingChannelUsers);
+  // Typing lives in lib/typingStore.js, not App state: only ChatPanel subscribes,
+  // so a typing event re-renders the chat header, not App and the whole layout.
+  // dm: user | null; group: groupId -> Map<userId, user>; channel: channelId -> Map.
+  const setTypingDmUser = setTypingDm;
+  const setTypingGroupUsers = setTypingGroups;
+  const setTypingChannelUsers = setTypingChannels;
+  // Every chat's typing (the store only follows the open chat, see typing:update).
+  const typingGroupAllRef = useRef({});
+  const typingChannelAllRef = useRef({});
   const [dmHasMore, setDmHasMore] = useState(true);
   const [loadingOlderDm, setLoadingOlderDm] = useState(false);
   const [reconnectState, setReconnectState] = useState("idle");
@@ -6239,9 +6241,6 @@ export default function App() {
           onDismissActiveBanner={groupCall?.dismissActiveBanner}
           notifPermission={notifPermission}
           onRequestNotifPermission={handleRequestNotifPermission}
-          typingDmUser={typingDmUser}
-          typingGroupUsers={typingGroupUsers}
-          typingChannelUsers={typingChannelUsers}
           onTypingDmStart={emitTypingDmStart}
           onTypingDmStop={emitTypingDmStop}
           onTypingGroupStart={emitTypingGroupStart}

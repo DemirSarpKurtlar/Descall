@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
+import { memo, useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
 import { createPortal } from "react-dom";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -93,7 +93,7 @@ function formatSlowmode(seconds, locale) {
   return unit(n, "second");
 }
 
-export default function MessageComposer({
+function MessageComposer({
   onSend,
   disabled = false,
   activeDmUser,
@@ -2080,3 +2080,7 @@ export default function MessageComposer({
     </div>
   );
 }
+
+// Memoized: ChatPanel re-renders on its own for typing indicators (lib/typingStore)
+// and its other local state; the composer's props are unchanged then, so it skips.
+export default memo(MessageComposer);

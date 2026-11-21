@@ -788,7 +788,13 @@ export default function AppLayout({
       </div>
 
       <div ref={mainSlotRef} className="app-main-slot">
-        <AnimatePresence initial={false}>
+        {/* presenceAffectsLayout={false}: with the default (true) framer-motion's
+            PresenceChild hands down a new PresenceContext value on every render
+            (Math.random() dependency), so each AppLayout render (presence, a
+            message in another chat, ...) re-rendered every motion element of the
+            open chat, memoized message bubbles included. Nothing here uses
+            layout animations against the exiting view. */}
+        <AnimatePresence initial={false} presenceAffectsLayout={false}>
           <motion.div
             key={mainViewId(activeView)}
             className="app-main-view"
