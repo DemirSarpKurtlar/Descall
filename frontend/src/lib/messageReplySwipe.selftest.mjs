@@ -199,7 +199,7 @@ function touchEvent(type, clientX, clientY, extra = {}) {
     onCancel: () => { seen.cancel += 1; },
   });
   assert.equal(el.opts("touchstart").passive, true, "start stays passive so the scroll can begin");
-  assert.equal(el.opts("touchmove").passive, false, "move can preventDefault after the axis locks");
+  assert.equal(el.opts("touchmove").passive, true, "move is passive: a list scroll never waits for the main thread");
 
   const start = touchEvent("touchstart", 120, 500, { timeStamp: 5 });
   el.fire("touchstart", start);
@@ -239,7 +239,7 @@ function touchEvent(type, clientX, clientY, extra = {}) {
 
   const lock = touchEvent("touchmove", 284, 482, { identifier: 4, timeStamp: 30 });
   el.fire("touchmove", lock);
-  assert.equal(lock.prevented, true);
+  assert.equal(lock.prevented, false, "passive: the list is frozen instead of preventDefault");
   assert.equal(seen.claim, 1);
   assert.equal(seen.xs[0], -16, "1:1 left, own message");
   assert.equal(seen.haptic, 0);
