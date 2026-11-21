@@ -43,6 +43,33 @@ assert.match(css, /html\.tauri-app \[data-tauri-drag-region\],\s*html\.tauri-app
 // body modal hit the modal with data-theme="emberfall").
 assert.match(jsx, /document\.body\.insertBefore\(host, document\.body\.firstChild\)/, "title bar host is a body layer");
 assert.match(jsx, /return host \? createPortal\(bar, host\) : bar;/, "title bar is portaled out of #root");
+// Body-level inert shields must leave that host alone (useModalFocus keeps ".titlebar" by
+// itself; the marketing auth modal walks body children).
+{
+  const { inertOutside } = await import("../hooks/useModalFocus.js");
+  const mk = (tag, cls = "", id = "") => {
+    const n = { tagName: tag, id, inert: false, children: [], parentElement: null, ownerDocument: null,
+      matches: (sel) => sel === ".titlebar" && cls === "titlebar",
+      querySelector: (sel) => (function find(x) { for (const c of x.children) { if (c.matches(sel)) return c; const f = find(c); if (f) return f; } return null; })(n),
+      contains: (o) => { for (let p = o; p; p = p.parentElement) if (p === n) return true; return false; },
+      append(...cs) { for (const c of cs) { c.parentElement = n; n.children.push(c); } return n; } };
+    return n;
+  };
+  const body = mk("BODY");
+  const host = mk("DIV", "", "descall-titlebar-host").append(mk("DIV", "titlebar"));
+  const root = mk("DIV", "", "root");
+  const modal = mk("DIV", "modal");
+  body.append(host, root, modal);
+  const doc = { body };
+  for (const n of [body, host, host.children[0], root, modal]) n.ownerDocument = doc;
+  const restore = inertOutside(modal);
+  assert.equal(host.children[0].inert, false, "useModalFocus keeps the title bar in its body host");
+  assert.equal(host.inert, false);
+  assert.equal(root.inert, true, "the app behind the modal is inert");
+  restore();
+  const auth = read("site", "MarketingAuthModal.jsx");
+  assert.match(auth, /if \(el\.id === "descall-titlebar-host"\) continue;/, "the marketing auth modal leaves the title bar host usable");
+}
 // Restore glyph while maximized (was the same square, smaller).
 assert.match(jsx, /isMaximized \? \([\s\S]{0,120}<svg className="win-restore-glyph"/, "restore glyph while maximized");
 

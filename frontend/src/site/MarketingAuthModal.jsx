@@ -150,6 +150,8 @@ function AuthModal({
     const madeInert = [];
     for (const el of Array.from(document.body.children)) {
       if (el === overlay || el.contains(overlay) || el.hasAttribute("inert")) continue;
+      // The desktop title bar (TitleBar.jsx host) keeps its window buttons over every modal.
+      if (el.id === "descall-titlebar-host") continue;
       if (el.tagName === "SCRIPT" || el.tagName === "STYLE") continue;
       el.setAttribute("inert", "");
       madeInert.push(el);
