@@ -14,6 +14,7 @@
 // 6. Taskbar thumbnail buttons and the unread badge come back after the tray.
 // 7. The first close to the tray shows the "keeps running in the background" capsule.
 // 8. A Descall+ "toast" style notification opens the chat when clicked.
+// 9. Unread messages put a dot on the tray icon.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -241,6 +242,21 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   const toast = codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs"));
   const plain = toast.slice(toast.indexOf("pub fn plain_toast_xml"), toast.indexOf("pub fn show("));
   assert.doesNotMatch(plain, /<input/, "no reply box on a plain toast");
+}
+
+// ---- 9: unread dot on the tray icon -------------------------------------------------------------------
+{
+  // Owner checklist: unread messages show a badge on the tray icon (Electron had none).
+  const tm = codeOnly(read("desktop/app/src-tauri/src/tray_menu.rs"));
+  const setState = tm.slice(tm.indexOf("pub fn tray_set_state"), tm.indexOf("pub fn tray_menu_state"));
+  assert.match(setState, /"unreadMessages"[\s\S]*crate::tray::set_unread\(&app, unread\)/, "every page state drives the dot");
+  assert.ok(setState.indexOf("set_unread") < setState.indexOf("i.app_state.as_ref() == Some(&next)"), "also when the panel state did not change");
+  const tray = codeOnly(read("desktop/app/src-tauri/src/tray.rs"));
+  const fn = tray.slice(tray.indexOf("pub fn set_unread"), tray.indexOf("pub fn rebuild"));
+  assert.match(fn, /UNREAD_DOT\.swap\(unread/, "only a change touches the icon");
+  assert.match(fn, /unread_dot_rgba\(rgba, \*w\)/);
+  assert.match(fn, /else \{ rgba\.clone\(\) \}/, "no unread: the plain icon again");
+  assert.match(codeOnly(read("desktop/crates/descall-shell/src/tray_panel.rs")), /fn unread_dot_on_the_tray_icon\(\)/, "pixel rules unit-tested in Rust");
 }
 
 console.log("shell-notif.test: ok");

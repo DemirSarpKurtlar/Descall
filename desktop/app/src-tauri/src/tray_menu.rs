@@ -369,6 +369,8 @@ pub fn tray_set_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, s
         return;
     }
     let next = model::normalize_app_state(&state);
+    let unread = next.get("signedIn").and_then(Value::as_bool) == Some(true) && next.get("unreadMessages").and_then(Value::as_u64).unwrap_or(0) > 0;
+    crate::tray::set_unread(&app, unread);
     {
         let sh = tm(&app);
         let mut i = sh.inner.lock().unwrap();

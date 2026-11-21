@@ -5,7 +5,8 @@
 //! the shell language and are rebuilt when it or the update state changes.
 
 use std::any::Any;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 use tauri::menu::{CheckMenuItem, ContextMenu, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -139,11 +140,29 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
         b = b.menu(&menu);
     }
     if let Some(icon) = small_icon().or_else(|| app.default_window_icon().map(|i| i.clone().to_owned())) {
+        let _ = BASE_ICON.set((icon.rgba().to_vec(), icon.width(), icon.height()));
         b = b.icon(icon);
     }
     match b.build(app) {
         Ok(_) => shell(app).has_tray.store(true, Ordering::Release),
         Err(e) => log::error!("[tray] could not create the tray icon: {e}"),
+    }
+}
+
+/// The tray icon as created (RGBA, width, height), for the unread dot.
+static BASE_ICON: OnceLock<(Vec<u8>, u32, u32)> = OnceLock::new();
+static UNREAD_DOT: AtomicBool = AtomicBool::new(false);
+
+/// Unread messages put a red dot on the tray icon (descall_shell::tray_panel::unread_dot_rgba);
+/// none takes it off. Called with every tray state from the page; acts only on a change.
+pub fn set_unread<R: Runtime>(app: &AppHandle<R>, unread: bool) {
+    if UNREAD_DOT.swap(unread, Ordering::AcqRel) == unread {
+        return;
+    }
+    let (Some(tray), Some((rgba, w, h))) = (app.tray_by_id(ID), BASE_ICON.get()) else { return };
+    let pixels = if unread && w == h { descall_shell::tray_panel::unread_dot_rgba(rgba, *w) } else { rgba.clone() };
+    if let Err(e) = tray.set_icon(Some(tauri::image::Image::new_owned(pixels, *w, *h))) {
+        log::warn!("[tray] unread dot: {e}");
     }
 }
 
