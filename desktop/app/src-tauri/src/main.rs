@@ -160,7 +160,9 @@ fn main() {
                     }
                 })
                 .build()?;
-            if let (Some(x), Some(y)) = (ws.x, ws.y) {
+            if let Some((x, y)) = ws.physical {
+                let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
+            } else if let (Some(x), Some(y)) = (ws.x, ws.y) {
                 let _ = w.set_position(tauri::LogicalPosition::new(x, y));
             }
             if ws.maximized {

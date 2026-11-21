@@ -21,6 +21,9 @@ pub struct InitialWindow {
     pub height: f64,
     pub x: Option<f64>,
     pub y: Option<f64>,
+    /// Top-left corner in physical pixels (window-state.json px/py, written by this shell).
+    /// Wins over x/y: a logical point is ambiguous across monitors with different scaling.
+    pub physical: Option<(i32, i32)>,
     pub maximized: bool,
     pub min_width: f64,
     pub min_height: f64,
@@ -245,13 +248,55 @@ pub fn initial_window_state<R: Runtime>(app: &AppHandle<R>) -> InitialWindow {
         let wa = m.work_area();
         descall_shell::occlusion::Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s }
     };
-    let (sx, sy) = (n("x"), n("y"));
+    let maximized = v.get("maximized").and_then(|x| x.as_bool()).unwrap_or(false);
+    // Saved by this shell: the physical corner finds its monitor exactly, whatever the scaling
+    // of the others (a logical x/y from the 150 % screen also lands inside the 100 % one).
+    let (mut sx, mut sy) = (n("x"), n("y"));
+    if let (Some(px), Some(py)) = (v.get("px").and_then(|x| x.as_i64()), v.get("py").and_then(|x| x.as_i64())) {
+        let screens: Vec<Screen> = monitors
+            .iter()
+            .map(|m| {
+                let wa = m.work_area();
+                Screen { x: wa.position.x, y: wa.position.y, width: wa.size.width, height: wa.size.height, scale: m.scale_factor() }
+            })
+            .collect();
+        if let Some((f, corner)) = restore_physical(px as i32, py as i32, n("width"), n("height"), &screens) {
+            return InitialWindow { width: f.width, height: f.height, x: None, y: None, physical: Some(corner), maximized, min_width: f.min_width, min_height: f.min_height };
+        }
+        // That monitor is gone: centre on the primary one (below).
+        sx = None;
+        sy = None;
+    }
     let inside = |r: &descall_shell::occlusion::Rect| matches!((sx, sy), (Some(x), Some(y)) if x >= r.x - 8.0 && y >= r.y - 8.0 && x < r.x + r.width && y < r.y + r.height);
     let saved_monitor = monitors.iter().map(to_rect).find(|r| inside(r));
     let on_screen = saved_monitor.is_some();
     let work = saved_monitor.or_else(|| app.primary_monitor().ok().flatten().map(|m| to_rect(&m)));
     let f = descall_shell::occlusion::fit_bounds_to_work_area(sx.filter(|_| on_screen), sy.filter(|_| on_screen), n("width"), n("height"), work, MIN_W, MIN_H);
-    InitialWindow { width: f.width, height: f.height, x: f.x, y: f.y, maximized: v.get("maximized").and_then(|x| x.as_bool()).unwrap_or(false), min_width: f.min_width, min_height: f.min_height }
+    InitialWindow { width: f.width, height: f.height, x: f.x, y: f.y, physical: None, maximized, min_width: f.min_width, min_height: f.min_height }
+}
+
+/// A monitor's work area in physical pixels and its scale factor.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Screen {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub scale: f64,
+}
+
+/// Restore from a saved physical corner: the monitor whose work area holds it (a few pixels
+/// of slack for the invisible resize border), the bounds fitted into that work area in its
+/// own logical units, and the fitted corner back in physical pixels. None when no monitor
+/// holds the corner (unplugged, resolution changed): the caller centres on the primary one.
+pub fn restore_physical(px: i32, py: i32, width: Option<f64>, height: Option<f64>, screens: &[Screen]) -> Option<(descall_shell::occlusion::Fitted, (i32, i32))> {
+    let slack = 16;
+    let s = screens.iter().copied().find(|s| s.width > 0 && s.height > 0 && px >= s.x - slack && py >= s.y - slack && px < s.x + s.width as i32 && py < s.y + s.height as i32)?;
+    let scale = if s.scale.is_finite() && s.scale > 0.0 { s.scale } else { 1.0 };
+    let local = descall_shell::occlusion::Rect { x: 0.0, y: 0.0, width: s.width as f64 / scale, height: s.height as f64 / scale };
+    let f = descall_shell::occlusion::fit_bounds_to_work_area(Some((px - s.x) as f64 / scale), Some((py - s.y) as f64 / scale), width, height, Some(local), MIN_W, MIN_H);
+    let corner = (s.x + (f.x.unwrap_or(0.0) * scale).round() as i32, s.y + (f.y.unwrap_or(0.0) * scale).round() as i32);
+    Some((f, corner))
 }
 
 fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
@@ -268,6 +313,8 @@ fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
             v["y"] = json!((p.y as f64 / s).round());
             v["width"] = json!((sz.width as f64 / s).round());
             v["height"] = json!((sz.height as f64 / s).round());
+            v["px"] = json!(p.x);
+            v["py"] = json!(p.y);
         }
     }
     v["maximized"] = json!(maximized);
@@ -450,4 +497,51 @@ pub fn watch_reduced_transparency<R: Runtime>(app: &AppHandle<R>) {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod window_state_tests {
+    use super::{restore_physical, Screen};
+
+    // Laptop 1920x1080 at 100 % (taskbar 40 px), external 3840x2160 at 150 % on its right.
+    const LAPTOP: Screen = Screen { x: 0, y: 0, width: 1920, height: 1040, scale: 1.0 };
+    const EXTERNAL: Screen = Screen { x: 1920, y: 0, width: 3840, height: 2100, scale: 1.5 };
+
+    #[test]
+    fn the_window_comes_back_on_the_scaled_monitor_it_was_on() {
+        // Saved at physical (2400, 300) on the external screen. As a logical point (1600, 200)
+        // that also lies inside the laptop's work area, which is where it used to reopen.
+        let (f, corner) = restore_physical(2400, 300, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("on the external screen");
+        assert_eq!(corner, (2400, 300));
+        assert_eq!((f.width, f.height), (1400.0, 900.0));
+    }
+
+    #[test]
+    fn a_window_hanging_off_the_work_area_is_pulled_back() {
+        let (f, corner) = restore_physical(100, 900, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("on the laptop");
+        assert_eq!(corner, (100, 140));
+        assert_eq!((f.width, f.height), (1400.0, 900.0));
+        // Bigger than the screen: shrinks to the work area, and so does the minimum size.
+        let small = Screen { x: 0, y: 0, width: 1366, height: 728, scale: 1.0 };
+        let (f, corner) = restore_physical(0, 0, Some(1600.0), Some(1000.0), &[small]).expect("on screen");
+        assert_eq!((f.width, f.height, corner), (1366.0, 728.0, (0, 0)));
+        assert!(f.min_width <= 1366.0 && f.min_height <= 728.0);
+    }
+
+    #[test]
+    fn the_resize_border_corner_still_counts_as_on_screen() {
+        let (_, corner) = restore_physical(-8, -8, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("slack for the border");
+        assert_eq!(corner, (0, 0));
+        // Same on the scaled screen: its border is 12 physical px.
+        let top = Screen { x: 0, y: -2100, width: 3840, height: 2100, scale: 1.5 };
+        let (_, corner) = restore_physical(-12, -2112, Some(1400.0), Some(900.0), &[LAPTOP, top]).expect("slack on the upper screen");
+        assert_eq!(corner, (0, -2100));
+    }
+
+    #[test]
+    fn an_unplugged_monitor_gives_none() {
+        assert!(restore_physical(6000, 300, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).is_none());
+        assert!(restore_physical(-3000, 0, None, None, &[LAPTOP]).is_none());
+        assert!(restore_physical(10, 10, None, None, &[]).is_none());
+    }
 }
