@@ -180,6 +180,10 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(s.api.zoom.get(), 1, "zoom outside 0.5..2 ignored");
   deq(await s.api.writeClipboardText(5), { ok: false }, "non-string copy refused without IPC");
   assert.equal(s.api.secureToken.get(), "boot.tok.en", "token from the boot snapshot, synchronously");
+  assert.equal(s.window.__DESCALL_BOOT__.token, undefined, "the token is not left on window");
+  assert.equal(s.window.__DESCALL_BOOT__.version, "4.0.0", "other boot values stay");
+  assert.ok(Object.isFrozen(s.window.__DESCALL_BOOT__));
+  assert.ok(!JSON.stringify(s.window.__DESCALL_BOOT__).includes("boot.tok.en"));
   assert.equal(s.api.secureToken.set("new.tok.en"), true);
   assert.equal(s.api.secureToken.get(), "new.tok.en");
   assert.equal(s.ctx.sessionStorage.getItem("__descall_token_override"), "new.tok.en", "survives a boot-retry reload");

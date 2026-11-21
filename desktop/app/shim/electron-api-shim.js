@@ -86,6 +86,14 @@
     return BOOT.token || null;
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
+  // The sign-in token and the imported settings stay in this closure: window.__DESCALL_BOOT__
+  // keeps the other values only, so the token is not readable from window (for any page
+  // script, after a sign-out, until the next start). Electron's preload never put it on window.
+  if ("token" in BOOT || "importLocalStorage" in BOOT) {
+    const rest = {};
+    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
+    try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
+  }
 
   let zoomFactor = 1;
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
