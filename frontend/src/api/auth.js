@@ -1,5 +1,6 @@
 import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
+import { bootPrefetchOr } from "../lib/bootPrefetch.js";
 import { peekAttribution } from "../lib/attribution";
 import { pendingSignupInvite } from "../lib/serverInviteRoute";
 import { withSignupContext } from "../lib/signupContext";
@@ -114,12 +115,17 @@ export function getGoogleAuthConfig() {
   });
 }
 
-export function getMe(token, { signal } = {}) {
+/** GET /auth/me on the wire (main.jsx starts one at boot, see lib/bootPrefetch.js). */
+export function fetchMeNow(token, { signal } = {}) {
   return httpRequest(API_ROUTES.me, {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
     ...(signal ? { signal } : {}),
   });
+}
+
+export function getMe(token, { signal } = {}) {
+  return bootPrefetchOr("me", token, () => fetchMeNow(token, { signal }));
 }
 
 /** Public forgot-password: username or email → emailed 6-digit code. */

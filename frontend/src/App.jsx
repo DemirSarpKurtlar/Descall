@@ -8,7 +8,8 @@ import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
-import AppLayout from "./components/layout/AppLayout";
+import AppLayoutView from "./components/layout/AppLayout";
+import { memoStableProps } from "./lib/memoStableProps.js";
 // Invite / vanity landings only render on their deep links: own chunks, so their
 // public-page CSS (glass-public*.css) is not part of every cold start.
 const GroupInviteLanding = lazy(() => import("./components/groups/GroupInviteLanding"));
@@ -77,6 +78,7 @@ import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessa
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
+import { afterFirstScreen } from "./lib/afterFirstScreen.js";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { hasHeardAboutPendingFlag, markHeardAboutPending } from "./lib/heardAbout";
@@ -135,7 +137,7 @@ import {
 } from "./lib/nativePush";
 import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
-import SpecialBadgeHost from "./components/badges/SpecialBadgeHost.jsx";
+import SpecialBadgeHostView from "./components/badges/SpecialBadgeHost.jsx";
 import { noteEquipped as noteSpecialBadge } from "./lib/specialBadges";
 import { t as tRuntime } from "./i18n/runtime";
 import { formatDate } from "./i18n/format.js";
@@ -198,6 +200,10 @@ const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceG
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 // End-of-call DesCoin summary + wallet history drawer (owner pick: draft C + B receipt).
+// Inline handlers from this file no longer re-render the whole layout (lib/memoStableProps.js).
+const AppLayout = memoStableProps(AppLayoutView, "AppLayout");
+const CallTapCard = memoStableProps(CallTapCardView, "CallTapCard");
+const SpecialBadgeHost = memoStableProps(SpecialBadgeHostView, "SpecialBadgeHost");
 const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
@@ -205,7 +211,7 @@ const AnnouncementLive = lazy(() => import("./components/announcements/Announcem
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
-import CallTapCard from "./components/voice/CallTapCard";
+import CallTapCardView from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
@@ -546,6 +552,19 @@ export default function App() {
   const sessionEpochRef = useRef(0);
   const [bootError, setBootError] = useState(false);
   const [bootAttempt, setBootAttempt] = useState(0);
+  // Hosts the first screen never shows (call coin summary, promo popup, live
+  // announcements) mount once it is up: their chunks and fetches no longer
+  // compete with the chat list on a cold start (lib/afterFirstScreen.js).
+  const [afterBoot, setAfterBoot] = useState(false);
+  useEffect(() => {
+    let live = true;
+    afterFirstScreen(() => {
+      if (live) setAfterBoot(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
   // Sign-out or another account: profiles cached for the last session (profile window and hover
   // card, lib/profileCache.js) are dropped instead of painting instantly for the new one.
@@ -5665,12 +5684,13 @@ export default function App() {
 
         <SpecialBadgeHost socket={socketApi} meId={me?.id || null} />
 
-        {me?.id ? (
+        {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
           </Suspense>
         ) : null}
 
+        {afterBoot ? (
         <Suspense fallback={null}>
           <PromoHost
             socket={socketApi}
@@ -5680,8 +5700,9 @@ export default function App() {
             onBalance={(balance) => setMe((prev) => (prev ? { ...prev, descoinBalance: balance } : prev))}
           />
         </Suspense>
+        ) : null}
 
-        {me?.id ? (
+        {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <AnnouncementLive socket={socketApi} enabled={Boolean(me?.id)} navigate={navigate} />
           </Suspense>
