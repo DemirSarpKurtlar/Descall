@@ -141,4 +141,27 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.equal(loadShim({ sessionStorage: session }).api.zoom.get(), 1, "a bad stored value falls back to 1");
 }
 
+// 4. Shell-side window contracts (src-tauri; the Rust has its own #[test]s for the pure parts).
+{
+  const src = join(here, "..", "src-tauri", "src");
+  const boot = readFileSync(join(src, "boot.rs"), "utf8");
+  const state = readFileSync(join(src, "state.rs"), "utf8");
+  const admin = readFileSync(join(src, "admin.rs"), "utf8");
+  const main = readFileSync(join(src, "main.rs"), "utf8");
+  // app:visibility like main.cjs: restore and show also clear "backgrounded" without a focus event.
+  assert.match(boot, /if was_minimized\.swap\(false, [^)]*\) \{\s*visibility\(&win, false\);/, "restore from minimized resumes the page");
+  const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn show_main") + 600);
+  assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "tray / second launch show resumes the page");
+  // First close to the tray tells the user once (main.cjs background-notice-shown).
+  assert.match(boot, /let _ = win\.hide\(\);\s*background_notice_once\(app\);/);
+  assert.match(boot, /const BACKGROUND_NOTICE: &str = "background-notice-shown";/);
+  // Window state: the physical corner is saved and wins on restore.
+  assert.match(boot, /v\["px"\] = json!\(p\.x\);\s*v\["py"\] = json!\(p\.y\);/);
+  assert.match(main, /if let Some\(\(x, y\)\) = ws\.physical \{\s*let _ = w\.set_position\(tauri::PhysicalPosition::new\(x, y\)\);/);
+  // Admin windows: browser guards, links to the default browser, fitted and centred.
+  assert.match(admin, /crate::webview::install_browser_guards\(&win\);/, "admin windows have no browser menu / reload keys");
+  assert.match(admin, /is_safe_external_url\(next\.as_str\(\)\)[\s\S]{0,120}open_url\(next\.as_str\(\)/, "admin links open in the default browser");
+  assert.match(admin, /let place = placement\(app, w, h\);/);
+}
+
 console.log("window-shim.test: ok");

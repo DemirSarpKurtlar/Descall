@@ -406,6 +406,7 @@ fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
 
 pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     let win = w.clone();
+    let was_minimized = std::sync::atomic::AtomicBool::new(false);
     w.on_window_event(move |e| {
         let app = win.app_handle();
         match e {
@@ -437,8 +438,14 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                     crate::state::to_main(app, "window:maximized", maximized);
                 }
                 if win.is_minimized().unwrap_or(false) {
+                    was_minimized.store(true, std::sync::atomic::Ordering::Relaxed);
                     visibility(&win, true);
                 } else {
+                    // Back from minimized (main.cjs 'restore'): the page resumes its animations
+                    // even when Windows does not hand it the focus (foreground lock).
+                    if was_minimized.swap(false, std::sync::atomic::Ordering::Relaxed) {
+                        visibility(&win, false);
+                    }
                     publish_content_box(&win);
                     save_window_state(&win);
                 }
