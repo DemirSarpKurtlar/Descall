@@ -100,6 +100,8 @@ import {
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 
 /** Parts of a message's own toolbar; a press inside them does not close it. */
+// Long-press sink starts this long after touch-down (scroll intent cancels it first).
+const PRESS_HIGHLIGHT_DELAY_MS = 120;
 const MESSAGE_TOOLBAR_SURFACES = ".message-hover-bar, .reaction-picker, .mhb-more, .message-inline-picker";
 
 // Reaction picker (approved 2026-10-19, maintenance-and-menus 2-tepki-secici-*):
@@ -1412,12 +1414,18 @@ function MessageBubbleView({
     primeHaptics();
     pressDetach.current?.();
     let detach = () => {};
+    // The sink highlight waits like a native scroll view's delayed content
+    // touches: a finger that lands on a bubble only to scroll the chat (the
+    // usual case) cancels before this fires, so the bubble never dims, scales
+    // and repaints at the start of the scroll.
+    let pressTimer = 0;
     const session = attachMenuPress({
       gate: pressGate.current,
       event,
       el,
       delay: MESSAGE_MENU_LONG_PRESS_MS,
       onTeardown: () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; }
         if (pressed) el.removeAttribute("data-pressed");
         if (pressDetach.current === detach) pressDetach.current = null;
       },
@@ -1434,7 +1442,12 @@ function MessageBubbleView({
     if (!session) return;
     detach = session.detach;
     pressDetach.current = detach;
-    if (pressed) el.setAttribute("data-pressed", "");
+    if (pressed) {
+      pressTimer = setTimeout(() => {
+        pressTimer = 0;
+        if (pressDetach.current === detach) el.setAttribute("data-pressed", "");
+      }, PRESS_HIGHLIGHT_DELAY_MS);
+    }
   }, [glass, editing]);
 
   useEffect(() => {
