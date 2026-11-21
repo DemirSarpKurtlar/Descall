@@ -597,6 +597,8 @@ export default function App() {
   const listCommitRef = useRef({ friends: false, groups: false, servers: false });
   const groupsFlightRef = useRef(null);
   const serversFlightRef = useRef(null);
+  // When the group / server lists last loaded (ms), see the socket `connected` handler.
+  const listsLoadedAtRef = useRef({ groups: 0, servers: 0 });
   // Servers joined on this device and when (lib/serverListMerge.js): a list request
   // that started before the join must not drop them.
   const localJoinsRef = useRef(new Map());
@@ -1064,6 +1066,7 @@ export default function App() {
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       listCommitRef.current.servers = true;
+      listsLoadedAtRef.current.servers = Date.now();
       setServersLoadError(false);
       setServersLoaded(true);
       syncServerChannelMeta();
@@ -1877,14 +1880,24 @@ export default function App() {
       setAuthError(error?.message || t("core.app.socketAuthFailed"));
     });
 
+    let liveConnectedSeen = false;
     socket.on("connected", (payload) => {
       if (payload?.user) {
         // Merge, never let a thin socket payload wipe displayName / bio / banner.
         commitSessionUser({ ...(getUser() || me || {}), ...payload.user });
       }
-      fetchGroupsRef.current?.();
+      // socket.js fires a synthetic `connected` (no user) right away so the lists
+      // load before the socket is up; the server's own `connected` follows a moment
+      // later. Loading both again then cost 5 duplicate requests at every app open
+      // (groups, servers, channel unread, folders, channel mutes). Skip that first
+      // live one when the lists loaded in the last 15 s: rooms are restored by the
+      // `connect` handler (rejoinGroups / rejoinServers). Every later reconnect refreshes.
+      const firstLive = Boolean(payload?.user) && !liveConnectedSeen;
+      if (payload?.user) liveConnectedSeen = true;
+      const fresh = (at) => firstLive && at > 0 && Date.now() - at < 15000;
+      if (!fresh(listsLoadedAtRef.current.groups)) fetchGroupsRef.current?.();
       // Refresh on connect, session bootstrap / handleRefresh already load via REST.
-      fetchServersRef.current?.();
+      if (!fresh(listsLoadedAtRef.current.servers)) fetchServersRef.current?.();
     });
 
     socket.on("status:current", ({ status } = {}) => {
@@ -3448,6 +3461,7 @@ export default function App() {
     try {
       const raw = await getMyGroups();
       const groups = normalizeGroups(raw);
+      listsLoadedAtRef.current.groups = Date.now();
       setMyGroups(groups);
       // Server unread counts (polish messaging-10): messages that came while I was away.
       setGroupUnread((prev) => {
