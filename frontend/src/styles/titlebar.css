@@ -277,3 +277,18 @@ body.electron-app .app-feedback-banner-text {
 body.electron-app .app-feedback-banner-progress {
   border-radius: 0 0 var(--r-md) var(--r-md);
 }
+
+/* Tauri (WebView2, html.tauri-app set by the shell's shim). WebView2 turns app-region: drag
+   into a native caption, which swallowed the clicks on the window buttons (owner report,
+   desktop 4.0.1: minimize / maximize / close did nothing). The bar drags through
+   data-tauri-drag-region instead (TitleBar.jsx), so no CSS drag region here. The bar also
+   stays sharp over a modal, as in Electron: the layer under it keeps its tint, no blur. */
+html.tauri-app .titlebar,
+html.tauri-app .titlebar * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+html.tauri-app .titlebar::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
