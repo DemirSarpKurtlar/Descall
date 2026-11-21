@@ -160,6 +160,13 @@ function windowBuilders() {
     assert.ok(csp["media-src"].includes(host), `custom ringtones / sounds from ${host}`);
   }
   assert.match(csp["connect-src"], /wss:\/\/\*\.livekit\.cloud/, "LiveKit signalling");
+  // Windows + use_https_scheme(true): Tauri's IPC is https://ipc.localhost (core.js
+  // convertFileSrc). "http://ipc.localhost" covers it (CSP3 lets an http: source match https:,
+  // checked in Chromium at the Tauri origin), so the IPC never falls back to postMessage.
+  assert.ok(csp["connect-src"].split(/\s+/).includes("http://ipc.localhost"), "app pages: IPC allowed");
+  const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
+  const shellCsp = /pub const CSP: &str = "([^"]+)"/.exec(pagesRs)[1];
+  assert.ok(/connect-src[^;]*https?:\/\/ipc\.localhost/.test(shellCsp), "shell pages (mini call card, capsules): IPC allowed");
 }
 
 console.log("media-calls.test: ok");
