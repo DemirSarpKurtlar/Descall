@@ -207,6 +207,14 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
         use tauri_plugin_notification::NotificationExt;
         let from = str_of(&data, "from");
         let preview = str_of(&data, "preview");
+        let (toast_title, toast_body) = notif::reply_toast_text(title, &body, &data);
+        let silent = options.get("silent").and_then(Value::as_bool).unwrap_or(false);
+        // A click opens the chat, like Electron's Notification (the plugin's toast has no
+        // click on Windows); the plugin stays as the fallback.
+        let click = json!({ "title": title, "body": body, "tag": tag, "data": data });
+        if crate::premium::show_toast(&toast_title, &toast_body, silent, click) {
+            return None;
+        }
         let shown = app
             .notification()
             .builder()

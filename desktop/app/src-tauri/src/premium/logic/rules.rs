@@ -338,6 +338,17 @@ pub fn parse_toast_args(args: &str) -> Option<(String, String)> {
     (ok_id && ok_conv).then(|| (id.to_string(), conv.to_string()))
 }
 
+/// Arguments of a plain notification toast (no reply box): a click opens what it was about.
+pub fn toast_click_args(id: &str) -> String {
+    format!("descall-n|{id}")
+}
+
+pub fn parse_toast_click(args: &str) -> Option<String> {
+    let id = args.strip_prefix("descall-n|")?;
+    let ok = !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
+    ok.then(|| id.to_string())
+}
+
 pub fn drop_targets(next: &Value) -> Vec<Value> {
     next.get("targets")
         .and_then(Value::as_array)
@@ -483,6 +494,11 @@ mod tests {
         assert_eq!(parse_toast_args("descall-qr|x|group:1"), None, "only DMs are replyable");
         assert_eq!(parse_toast_args("other|x|dm:1"), None);
         assert_eq!(parse_toast_args("descall-qr|a b|dm:1"), None);
+        assert_eq!(parse_toast_click(&toast_click_args("descall-n-1-2")).as_deref(), Some("descall-n-1-2"));
+        assert_eq!(parse_toast_click("descall-n|"), None);
+        assert_eq!(parse_toast_click("descall-n|a|b"), None);
+        assert_eq!(parse_toast_click(&a), None, "a reply toast is not a plain one");
+        assert_eq!(parse_toast_args(&toast_click_args("x")), None);
         assert_eq!(safe_file_name("my clip (1).webm"), "my_clip_1_.webm");
         assert_eq!(safe_file_name(""), "clip.webm");
         assert_eq!(drop_targets(&json!({"targets": [{"id": "dm:1", "label": "Ada"}, {"label": "x"}]})).len(), 1);

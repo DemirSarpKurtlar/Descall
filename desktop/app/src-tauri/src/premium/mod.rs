@@ -834,6 +834,12 @@ pub fn show_quick_reply(title: &str, body: &str, conv: &str, click_data: Value) 
     host().is_some_and(|h| features::quick_reply::show(h, title, body, conv, click_data))
 }
 
+/// The "toast" notification style as a native toast whose click opens the chat; false = the
+/// caller falls back to the plugin notification.
+pub fn show_toast(title: &str, body: &str, silent: bool, click: Value) -> bool {
+    host().is_some_and(|h| features::quick_reply::show_plain(h, title, body, silent, click))
+}
+
 /// Read the session token from the shell's secure store (auth-token); the renderer's own
 /// claim is the fallback, as in Electron.
 #[allow(dead_code)]

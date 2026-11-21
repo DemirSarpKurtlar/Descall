@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-use crate::premium::logic::rules::{cut, parse_toast_args, reply_target, toast_args};
+use crate::premium::logic::rules::{cut, parse_toast_args, parse_toast_click, reply_target, toast_args, toast_click_args};
 use crate::premium::toast::{self, Handle, TOAST_CLSID};
 use crate::premium::{host, lock, ok, Bus, Caller, Feature, From, Host};
 
@@ -64,14 +64,7 @@ pub(crate) fn show(h: &Host, title: &str, body: &str, conv: &str, click_data: Va
     if !h.is_running("quick_reply") || support().is_err() {
         return false;
     }
-    {
-        let mut l = lock(&LIVE);
-        l.retain(|_, e| e.at.elapsed() < KEEP);
-        while l.len() >= MAX_LIVE {
-            let Some(oldest) = l.iter().min_by_key(|(_, e)| e.at).map(|(k, _)| k.clone()) else { break };
-            l.remove(&oldest);
-        }
-    }
+    prune();
     let id = format!("descall-qr-{:x}-{:x}", crate::premium::now_ms(), h.next_id());
     let args = toast_args(&id, &cut(conv, 70));
     match toast::show(&args, &cut(title, 120), &cut(body, 300), &h.et("quickReply.placeholder", &[]), on_activation) {
@@ -86,8 +79,49 @@ pub(crate) fn show(h: &Host, title: &str, body: &str, conv: &str, click_data: Va
     }
 }
 
+/// Toasts older than ten minutes go, and at most MAX_LIVE stay answerable / clickable.
+fn prune() {
+    let mut l = lock(&LIVE);
+    l.retain(|_, e| e.at.elapsed() < KEEP);
+    while l.len() >= MAX_LIVE {
+        let Some(oldest) = l.iter().min_by_key(|(_, e)| e.at).map(|(k, _)| k.clone()) else { break };
+        l.remove(&oldest);
+    }
+}
+
+/// The Descall+ "toast" notification style: a native toast without the reply box whose click
+/// opens the chat (Electron's Notification click sent notification:click with this envelope;
+/// tauri-plugin-notification has no click on Windows). False: the caller falls back.
+pub(crate) fn show_plain(h: &Host, title: &str, body: &str, silent: bool, click: Value) -> bool {
+    if support().is_err() {
+        return false;
+    }
+    prune();
+    let id = format!("descall-n-{:x}-{:x}", crate::premium::now_ms(), h.next_id());
+    let xml = toast::plain_toast_xml(&toast_click_args(&id), &cut(title, 120), &cut(body, 300), silent);
+    match toast::show_xml(&xml, on_activation) {
+        Ok(handle) => {
+            lock(&LIVE).insert(id, Live { handle, at: Instant::now(), click });
+            true
+        }
+        Err(e) => {
+            log::warn!("[premium] notification toast failed: {e}");
+            false
+        }
+    }
+}
+
 /// Every toast activation (in-process event or COM activator, warm or cold start).
 pub(crate) fn on_activation(args: String, reply: Option<String>) {
+    if let Some(id) = parse_toast_click(&args) {
+        let Some(h) = host() else { return };
+        h.show_main();
+        let click = lock(&LIVE).get(&id).map(|l| l.click.clone());
+        if let Some(click) = click {
+            let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+        }
+        return;
+    }
     let Some((id, conv)) = parse_toast_args(&args) else { return };
     let text = reply.map(|t| cut(t.trim(), 2000)).filter(|t| !t.is_empty());
     match text {

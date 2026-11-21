@@ -13,6 +13,7 @@
 // 5. The tray icon is the embedded app icon at the small icon size, not the 32 px one.
 // 6. Taskbar thumbnail buttons and the unread badge come back after the tray.
 // 7. The first close to the tray shows the "keeps running in the background" capsule.
+// 8. A Descall+ "toast" style notification opens the chat when clicked.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -221,6 +222,25 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
     const j = JSON.parse(read(`frontend/electron/i18n/${l}.json`));
     assert.ok(j.notice && j.notice.background, `${l}: notice.background`);
   }
+}
+
+// ---- 8: Descall+ "toast" style: a click on the native toast opens the chat -----------------------
+{
+  // Electron's Notification click sent notification:click { title, body, tag, data };
+  // tauri-plugin-notification has no click on Windows, so the toast goes through premium
+  // toast.rs (activation handler) first and the plugin is only the fallback.
+  const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
+  const toastAt = notify.indexOf('Some("toast")');
+  const branch = notify.slice(toastAt, notify.indexOf("let n = app.state::<Notifications>();", toastAt));
+  assert.ok(branch.indexOf("show_toast(") >= 0 && branch.indexOf("show_toast(") < branch.indexOf(".notification()"), "native toast with click first, plugin fallback");
+  assert.match(branch, /json!\(\{ "title": title, "body": body, "tag": tag, "data": data \}\)/, "same click envelope as Electron");
+  const qr = codeOnly(read("desktop/app/src-tauri/src/premium/features/quick_reply.rs"));
+  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush"));
+  assert.ok(act.indexOf("parse_toast_click") >= 0 && act.indexOf("parse_toast_click") < act.indexOf("parse_toast_args"), "plain toast clicks handled before reply toasts");
+  assert.match(act, /show_main\(\)[\s\S]*"notification:click"/, "click shows Descall and opens the chat");
+  const toast = codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs"));
+  const plain = toast.slice(toast.indexOf("pub fn plain_toast_xml"), toast.indexOf("pub fn show("));
+  assert.doesNotMatch(plain, /<input/, "no reply box on a plain toast");
 }
 
 console.log("shell-notif.test: ok");
