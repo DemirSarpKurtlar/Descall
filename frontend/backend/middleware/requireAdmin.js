@@ -8,6 +8,8 @@ async function requireAdmin(req, res, next) {
   if (!u) {
     return res.status(403).json({ error: "Admin access required." });
   }
+  // Admin Token: the token was resolved to the owner account when it was checked.
+  if (req.apiToken) return next();
 
   // Check if username is admin or if user has is_admin in database
   if (u.username === "admin") {
@@ -42,6 +44,8 @@ async function requireAdmin(req, res, next) {
  */
 async function userIsSuperAdmin(req) {
   if (req?.user?.username === "admin") return true;
+  // Admin Token: only the owner can hold one, checked on every request (lib/adminTokens/auth.js).
+  if (req?.apiToken && req?.user?.id) return true;
   if (!req?.user?.id) return false;
   try {
     const { data, error } = await supabase

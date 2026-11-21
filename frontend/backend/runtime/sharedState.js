@@ -77,14 +77,22 @@ const userFeedbacks = [];
 const MAX_FEEDBACKS = 5000;
 
 function appendAudit(actorId, actorUsername, action, target, meta = {}) {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  // Admin Token: an entry written inside a token request carries { actor_via: "token", token_id, token_name }.
+  let tagged = meta;
+  try {
+    tagged = require("../lib/adminTokens/context").tagAuditMeta(meta, id);
+  } catch {
+    /* tagging is optional */
+  }
   const entry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id,
     at: new Date().toISOString(),
     actorId,
     actorUsername,
     action,
     target: target || null,
-    meta,
+    meta: tagged,
   };
   auditLog.unshift(entry);
   if (auditLog.length > MAX_AUDIT) auditLog.length = MAX_AUDIT;

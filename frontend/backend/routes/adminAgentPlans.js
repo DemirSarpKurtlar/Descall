@@ -203,6 +203,7 @@ router.post("/agent/plans/:id/discard", async (req, res) => {
  * the step-up host asks for a new code on STEP_UP_REQUIRED.
  */
 async function requireFreshCode(req) {
+  if (req.apiToken) return; // Admin Token: acts directly (owner decision)
   const s = await store.getScopes();
   if (!s.require_2fa_each || !req.adminTotpKnown) return;
   const raw = req.get("x-admin-step-up");

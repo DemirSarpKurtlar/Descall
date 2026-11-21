@@ -58,6 +58,18 @@ async function requireAuth(req, res, next) {
 
   const token = authHeader.slice(7);
 
+  // Admin Token (dsk_admin_…): resolves to the owner account (lib/adminTokens/auth.js).
+  if (token.startsWith("dsk_admin_")) {
+    if (req.apiToken && req.user) return next(); // already resolved earlier in this chain
+    try {
+      return await require("../lib/adminTokens/auth").requireTokenAuth(req, res, next, token);
+    } catch (err) {
+      console.error("[auth] admin token:", err?.message || err);
+      if (!res.headersSent) return res.status(500).json({ error: "Internal server error." });
+      return undefined;
+    }
+  }
+
   let decoded;
   try {
     decoded = verifyToken(token);

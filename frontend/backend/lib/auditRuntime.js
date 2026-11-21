@@ -39,6 +39,8 @@ function maskIp(ip) {
 }
 
 function ipOf(req) {
+  // Admin Token MCP calls reach the admin API over loopback; the bot's own address is kept.
+  if (req?.apiTokenClientIp) return req.apiTokenClientIp;
   try {
     return require("./clientIp").ipOfRequest(req);
   } catch {
