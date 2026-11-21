@@ -3,6 +3,12 @@
 //! frontend/dist works in both shells. Tauri adds the sha256 of every inline <script> of
 //! index.html itself (Electron computed them at start-up), so only the source lists are
 //! compared. The Electron-only `descall:` scheme and the dev server are left out on purpose.
+//!
+//! One deliberate difference: no 'unsafe-eval'. Electron carried it since 2.9 with no user;
+//! the built bundle has no eval, new Function or string timers (the only `Function("return
+//! this")` is socket.io's global lookup, reached only when neither self nor window exists),
+//! and gtag.js, Google Ads and PostHog do not need it (only GTM custom JavaScript variables
+//! do, and the app loads gtag.js, not a GTM container). WebAssembly keeps 'wasm-unsafe-eval'.
 
 #[cfg(test)]
 mod tests {
@@ -44,10 +50,22 @@ mod tests {
         assert_eq!(tauri_directive("img-src"), electron_directive("IMG", "img-src"), "img-src");
         assert_eq!(tauri_directive("media-src"), electron_directive("MEDIA", "media-src"), "media-src");
         let mut script = sources(&electron_const("SCRIPT_REMOTE"));
-        script.extend(["'self'".to_string(), "'unsafe-eval'".to_string()]);
+        script.insert("'self'".to_string());
         let mut tauri_script = tauri_directive("script-src");
         tauri_script.remove("'wasm-unsafe-eval'");
         assert_eq!(tauri_script, script, "script-src (hashes are added by Tauri)");
         assert!(!tauri_directive("script-src").contains("'unsafe-inline'"), "no unsafe-inline for page scripts");
+    }
+
+    #[test]
+    fn no_eval_for_page_scripts() {
+        let conf: serde_json::Value = serde_json::from_str(TAURI_CONF).unwrap();
+        for (directive, v) in conf["app"]["security"]["csp"].as_object().unwrap() {
+            let v = v.as_str().unwrap_or_default();
+            assert!(!sources(v).contains("'unsafe-eval'"), "{directive} must not allow 'unsafe-eval'");
+        }
+        // Electron adds it next to SCRIPT_REMOTE (cspPolicy.cjs), so the parity check above
+        // compares the remote list without it.
+        assert!(electron_const("SCRIPT_REMOTE").split_whitespace().all(|s| s != "'unsafe-eval'"));
     }
 }
