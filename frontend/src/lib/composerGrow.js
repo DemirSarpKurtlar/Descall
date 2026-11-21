@@ -46,3 +46,14 @@ export function shouldSendOnEnter(e, { composing = false } = {}) {
   if (composing || isImeEnter(e)) return false;
   return true;
 }
+
+/**
+ * min-height that holds a box at its current border-box height while the
+ * field inside it is collapsed for measuring (min-height follows box-sizing).
+ */
+export function heldBoxHeight(borderBoxHeight, cs) {
+  const h = Number(borderBoxHeight) || 0;
+  if (!cs || cs.boxSizing === "border-box") return h;
+  const n = (v) => parseFloat(v) || 0;
+  return Math.max(0, h - n(cs.paddingTop) - n(cs.paddingBottom) - n(cs.borderTopWidth) - n(cs.borderBottomWidth));
+}
