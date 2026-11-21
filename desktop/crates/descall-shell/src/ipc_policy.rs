@@ -341,6 +341,20 @@ mod capability_tests {
         }
     }
 
+    /// Every window that runs the app (main, admin, pop-outs, account windows) gets the native
+    /// browser guards (no WebView2 menu, no Reload / Back / Print / Save accelerators).
+    #[test]
+    fn app_windows_get_the_browser_guards() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+        ] {
+            assert!(src.contains("install_browser_guards(&"), "{file} creates an app window without the browser guards");
+        }
+    }
+
     #[test]
     fn devtools_stay_off_in_release() {
         let cargo = include_str!("../../../app/src-tauri/Cargo.toml");

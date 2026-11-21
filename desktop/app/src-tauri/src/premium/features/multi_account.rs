@@ -112,7 +112,8 @@ fn open(h: &Host, id: &str) -> Value {
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .build();
     match built {
-        Ok(_) => {
+        Ok(w) => {
+            crate::webview::install_browser_guards(&w);
             wins::track(h, &label, "account", "multi_account", json!({ "id": id }));
             ok(json!({ "id": id }))
         }

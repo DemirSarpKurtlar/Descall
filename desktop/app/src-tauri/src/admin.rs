@@ -50,6 +50,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
     match built {
         Ok(win) => {
             crate::webview::install_permission_handler(&win);
+            crate::webview::install_browser_guards(&win);
             let w2 = win.clone();
             win.on_window_event(move |e| {
                 if let tauri::WindowEvent::Resized(_) = e {
