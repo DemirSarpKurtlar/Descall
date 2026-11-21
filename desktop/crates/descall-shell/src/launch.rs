@@ -138,4 +138,18 @@ mod tests {
         assert!(cmd.starts_with('"') && cmd.contains("--autostart") && cmd.contains("--hidden"));
         assert!(is_autostart_launch(&[cmd.as_str()]));
     }
+
+    // No OS URL scheme is registered: nothing in the shell reads a descall:// link (Electron
+    // never registered one either), and a registered scheme lets any web page start the app.
+    // Add the plugin back only together with a handler for the links and a test for it.
+    #[test]
+    fn no_os_url_scheme_is_registered() {
+        let conf: serde_json::Value = serde_json::from_str(include_str!("../../../app/src-tauri/tauri.conf.json")).unwrap();
+        assert!(conf["plugins"].get("deep-link").is_none(), "tauri.conf.json plugins.deep-link");
+        let cargo = include_str!("../../../app/src-tauri/Cargo.toml");
+        assert!(!cargo.contains("tauri-plugin-deep-link"), "Cargo.toml tauri-plugin-deep-link");
+        let main_rs = include_str!("../../../app/src-tauri/src/main.rs");
+        assert!(!main_rs.contains("deep_link"), "main.rs deep_link plugin");
+        assert!(!include_str!("../../../app/src-tauri/nsis/hooks.nsh").contains("URL Protocol"), "hooks.nsh URL Protocol");
+    }
 }
