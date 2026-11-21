@@ -54,7 +54,7 @@ pub fn serve(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let kind = if KINDS.contains(&kind) { kind } else { "widget" };
     Response::builder()
         .header("Content-Type", "text/html; charset=utf-8")
-        .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:; connect-src ipc: http://ipc.localhost")
+        .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:; connect-src ipc: http://ipc.localhost https://ipc.localhost")
         .body(HTML.replace("__KIND__", kind).into_bytes())
         .unwrap_or_default()
 }

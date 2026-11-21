@@ -343,6 +343,18 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(webviewRsDl, /SetState\(COREWEBVIEW2_PERMISSION_STATE_DENY\)/, "no Edge permission prompts over the app");
   assert.match(webviewRsDl, /unique_path\(/, "downloads never overwrite a file");
   assert.match(webviewRsDl, /reveal_item_in_dir/, "the finished file is shown in Explorer");
+  // IPC: with use_https_scheme(true) Tauri's invoke fetches https://ipc.localhost/<cmd>. A CSP
+  // with only http://ipc.localhost blocked it (a securitypolicyviolation on every start) and
+  // Tauri fell back to the slower postMessage IPC (binary bodies as JSON number arrays).
+  const conf = JSON.parse(readFileSync(join(here, "..", "src-tauri", "tauri.conf.json"), "utf8"));
+  assert.match(mainRs, /\.use_https_scheme\(true\)/);
+  assert.ok(conf.app.security.csp["connect-src"].split(/\s+/).includes("https://ipc.localhost"), "app CSP allows the https IPC origin");
+  const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
+  const overlayRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "overlay.rs"), "utf8");
+  const trayHtml = readFileSync(join(here, "..", "..", "..", "frontend", "public", "tray-menu", "tray-menu.html"), "utf8");
+  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay", overlayRs], ["tray menu page", trayHtml]]) {
+    assert.match(src, /connect-src ipc: http:\/\/ipc\.localhost https:\/\/ipc\.localhost/, `${name}: https IPC origin in connect-src`);
+  }
   // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
   assert.doesNotMatch(mainRs, /url\.as_str\(\) == "about:blank"/, "no empty about:blank windows");
 }
