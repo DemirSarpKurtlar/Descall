@@ -355,6 +355,8 @@ for (const [path, args, cmd, expected] of CASES) {
   for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay", overlayRs], ["tray menu page", trayHtml]]) {
     assert.match(src, /connect-src ipc: http:\/\/ipc\.localhost https:\/\/ipc\.localhost/, `${name}: https IPC origin in connect-src`);
   }
+  // Descall+ portal windows (call, sidebar): links go to the browser, never a bare popup.
+  assert.match(readFileSync(join(here, "..", "src-tauri", "src", "premium", "wins.rs"), "utf8"), /\.on_navigation\(\|u\| u\.scheme\(\) == "about"\)\s*\/\/[^\n]*\n(\s*\/\/[^\n]*\n)*\s*\.on_new_window\(/, "portal windows handle new-window requests");
   // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
   assert.doesNotMatch(mainRs, /url\.as_str\(\) == "about:blank"/, "no empty about:blank windows");
 }
