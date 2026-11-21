@@ -43,6 +43,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .background_color(tauri::window::Color(0x14, 0x15, 0x1e, 255))
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)
+        .disable_drag_drop_handler() // HTML5 drag and drop (shop desk, announcements board)
         .initialization_script(script)
         .on_navigation(move |next| crate::boot::is_app_url(next) && spec(next.path()).map(|s| s.0) == Some(label))
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)

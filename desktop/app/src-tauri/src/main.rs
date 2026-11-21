@@ -123,6 +123,10 @@ fn main() {
                 .background_color(tauri::window::Color(11, 12, 18, 255))
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
                 .additional_browser_args(BROWSER_ARGS)
+                // HTML5 drag and drop (files onto a chat, the profile picker, sortable lists):
+                // Tauri's own drop handler replaces WebView2's on Windows and the page never
+                // gets the drop. Nothing uses Tauri's DragDropEvent.
+                .disable_drag_drop_handler()
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)
                 .on_new_window(move |url, features| {

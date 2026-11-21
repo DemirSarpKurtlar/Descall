@@ -103,6 +103,10 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .focusable(o.focusable)
                 .visible(false)
                 .visible_on_all_workspaces(true)
+                // One WebView2 environment per data folder: the same browser arguments as every
+                // other window, or WebView2 refuses to create this one.
+                .additional_browser_args(crate::BROWSER_ARGS)
+                .disable_drag_drop_handler() // the quick drop zone reads files from the HTML5 drop
                 .initialization_script(HUD_SHIM)
                 .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
                 .build();

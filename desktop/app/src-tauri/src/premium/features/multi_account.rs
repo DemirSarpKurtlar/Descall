@@ -107,6 +107,8 @@ fn open(h: &Host, id: &str) -> Value {
         .decorations(false)
         .data_directory(dir(h, id).join("webview"))
         .use_https_scheme(true)
+        .additional_browser_args(crate::BROWSER_ARGS)
+        .disable_drag_drop_handler() // HTML5 drag and drop for the app it shows
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)

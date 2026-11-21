@@ -66,6 +66,10 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        // Same WebView2 environment arguments as the main window (shared data folder), and
+        // HTML5 drag and drop for the app it shows.
+        .additional_browser_args(crate::BROWSER_ARGS)
+        .disable_drag_drop_handler()
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {

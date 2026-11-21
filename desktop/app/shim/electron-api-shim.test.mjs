@@ -431,5 +431,26 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   const trayRs = readFileSync(join(src, "src", "tray.rs"), "utf8");
   assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
 }
+{
+  // Every window: WebView2 shares one browser process per data folder and refuses a second
+  // environment with other arguments, so each builder passes BROWSER_ARGS (the Descall+ portal
+  // windows reuse the opener's environment through window_features). Windows that show the app
+  // or a drop zone disable Tauri's drop handler, which on Windows swallowed every HTML5 drop
+  // (files onto a chat, profile picker, admin sortable lists, quick drop).
+  const rs = (p) => readFileSync(join(here, "..", "src-tauri", "src", ...p.split("/")), "utf8");
+  const builders = ["main.rs", "admin.rs", "tray_menu.rs", "commands/overlay.rs", "commands/notify.rs", "premium/overlay.rs", "premium/features/multi_window.rs", "premium/features/multi_account.rs", "premium/features/quick_launcher.rs", "premium/wins.rs"];
+  for (const file of builders) {
+    const text = rs(file);
+    const chains = text.split("WebviewWindowBuilder::new(").slice(1).map((c) => c.slice(0, c.indexOf(".build()")));
+    assert.ok(chains.length, `${file} builds a window`);
+    for (const chain of chains) {
+      if (/\.window_features\(/.test(chain)) continue;
+      assert.match(chain, /\.additional_browser_args\((crate::)?BROWSER_ARGS\)/, `${file}: window without the shared WebView2 browser arguments`);
+    }
+  }
+  for (const file of ["main.rs", "admin.rs", "premium/overlay.rs", "premium/features/multi_window.rs", "premium/features/multi_account.rs"]) {
+    assert.match(rs(file), /\.disable_drag_drop_handler\(\)/, `${file}: HTML5 drag and drop reaches the page`);
+  }
+}
 
 console.log("electron-api-shim.test: ok");
