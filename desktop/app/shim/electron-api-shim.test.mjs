@@ -268,6 +268,13 @@ for (const [path, args, cmd, expected] of CASES) {
   await new Promise((r) => setTimeout(r, 1700));
   assert.equal(s.invokes.filter((c) => c[1] && c[1].channel === "premium:status").length, statusPolls, "polling stops when nothing waits");
   assert.ok(!answers.some((a) => a[0] === "premium:global_mute:status" && a[2]), "status reads are not replayed");
+  // Signing out drops what waits: nothing of that session is sent again later.
+  running = [];
+  await s.premium.invoke("premium:focus_mode:state", { until: 0 });
+  await s.premium.invoke("premium:entitlements", { keys: [], plan: null, token: "" });
+  running = ["focus_mode"];
+  await new Promise((r) => setTimeout(r, 1150));
+  assert.ok(!answers.some((a) => a[0] === "premium:focus_mode:state" && a[2]), "no resend after sign-out");
 }
 {
   // Switching a feature on: later calls wait for the settings:set, and a "locked" answer right

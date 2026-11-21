@@ -163,7 +163,7 @@
     let r = await invoke("premium_invoke", { channel, args: packed });
     if (REPLAY.has(channel)) {
       if (latest.get(channel) === packed) {
-        if (isLocked(r)) { pending.add(channel); schedulePoll(false); } else pending.delete(channel);
+        if (isLocked(r)) { const first = !pending.size; pending.add(channel); schedulePoll(first); } else pending.delete(channel);
       }
       return r;
     }
@@ -182,6 +182,8 @@
     }
     const packed = await packArgs(args);
     if (REPLAY.has(channel)) latest.set(channel, packed);
+    // Signed out / no plan: nothing of the previous session is sent again.
+    if (channel === "premium:entitlements" && !(packed[0] && packed[0].plan)) { pending.clear(); latest.clear(); }
     let r;
     if (channel === "premium:settings:set") {
       // In order, like Electron; later calls wait for it.
