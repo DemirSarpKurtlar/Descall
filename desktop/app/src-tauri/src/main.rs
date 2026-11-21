@@ -129,6 +129,8 @@ fn main() {
                 // No browser autofill dropdown under the app's fields (search, username,
                 // message composer); Electron never had one.
                 .general_autofill_enabled(false)
+                // <a download> / blob: exports: Downloads + Explorer, no Edge download bubble.
+                .on_download(webview::on_download)
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)

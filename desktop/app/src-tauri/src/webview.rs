@@ -166,6 +166,35 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     }
 }
 
+/// Page downloads (<a download> exports, blob: / data: files): WebView2's own download bubble
+/// (an Edge flyout over the app) is replaced by what electronAPI.downloadFile does: the file
+/// goes to Downloads under a free name (descall_shell::download) and is shown in Explorer.
+pub fn on_download<R: Runtime>(webview: tauri::Webview<R>, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    use tauri::webview::DownloadEvent;
+    use tauri::Manager;
+    match event {
+        DownloadEvent::Requested { destination, .. } => {
+            let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            if let Ok(dir) = webview.app_handle().path().download_dir() {
+                if let Ok((_, safe)) = descall_shell::download::resolve_download_path(&dir, &name) {
+                    *destination = descall_shell::download::unique_path(&dir, &safe, |p| p.exists());
+                }
+            }
+            true
+        }
+        DownloadEvent::Finished { path, success, .. } => {
+            if success {
+                if let Some(p) = path {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = webview.app_handle().opener().reveal_item_in_dir(&p);
+                }
+            }
+            true
+        }
+        _ => true,
+    }
+}
+
 /// Native "Descall could not open" with Retry / Cancel(quit). Blocking; call off the UI thread.
 pub fn ask_retry(title: &str, detail: &str) -> bool {
     #[cfg(windows)]

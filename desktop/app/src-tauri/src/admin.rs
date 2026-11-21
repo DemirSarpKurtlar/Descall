@@ -44,6 +44,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .use_https_scheme(true)
         .disable_drag_drop_handler() // HTML5 drops (announcement images, set builder)
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        .on_download(crate::webview::on_download) // CSV / JSON exports: Downloads + Explorer
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(script)
         .on_navigation(move |next| crate::boot::is_app_url(next) && spec(next.path()).map(|s| s.0) == Some(label))
