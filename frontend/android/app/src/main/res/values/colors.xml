@@ -6,4 +6,9 @@
          the WebView follow the accent, like the iPhone tint color. -->
     <color name="colorAccent">#587AF6</color>
     <color name="splash_background">#1E1F22</color>
+    <!-- Behind the WebView after launch: the Liquid Glass base (bottom of the
+         aurora, the color Safari paints behind its toolbars). WebView < 140
+         pads the system bars, so this is the status / navigation bar color
+         there; the grey launch surface showed as a band above the glass UI. -->
+    <color name="window_background">#101118</color>
 </resources>

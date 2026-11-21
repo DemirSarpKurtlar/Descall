@@ -42,6 +42,11 @@ assert.match(colors, /<color name="colorAccent">#587AF6<\/color>/, "accent is th
 const noActionBar = styles.slice(styles.indexOf('name="AppTheme.NoActionBar"'), styles.indexOf('name="AppTheme.NoActionBarLaunch"'));
 assert.match(noActionBar, /<item name="colorAccent">@color\/colorAccent<\/item>/, "the activity theme carries the accent");
 assert.match(noActionBar, /<item name="colorControlActivated">@color\/colorAccent<\/item>/);
+// Behind the WebView (system bars on WebView < 140, keyboard gaps): the glass base, not the grey launch tile.
+assert.match(colors, /<color name="window_background">#101118<\/color>/);
+assert.match(noActionBar, /<item name="android:windowBackground">@color\/window_background<\/item>/);
+const launch = styles.slice(styles.indexOf('name="AppTheme.NoActionBarLaunch"'));
+assert.match(launch, /windowSplashScreenBackground">@color\/splash_background</, "the launch splash keeps its own surface");
 
 // System font scale must not multiply the glass chrome (the iPhone WebView does not either).
 const mainActivity = readFileSync(join(here, "..", "..", "android", "app", "src", "main", "java", "com", "descall", "app", "MainActivity.java"), "utf8");
