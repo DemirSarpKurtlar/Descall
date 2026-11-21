@@ -63,7 +63,7 @@ import {
   peekChatCache,
 } from "./lib/chatCache";
 import { emitRoomOnce, nextGroupRejoin } from "./lib/socketResubscribe";
-import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatPrefetchHandler } from "./lib/chatPrefetch";
+import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, startupPrefetchLimits, setChatPrefetchHandler } from "./lib/chatPrefetch";
 import { createSocket, rememberBootFriendsHash, forgetBootHashes } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
@@ -4878,7 +4878,7 @@ export default function App() {
 
   useEffect(() => {
     if (!me?.id || !friendsLoaded || !groupsLoaded || !serversLoaded) return undefined;
-    const plan = planStartupPrefetch({ dms: sortedDms, groups: sortedGroups, servers: myServers });
+    const plan = planStartupPrefetch({ dms: sortedDms, groups: sortedGroups, servers: myServers, ...startupPrefetchLimits() });
     for (const id of plan.dmIds) requestChatPrefetch("dm", id);
     for (const id of plan.groupIds) requestChatPrefetch("group", id);
     for (const channel of plan.channels) {

@@ -14,6 +14,23 @@ export function requestChatPrefetch(kind, id) {
 }
 
 /**
+ * How many conversations the app warms at open, by connection. Data Saver or a
+ * 2G-class link (navigator.connection, Chromium / the Android WebView only)
+ * warms just the first chat; 3G warms fewer. WebKit has no
+ * navigator.connection and keeps the defaults.
+ */
+export function startupPrefetchLimits(connection = typeof navigator !== "undefined" ? navigator.connection : null) {
+  const defaults = { dmLimit: 4, groupLimit: 4, channelLimit: 2 };
+  if (!connection) return defaults;
+  const type = String(connection.effectiveType || "");
+  if (connection.saveData || type === "slow-2g" || type === "2g") {
+    return { dmLimit: 1, groupLimit: 0, channelLimit: 0 };
+  }
+  if (type === "3g") return { dmLimit: 2, groupLimit: 2, channelLimit: 0 };
+  return defaults;
+}
+
+/**
  * The lists passed in are already in sidebar order. Warm the rows a person
  * actually sees first, plus the first text channel of the first servers.
  */
