@@ -179,6 +179,18 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   }
 }
 
+// ---- 1b. WebView2 permissions: app media allowed, the rest refused without a prompt (Electron)
+{
+  const wv = stripRust(readFileSync(join(srcRoot, "webview.rs"), "utf8"));
+  assert.match(wv, /permission_decision\(/, "the handler asks descall_shell::clipboard::permission_decision");
+  assert.match(wv, /COREWEBVIEW2_PERMISSION_STATE_DENY/, "refusals are explicit, so WebView2 shows no prompt");
+  const clip = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  const body = clip.slice(clip.indexOf("pub fn permission_decision"), clip.indexOf("#[cfg(test)]"));
+  for (const k of ["Notifications", "Geolocation", "ClipboardRead", "Microphone", "Camera"]) {
+    assert.match(body, new RegExp(`PermissionKind::${k}[^=]*=> Some\\(false\\)`), `${k} outside the media grant: refused silently`);
+  }
+}
+
 // ---- 2a. the mini call card never takes focus (Electron: showInactive)
 {
   const ov = stripRust(readFileSync(join(srcRoot, "commands", "overlay.rs"), "utf8"));

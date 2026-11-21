@@ -47,12 +47,13 @@ pub fn clear_and_reload<R: Runtime>(window: &WebviewWindow<R>, why: &str) {
 }
 
 /// Grant microphone / camera / autoplay to the app origin without a prompt, as Electron's
-/// setPermissionRequestHandler did (descall_shell::clipboard::permission_allowed).
+/// setPermissionRequestHandler did (descall_shell::clipboard::permission_decision); every
+/// other request is refused without a prompt, as Electron refused it.
 pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
     {
         let _ = window.with_webview(|pw| unsafe {
-            use descall_shell::clipboard::{permission_allowed, PermissionKind};
+            use descall_shell::clipboard::{permission_decision, PermissionKind};
             use webview2_com::Microsoft::Web::WebView2::Win32::*;
             let Ok(core) = pw.controller().CoreWebView2() else { return };
             let handler = webview2_com::PermissionRequestedEventHandler::create(Box::new(|_, args| {
@@ -71,8 +72,12 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
                     COREWEBVIEW2_PERMISSION_KIND_GEOLOCATION => PermissionKind::Geolocation,
                     _ => PermissionKind::Other,
                 };
-                if permission_allowed(k, &uri, cfg!(debug_assertions)) {
-                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                // Allow the app's media, refuse the rest silently as Electron did (no browser
+                // prompt), leave unknown kinds to WebView2.
+                match permission_decision(k, &uri, cfg!(debug_assertions)) {
+                    Some(true) => args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?,
+                    Some(false) => args.SetState(COREWEBVIEW2_PERMISSION_STATE_DENY)?,
+                    None => {}
                 }
                 Ok(())
             }));

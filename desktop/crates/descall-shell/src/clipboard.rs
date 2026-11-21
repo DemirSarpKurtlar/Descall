@@ -75,6 +75,21 @@ pub fn permission_allowed(kind: PermissionKind, url: &str, is_dev: bool) -> bool
     }
 }
 
+/// The PermissionRequested answer: `Some(true)` allow, `Some(false)` deny without WebView2's
+/// prompt, `None` leave WebView2's default. Electron's permission handler refused everything
+/// outside the media list silently, so the Tauri app never shows a browser prompt either
+/// (e.g. Notification.requestPermission() in the maintenance gate; Descall notifies natively).
+/// Autoplay outside the app and kinds this list does not know keep WebView2's default.
+pub fn permission_decision(kind: PermissionKind, url: &str, is_dev: bool) -> Option<bool> {
+    if permission_allowed(kind, url, is_dev) {
+        return Some(true);
+    }
+    match kind {
+        PermissionKind::Microphone | PermissionKind::Camera | PermissionKind::ClipboardRead | PermissionKind::Notifications | PermissionKind::Geolocation => Some(false),
+        PermissionKind::Autoplay | PermissionKind::Other => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! clipboardText.selftest.mjs / clipboardImage selftest logic.
@@ -110,5 +125,19 @@ mod tests {
         for k in [PermissionKind::ClipboardRead, PermissionKind::Geolocation, PermissionKind::Notifications, PermissionKind::Other] {
             assert!(!permission_allowed(k, "https://tauri.localhost/", false), "{k:?}");
         }
+    }
+
+    #[test]
+    fn no_browser_prompts_like_electron() {
+        assert_eq!(permission_decision(PermissionKind::Microphone, "https://tauri.localhost/", false), Some(true));
+        assert_eq!(permission_decision(PermissionKind::Autoplay, "https://tauri.localhost/", false), Some(true));
+        // Electron refused these without UI; WebView2 would ask.
+        assert_eq!(permission_decision(PermissionKind::Notifications, "https://tauri.localhost/", false), Some(false));
+        assert_eq!(permission_decision(PermissionKind::Geolocation, "https://tauri.localhost/", false), Some(false));
+        assert_eq!(permission_decision(PermissionKind::ClipboardRead, "https://tauri.localhost/", false), Some(false));
+        assert_eq!(permission_decision(PermissionKind::Camera, "https://evil.example/", false), Some(false));
+        // WebView2's own default.
+        assert_eq!(permission_decision(PermissionKind::Autoplay, "https://www.youtube.com/", false), None);
+        assert_eq!(permission_decision(PermissionKind::Other, "https://tauri.localhost/", false), None);
     }
 }
