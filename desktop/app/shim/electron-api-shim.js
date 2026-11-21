@@ -59,6 +59,22 @@
     }).then((u) => { if (dead) u(); else un = u; }).catch(noop);
     return () => { dead = true; if (un) { un(); un = null; } };
   };
+  /**
+   * window:maximized, plus the state at subscribe time. The shell maximizes a window that was
+   * left maximized before the page loads, so that event is gone by the time the title bar
+   * subscribes, and its button showed "Maximize" on a maximized window (Electron maximized
+   * after the page was up). A real event that arrives first wins over the late answer.
+   */
+  const onMaximized = (cb) => {
+    if (typeof cb !== "function") return noop;
+    let seen = false;
+    let dead = false;
+    const off = on("window:maximized", (v) => { seen = true; cb(v); }, Boolean);
+    invoke("plugin:window|is_maximized").then((v) => {
+      if (!seen && !dead) cb(Boolean(v));
+    }).catch(noop);
+    return () => { dead = true; off(); };
+  };
   /** Legacy listeners that got (event, info) and are removed with removeAllListeners. */
   const legacy = new Map();
   const onLegacy = (event, cb) => {
@@ -87,7 +103,13 @@
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
 
-  let zoomFactor = 1;
+  // zoom.get is synchronous (webFrame.getZoomFactor in Electron). WebView2 keeps the zoom of
+  // the webview across a reload (boot retry) while this script starts over, so the last value
+  // set during this run is mirrored to sessionStorage; a new app start begins at 1 again.
+  const ZOOM_KEY = "__descall_zoom";
+  let zoomFactor = (() => {
+    try { const z = Number(sessionStorage.getItem(ZOOM_KEY)); return Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1; } catch (_) { return 1; }
+  })();
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
   on("native-theme:reduced-transparency-changed", (v) => { reducedTransparency = Boolean(v); });
 
@@ -114,7 +136,11 @@
       get: () => zoomFactor,
       set: (factor) => {
         const f = Number(factor);
-        if (Number.isFinite(f) && f >= 0.5 && f <= 2) { zoomFactor = f; fire("window_set_zoom", { factor: f }); }
+        if (Number.isFinite(f) && f >= 0.5 && f <= 2) {
+          zoomFactor = f;
+          try { sessionStorage.setItem(ZOOM_KEY, String(f)); } catch (_) { /* ignore */ }
+          fire("window_set_zoom", { factor: f });
+        }
       },
     },
 
@@ -133,7 +159,7 @@
     minimizeWindow: () => winCmd("window_minimize", "minimize"),
     maximizeWindow: () => winCmd("window_toggle_maximize", "toggle_maximize"),
     closeWindow: () => winCmd("window_close", "close"),
-    onMaximizedChange: (cb) => on("window:maximized", cb, Boolean),
+    onMaximizedChange: (cb) => onMaximized(cb),
     onAppVisibility: (cb) => on("app:visibility", cb, (p) => p || {}),
     // Main-process errors (preload onMainError); admin windows get a no-op like adminPreload.
     onMainError: ADMIN ? () => noop : (cb) => on("app:main-error", cb, (p) => p || {}),
@@ -245,6 +271,11 @@
   };
   window.addEventListener("keydown", (e) => {
     if (blockedKey(e)) e.preventDefault();
+    // F11 maximizes / restores the window, as Electron's windowKeys.cjs did (no fullscreen).
+    if (e.key === "F11" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      winCmd("window_toggle_maximize", "toggle_maximize");
+    }
   }, true);
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
