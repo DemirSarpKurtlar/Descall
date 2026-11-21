@@ -15,13 +15,13 @@ assert.match(main, /classList\.add\("native-android"\)/, "html.native-android ma
 
 // Inter faces at every weight the glass UI asks for, local files that exist.
 const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
-assert.equal(faces.length, 8, "400 / 500 / 600 / 700 x latin + latin-ext");
+assert.equal(faces.length, 12, "400 / 500 / 600 / 700 x latin + latin-ext + cyrillic");
 for (const w of [400, 500, 600, 700]) {
-  for (const sub of ["latin", "latin-ext"]) {
+  for (const sub of ["latin", "latin-ext", "cyrillic"]) {
     const face = faces.find((f) => f.includes(`font-weight: ${w};`) && f.includes(`inter-${sub}-${w}-normal.woff2`));
     assert(face, `Inter ${w} ${sub}`);
     assert.match(face, /font-family: "Inter";/);
-    assert.match(face, /font-display: fallback;/, "never a late swap, never a long invisible-text block");
+    assert.match(face, /font-display: fallback;/, "short block, swap only during boot");
     assert.match(face, /unicode-range:/, "only the subset a glyph needs is loaded");
     const url = face.match(/url\("([^"]+)"\)/)[1];
     assert(existsSync(resolve(here, url)), `font file ships: ${url}`);
