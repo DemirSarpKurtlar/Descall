@@ -5,6 +5,50 @@ export const OFFSCREEN_MIN_MESSAGES = 48;
 /** A few groups are enough when they are long (one sender, hundreds of bubbles). */
 export const OFFSCREEN_MIN_GROUPS = 4;
 const ROW_SELECTOR = ".message-group";
+const OFFSCREEN = "is-offscreen";
+
+/**
+ * One IntersectionObserver entry: hide a row far outside the scrollport
+ * (content-visibility: auto via .is-offscreen), show it again near it.
+ *
+ * The row's real height is frozen into its placeholder size first, so hiding
+ * it changes no layout. Before (send bug, Nov 2026): the placeholder was the
+ * stylesheet's 88 px, so every hide / show moved everything below it, the
+ * browser clamped scrollTop when the list sat at the bottom, and rows at the
+ * margin flip-flopped as the shift moved them across it.
+ */
+export function applyOffscreen(entry, readStyle = defaultReadStyle) {
+  const el = entry?.target;
+  if (!el?.classList) return;
+  const off = !entry.isIntersecting;
+  if (off === el.classList.contains(OFFSCREEN)) return;
+  if (off) {
+    const box = Number(entry.boundingClientRect?.height) || 0;
+    // Not laid out (0): keep the stylesheet placeholder.
+    if (box > 0 && el.style) el.style.containIntrinsicHeight = `auto ${placeholderHeight(box, readStyle(el))}px`;
+  }
+  el.classList.toggle(OFFSCREEN, off);
+}
+
+/**
+ * contain-intrinsic-height sizes the content box: padding and border come on
+ * top. Desktop / iPad rows have 6 px padding, so the border-box height would
+ * add 12 px per hidden row.
+ */
+export function placeholderHeight(borderBoxHeight, cs) {
+  const n = (v) => parseFloat(v) || 0;
+  const chrome = cs ? n(cs.paddingTop) + n(cs.paddingBottom) + n(cs.borderTopWidth) + n(cs.borderBottomWidth) : 0;
+  // Not rounded: a half pixel per row adds up over a long history.
+  return Math.max(0, Math.round(((Number(borderBoxHeight) || 0) - chrome) * 100) / 100);
+}
+
+function defaultReadStyle(el) {
+  try {
+    return typeof getComputedStyle === "function" ? getComputedStyle(el) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Mark message groups that sit well outside the scrollport so the browser
@@ -16,6 +60,8 @@ const ROW_SELECTOR = ".message-group";
  * as they mount; rows already marked keep their class. Re-creating the
  * observer per message used to strip `is-offscreen` from every row first,
  * which laid out the whole history again on each incoming message.
+ * Each hidden row keeps its real height as its placeholder (applyOffscreen),
+ * so hiding and showing rows never moves the list.
  */
 export function useOffscreenRows(listRef, rowCount) {
   const stateRef = useRef(null);
@@ -53,9 +99,7 @@ export function createOffscreenTracker(list, root) {
   const st = { list, root, nodes: new Set(), io: null, mo: null, raf: 0 };
   st.io = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) {
-        entry.target.classList.toggle("is-offscreen", !entry.isIntersecting);
-      }
+      for (const entry of entries) applyOffscreen(entry);
     },
     { root, rootMargin: "700px 0px", threshold: 0 }
   );
@@ -91,6 +135,6 @@ export function destroyOffscreenTracker(st) {
   if (st.raf && typeof cancelAnimationFrame === "function") cancelAnimationFrame(st.raf);
   st.mo?.disconnect();
   st.io.disconnect();
-  st.nodes.forEach((node) => node.classList.remove("is-offscreen"));
+  st.nodes.forEach((node) => node.classList.remove(OFFSCREEN));
   st.nodes.clear();
 }

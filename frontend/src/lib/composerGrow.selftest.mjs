@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   shouldSendOnLineBreakInput,
   LINE_BREAK_ENTER_MS,
-  composerDeviceClass, maxComposerHeight, composerHeight, isImeEnter, shouldSendOnEnter,
+  composerDeviceClass, maxComposerHeight, composerHeight, isImeEnter, shouldSendOnEnter, heldBoxHeight,
   IPHONE_MAX_LINES, IPAD_MAX_LINES, DESKTOP_MAX_PX,
 } from "./composerGrow.js";
 
@@ -50,5 +50,21 @@ assert.equal(
   true,
 );
 assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: false, at: 1000 }, now: 1001 }), true);
+
+// Measuring holds the field's box at its height (Nov 2026: on iPad / desktop
+// the collapse made the chat list above taller for one forced layout, the
+// browser clamped its scrollTop and the newest message slid under the
+// composer). min-height follows box-sizing.
+assert.equal(heldBoxHeight(96, { boxSizing: "border-box", paddingTop: "14px", paddingBottom: "14px" }), 96);
+assert.equal(heldBoxHeight(96, { boxSizing: "content-box", paddingTop: "14px", paddingBottom: "14px", borderTopWidth: "1px", borderBottomWidth: "1px" }), 66);
+assert.equal(heldBoxHeight(96, null), 96);
+assert.equal(heldBoxHeight(10, { boxSizing: "content-box", paddingTop: "14px" }), 0);
+{
+  const src = (await import("node:fs")).readFileSync(new URL("../components/chat/MessageComposer.jsx", import.meta.url), "utf8");
+  const grow = src.slice(src.indexOf("const prevScroll = el.scrollTop;"), src.indexOf("el.style.maxHeight = `${maxHeight}px`;"));
+  const hold = grow.indexOf("box.style.minHeight = `${heldBoxHeight(");
+  assert.ok(hold >= 0 && hold < grow.indexOf('el.style.height = "auto"'), "box held before the field collapses");
+  assert.ok(grow.lastIndexOf("box.style.minHeight = heldMin") > grow.lastIndexOf("el.style.height = `${height}px`"), "released after the final height is set");
+}
 
 console.log("composerGrow selftest OK");

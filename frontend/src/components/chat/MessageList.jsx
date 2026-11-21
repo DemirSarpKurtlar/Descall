@@ -1153,8 +1153,10 @@ function MessageBubbleView({
   const glass = useGlassUi();
   // History that is already there when a chat opens is drawn in place: 50
   // bubble enter animations ran on the main thread while the page slid in.
-  // Messages that arrive later (or were just sent) still animate in.
-  const [animateIn] = useState(() => isFresh || nowMs() > quietUntil);
+  // Messages that arrive later (or were just sent) still animate in, once:
+  // the server copy of a row you sent (clientKey, lib/liveMessageMerge)
+  // takes the optimistic bubble's place without a second entrance.
+  const [animateIn] = useState(() => !message?.clientKey && (isFresh || nowMs() > quietUntil));
   // A mouse-only device (desktop/Electron) has no swipe-to-reply: framer's drag
   // would set user-select:none on the bubble and a double click on the text
   // could never select the word (A2). Touch devices keep the swipe.

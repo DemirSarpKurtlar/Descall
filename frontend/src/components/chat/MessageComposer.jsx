@@ -32,7 +32,7 @@ import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { getComposerInput, registerComposerInput } from "../../lib/composerFocus";
-import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter, shouldSendOnLineBreakInput } from "../../lib/composerGrow";
+import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter, shouldSendOnLineBreakInput, heldBoxHeight } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
@@ -425,9 +425,18 @@ function MessageComposer({
     const minHeight = parseFloat(cs.minHeight) || 0;
     const maxHeight = maxComposerHeight({ device: composerDevice, lineHeight, paddingY, borderY });
     const prevScroll = el.scrollTop;
+    // Measuring collapses the field to one line for a forced layout. Hold its
+    // box at the current height meanwhile: where the composer is in the flow
+    // (iPad, desktop), the chat list above would grow for that layout and the
+    // browser would clamp its scrollTop, leaving the newest message under the
+    // composer and the list unpinned after the next keystroke (Nov 2026).
+    const box = el.parentElement;
+    const heldMin = box ? box.style.minHeight : "";
+    if (box) box.style.minHeight = `${heldBoxHeight(box.getBoundingClientRect().height, window.getComputedStyle(box))}px`;
     el.style.height = "auto";
     const { height, scroll } = composerHeight({ scrollHeight: el.scrollHeight, minHeight, maxHeight, borderY });
     el.style.height = `${height}px`;
+    if (box) box.style.minHeight = heldMin;
     el.style.maxHeight = `${maxHeight}px`;
     el.style.overflowY = scroll ? "auto" : "hidden";
     if (scroll) {
