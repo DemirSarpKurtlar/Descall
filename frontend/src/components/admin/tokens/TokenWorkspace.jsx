@@ -371,14 +371,18 @@ export function UsageCard({ token, usage, loading }) {
               <span className="s">{t("atok.usage.destSub")}</span>
             </div>
           </div>
-          <div className="atk-split-l">
-            <span>{t("atok.mcpShare", { n: f.n(split.mcp) })}</span>
-            <span>{t("atok.usage.rest", { n: f.n(split.rest) })}</span>
-          </div>
-          <div className="atk-split" aria-hidden="true">
-            <i style={{ width: `${split.mcp}%` }} className="is-mcp" />
-            <i style={{ width: `${split.rest}%` }} className="is-rest" />
-          </div>
+          {split.mcp + split.rest ? (
+            <>
+              <div className="atk-split-l">
+                <span>{t("atok.mcpShare", { n: f.n(split.mcp) })}</span>
+                <span>{t("atok.usage.rest", { n: f.n(split.rest) })}</span>
+              </div>
+              <div className="atk-split" aria-hidden="true">
+                <i style={{ width: `${split.mcp}%` }} className="is-mcp" />
+                <i style={{ width: `${split.rest}%` }} className="is-rest" />
+              </div>
+            </>
+          ) : null}
           <div className="atk-b24" role="img" aria-label={t("atok.usage.chartLabel")}>
             <div className="atk-b24-y tnum" aria-hidden="true">
               <span>{f.n(top)}</span>

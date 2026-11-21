@@ -1,16 +1,39 @@
 /**
  * Admin Token building blocks: opaque dialog and right drawer (bottom sheets on a phone),
  * the 6-digit code field, sparkline, token icon, status pill, switch, skeleton, toast.
- * Focus trap, Esc and focus return come from the Sistem page's useModal (one stack of
- * [data-asx-modal] elements, so a dialog over the drawer closes first).
+ * Focus trap, inert page behind and focus return come from hooks/useModalFocus; Esc closes
+ * only the top-most sheet and never while it is busy or locked (the one-time reveal).
  */
-import { useCallback, useId, useMemo, useRef } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "../../../context/LocaleContext";
 import { displayName, formatDate, formatNumber } from "../../../i18n/format.js";
 import { Check, Undo2, X } from "../../ui/Icon.jsx";
-import { useModal } from "../system/SystemUi.jsx";
+import useModalFocus from "../../../hooks/useModalFocus.js";
 import { OTP_LENGTH, cleanOtp, colorOf, initials, sparkPaths, statusKey } from "./tokenModel.js";
+
+/** useModalFocus (Tab trap, inert background, focus back to the opener) + Esc for the top sheet. */
+function useSheet(open, ref, onClose, blocked) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const blockedRef = useRef(blocked);
+  blockedRef.current = blocked;
+  useModalFocus(open, ref, { initialFocus: () => ref.current?.querySelector("[data-autofocus]") || null });
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented || !ref.current) return;
+      const all = document.querySelectorAll("[data-atk-modal]");
+      if (all[all.length - 1] !== ref.current) return;
+      // Another layer on top (the 2FA prompt) owns the key.
+      if (document.activeElement && document.activeElement !== document.body && !ref.current.contains(document.activeElement)) return;
+      e.stopPropagation();
+      if (!blockedRef.current) closeRef.current?.();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open, ref]);
+}
 
 /** Locale formatters shared by the page: numbers, percents, dates, times, countries, labels. */
 export function useFmt() {
@@ -39,11 +62,11 @@ export function Dialog({ open, onClose, busy = false, locked = false, icon: Icon
   const titleId = useId();
   const ref = useRef(null);
   const blocked = busy || locked;
-  useModal(open, ref, onClose, blocked);
+  useSheet(open, ref, onClose, blocked);
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="atk-scrim" onMouseDown={(e) => e.target === e.currentTarget && !blocked && onClose?.()}>
-      <div ref={ref} data-asx-modal="" className="atk-dlg" style={{ "--atk-dlg-w": `${width}px` }} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
+      <div ref={ref} data-atk-modal="" className="atk-dlg" style={{ "--atk-dlg-w": `${width}px` }} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
         <span className="atk-handle" aria-hidden="true" />
         <header className="atk-mh">
           {Icon ? (
@@ -75,11 +98,11 @@ export function Drawer({ open, onClose, busy = false, locked = false, icon: Icon
   const titleId = useId();
   const ref = useRef(null);
   const blocked = busy || locked;
-  useModal(open, ref, onClose, blocked);
+  useSheet(open, ref, onClose, blocked);
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="atk-scrim is-drawer" onMouseDown={(e) => e.target === e.currentTarget && !blocked && onClose?.()}>
-      <div ref={ref} data-asx-modal="" className="atk-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
+      <div ref={ref} data-atk-modal="" className="atk-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
         <span className="atk-handle" aria-hidden="true" />
         <header className="atk-dw-h">
           {Icon ? (
