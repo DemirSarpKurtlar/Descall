@@ -93,6 +93,11 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
         .skip_taskbar(true)
         .visible_on_all_workspaces(true)
         .focused(false)
+        // Electron showed the card with showInactive(). tao drops the "don't focus" marker
+        // after creation, so a later show() activated the card and took the keyboard (or a
+        // game's foreground) away. Not activatable (WS_EX_NOACTIVATE); clicks still work, as
+        // on the notification capsules.
+        .focusable(false)
         .visible(false)
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)

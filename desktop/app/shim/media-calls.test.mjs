@@ -162,6 +162,13 @@ function windowBuilders() {
   }
 }
 
+// ---- 2a. the mini call card never takes focus (Electron: showInactive)
+{
+  const ov = stripRust(readFileSync(join(srcRoot, "commands", "overlay.rs"), "utf8"));
+  const chain = ov.slice(ov.indexOf("WebviewWindowBuilder::new("), ov.indexOf(".build()", ov.indexOf("WebviewWindowBuilder::new(")));
+  assert.match(chain, /\.focusable\(false\)/, "show() would activate the card: keyboard / game focus lost when a call starts");
+}
+
 // ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)
 {
   const main = stripRust(readFileSync(join(srcRoot, "main.rs"), "utf8"));
