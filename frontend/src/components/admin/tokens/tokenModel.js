@@ -59,6 +59,7 @@ export const statusKey = (s) => `atok.status.${STATUSES.includes(s) ? s : "expir
 export const expiryKey = (e) => `atok.exp.${EXPIRY_OPTIONS.includes(e) ? e : "never"}`;
 
 export function maskToken(t) {
+  if (t?.masked) return String(t.masked);
   return `${TOKEN_PREFIX}${t?.prefix || "····"}…${t?.last4 || "····"}`;
 }
 
@@ -282,6 +283,7 @@ export function axisTicks(n = 24) {
 /** "ban" | "delete" | "descoin" | "broadcast" | null for a call or an endpoint row. */
 export function destructiveKind(row) {
   if (!row) return null;
+  if (["ban", "delete", "descoin", "broadcast"].includes(row.destructiveKind)) return row.destructiveKind;
   const method = String(row.method || "").toUpperCase();
   const path = String(row.tool || row.path || "").toLowerCase();
   if (/\b(ban|ban_user|timeout|kick)\b|\/ban\b|_ban\b/.test(path)) return "ban";
@@ -554,6 +556,14 @@ export function auditKind(action) {
   return "dest";
 }
 
+/** Paused by an alert rule rather than by hand (Token.pausedReason). */
+export function autoPaused(token) {
+  return token?.status === "paused" && Boolean(token.pausedReason) && token.pausedReason !== "manual";
+}
+
+/** "allow_ip" adds the address only when the token has an allowlist; otherwise it approves it. */
+export const allowIpMode = (token) => ((token?.ipAllowlist || []).length ? "add" : "approve");
+
 /* ---------- forms ---------- */
 
 export function cleanOtp(v) {
@@ -614,6 +624,11 @@ const ERR = {
   RESTORE_EXPIRED: "atok.err.restoreExpired",
   OWNER_ONLY: "atok.err.ownerOnly",
   BAD_CODE: "atok.err.code",
+  TOKEN_REVOKED: "atok.err.revoked",
+  BAD_REASON: "atok.err.reason",
+  BAD_GRACE: "atok.err.grace",
+  BAD_ACTION: "atok.err.action",
+  ALERT_NOT_FOUND: "atok.err.alertNotFound",
   STEP_UP_REQUIRED: "atok.err.stepUp",
   STEP_UP_CANCELLED: "atok.err.stepUpCancelled",
 };

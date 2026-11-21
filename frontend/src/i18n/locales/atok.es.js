@@ -131,7 +131,9 @@ export const ATOK_ES = {
     "rotate": "Renovar",
     "dismissed": "Alerta ignorada",
     "paused": "{name} en pausa",
-    "allowed": "{ip} añadida a la lista de permitidas"
+    "allowed": "{ip} añadida a la lista de permitidas",
+    "trustIp": "Aprobar IP",
+    "trusted": "{ip} aprobada"
   },
   "alert": {
     "ipTitle": "Nueva IP: {ip}, {country}",
@@ -184,7 +186,8 @@ export const ATOK_ES = {
     "paused": "En pausa",
     "pausedBody": "El token es válido pero las solicitudes se rechazan con 423. Al reanudar, el mismo token vuelve a funcionar.",
     "grace": "Periodo de transición",
-    "graceBody": "El token anterior a la renovación también se acepta hasta el {when}."
+    "graceBody": "El token anterior a la renovación también se acepta hasta el {when}.",
+    "pausedAuto": "Pausado automáticamente por una alerta. Revisa el uso; si todo está bien, reanúdalo o aprueba la IP."
   },
   "usage": {
     "title": "Consola de uso",
@@ -448,6 +451,11 @@ export const ATOK_ES = {
     "stepUp": "Esta acción requiere un código 2FA.",
     "stepUpCancelled": "Se canceló la verificación 2FA.",
     "notDeployed": "El servidor aún no ofrece esta función.",
-    "generic": "No se pudo completar la acción. Inténtalo de nuevo."
+    "generic": "No se pudo completar la acción. Inténtalo de nuevo.",
+    "revoked": "Este token fue revocado; deshaz primero la revocación o crea un token nuevo.",
+    "reason": "Elige un motivo válido.",
+    "grace": "Periodo de transición no válido.",
+    "action": "Acción de alerta no válida.",
+    "alertNotFound": "No se encontró la alerta; la lista se actualizó."
   }
 };

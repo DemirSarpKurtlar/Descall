@@ -131,7 +131,9 @@ export const ATOK_TR = {
     "rotate": "Yenile",
     "dismissed": "Uyarı yoksayıldı",
     "paused": "{name} duraklatıldı",
-    "allowed": "{ip} izin listesine eklendi"
+    "allowed": "{ip} izin listesine eklendi",
+    "trustIp": "IP'yi onayla",
+    "trusted": "{ip} onaylandı"
   },
   "alert": {
     "ipTitle": "Yeni IP: {ip}, {country}",
@@ -184,7 +186,8 @@ export const ATOK_TR = {
     "paused": "Duraklatıldı",
     "pausedBody": "Token geçerli ama istekler 423 ile reddediliyor. Devam ettirdiğinde aynı token yeniden çalışır.",
     "grace": "Geçiş süresi",
-    "graceBody": "Yenilemeden önceki token {when} saatine kadar da kabul ediliyor."
+    "graceBody": "Yenilemeden önceki token {when} saatine kadar da kabul ediliyor.",
+    "pausedAuto": "Uyarı üzerine otomatik duraklatıldı. Kullanımı kontrol et; sorun yoksa devam ettir ya da IP'yi onayla."
   },
   "usage": {
     "title": "Kullanım konsolu",
@@ -448,6 +451,11 @@ export const ATOK_TR = {
     "stepUp": "Bu işlem için 2FA kodu gerekiyor.",
     "stepUpCancelled": "2FA doğrulaması iptal edildi.",
     "notDeployed": "Sunucu bu özelliği henüz sunmuyor.",
-    "generic": "İşlem tamamlanamadı. Tekrar dene."
+    "generic": "İşlem tamamlanamadı. Tekrar dene.",
+    "revoked": "Bu token iptal edilmiş; önce iptali geri al ya da yeni token oluştur.",
+    "reason": "Geçerli bir sebep seç.",
+    "grace": "Geçersiz geçiş süresi.",
+    "action": "Geçersiz uyarı işlemi.",
+    "alertNotFound": "Uyarı bulunamadı; liste yenilendi."
   }
 };

@@ -991,6 +991,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {/* Admin Token (owner pick Draft B "Liste ve çalışma alanı"): tokens/AdminTokens.jsx */}
         {tab === "adminToken" && perm.owner && (
           <AdminTokens
+            socket={socket}
             viewerUsername={viewerUsername}
             onGoto={(id, opts = {}) => {
               if (id === "audit") setAuditQuery(opts.q ? { q: opts.q, at: Date.now() } : null);

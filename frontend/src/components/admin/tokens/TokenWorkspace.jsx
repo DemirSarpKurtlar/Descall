@@ -36,6 +36,8 @@ import {
   SNIPPET_TABS,
   agoLabel,
   alertCopy,
+  allowIpMode,
+  autoPaused,
   auditKind,
   axisTicks,
   clientChannel,
@@ -238,7 +240,7 @@ export function StateBanner({ token, now, busy, onResume, onRestore }) {
           <Pause size={20} aria-hidden="true" />
           <div className="atk-banner-t">
             <b>{t("atok.banner.paused")}</b>
-            {t("atok.banner.pausedBody")}
+            {autoPaused(token) ? t("atok.banner.pausedAuto") : t("atok.banner.pausedBody")}
           </div>
           <button type="button" className="atk-btn is-sm" disabled={busy} onClick={onResume}>
             <Play size={13} />
@@ -279,7 +281,7 @@ export function TokenAlertBanner({ alert, token, busy, onAction }) {
         ) : null}
         {alert.kind !== "burst" && alert.ip ? (
           <button type="button" className="atk-btn is-sm" disabled={busy} onClick={() => onAction(alert, "allow_ip")}>
-            {t("atok.alerts.allowIpShort")}
+            {allowIpMode(token) === "add" ? t("atok.alerts.allowIpShort") : t("atok.alerts.trustIp")}
           </button>
         ) : null}
         <button type="button" className="atk-btn is-sm is-ghost" disabled={busy} onClick={() => onAction(alert, "dismiss")}>

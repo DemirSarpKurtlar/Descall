@@ -29,6 +29,7 @@ import {
   FRESH_SECRET_MS,
   LIST_POLL_MS,
   alertKinds,
+  allowIpMode,
   assignColors,
   defaultSelection,
   deltaPct,
@@ -57,7 +58,7 @@ function usePageVisible() {
   return visible;
 }
 
-export default function AdminTokens({ viewerUsername, onGoto }) {
+export default function AdminTokens({ socket, viewerUsername, onGoto }) {
   const f = useFmt();
   const { t } = f;
   const visible = usePageVisible();
@@ -140,6 +141,28 @@ export default function AdminTokens({ viewerUsername, onGoto }) {
     return () => clearInterval(id);
   }, [visible, loadList]);
 
+  // Live: a new alert (owner's room) or any admin change refreshes the list at once;
+  // the 3 s calls polling keeps running for the console.
+  const refreshTimer = useRef(null);
+  useEffect(() => {
+    if (!socket) return undefined;
+    const soon = () => {
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(loadList, 400);
+    };
+    const onAlert = (a) => {
+      if (a?.id) setData((p) => ({ ...p, alerts: [a, ...p.alerts.filter((x) => x.id !== a.id)] }));
+      soon();
+    };
+    socket.on("admin:token-alert", onAlert);
+    socket.on("admin:update", soon);
+    return () => {
+      clearTimeout(refreshTimer.current);
+      socket.off("admin:token-alert", onAlert);
+      socket.off("admin:update", soon);
+    };
+  }, [socket, loadList]);
+
   // Keep a valid selection.
   useEffect(() => {
     if (data.loading) return;
@@ -153,6 +176,15 @@ export default function AdminTokens({ viewerUsername, onGoto }) {
       const d = await tokenApi.detail(id);
       setDetail((p) => (p.id !== id && quiet ? p : { id, loading: false, usage: d?.usage || null, audit: Array.isArray(d?.audit) ? d.audit : [], err: null, loadedAt: Date.now() }));
       if (d?.token) setData((p) => ({ ...p, tokens: p.tokens.map((x) => (x.id === id ? { ...x, ...d.token } : x)) }));
+      // The token's own alerts (GET /tokens/:id) refresh the panel's copy of them.
+      if (Array.isArray(d?.alerts) && d.alerts.length) {
+        setData((p) => {
+          const fresh = new Map(d.alerts.map((a) => [a.id, a]));
+          const kept = p.alerts.map((a) => (fresh.has(a.id) ? { ...a, ...fresh.get(a.id) } : a));
+          const added = d.alerts.filter((a) => !p.alerts.some((x) => x.id === a.id) && a.status === "open");
+          return { ...p, alerts: [...added, ...kept] };
+        });
+      }
       if (!quiet) setCalls(Array.isArray(d?.usage?.recentCalls) ? d.usage.recentCalls.slice(0, 50) : []);
       else if (Array.isArray(d?.usage?.recentCalls)) setCalls((prev) => mergeCalls(prev, d.usage.recentCalls));
     } catch (e) {
@@ -325,7 +357,7 @@ export default function AdminTokens({ viewerUsername, onGoto }) {
         if (r?.token) patchToken(r.token);
         const tok = data.tokens.find((x) => x.id === alert.tokenId);
         if (action === "pause") notify(t("atok.alerts.paused", { name: tok?.name || alert.tokenName }), tok ? { undo: { kind: "resume", token: tok } } : {});
-        else if (action === "allow_ip") notify(t("atok.alerts.allowed", { ip: alert.ip }));
+        else if (action === "allow_ip") notify(t(tok && allowIpMode(tok) === "add" ? "atok.alerts.allowed" : "atok.alerts.trusted", { ip: alert.ip }));
         else notify(t("atok.alerts.dismissed"));
         loadList();
         if (alert.tokenId === selectedId) loadDetail(selectedId, { quiet: true });

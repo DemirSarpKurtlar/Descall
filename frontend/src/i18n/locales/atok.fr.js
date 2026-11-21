@@ -131,7 +131,9 @@ export const ATOK_FR = {
     "rotate": "Renouveler",
     "dismissed": "Alerte ignorée",
     "paused": "{name} en pause",
-    "allowed": "{ip} ajoutée à la liste autorisée"
+    "allowed": "{ip} ajoutée à la liste autorisée",
+    "trustIp": "Approuver l'IP",
+    "trusted": "{ip} approuvée"
   },
   "alert": {
     "ipTitle": "Nouvelle IP : {ip}, {country}",
@@ -184,7 +186,8 @@ export const ATOK_FR = {
     "paused": "En pause",
     "pausedBody": "Le jeton est valide mais les requêtes sont refusées avec 423. À la reprise, le même jeton fonctionne de nouveau.",
     "grace": "Période de transition",
-    "graceBody": "Le jeton d'avant le renouvellement est aussi accepté jusqu'au {when}."
+    "graceBody": "Le jeton d'avant le renouvellement est aussi accepté jusqu'au {when}.",
+    "pausedAuto": "Mis en pause automatiquement par une alerte. Vérifie l'utilisation ; si tout va bien, reprends-le ou approuve l'IP."
   },
   "usage": {
     "title": "Console d'utilisation",
@@ -448,6 +451,11 @@ export const ATOK_FR = {
     "stepUp": "Cette action exige un code 2FA.",
     "stepUpCancelled": "La vérification 2FA a été annulée.",
     "notDeployed": "Le serveur ne propose pas encore cette fonction.",
-    "generic": "L'action n'a pas pu aboutir. Réessaie."
+    "generic": "L'action n'a pas pu aboutir. Réessaie.",
+    "revoked": "Ce jeton a été révoqué ; annule d'abord la révocation ou crée un nouveau jeton.",
+    "reason": "Choisis un motif valide.",
+    "grace": "Période de transition non valide.",
+    "action": "Action d'alerte non valide.",
+    "alertNotFound": "Alerte introuvable ; la liste a été actualisée."
   }
 };

@@ -26,6 +26,10 @@ assert.equal(M.expiryKey("5y"), "atok.exp.never");
 assert.deepEqual([...M.EXPIRY_OPTIONS], ["1h", "1d", "7d", "30d", "90d", "never"], "contract expiry options");
 assert.equal(M.maskToken({ prefix: "7Hq2", last4: "k9Xa" }), "dsk_admin_7Hq2\u2026k9Xa", "dsk_admin_7Hq2…k9Xa like the draft");
 assert.ok(M.maskToken(null).startsWith("dsk_admin_"));
+assert.equal(M.maskToken({ masked: "dsk_admin_AbCd\u2026wXyZ", prefix: "x", last4: "y" }), "dsk_admin_AbCd\u2026wXyZ", "the server's masked string wins");
+assert.ok(M.autoPaused({ status: "paused", pausedReason: "alert" }) && !M.autoPaused({ status: "paused", pausedReason: "manual" }) && !M.autoPaused({ status: "active", pausedReason: "alert" }));
+assert.equal(M.allowIpMode({ ipAllowlist: ["1.2.3.4"] }), "add");
+assert.equal(M.allowIpMode({ ipAllowlist: [] }), "approve", "no allowlist: allow_ip approves instead of adding");
 assert.equal(M.initials("Claude Code"), "CC");
 assert.equal(M.initials("moderasyon asistanı"), "MA");
 assert.equal(M.initials("ılık"), "IL", "Turkish dotless i upper-cases to I");
@@ -118,6 +122,7 @@ assert.equal(M.destructiveKind({ method: "POST", path: "/api/admin/announcements
 assert.equal(M.destructiveKind({ method: "MCP", path: "tools/call ban_user" }), "ban");
 assert.equal(M.destructiveKind({ via: "mcp", method: "POST", path: "/mcp", tool: "grant_credits" }), "descoin");
 assert.equal(M.destructiveKind({ method: "GET", path: "/api/admin/users?q=x" }), null);
+assert.equal(M.destructiveKind({ method: "POST", path: "/x", destructiveKind: "broadcast" }), "broadcast", "the server's destructiveKind wins");
 assert.equal(M.isDestructiveRow({ method: "GET", path: "/api/admin/announcements" }), false);
 assert.equal(M.isDestructiveRow({ method: "POST", path: "/x", destructive: true }), true, "the server's flag wins");
 assert.deepEqual(M.destructiveParts({ ban: 12, delete: 9, descoin: 14, broadcast: 2, total: 37 }).map((p) => `${p.kind}:${p.n}`), ["ban:12", "delete:9", "descoin:14", "broadcast:2"]);
@@ -209,7 +214,7 @@ assert.equal(M.errorKey({ code: "CONFIRM_MISMATCH" }), "atok.err.confirm");
 assert.equal(M.errorKey({ status: 404 }), "atok.err.notDeployed");
 assert.equal(M.errorKey({ code: "TOKEN_NOT_FOUND", status: 404 }), "atok.err.notFound");
 assert.equal(M.errorKey(new Error("x")), "atok.err.generic");
-for (const code of ["TOKENS_UNAVAILABLE", "TOKEN_NOT_FOUND", "NAME_REQUIRED", "BAD_EXPIRY", "BAD_IP", "CONFIRM_MISMATCH", "RESTORE_EXPIRED", "OWNER_ONLY"]) assert.ok(M.ERROR_CODES.includes(code), `contract error ${code}`);
+for (const code of ["TOKENS_UNAVAILABLE", "TOKEN_NOT_FOUND", "NAME_REQUIRED", "BAD_EXPIRY", "BAD_IP", "CONFIRM_MISMATCH", "RESTORE_EXPIRED", "OWNER_ONLY", "TOKEN_REVOKED", "BAD_REASON", "BAD_GRACE", "BAD_ACTION", "ALERT_NOT_FOUND"]) assert.ok(M.ERROR_CODES.includes(code), `contract error ${code}`);
 
 /* ---- locale parity ---- */
 const LOCALES = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];
@@ -309,6 +314,10 @@ assert.match(api, /setStepUpToken\(res\.token/);
 const page = read("AdminTokens.jsx");
 assert.match(page, /available === false/, "migration-not-applied state");
 assert.match(page, /CALLS_POLL_MS/);
+assert.match(page, /socket\.on\("admin:token-alert", onAlert\)/, "new alerts arrive live");
+assert.match(page, /socket\.on\("admin:update", soon\)/);
+assert.match(panel, /<AdminTokens\s+socket=\{socket\}/);
+for (const f of files) assert.ok(!/\.serverText|err(?:or)?\.message\b/.test(read(f)), `${f}: never shows the server's raw error text`);
 assert.match(page, /if \(!visible \|\| !selectedId/, "live calls pause on a hidden tab");
 assert.match(page, /tokenApi\.revokeAll\(|onDone=/);
 assert.equal(M.CALLS_POLL_MS, 3000, "every 3 s");

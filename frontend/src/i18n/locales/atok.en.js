@@ -131,7 +131,9 @@ export const ATOK_EN = {
     "rotate": "Rotate",
     "dismissed": "Alert dismissed",
     "paused": "{name} paused",
-    "allowed": "{ip} added to the allowlist"
+    "allowed": "{ip} added to the allowlist",
+    "trustIp": "Approve IP",
+    "trusted": "{ip} approved"
   },
   "alert": {
     "ipTitle": "New IP: {ip}, {country}",
@@ -184,7 +186,8 @@ export const ATOK_EN = {
     "paused": "Paused",
     "pausedBody": "The token is valid but requests are refused with 423. When you resume, the same token works again.",
     "grace": "Grace period",
-    "graceBody": "The token from before the rotation is also accepted until {when}."
+    "graceBody": "The token from before the rotation is also accepted until {when}.",
+    "pausedAuto": "Paused automatically by an alert. Check the usage; if all is well, resume it or approve the IP."
   },
   "usage": {
     "title": "Usage console",
@@ -448,6 +451,11 @@ export const ATOK_EN = {
     "stepUp": "This action needs a 2FA code.",
     "stepUpCancelled": "2FA verification was cancelled.",
     "notDeployed": "The server does not offer this feature yet.",
-    "generic": "The action could not be completed. Try again."
+    "generic": "The action could not be completed. Try again.",
+    "revoked": "This token was revoked; undo the revoke first or create a new token.",
+    "reason": "Pick a valid reason.",
+    "grace": "Invalid grace period.",
+    "action": "Invalid alert action.",
+    "alertNotFound": "Alert not found; the list was refreshed."
   }
 };

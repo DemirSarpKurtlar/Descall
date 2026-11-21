@@ -131,7 +131,9 @@ export const ATOK_DE = {
     "rotate": "Erneuern",
     "dismissed": "Warnung ignoriert",
     "paused": "{name} pausiert",
-    "allowed": "{ip} zur Zulassungsliste hinzugefügt"
+    "allowed": "{ip} zur Zulassungsliste hinzugefügt",
+    "trustIp": "IP bestätigen",
+    "trusted": "{ip} bestätigt"
   },
   "alert": {
     "ipTitle": "Neue IP: {ip}, {country}",
@@ -184,7 +186,8 @@ export const ATOK_DE = {
     "paused": "Pausiert",
     "pausedBody": "Das Token ist gültig, aber Anfragen werden mit 423 abgelehnt. Beim Fortsetzen funktioniert dasselbe Token wieder.",
     "grace": "Übergangszeit",
-    "graceBody": "Das Token von vor der Erneuerung wird bis {when} ebenfalls akzeptiert."
+    "graceBody": "Das Token von vor der Erneuerung wird bis {when} ebenfalls akzeptiert.",
+    "pausedAuto": "Durch eine Warnung automatisch pausiert. Prüfe die Nutzung; ist alles in Ordnung, setze fort oder bestätige die IP."
   },
   "usage": {
     "title": "Nutzungskonsole",
@@ -448,6 +451,11 @@ export const ATOK_DE = {
     "stepUp": "Für diese Aktion ist ein 2FA-Code nötig.",
     "stepUpCancelled": "Die 2FA-Bestätigung wurde abgebrochen.",
     "notDeployed": "Der Server bietet diese Funktion noch nicht an.",
-    "generic": "Die Aktion konnte nicht abgeschlossen werden. Versuche es erneut."
+    "generic": "Die Aktion konnte nicht abgeschlossen werden. Versuche es erneut.",
+    "revoked": "Dieses Token wurde widerrufen; hebe zuerst den Widerruf auf oder erstelle ein neues Token.",
+    "reason": "Wähle einen gültigen Grund.",
+    "grace": "Ungültige Übergangszeit.",
+    "action": "Ungültige Warnungsaktion.",
+    "alertNotFound": "Warnung nicht gefunden; die Liste wurde aktualisiert."
   }
 };

@@ -5,7 +5,7 @@
  */
 import { Activity, Check, Clock, Globe, Pause, Plus, RefreshCw, Search, Zap } from "../../ui/Icon.jsx";
 import { LiveBadge, Pill, Skel, Spark, Toggle, TokenIcon, useFmt } from "./TokenUi.jsx";
-import { AUTO_PAUSE_RULES, FILTERS, agoLabel, alertCopy, countByFilter, expiryKey, filterTokens, isLive, leftLabel, maskToken, openAlerts, colorOf } from "./tokenModel.js";
+import { allowIpMode, AUTO_PAUSE_RULES, FILTERS, agoLabel, alertCopy, countByFilter, expiryKey, filterTokens, isLive, leftLabel, maskToken, openAlerts, colorOf } from "./tokenModel.js";
 
 export function TokenList({ tokens, loading, selectedId, filter, query, onFilter, onQuery, onSelect, onCreate, now }) {
   const f = useFmt();
@@ -127,7 +127,7 @@ function AlertItem({ alert, token, busy, onAction, onInspect }) {
           {alert.kind !== "burst" && alert.ip && live ? (
             <button type="button" className="atk-btn is-sm" disabled={busy} onClick={() => onAction(alert, "allow_ip")} data-testid="atk-alert-allow">
               <Check size={13} />
-              {t("atok.alerts.allowIp")}
+              {allowIpMode(token) === "add" ? t("atok.alerts.allowIp") : t("atok.alerts.trustIp")}
             </button>
           ) : null}
           {alert.kind === "burst" && token ? (
