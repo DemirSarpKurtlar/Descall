@@ -185,6 +185,28 @@ function hasNativeDisplay(w) {
   return nativeShellPlatform(w) === "ios" || isNativeIosShell(w);
 }
 
+/**
+ * Android effects tier (html.g-fx-lean): same dark heavy glass, cheaper
+ * techniques. Chromium on a mid-range phone GPU pays a separate render pass per
+ * backdrop-filter, re-blurs every frame something under it animates, and
+ * repaints every animated background-position. The tier keeps live blur only
+ * on moving chrome (bars, sheets, menus) with smaller radii, gives chips and
+ * static cards a pre-tinted fill instead, and freezes ambient scene motion.
+ * On by default in the Android app; localStorage "descall:fx-lean" = "0" turns
+ * it off there, "1" forces it on any glass phone (QA / A-B on web).
+ */
+export const FX_LEAN_CLASS = "g-fx-lean";
+export const FX_LEAN_KEY = "descall:fx-lean";
+export const ANDROID_CLASS = "native-android";
+/** Android probe: a median frame slower than ~40 fps drops to glass-lite (no live blur). */
+export const GLASS_ANDROID_FRAME_SLOW_MS = 25;
+
+export function shouldUseLeanEffects({ isNativeAndroid = false, override = null } = {}) {
+  if (override === "0") return false;
+  if (override === "1") return true;
+  return Boolean(isNativeAndroid);
+}
+
 /** Chrome rounds navigator.deviceMemory down (0.25 … 8 GB). 2 GB or less is a low-end phone. */
 export const GLASS_LOW_MEMORY_GB = 2;
 
@@ -212,6 +234,10 @@ function applyWebGlassFallback(w) {
     fpsLow: phoneFpsLow || isLowMemoryDevice(w?.navigator?.deviceMemory),
   });
   doc.classList.toggle("glass-lite", lite);
+  doc.classList.toggle(
+    FX_LEAN_CLASS,
+    shouldUseLeanEffects({ isNativeAndroid: nativeShellPlatform(w) === "android", override: readStorage(w, FX_LEAN_KEY) })
+  );
   doc.classList.toggle("a11y-solid", reducedTransparency || forcedColors || readStorage(w, "descall:reduce-transparency") === "1");
   doc.classList.toggle("a11y-contrast", contrastMore);
 }
@@ -219,7 +245,7 @@ function applyWebGlassFallback(w) {
 function clearWebGlassFallback(w) {
   const doc = w?.document?.documentElement;
   if (!doc?.classList?.remove || hasNativeDisplay(w)) return;
-  doc.classList.remove("glass-lite", "a11y-solid", "a11y-contrast");
+  doc.classList.remove("glass-lite", "a11y-solid", "a11y-contrast", FX_LEAN_CLASS);
 }
 
 function pageHidden(w) {
@@ -266,7 +292,8 @@ function sampleFrameRate(w) {
       return;
     }
     sampling = false;
-    if (isGlassFrameRateLow(deltas)) {
+    const slowMs = nativeShellPlatform(w) === "android" ? GLASS_ANDROID_FRAME_SLOW_MS : undefined;
+    if (isGlassFrameRateLow(deltas, slowMs ? { slowMs } : undefined)) {
       phoneFpsLow = true;
       applyWebGlassFallback(w);
     }
@@ -285,6 +312,8 @@ export function syncGlassThemeColor(w, enabled) {
 function setEnabled(next, w) {
   const doc = w?.document?.documentElement;
   if (doc) doc.classList.toggle(GLASS_CLASS, next);
+  // Platform hook for Android-only CSS, independent of the glass gate.
+  if (nativeShellPlatform(w) === "android") doc?.classList?.toggle?.(ANDROID_CLASS, true);
   if (next && !isNativeIosShell(w)) {
     applyWebGlassFallback(w);
     sampleFrameRate(w);
