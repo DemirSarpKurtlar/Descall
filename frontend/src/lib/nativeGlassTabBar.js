@@ -24,7 +24,19 @@ export const TAB_SYMBOLS = Object.freeze({
 
 export const NATIVE_TABBAR_CLASS = "native-tabbar";
 const SHOW_TIMEOUT_MS = 2500;
-const COVER_POLL_MS = 250;
+/**
+ * Cover checks used to poll every 250 ms forever (getBoundingClientRect + 3x
+ * elementFromPoint, i.e. a forced style/layout + hit test 4 times a second on
+ * every screen, even with nothing on screen changing: iPhone idle energy).
+ * They now run only when something could have changed (DOM / class / style
+ * mutation, transition or animation end, resize, visibility), at most once per
+ * COVER_MIN_GAP_MS, plus one trailing check COVER_SETTLE_MS after the last
+ * change so a sheet that slides in is seen once it is in place.
+ */
+export const COVER_MIN_GAP_MS = 200;
+export const COVER_SETTLE_MS = 350;
+const COVER_ATTRS = ["class", "style", "hidden", "open", "aria-hidden", "data-state"];
+const COVER_EVENTS = ["transitionend", "animationend", "transitioncancel"];
 
 /** Badge as the native side shows it: "" for none, "99+" above 99. */
 export function badgeLabel(value) {
@@ -68,6 +80,53 @@ export function nativeBarInUse({ wanted = false, active = false, engaged = false
 /** "dark" | "light" for the native bar from the glass theme's --g-scheme. */
 export function barStyleFor(scheme) {
   return String(scheme || "").trim() === "light" ? "light" : "dark";
+}
+
+/**
+ * Coalesces "something may have changed" pokes into `check()` calls: the first
+ * poke checks on the next timer turn, later ones at most every `minGapMs`, and
+ * one trailing check runs `settleMs` after the last poke. No pokes, no work.
+ */
+export function createCoalescedCheck(check, {
+  setT = (fn, ms) => setTimeout(fn, ms),
+  clearT = (id) => clearTimeout(id),
+  now = () => Date.now(),
+  minGapMs = COVER_MIN_GAP_MS,
+  settleMs = COVER_SETTLE_MS,
+} = {}) {
+  let timer = 0;
+  let settle = 0;
+  let last = -Infinity;
+  let disposed = false;
+  const run = () => {
+    if (disposed) return;
+    last = now();
+    check();
+  };
+  const poke = () => {
+    if (disposed) return;
+    if (!timer) {
+      timer = setT(() => {
+        timer = 0;
+        run();
+      }, Math.max(0, last + minGapMs - now()));
+    }
+    if (settle) clearT(settle);
+    settle = setT(() => {
+      settle = 0;
+      run();
+    }, settleMs);
+  };
+  return {
+    poke,
+    dispose() {
+      disposed = true;
+      if (timer) clearT(timer);
+      if (settle) clearT(settle);
+      timer = 0;
+      settle = 0;
+    },
+  };
 }
 
 /**
@@ -190,8 +249,23 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
       setCovered((prev) => (prev === next ? prev : next));
     };
     check();
-    const id = setInterval(check, COVER_POLL_MS);
-    return () => clearInterval(id);
+    const watch = createCoalescedCheck(check);
+    const root = document.documentElement;
+    let mo = null;
+    if (typeof MutationObserver === "function") {
+      mo = new MutationObserver(watch.poke);
+      mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: COVER_ATTRS });
+    }
+    for (const ev of COVER_EVENTS) document.addEventListener(ev, watch.poke, true);
+    window.addEventListener("resize", watch.poke);
+    document.addEventListener("visibilitychange", watch.poke);
+    return () => {
+      mo?.disconnect();
+      for (const ev of COVER_EVENTS) document.removeEventListener(ev, watch.poke, true);
+      window.removeEventListener("resize", watch.poke);
+      document.removeEventListener("visibilitychange", watch.poke);
+      watch.dispose();
+    };
   }, [wanted, selector]);
 
   const show = wanted && !covered;

@@ -15,7 +15,8 @@
  *    server's ping interval (the server certainly pinged us → we missed it);
  *  - otherwise, if the page was actually frozen (iOS suspends the WebView;
  *    a 1 s heartbeat shows the gap), probe with an acked `app:ping` and
- *    reconnect if neither the ack nor any other packet arrives in time.
+ *    reconnect if neither the ack nor any other packet arrives in time
+ *    (the heartbeat runs only while the page is hidden).
  *    A page that kept running while hidden (desktop tab, iOS in a call with
  *    background audio) had its own ping timer running: no probe, so a slow
  *    network can never kick a live voice session off the server.
@@ -66,11 +67,25 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
   const onAttempt = () => {
     attemptStartedAt = now();
   };
-  const tick = setInterval(() => {
+  // The heartbeat only runs while the page is hidden: a foreground page is never
+  // frozen, and a 1 s timer kept the phone's CPU waking every second for the whole
+  // session (iPhone idle energy). Freezes happen while hidden; that is when it ticks.
+  let tick = 0;
+  const onTick = () => {
     const t = now();
     frozenGapMs = Math.max(frozenGapMs, t - lastTickAt);
     lastTickAt = t;
-  }, TICK_MS);
+  };
+  const startTick = () => {
+    if (tick) return;
+    lastTickAt = now();
+    tick = setInterval(onTick, TICK_MS);
+  };
+  const stopTick = () => {
+    if (tick) clearInterval(tick);
+    tick = 0;
+  };
+  if (document.visibilityState === "hidden") startTick();
   socket.on("connect", onConnect);
   socket.io?.on?.("ping", markRx);
   socket.io?.on?.("open", bindEngine);
@@ -120,7 +135,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
       return true;
     }
     // The visibility event can run before the heartbeat catches up.
-    const gap = Math.max(frozenGapMs, t - lastTickAt);
+    const gap = Math.max(frozenGapMs, tick ? t - lastTickAt : 0);
     if (gap < FROZEN_GAP_MS || probing) return true;
     probing = true;
     const sentAt = t;
@@ -145,8 +160,12 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
   }
 
   function onVisibility() {
-    if (document.visibilityState === "hidden") return;
+    if (document.visibilityState === "hidden") {
+      startTick();
+      return;
+    }
     onForeground("visible");
+    stopTick();
   }
   function onForeground(src) {
     const t = now();
@@ -156,22 +175,31 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
     frozenGapMs = 0;
     lastTickAt = t;
   }
-  const onResume = () => onForeground("resume");
+  const onResume = () => {
+    onForeground("resume");
+    if (document.visibilityState !== "hidden") stopTick();
+  };
   const onOnline = () => onForeground("online");
 
   // Capture on window so this runs before document-level visibility handlers
   // (e.g. the CallKit bridge's resume request), they then see the real state.
   window.addEventListener("visibilitychange", onVisibility, true);
   document.addEventListener("resume", onResume); // Capacitor native resume
+  // Capacitor `pause` / pagehide can come without a visibilitychange (older shells):
+  // start the heartbeat there too, so a short freeze is still seen on resume.
+  document.addEventListener("pause", startTick);
+  window.addEventListener("pagehide", startTick);
   window.addEventListener("online", onOnline);
 
   return {
     ensureFresh,
     dispose() {
       disposed = true;
-      clearInterval(tick);
+      stopTick();
       window.removeEventListener("visibilitychange", onVisibility, true);
       document.removeEventListener("resume", onResume);
+      document.removeEventListener("pause", startTick);
+      window.removeEventListener("pagehide", startTick);
       window.removeEventListener("online", onOnline);
       socket.off("connect", onConnect);
       socket.io?.off?.("ping", markRx);
