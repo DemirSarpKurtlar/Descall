@@ -126,6 +126,9 @@ fn main() {
                 // folder reordering) like Electron. Tauri's own handler swallows every drop
                 // on Windows and the page got no dragenter / drop at all.
                 .disable_drag_drop_handler()
+                // No browser autofill dropdown under the app's fields (search, username,
+                // message composer); Electron never had one.
+                .general_autofill_enabled(false)
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)

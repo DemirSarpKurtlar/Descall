@@ -318,8 +318,12 @@ for (const [path, args, cmd, expected] of CASES) {
   // HTML5 drag and drop reaches the page (files into chats, reordering): Tauri's own drop
   // handler swallows every drop on Windows unless it is turned off per window.
   assert.match(mainRs, /\.disable_drag_drop_handler\(\)/, "main window: HTML5 drag and drop");
+  // No WebView2 autofill dropdown under the app's fields (wry turns it on by default).
+  assert.match(mainRs, /\.general_autofill_enabled\(false\)/, "main window: no browser autofill");
   for (const f of ["admin.rs", "premium/features/multi_account.rs", "premium/features/multi_window.rs"]) {
-    assert.match(readFileSync(join(here, "..", "src-tauri", "src", f), "utf8"), /\.disable_drag_drop_handler\(\)/, `${f}: HTML5 drag and drop`);
+    const src = readFileSync(join(here, "..", "src-tauri", "src", f), "utf8");
+    assert.match(src, /\.disable_drag_drop_handler\(\)/, `${f}: HTML5 drag and drop`);
+    assert.match(src, /\.general_autofill_enabled\(false\)/, `${f}: no browser autofill`);
   }
   // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
   assert.doesNotMatch(mainRs, /url\.as_str\(\) == "about:blank"/, "no empty about:blank windows");

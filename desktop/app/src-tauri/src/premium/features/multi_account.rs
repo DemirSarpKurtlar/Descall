@@ -108,6 +108,7 @@ fn open(h: &Host, id: &str) -> Value {
         .data_directory(dir(h, id).join("webview"))
         .use_https_scheme(true)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
+        .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
