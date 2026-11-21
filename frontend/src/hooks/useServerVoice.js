@@ -1,6 +1,8 @@
+import { afterFirstScreen } from "../lib/afterFirstScreen.js";
 import { publishActiveSpeakers } from "../lib/activeSpeakers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
+import { isNativeAndroid } from "../lib/platform";
 import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
@@ -247,8 +249,13 @@ export function useServerVoice(socket) {
   }, []);
 
   useEffect(() => {
-    preloadIceServers().catch(() => {});
-    preloadNoiseSuppression();
+    // Warm-up only: after the first app screen, not during the cold start. Android app:
+    // no noise-suppression warm-up at all (about 500 KB of WASM and worklets on every
+    // start, voice or not); acquireJoinMic warms it when a channel is joined.
+    afterFirstScreen(() => {
+      preloadIceServers().catch(() => {});
+      if (!isNativeAndroid()) preloadNoiseSuppression();
+    });
   }, []);
 
   useEffect(() => {
@@ -1386,6 +1393,7 @@ export function useServerVoice(socket) {
   }, [cleanupAll, isScreenSharing]);
 
   const acquireJoinMic = useCallback(async () => {
+    if (isNativeAndroid()) preloadNoiseSuppression();
     try {
       return await acquireVoiceMicStream(micConstraints());
     } catch (err) {

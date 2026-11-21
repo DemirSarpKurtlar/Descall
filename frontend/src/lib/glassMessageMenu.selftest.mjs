@@ -78,6 +78,8 @@ assert.doesNotMatch(list, /text=\{String\(message\.text \|\| ""\)\.slice\(0, 280
 assert.match(list, /fromMedia: true/);
 assert.match(list, /suppressMediaClickUntil/);
 assert.match(list, /beginMenuPress\(e, \{ pressed: true \}\)/);
+// Scroll intent first: the sink highlight is delayed, a scroll cancels it before it paints.
+assert.match(list, /pressTimer = setTimeout\(\(\) => \{[^}]*el\.setAttribute\("data-pressed", ""\)/);
 // Haptic on the fire frame; bridge primed on press-down.
 assert.match(list, /onFire: \(\) => \{\s*hapticImpactMedium\(\);/);
 assert.match(list, /primeHaptics\(\);\s*pressDetach\.current\?\.\(\);/);

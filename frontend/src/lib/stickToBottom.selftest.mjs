@@ -64,6 +64,8 @@ assert.equal(pinBehavior({ initial: true, distance: 120 }), "auto");
 assert.equal(pinBehavior({ distance: 120 }), "smooth");
 assert.equal(pinBehavior({ distance: 5000 }), "auto");
 assert.equal(pinBehavior({ distance: 0 }), "auto");
+// your own message lands at once (no glide half under the composer)
+assert.equal(pinBehavior({ own: true, distance: 120 }), "auto");
 
 // --- controller ---
 function makeScroller({ scrollHeight = 4000, clientHeight = 800, scrollTop = 3200 } = {}) {
@@ -254,6 +256,47 @@ const later = (ms) => { clock += ms; };
   assert.equal(s.scrollTop, 4000 - 800);
   assert.equal(pin.pinned, true);
   assert.equal(seen.at(-1).unseen, 0);
+  pin.destroy();
+}
+{
+  // 11) Send (owner report Nov 2026: "on mobile, after Enter the chat
+  //     sometimes scrolls up a little"). Your own message lands at once, the
+  //     server echo / a taller row is followed, and only sending (not a
+  //     message from someone else) pulls a reader down.
+  const heights = Array.from({ length: 40 }, () => 100);
+  const s = makeScroller({ scrollHeight: 4000, scrollTop: 3200 });
+  const content = makeContent(s, heights);
+  const pin = attachStickToBottom(s, { content, initialPinned: true });
+  const addRow = (h) => {
+    const r = { h, isConnected: true, classList: { contains: (x) => x === "message-group" } };
+    r.getBoundingClientRect = () => ({ top: r.y - s.scrollTop, bottom: r.y + r.h - s.scrollTop });
+    content.rows.push(r); content.children = content.rows; content.layout();
+    return r;
+  };
+  later(1000);
+  const mine = addRow(77);
+  pin.onMessages({ own: true, appended: true });
+  assert.equal(s.smooth, 0, "own message: no glide");
+  assert.equal(distanceFromBottom(s), 0, "own message fully visible at once");
+  // The composer shrinks back to one line (scroller grows) in the same frame.
+  s.clientHeight = 860; fireResize(s);
+  assert.equal(distanceFromBottom(s), 0);
+  // Server echo replaces the optimistic row a little taller.
+  later(120);
+  mine.h += 18; content.layout(); fireResize(content);
+  pin.onMessages({ own: true, appended: true });
+  assert.equal(distanceFromBottom(s), 0, "echo stays fully visible");
+  assert.equal(pin.pinned, true);
+  // Reading history: someone else's message does not move you...
+  later(1000);
+  userScroll(s, 2000);
+  assert.equal(pin.pinned, false);
+  addRow(60); pin.onMessages({ appended: true }); fireResize(content);
+  assert.equal(s.scrollTop, 2000, "an arriving message does not pull a reader down");
+  // ...sending does.
+  addRow(50); pin.onMessages({ own: true, appended: true });
+  assert.equal(distanceFromBottom(s), 0, "sending always goes to the bottom");
+  assert.equal(s.smooth, 0, "and lands at once");
   pin.destroy();
 }
 Date.now = nowReal;

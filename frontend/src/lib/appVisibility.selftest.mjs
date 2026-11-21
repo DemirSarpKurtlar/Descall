@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 // The module imports a CSS file; test the pure helper by evaluating its source.
 const src = readFileSync(new URL("./appVisibility.js", import.meta.url), "utf8");
 const body = src.replace(/^import .*$/gm, "").replace(/export /g, "");
-const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { applyAppVisibility, installAppVisibility, installIdlePause, BACKGROUNDED_CLASS, IDLE_CLASS };`)();
+const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { applyAppVisibility, installAppVisibility, installIdlePause, installPageHiddenPause, idleDelayFor, readPowerState, BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS, IDLE_MS, IDLE_MS_SAVER };`)();
 const cls = new Set();
 const root = { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) } };
 assert.equal(mod.applyAppVisibility(root, { backgrounded: true }), true);
@@ -69,7 +69,60 @@ assert.equal(typeof mod.installAppVisibility({}), "function", "web / iOS: no-op"
   assert.equal(cls.has("app-idle"), false);
 }
 
+// iPhone idle energy: shorter idle in Low Power Mode / thermal / Reduce Motion.
+assert.equal(mod.IDLE_MS, 15000);
+assert.equal(mod.idleDelayFor(), mod.IDLE_MS);
+assert.equal(mod.idleDelayFor({ lowPower: true }), mod.IDLE_MS_SAVER);
+assert.equal(mod.idleDelayFor({ thermal: "serious" }), mod.IDLE_MS_SAVER);
+assert.equal(mod.idleDelayFor({ thermal: "critical" }), mod.IDLE_MS_SAVER);
+assert.equal(mod.idleDelayFor({ thermal: "fair" }), mod.IDLE_MS);
+assert.equal(mod.idleDelayFor({ reducedMotion: true }), mod.IDLE_MS_SAVER);
+{
+  const mk = (attr, reduce) => ({ document: { documentElement: { getAttribute: () => attr } }, matchMedia: () => ({ matches: reduce }) });
+  assert.deepEqual(mod.readPowerState(mk("lowPower device", false)), { lowPower: true, thermal: "nominal", reducedMotion: false });
+  assert.deepEqual(mod.readPowerState(mk("thermal", true)), { lowPower: false, thermal: "serious", reducedMotion: true });
+  assert.deepEqual(mod.readPowerState(mk(null, false)), { lowPower: false, thermal: "nominal", reducedMotion: false });
+  assert.deepEqual(mod.readPowerState(undefined), { lowPower: false, thermal: "nominal", reducedMotion: false });
+  // The idle timer reads the state each time it arms.
+  let attr = "";
+  let lastMs = 0;
+  const cls = new Set();
+  const root = { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c), remove: (c) => cls.delete(c) }, getAttribute: () => attr };
+  const w = { document: { documentElement: root }, addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: false }), setTimeout: () => 0, clearTimeout() {} };
+  const off = mod.installIdlePause(w, { isBusy: () => false, subscribeBusy: () => () => {}, setTimeout: (fn, ms) => { lastMs = ms; return 1; }, clearTimeout() {} });
+  assert.equal(lastMs, 15000);
+  attr = "lowPower";
+  off();
+  mod.installIdlePause(w, { isBusy: () => false, subscribeBusy: () => () => {}, setTimeout: (fn, ms) => { lastMs = ms; return 1; }, clearTimeout() {} })();
+  assert.equal(lastMs, 5000, "Low Power Mode idles sooner");
+}
+// html.app-hidden follows page visibility / Capacitor pause-resume / pagehide.
+{
+  const cls = new Set();
+  const dl = {}; const wl = {};
+  const doc = { visibilityState: "visible", documentElement: { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c), remove: (c) => cls.delete(c) } },
+    addEventListener: (e, f) => { (dl[e] ||= []).push(f); }, removeEventListener: (e, f) => { dl[e] = (dl[e] || []).filter((x) => x !== f); } };
+  const w = { document: doc, addEventListener: (e, f) => { (wl[e] ||= []).push(f); }, removeEventListener: (e, f) => { wl[e] = (wl[e] || []).filter((x) => x !== f); } };
+  const off = mod.installPageHiddenPause(w);
+  const fireD = (e) => (dl[e] || []).forEach((f) => f());
+  const fireW = (e) => (wl[e] || []).forEach((f) => f());
+  assert.equal(cls.has("app-hidden"), false);
+  doc.visibilityState = "hidden"; fireD("visibilitychange");
+  assert.equal(cls.has("app-hidden"), true, "hidden page pauses");
+  doc.visibilityState = "visible"; fireD("visibilitychange");
+  assert.equal(cls.has("app-hidden"), false, "visible again resumes");
+  fireD("pause"); assert.equal(cls.has("app-hidden"), true, "Capacitor pause");
+  fireD("resume"); assert.equal(cls.has("app-hidden"), false, "Capacitor resume");
+  fireW("pagehide"); assert.equal(cls.has("app-hidden"), true, "pagehide");
+  fireW("pageshow"); assert.equal(cls.has("app-hidden"), false, "pageshow");
+  off();
+  assert.equal((dl.visibilitychange || []).length, 0, "cleanup");
+  assert.equal(typeof mod.installPageHiddenPause({}), "function", "no DOM: no-op");
+}
+
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+assert.match(read("../main.jsx"), /m\.installPageHiddenPause\(\)/);
+assert.match(read("../styles/app-backgrounded.css"), /html\.app-hidden \*,[\s\S]*?animation-play-state: paused !important;/);
 const pauseCss = read("../styles/app-backgrounded.css");
 assert.match(pauseCss, /html\.app-blurred :is\(\.vt2-skin, \.vt2-skin \*\)[\s\S]*?animation-play-state: paused !important;/, "voice tile skins pause when the window is blurred");
 assert.match(pauseCss, /html\.app-idle \*,[\s\S]*?animation-play-state: paused !important;/);

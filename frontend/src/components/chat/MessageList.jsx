@@ -77,6 +77,11 @@ import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
 import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, hapticSelection, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
+
+// Android Chromium drops a horizontal-first pan on the pan-y bubble by itself;
+// elsewhere (WebKit) the list is frozen while a reply drag runs
+// (lib/messageReplySwipe.js freezeScroll). The listeners are passive everywhere.
+const REPLY_SWIPE_FREEZE = !(typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || ""));
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
 import { attachStickToBottom, JUMP_BUTTON_PX } from "../../lib/stickToBottom";
 import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
@@ -98,8 +103,11 @@ import {
   reactBarWidth,
 } from "../../lib/glassMessageMenu";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
+import { motionBlur } from "../../lib/motionBlur.js";
 
 /** Parts of a message's own toolbar; a press inside them does not close it. */
+// Long-press sink starts this long after touch-down (scroll intent cancels it first).
+const PRESS_HIGHLIGHT_DELAY_MS = 120;
 const MESSAGE_TOOLBAR_SURFACES = ".message-hover-bar, .reaction-picker, .mhb-more, .message-inline-picker";
 
 // Reaction picker (approved 2026-10-19, maintenance-and-menus 2-tepki-secici-*):
@@ -678,19 +686,21 @@ function MessageList({
   }, [searchedMessages, unreadCount, isSearching, t]);
 
   // Roving focus over the bubbles (DOM only, so no bubble re-renders): one bubble is in
-  // the Tab order, the newest unless focus is already in the list.
+  // the Tab order, the newest unless focus is already in the list. Runs only when the
+  // rendered bubbles can change (not on every typing / hover / presence render, where it
+  // walked every bubble of a long chat).
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
-    if (!bubbles.length) return;
     const current = list.querySelector('.message-bubble[tabindex="0"]');
     if (current && list.contains(document.activeElement)) return;
+    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
+    if (!bubbles.length) return;
     const newest = bubbles[bubbles.length - 1];
     if (current === newest) return;
     if (current) current.tabIndex = -1;
     newest.tabIndex = 0;
-  });
+  }, [groupedMessages, revealedBlocked, loading]);
   const onBubbleArrows = useCallback((e) => {
     const bubble = e.target;
     if (!bubble?.classList?.contains("message-bubble") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -1031,9 +1041,9 @@ function MessageList({
               type="button"
               className="msg-jump-btn g-glass g-heavy"
               aria-label={jump.unseen > 0 ? t("chatx.newMessagesJump", { count: jump.unseen }) : t("Scroll to bottom")}
-              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...motionBlur(6) }}
+              animate={{ opacity: 1, scale: 1, y: 0, ...motionBlur(0) }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...motionBlur(6) }}
               transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
               whileTap={{ scale: 0.96 }}
               onClick={() => {
@@ -1146,8 +1156,10 @@ function MessageBubbleView({
   const glass = useGlassUi();
   // History that is already there when a chat opens is drawn in place: 50
   // bubble enter animations ran on the main thread while the page slid in.
-  // Messages that arrive later (or were just sent) still animate in.
-  const [animateIn] = useState(() => isFresh || nowMs() > quietUntil);
+  // Messages that arrive later (or were just sent) still animate in, once:
+  // the server copy of a row you sent (clientKey, lib/liveMessageMerge)
+  // takes the optimistic bubble's place without a second entrance.
+  const [animateIn] = useState(() => !message?.clientKey && (isFresh || nowMs() > quietUntil));
   // A mouse-only device (desktop/Electron) has no swipe-to-reply: framer's drag
   // would set user-select:none on the bubble and a double click on the text
   // could never select the word (A2). Touch devices keep the swipe.
@@ -1412,12 +1424,18 @@ function MessageBubbleView({
     primeHaptics();
     pressDetach.current?.();
     let detach = () => {};
+    // The sink highlight waits like a native scroll view's delayed content
+    // touches: a finger that lands on a bubble only to scroll the chat (the
+    // usual case) cancels before this fires, so the bubble never dims, scales
+    // and repaints at the start of the scroll.
+    let pressTimer = 0;
     const session = attachMenuPress({
       gate: pressGate.current,
       event,
       el,
       delay: MESSAGE_MENU_LONG_PRESS_MS,
       onTeardown: () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; }
         if (pressed) el.removeAttribute("data-pressed");
         if (pressDetach.current === detach) pressDetach.current = null;
       },
@@ -1434,7 +1452,12 @@ function MessageBubbleView({
     if (!session) return;
     detach = session.detach;
     pressDetach.current = detach;
-    if (pressed) el.setAttribute("data-pressed", "");
+    if (pressed) {
+      pressTimer = setTimeout(() => {
+        pressTimer = 0;
+        if (pressDetach.current === detach) el.setAttribute("data-pressed", "");
+      }, PRESS_HIGHLIGHT_DELAY_MS);
+    }
   }, [glass, editing]);
 
   useEffect(() => {
@@ -1672,6 +1695,7 @@ function MessageBubbleView({
     return attachReplySwipe(el, {
       getDirection: () => "right",
       getEdgeWidth: () => swipeBackEdgeBand(),
+      freezeScroll: REPLY_SWIPE_FREEZE,
       shouldIgnore: (target) => {
         if (replyLive.current.editing) return true;
         const node = target?.nodeType === 1 ? target : target?.parentElement;
@@ -1837,7 +1861,14 @@ function MessageBubbleView({
   };
   // The menu key also fires a contextmenu event: no native menu on top of ours.
   const onBubbleContextMenu = (e) => {
-    if (Date.now() - kbdMenuAt.current < 800) e.preventDefault();
+    if (Date.now() - kbdMenuAt.current < 800) {
+      e.preventDefault();
+      return;
+    }
+    // Android raises contextmenu at its own long-press (400 ms) while our 450 ms
+    // menu press is still armed. Left alone, Chromium may show its own menu or
+    // cancel the touch, which aborted the press and the menu never opened.
+    if (glass && pressDetach.current && e.nativeEvent?.pointerType !== "mouse") e.preventDefault();
   };
   useEffect(() => {
     const el = bubbleRef.current;

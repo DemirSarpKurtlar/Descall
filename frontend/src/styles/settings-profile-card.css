@@ -28,6 +28,10 @@ html[data-theme="light"] .spc {
   box-shadow: 0 0 0 0.5px var(--spc-edge), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 24px rgba(20, 30, 60, 0.1), 0 1px 2px rgba(20, 30, 60, 0.06);
 }
 html.a11y-solid .spc { --spc-fill: #2b2d31; -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* Phone glass (iOS, Android): the card scrolls over the static ambient under
+   a 94-95% opaque fill, so a 40px blur of that smooth gradient is invisible
+   but is a full-card pass on every scroll frame. */
+html.glass-ui .spc { -webkit-backdrop-filter: none; backdrop-filter: none; }
 html.a11y-solid[data-theme="light"] .spc { --spc-fill: #ffffff; }
 @media (prefers-reduced-transparency: reduce) {
   .spc { --spc-fill: #2b2d31; -webkit-backdrop-filter: none; backdrop-filter: none; }

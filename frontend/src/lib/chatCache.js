@@ -28,6 +28,52 @@ export function isOptimistic(message) {
   return id.startsWith("temp-") || id.startsWith("casino-") || id.startsWith("active-call");
 }
 
+function sameValue(a, b) {
+  if (Object.is(a, b)) return true;
+  if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Same fields, nested values (from, reactions, editHistory...) compared by
+ * content; a missing field and an undefined one count as the same.
+ */
+export function sameMessageContent(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  for (const k of Object.keys(a)) if (!sameValue(a[k], b[k])) return false;
+  for (const k of Object.keys(b)) if (!(k in a) && b[k] !== undefined) return false;
+  return true;
+}
+
+/**
+ * Keep the on-screen object for every message whose content did not change
+ * (and the whole previous array when nothing changed). A history refresh
+ * (prefetch, reconnect, reopen) returns fresh objects for the same rows; with
+ * new identities every memoized bubble of the open chat re-rendered.
+ */
+export function keepMessageIdentity(prev, next) {
+  if (!Array.isArray(prev) || !prev.length || !Array.isArray(next)) return next;
+  const byId = new Map();
+  for (const m of prev) if (m?.id != null && !byId.has(m.id)) byId.set(m.id, m);
+  let reused = 0;
+  const out = next.map((m) => {
+    const old = m?.id != null ? byId.get(m.id) : undefined;
+    if (old && old !== m && sameMessageContent(old, m)) {
+      reused += 1;
+      return old;
+    }
+    if (old === m) reused += 1;
+    return m;
+  });
+  if (reused === out.length && out.length === prev.length && out.every((m, i) => m === prev[i])) return prev;
+  return out;
+}
+
 /**
  * Merge a server page into messages already on screen.
  * incremental: only upsert (new messages and edits). A full page also drops
@@ -45,7 +91,7 @@ export function reconcileHistoryWindow(existing, incoming, { incremental = false
       const prior = byId.get(message.id);
       byId.set(message.id, prior ? { ...prior, ...message, sending: prior.sending, failed: prior.failed } : message);
     }
-    return sortMessages([...byId.values()]);
+    return keepMessageIdentity(prev, sortMessages([...byId.values()]));
   }
 
   if (next.length === 0) {
@@ -75,7 +121,7 @@ export function reconcileHistoryWindow(existing, incoming, { incremental = false
       byId.set(message.id, message);
     }
   }
-  return sortMessages([...byId.values()]).slice(-MAX_PER_CONV * 2);
+  return keepMessageIdentity(prev, sortMessages([...byId.values()]).slice(-MAX_PER_CONV * 2));
 }
 
 export function newestCursor(messages) {

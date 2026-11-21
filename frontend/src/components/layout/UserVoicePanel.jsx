@@ -56,6 +56,8 @@ function useSocketPing(socket, active) {
     const samples = [];
     const probe = () => {
       if (!socket.connected || typeof socket.timeout !== "function") return;
+      // Ping readout for the panel: not while the page is hidden (locked phone in voice).
+      if (typeof document !== "undefined" && document.hidden) return;
       const t0 = performance.now();
       socket.timeout(4000).emit("app:ping", (err) => {
         if (!alive) return;

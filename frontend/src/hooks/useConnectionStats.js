@@ -29,6 +29,9 @@ export default function useConnectionStats(pcRef, { active = false, intervalMs =
 
     let alive = true;
     const poll = async () => {
+      // Diagnostics UI only: nobody sees it while the page is hidden (phone locked
+      // in a call), so skip getStats + re-render then. Bitrate uses report timestamps.
+      if (typeof document !== "undefined" && document.hidden) return;
       const pc = pcRef?.current;
       if (!pc || pc.connectionState === "closed") return;
       const result = await sampleConnectionStats(pc, prevSampleRef.current);

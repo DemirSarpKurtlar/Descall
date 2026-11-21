@@ -1,4 +1,6 @@
 import { authedRequest } from "./authedHttp";
+import { bootPrefetchOr } from "../lib/bootPrefetch.js";
+import { getToken } from "../lib/storage";
 
 const dmMessageFlight = new Map();
 
@@ -17,6 +19,7 @@ export function getDmMessages(peerId, { before, since, limit = 100 } = {}) {
   return pending;
 }
 
+export const DM_PREVIEWS_PATH = "/api/dm/previews";
 export function getDmPreviews() {
-  return authedRequest("/api/dm/previews");
+  return bootPrefetchOr("dmPreviews", getToken(), () => authedRequest(DM_PREVIEWS_PATH));
 }

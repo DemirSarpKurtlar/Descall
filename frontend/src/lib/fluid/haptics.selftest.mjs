@@ -35,6 +35,19 @@ assert.match(src, /NotificationType\.Warning/);
 assert.match(src, /NotificationType\.Error/);
 assert.doesNotMatch(src, /Haptics\.vibrate/);
 assert.match(src, /function hapticCallConnected/);
+// Android: crisp system haptics through the synchronous DescallHaptics bridge
+// (View.performHapticFeedback), never the Capacitor vibrator for every press.
+const androidPlugin = readFileSync(join(root, "../android/app/src/main/java/com/descall/app/DescallHapticsPlugin.java"), "utf8");
+const mainActivity = readFileSync(join(root, "../android/app/src/main/java/com/descall/app/MainActivity.java"), "utf8");
+assert.match(src, /window\.DescallHaptics/);
+assert.match(src, /hasAndroidSystemHaptics\(\) && mark\(kind\)\) performAndroid\(kind\)/);
+assert.match(src, /if \(!isNativeIOS\(\) && !hasAndroidSystemHaptics\(\)\) return;/, "hints only with the bridge on Android");
+assert.match(androidPlugin, /addJavascriptInterface\(new HapticsInterface\(view\), "DescallHaptics"\)/);
+assert.match(androidPlugin, /@JavascriptInterface/);
+assert.match(androidPlugin, /performHapticFeedback\(constant\)/);
+assert.doesNotMatch(androidPlugin, /import android\.os\.Vibrat/);
+assert.match(mainActivity, /registerPlugin\(DescallHapticsPlugin\.class\)/);
+assert.match(mainActivity, /onBackPressed\(\);\s*(?:\}\s*finally\s*\{\s*)?setEnabled\(true\);/, "back callback is re-armed after handing one press to the system");
 assert.match(compat, /from "\.\/fluid\/haptics"/);
 assert.match(main, /installIosHapticHints\(\)/);
 

@@ -40,6 +40,18 @@ const me = "user-alice";
   assert.equal(next.length, 1);
   assert.equal(next[0].id, "real-1");
   assert.equal(next[0].sending, false);
+  // The echo remembers the optimistic id: the bubble you just sent does not
+  // play its entrance a second time when the server copy replaces it.
+  assert.equal(next[0].clientKey, "temp-1");
+  const g = mergeIncomingChatMessage([{ id: "temp-2", text: "x", sending: true }], { id: "real-2", text: "x" }, "temp-2");
+  assert.equal(g[0].clientKey, "temp-2");
+  assert.equal(g[0].sending, false);
+  // Rows that never were optimistic carry no clientKey.
+  assert.equal(mergeIncomingDmMessage([], { id: "real-3", from: { id: "bob" }, text: "y" }, me)[0].clientKey, undefined);
+}
+{
+  const list = (await import("node:fs")).readFileSync(new URL("../components/chat/MessageList.jsx", import.meta.url), "utf8");
+  assert.match(list, /useState\(\(\) => !message\?\.clientKey && \(isFresh/, "MessageBubble skips the entrance for a confirmed optimistic row");
 }
 
 // Missing / unknown client still accepted

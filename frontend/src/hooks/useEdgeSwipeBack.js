@@ -167,13 +167,39 @@ export function swipeBackEdgeBand() {
  * An edge swipe that already owns the page (DRAGGING) is left alone.
  */
 export function cancelSwipeBackIfPending() {
+  if (candidate && candidate.resolved === false) {
+    candidate = null;
+    return true;
+  }
   if (machine.state.phase !== PHASE.PENDING) return false;
   machine.reset();
   candidate = null;
   return true;
 }
 
+// Read on every touchstart on a message bubble (reply swipe edge band): a
+// getComputedStyle there forced a style recalc of the whole page at the start
+// of each scroll. The inset only changes with the viewport (rotation), so the
+// value is cached until the next resize.
+let safeAreaLeftCache = null;
+let safeAreaLeftWatch = false;
+
 function safeAreaLeft() {
+  if (safeAreaLeftCache != null) return safeAreaLeftCache;
+  const n = readSafeAreaLeft();
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    if (!safeAreaLeftWatch) {
+      safeAreaLeftWatch = true;
+      const reset = () => { safeAreaLeftCache = null; };
+      window.addEventListener("resize", reset, { passive: true });
+      window.addEventListener("orientationchange", reset, { passive: true });
+    }
+    safeAreaLeftCache = n;
+  }
+  return n;
+}
+
+function readSafeAreaLeft() {
   try {
     if (!safeAreaProbe || !safeAreaProbe.isConnected) {
       safeAreaProbe = document.createElement("div");
@@ -236,7 +262,15 @@ function entryCanGoBack(entry) {
   return props.canGoBack !== false && typeof props.onBack === "function";
 }
 
-function pickEntry() {
+/** Cheap first check: the finger landed inside an open overlay (closest(), no style reads). */
+function targetInOverlay(target) {
+  const el = target && target.nodeType === 1 ? target : target?.parentElement;
+  const hit = el?.closest?.(SWIPE_BACK_BLOCKERS);
+  return Boolean(hit && !hit.matches(NON_BLOCKING));
+}
+
+function pickEntry(target) {
+  if (target && targetInOverlay(target)) return null;
   const ordered = [...entries]
     .filter((entry) => entry.props.current.enabled && (entryCanGoBack(entry) || entry.props.current.canGoBack === false))
     .sort((a, b) => (b.props.current.priority || 0) - (a.props.current.priority || 0) || b.order - a.order);
@@ -284,7 +318,39 @@ function createPlaceholder() {
   return el;
 }
 
-function beginSession(entry, surface) {
+function isVerticalScroller(el) {
+  if (!(el.scrollHeight > el.clientHeight + 1)) return false;
+  const oy = window.getComputedStyle(el).overflowY;
+  return oy === "auto" || oy === "scroll" || oy === "overlay";
+}
+
+/**
+ * The touchmove listeners are passive, so a recognised swipe cannot rely on
+ * preventDefault to keep the list under the finger still (WebKit fixes a
+ * sequence's dispatch mode at touchstart). Instead the scrollers between the
+ * touch target and the page stop being user-scrollable while the page moves.
+ * Once per swipe, only the target's ancestors.
+ */
+function freezeScrollers(target, surface) {
+  const frozen = [];
+  let el = target && target.nodeType === 1 ? target : target?.parentElement;
+  while (el && el !== document.body && el !== document.documentElement) {
+    if (isVerticalScroller(el)) {
+      frozen.push([el, el.style.overflowY]);
+      el.style.overflowY = "hidden";
+    }
+    if (el === surface) break;
+    el = el.parentElement;
+  }
+  return frozen;
+}
+
+function unfreezeScrollers(frozen) {
+  if (!frozen) return;
+  for (const [el, value] of frozen) el.style.overflowY = value;
+}
+
+function beginSession(entry, surface, target = null) {
   const props = entry.props.current;
   const parent = surface.parentNode;
   if (!parent) return null;
@@ -347,6 +413,7 @@ function beginSession(entry, surface) {
 
   parent.classList.add("edge-swipe-host");
   document.documentElement.classList.add("edge-swipe-active");
+  const frozen = freezeScrollers(target, surface);
 
   return {
     entry,
@@ -361,6 +428,7 @@ function beginSession(entry, surface) {
     reduceMotion,
     surfaceSaved,
     underlaySaved,
+    frozen,
     canGoBack,
     x: 0,
     finishing: false,
@@ -384,6 +452,8 @@ function renderFrame(s, x) {
 
 function teardown(s, { keepSurfaceHidden = false } = {}) {
   if (!s) return;
+  unfreezeScrollers(s.frozen);
+  s.frozen = null;
   s.scrim.remove();
   s.shadow.remove();
   if (s.underlay && s.underlay !== s.placeholder) {
@@ -594,47 +664,86 @@ function onTouchStart(event) {
       canGoBack: session.canGoBack,
     });
     candidate = { entry: session.entry, surface: session.surface, touchId: touch.identifier };
+    blockScrollWhileDragging(true);
     return;
   }
   if (session) return; // finishing, ignore until the back navigation lands
 
-  const picked = pickEntry();
-  if (!picked) {
+  // Nothing is read from the DOM here. A touchstart opens every scroll, so the
+  // old overlay scan (querySelectorAll + getComputedStyle per match) and the
+  // surface / target layout reads ran on each one, ~300 ms of CPU over a
+  // 1000-message scroll on the iPhone profile. The start point is kept and the
+  // screen, overlays and target are only inspected once the finger actually
+  // moves right (resolveCandidate), i.e. on the rare touch that can become a
+  // swipe-back.
+  if (!hasEnabledEntry()) {
     candidate = null;
     return;
   }
+  candidate = {
+    touchId: touch.identifier,
+    x0: touch.clientX,
+    y0: touch.clientY,
+    t0: event.timeStamp,
+    target: event.target,
+    resolved: false,
+  };
+}
+
+function hasEnabledEntry() {
+  for (const entry of entries) if (entry.props.current.enabled) return true;
+  return false;
+}
+
+/**
+ * Pre-filter on the raw movement: still inside the slop (wait), or clearly not
+ * a rightward, horizontal-enough drag for any zone (drop, no DOM work). Edge
+ * dominance is the loosest of the two zones, so nothing the machine could lock
+ * is dropped here.
+ */
+function preLock(dx, dy) {
+  const slop = SWIPE_BACK_DEFAULTS.lockSlop;
+  if (Math.abs(dx) < slop && Math.abs(dy) < slop) return "wait";
+  if (dx > 0 && Math.abs(dx) > Math.abs(dy) * SWIPE_BACK_DEFAULTS.edgeDominance) return "resolve";
+  return "drop";
+}
+
+/** The deferred touchstart: pick the screen, check overlays, classify the start zone. */
+function resolveCandidate(c) {
+  const picked = pickEntry(c.target);
+  if (!picked) return null;
   const canGoBack = entryCanGoBack(picked.entry);
   // Nothing to go back to: only the very edge reacts (a rubber-band "end of
   // the stack"), and not at all with reduced motion.
-  if (!canGoBack && prefersReducedMotion()) {
-    candidate = null;
-    return;
-  }
-  const width = picked.surface.getBoundingClientRect().width || window.innerWidth;
+  if (!canGoBack && prefersReducedMotion()) return null;
   const rect = picked.surface.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
+  const width = rect.width || window.innerWidth;
+  const x = c.x0 - rect.left;
   const zone = classifyStart(
     {
       x,
       width,
       hasSelection: hasTextSelection(),
       edgeInset: safeAreaLeft(),
-      ...(x > SWIPE_BACK_DEFAULTS.edgeWidth ? inspectTouchTarget(event.target, picked.surface) : null),
+      ...(x > SWIPE_BACK_DEFAULTS.edgeWidth ? inspectTouchTarget(c.target, picked.surface) : null),
     },
     canGoBack ? SWIPE_BACK_DEFAULTS : { ...SWIPE_BACK_DEFAULTS, bodyZoneRatio: 0 },
   );
-  if (!zone) {
-    candidate = null;
-    return;
-  }
-  candidate = { ...picked, touchId: touch.identifier };
-  machine.begin({ x: touch.clientX, y: touch.clientY, t: event.timeStamp, width, zone, canGoBack });
+  if (!zone) return null;
+  machine.begin({ x: c.x0, y: c.y0, t: c.t0, width, zone, canGoBack });
+  return { entry: picked.entry, surface: picked.surface, touchId: c.touchId, target: c.target, resolved: true };
 }
 
 function onTouchMove(event) {
   if (!candidate) return;
   const touch = findTouch(event.changedTouches, candidate.touchId);
   if (!touch) return;
+  if (candidate.resolved === false) {
+    const step = preLock(touch.clientX - candidate.x0, touch.clientY - candidate.y0);
+    if (step === "wait") return;
+    candidate = step === "resolve" ? resolveCandidate(candidate) : null;
+    if (!candidate) return;
+  }
   const phaseBefore = machine.state.phase;
   if (phaseBefore === PHASE.PENDING && hasTextSelection()) {
     machine.reset();
@@ -647,13 +756,14 @@ function onTouchMove(event) {
     return;
   }
   if (result.type === "lock") {
-    session = beginSession(candidate.entry, candidate.surface);
+    session = beginSession(candidate.entry, candidate.surface, candidate.target);
     if (!session) {
       machine.reset();
       candidate = null;
       return;
     }
     renderFrame(session, 0);
+    blockScrollWhileDragging(true);
     // Load the haptics plugin now so the commit tap fires in the release frame.
     if (session.canGoBack) primeHaptics();
   }
@@ -669,8 +779,9 @@ function onTouchEnd(event) {
   const touch = findTouch(event.changedTouches, candidate.touchId);
   if (!touch) return;
   const cancelled = event.type === "touchcancel";
-  const result = machine.end({ t: event.timeStamp, cancelled });
+  const result = candidate.resolved === false ? { type: "none" } : machine.end({ t: event.timeStamp, cancelled });
   candidate = null;
+  blockScrollWhileDragging(false);
   if (frameRaf) {
     cancelAnimationFrame(frameRaf);
     frameRaf = 0;
@@ -682,15 +793,32 @@ function onTouchEnd(event) {
   settle(session, result.type, result.velocity);
 }
 
+function preventWhileDragging(event) {
+  if (machine.state.phase === PHASE.DRAGGING && session && event.cancelable) event.preventDefault();
+}
+
+let blockingOn = false;
+function blockScrollWhileDragging(on) {
+  if (on === blockingOn || typeof document === "undefined") return;
+  blockingOn = on;
+  if (on) document.addEventListener("touchmove", preventWhileDragging, { capture: true, passive: false });
+  else document.removeEventListener("touchmove", preventWhileDragging, { capture: true, passive: false });
+}
+
 function syncListeners() {
   const want = swipeBackSupported() && [...entries].some((entry) => entry.props.current.enabled);
   if (want === listenersOn) return;
   listenersOn = want;
   const method = want ? "addEventListener" : "removeEventListener";
-  // touchmove must be non-passive so a locked swipe can stop the page from scrolling.
-  // Installed only while a registered screen is enabled (never on desktop / Electron).
+  // All passive: a non-passive document touchmove made every scroll in the app
+  // wait for the main thread (iOS dispatches the whole sequence synchronously).
+  // The blocking listener is added only for a recognised swipe
+  // (blockScrollWhileDragging) and the scrollers under the finger are frozen
+  // for its duration, since an engine may treat a listener added mid-sequence
+  // as passive. Installed only while a registered screen is enabled (never on
+  // desktop / Electron).
   document[method]("touchstart", onTouchStart, { capture: true, passive: true });
-  document[method]("touchmove", onTouchMove, { capture: true, passive: false });
+  document[method]("touchmove", onTouchMove, { capture: true, passive: true });
   document[method]("touchend", onTouchEnd, { capture: true, passive: true });
   document[method]("touchcancel", onTouchEnd, { capture: true, passive: true });
 }

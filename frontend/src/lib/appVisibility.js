@@ -14,6 +14,11 @@
  *   while someone is looking and using the app, and stop at rest. Never set
  *   while in a call or voice channel (lib/voiceBusy). Spinners and progress keep
  *   running (carve-out in the stylesheet).
+ * - `app-hidden` (every platform, iPhone first): the page is hidden (visibilitychange,
+ *   pagehide, Capacitor `pause`), e.g. the iOS app in the background or the phone
+ *   locked while a call keeps the WebView running. Everything pauses, spinners too.
+ * Low Power Mode / thermal serious (iOS shell, html[data-glass-lite]) and
+ * prefers-reduced-motion go idle after IDLE_MS_SAVER instead of IDLE_MS.
  * Sockets, timers, notifications and sounds are untouched.
  */
 import "../styles/app-backgrounded.css";
@@ -28,6 +33,60 @@ export const IDLE_CLASS = "app-idle";
  */
 export const BLURRED_CLASS = "app-blurred";
 export const IDLE_MS = 15_000;
+export const IDLE_MS_SAVER = 5_000;
+export const HIDDEN_CLASS = "app-hidden";
+
+/** Idle delay for the device state: shorter in Low Power Mode, when hot, or with Reduce Motion. */
+export function idleDelayFor({ lowPower = false, thermal = "nominal", reducedMotion = false } = {}) {
+  if (lowPower || thermal === "serious" || thermal === "critical" || reducedMotion) return IDLE_MS_SAVER;
+  return IDLE_MS;
+}
+
+/** Device power state as the page can see it (glassDisplay writes data-glass-lite reasons on iOS). */
+export function readPowerState(win) {
+  const reasons = String(win?.document?.documentElement?.getAttribute?.("data-glass-lite") || "");
+  let reducedMotion = false;
+  try {
+    reducedMotion = Boolean(win?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  } catch {
+    reducedMotion = false;
+  }
+  return {
+    lowPower: /\blowPower\b/.test(reasons),
+    thermal: /\bthermal\b/.test(reasons) ? "serious" : "nominal",
+    reducedMotion,
+  };
+}
+
+/**
+ * html.app-hidden while the page is hidden / in the background. Returns a cleanup.
+ * Capacitor fires `pause` / `resume` on document (iOS and Android shells).
+ */
+export function installPageHiddenPause(win = typeof window !== "undefined" ? window : undefined) {
+  const doc = win?.document;
+  const root = doc?.documentElement;
+  if (!root?.classList || typeof doc.addEventListener !== "function") return () => {};
+  const set = (on) => {
+    if (root.classList.contains(HIDDEN_CLASS) !== Boolean(on)) root.classList.toggle(HIDDEN_CLASS, Boolean(on));
+  };
+  const sync = () => set(doc.visibilityState === "hidden");
+  const onHide = () => set(true);
+  const onShow = () => set(false);
+  doc.addEventListener("visibilitychange", sync);
+  doc.addEventListener("pause", onHide);
+  doc.addEventListener("resume", onShow);
+  win.addEventListener?.("pagehide", onHide);
+  win.addEventListener?.("pageshow", sync);
+  sync();
+  return () => {
+    doc.removeEventListener("visibilitychange", sync);
+    doc.removeEventListener("pause", onHide);
+    doc.removeEventListener("resume", onShow);
+    win.removeEventListener?.("pagehide", onHide);
+    win.removeEventListener?.("pageshow", sync);
+    root.classList.remove(HIDDEN_CLASS);
+  };
+}
 const INPUT_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 
 export function applyAppVisibility(root, { backgrounded } = {}) {
@@ -51,7 +110,7 @@ export function installAppVisibility(win = typeof window !== "undefined" ? windo
 export function installIdlePause(win = typeof window !== "undefined" ? window : undefined, deps = {}) {
   const root = win?.document?.documentElement;
   if (!root?.classList || typeof win.addEventListener !== "function") return () => {};
-  const idleMs = deps.idleMs ?? IDLE_MS;
+  const idleMs = () => deps.idleMs ?? idleDelayFor(readPowerState(win));
   const isBusy = deps.isBusy || getVoiceBusy;
   const onBusy = deps.subscribeBusy || subscribeVoiceBusy;
   const setT = deps.setTimeout || win.setTimeout.bind(win);
@@ -65,7 +124,7 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
   };
   const arm = () => {
     if (timer) clearT(timer);
-    timer = setT(() => { timer = 0; setIdle(true); }, idleMs);
+    timer = setT(() => { timer = 0; setIdle(true); }, idleMs());
   };
   const onInput = () => {
     // pointermove fires per pixel: re-arm at most every 250 ms.

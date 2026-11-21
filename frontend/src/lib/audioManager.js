@@ -22,6 +22,7 @@ import {
   unlockSoundPackAudio,
 } from "./soundPackSynth.js";
 import { startRingLoop, webRingSupported } from "./ringLoop.js";
+import { isNativeAndroid } from "./platform.js";
 
 // Detect Electron environment
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
@@ -95,6 +96,13 @@ const DEFAULT_SOUNDS = {
   screenShareStop: getSoundPath("screenshare-stop.mp3"),
   disconnect: getSoundPath("disconnect.mp3"),
 };
+
+// Android app: only these are loaded at boot. The other cues (mute, join,
+// screen share, ...) are registered with preload="none" and fetched on their
+// first play: 18 preloading <audio> elements meant 18 media players and about
+// 380 KB read and decoded while the app was opening, on the slowest phones.
+// The files sit in the APK, so a first play starts within a few ms.
+const BOOT_SOUND_TYPES = new Set(["incomingCall", "outgoingCall", "message", "notification"]);
 
 // Cooldown configuration (ms)
 const COOLDOWNS = {
@@ -266,8 +274,15 @@ class AudioManager {
   /**
    * Preload all sound files
    */
-  async preload(soundUrls) {
+  async preload(soundUrls, { lazy = isNativeAndroid() } = {}) {
     const promises = Object.entries(soundUrls).map(([type, url]) => {
+      if (lazy && !BOOT_SOUND_TYPES.has(type) && typeof Audio !== "undefined") {
+        const audio = new Audio();
+        audio.preload = "none";
+        audio.src = url;
+        this.sounds[type] = audio;
+        return Promise.resolve();
+      }
       return new Promise((resolve) => {
         const audio = new Audio();
         audio.preload = "auto";

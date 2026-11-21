@@ -1,0 +1,313 @@
+/* ============================================
+   Android effects tier (html.glass-ui.g-fx-lean, set by lib/glassUi.js in the
+   Android app; "descall:fx-lean" = "0" | "1" overrides it).
+
+   Same look (dark heavy glass, #587af5 accent, specular rim, refraction),
+   cheaper techniques for Chromium on mid-range phone GPUs:
+   - every backdrop-filter is its own render pass that reads and blurs the
+     backdrop, and it is redone on every frame something under it moves;
+   - blur cost grows with the radius (bigger read-back area per pass);
+   - saturate()/brightness() add filter stages to every pass;
+   - an animated background-position repaints the whole element each frame.
+
+   So: live blur stays only where content moves underneath (bars, sheets,
+   menus) with smaller radii and one filter stage; chips, lenses and small
+   floating bits get a pre-tinted translucent fill (blurring the smooth
+   ambient gradient behind them is visually identical); ambient scene motion
+   is frozen on its first frame; very large shadows shrink.
+   html.glass-lite on Android (slow frame probe, <= 4 cores, <= 2 GB) goes one
+   step further: no live blur at all, opaque-ish tinted fills.
+   ============================================ */
+
+html.glass-ui.g-fx-lean {
+  --g-blur: 18px;
+  --g-blur-heavy: 24px;
+  --g-blur-chip: 10px;
+  --g-saturate: 150%;
+  --g-saturate-heavy: 150%;
+  --g-saturate-chip: 100%;
+  --g-brightness: 1;
+  /* Tighter shadows: a 64px blur shadow on a full-width sheet is a big raster. */
+  --g-shadow: 0 10px 24px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.22);
+  --g-shadow-heavy: 0 16px 36px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
+  /* Pre-tinted fill for surfaces that lose their live blur: the theme's own
+     solid color under the original light tint, so dark / light / scene themes
+     keep their hue. */
+  --g-fx-fill: color-mix(in srgb, var(--g-solid) 62%, transparent);
+  --g-fx-fill-heavy: color-mix(in srgb, var(--g-solid-heavy) 86%, transparent);
+}
+
+/* Menus, sheets, alerts, toasts (frost.css): 86-88% opaque base, so a 20px
+   radius and a lighter saturate stage read the same as 48px / 180%. */
+html.glass-ui.g-fx-lean {
+  --frost-blur: 20px;
+  --frost-saturate: 140%;
+}
+
+/* A call keeps its own, smaller budget (call.css html.g-in-call): the lean
+   tokens above must not raise it again. Call chips over video keep a light
+   blur (--g-blur-chip) so the video does not show through sharp. */
+html.glass-ui.g-fx-lean.g-in-call {
+  --g-blur: 12px;
+  --g-blur-heavy: 12px;
+  --g-blur-chip: 8px;
+  --g-saturate: 100%;
+  --g-saturate-heavy: 100%;
+}
+
+/* Chips (.g-chip material): small, numerous, mostly over the static ambient. */
+html.glass-ui.g-fx-lean .g-chip {
+  background:
+    linear-gradient(var(--g-chip-bg), var(--g-chip-bg)),
+    var(--g-fx-fill);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Glass that sits on top of another blur: header capsules and press plates
+   over the top-edge frost, the search field over the heavy search frost, the
+   tab lens inside the tab bar. Re-blurring an already frosted, mostly opaque
+   backdrop is invisible but costs a full render pass each, so these take the
+   pre-tinted fill. The frost bands and the bars keep their live blur. */
+html.glass-ui.g-fx-lean .g-press-plate,
+html.glass-ui.g-fx-lean .g-bgroup-plate.g-glass,
+html.glass-ui.g-fx-lean .g-searchbar.g-glass,
+html.glass-ui.g-fx-lean .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui.g-fx-lean .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui.g-fx-lean .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-fx-fill);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-ui.g-fx-lean .g-tab-lens.g-lens {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Top-edge frost under the search field: already 78-90% opaque, so a smaller
+   radius and no saturate stage read the same. */
+html.glass-ui.g-fx-lean .g-head-search .g-edge-top {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Full-screen scrims and alerts: a 40px blur over the whole viewport is the
+   single most expensive pass on a phone GPU, and it runs for every frame of
+   the menu / alert spring. A denser dim with a smaller radius reads the same. */
+html.glass-ui.g-fx-lean .g-scrim.g-msg-scrim {
+  background: rgba(5, 6, 10, 0.7);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* overlay.css gives every other scrim a 32px blur with !important. */
+html.glass-ui.g-fx-lean .g-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .g-attach-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .g-giphy-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .grp-menu-catcher:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .server-voice-menu-backdrop {
+  background: rgba(5, 6, 10, 0.68) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Tab bar and list search capsule (overlay.css, !important): 86% opaque base,
+   so 40px vs 24px is not visible; the search capsule sits on the search frost
+   band and needs no pass of its own. */
+html.glass-ui.g-fx-lean .g-tabbar {
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+}
+
+html.glass-ui.g-fx-lean .g-searchbar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.g-fx-lean .g-alert-scrim {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Buttons and chips inside an alert / report sheet sit on the sheet's own
+   frost: no second pass. */
+html.glass-ui.g-fx-lean .g-alert-btn,
+html.glass-ui.g-fx-lean .report-reason-chip,
+html.glass-ui.g-fx-lean .report-modal-close,
+html.glass-ui.g-fx-lean .report-btn.ghost {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Chat list rows: a permanent will-change on every row and swipe track
+   promoted hundreds of compositor layers (and a ~27k px tall scroller layer).
+   The track is promoted by its own translate3d while it moves. */
+html.glass-ui.g-fx-lean .conv-group-wrap,
+html.glass-ui.g-fx-lean .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track,
+html.glass-ui.g-fx-lean .group-swipe-track {
+  will-change: auto;
+}
+
+/* At rest the track still carries translate3d(0px, 0, 0) inline, a 3D
+   transform that promotes every visible row. Closed rows (no reveal) take no
+   transform; SwipeRevealRow adds .is-revealing on the same frame the drag
+   moves the track, so the row is promoted only while it is open or moving. */
+html.glass-ui.g-fx-lean .app-root.g-shell .group-swipe-viewport.is-fluid-reveal:not(.is-revealing) .group-swipe-track {
+  transform: none !important;
+}
+
+/* Ambient scenes: play, then settle. The drift and sheen layers sit under
+   every blurred bar, so each frame of motion forces a re-blur of all of them;
+   the rim animates background-position (a repaint of every glass edge per
+   frame). They run only while html.g-scene-live is set (lib/sceneIntro.js: a
+   few seconds after launch, a theme change or a resume) and otherwise hold
+   still where they are. */
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-drift,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-specks,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-sheen,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-glass::before,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-chip::before {
+  animation-play-state: paused !important;
+}
+
+html.glass-ui.g-fx-lean .g-theme-sheen {
+  transition: opacity 0.9s ease;
+}
+
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-sheen {
+  opacity: 0;
+}
+
+/* Press feedback: a filter on a glass surface makes Chromium build a new
+   render surface (and re-run the backdrop pass) on every press. A brighter
+   overlay on the refraction pseudo-element is a plain composite. */
+html.glass-ui.g-fx-lean .g-glass[data-pressed],
+html.glass-ui.g-fx-lean .g-static[data-pressed],
+html.glass-ui.g-fx-lean .g-lens[data-pressed] {
+  filter: none;
+}
+
+html.glass-ui.g-fx-lean .g-glass[data-pressed]::after,
+html.glass-ui.g-fx-lean .g-static[data-pressed]::after,
+html.glass-ui.g-fx-lean .g-lens[data-pressed]::after {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Conversation ambient (chat.css) without background-attachment: fixed.
+   main-panel, chat-panel-shell and the message scroller each painted the
+   ambient with a fixed attachment; on the scroller itself Blink repaints that
+   background on every scroll frame (and the scroll stays on the main thread).
+   On the phone layout the shell is the full viewport at 0,0 and never
+   scrolls, so painting the ambient once on the shell with a normal
+   attachment gives the same pixels; the panel and the scroller inside it go
+   transparent and scroll as plain composited layers. iOS WebKit ignores
+   fixed attachment anyway, so only the Android tier needs this. */
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell {
+  background-attachment: scroll !important;
+}
+
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell .main-panel,
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell .messages-container {
+  background-color: transparent !important;
+  background-image: none !important;
+  background-attachment: scroll !important;
+}
+
+/* Remaining hardcoded 22-40px blurs (round 2). Same rules as above: surfaces
+   over moving content (video, scrolling lists) keep a smaller live blur with
+   one filter stage; surfaces whose fill is already 86-94% opaque or that sit
+   over the static ambient need no blur pass. */
+
+/* Shop sticky bar (90% opaque) and the profile editor save bar, over
+   scrolling cards. */
+html.glass-ui.g-fx-lean .s2-sticky,
+html.glass-ui.g-fx-lean .us-pe-savebar {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Jump-to-latest button over the message list (86% opaque). */
+html.glass-ui.g-fx-lean .msg-jump-dock .msg-jump-btn.msg-jump-btn {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Screen share: pills, the tile row and the filmstrip sit over live video, so
+   their blur re-runs for every decoded frame. */
+html.glass-ui.g-fx-lean .ss-v1 .ss-pill,
+html.glass-ui.g-fx-lean .ss-v1 .ss-tile-row,
+html.glass-ui.g-fx-lean .share-filmstrip {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Screen share quality sheet and the phone settings sheet: menu-weight
+   frost like frost.css. */
+html.glass-ui.g-fx-lean .ssq-sheet,
+html.glass-ui.g-fx-lean .user-settings.is-mobile.g-settings.s3-phone-sheet {
+  -webkit-backdrop-filter: blur(var(--frost-blur, 20px)) saturate(var(--frost-saturate, 140%));
+  backdrop-filter: blur(var(--frost-blur, 20px)) saturate(var(--frost-saturate, 140%));
+}
+
+html.glass-ui.g-fx-lean[data-theme="light"] .g-invite {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* ── Low-end Android (glass-lite): no live blur anywhere ── */
+html.glass-ui.g-fx-lean.glass-lite {
+  --frost-blur: 8px;
+  --frost-saturate: 100%;
+}
+
+html.glass-ui.g-fx-lean.glass-lite .g-tabbar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.g-fx-lean.glass-lite {
+  --g-blur: 0px;
+  --g-blur-heavy: 0px;
+  --g-saturate: 100%;
+  --g-saturate-heavy: 100%;
+  --g-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+  --g-shadow-heavy: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+html.glass-ui.g-fx-lean.glass-lite .g-glass,
+html.glass-ui.g-fx-lean.glass-lite .g-lens {
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-fx-fill);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-ui.g-fx-lean.glass-lite .g-glass.g-heavy {
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-fx-fill-heavy);
+}
+
+/* Frost bands and the composer lose their blur too: denser fills instead. */
+html.glass-ui.g-fx-lean.glass-lite .g-edge-top,
+html.glass-ui.g-fx-lean.glass-lite .g-head-search .g-edge-top {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.96) 0%, rgba(var(--g-edge-rgb, 13, 14, 19), 0.9) calc(100% - 16px), rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%);
+}
+
+html.glass-ui.g-fx-lean.glass-lite .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.g-fx-lean.glass-lite .app-root.g-shell .composer-left .composer-action-btn,
+html.glass-ui.g-fx-lean.glass-lite .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui.g-fx-lean.glass-lite .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui.g-fx-lean.glass-lite .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-fx-fill-heavy);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

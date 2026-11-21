@@ -2351,10 +2351,10 @@ function ChannelRow({
       onCloseMenu?.();
     };
     document.addEventListener("mousedown", onDoc);
-    document.addEventListener("touchstart", onDoc);
+    document.addEventListener("touchstart", onDoc, { passive: true });
     return () => {
       document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("touchstart", onDoc);
+      document.removeEventListener("touchstart", onDoc, { passive: true });
     };
   }, [menuOpen, onCloseMenu]);
   return (
@@ -2593,7 +2593,7 @@ function CursorContextMenu({ x, y, title = "", onClose, children }) {
     };
     const close = () => onClose?.();
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("touchstart", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
     document.addEventListener("keydown", onKey);
     document.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);

@@ -1048,10 +1048,6 @@ html.gd-lite .rail-tooltip {
   margin-left: 4px;
 }
 
-.conv-group-wrap {
-  will-change: transform;
-}
-
 .conv-group-wrap.is-swipeable {
   overflow: hidden;
   border-radius: var(--r-sm);
@@ -1176,6 +1172,14 @@ html.gd-lite .rail-tooltip {
   flex-direction: row;
   align-items: stretch;
   width: 100%;
+}
+
+/* No permanent will-change on the ~300 chat rows (each one was its own
+   compositor layer, ~600 with the row wrappers, a lot of GPU memory and
+   heat on iPhone). The track is promoted only while it moves or is open:
+   .is-revealing (fluid row) / .is-dragging (legacy row). */
+.group-swipe-viewport.is-revealing .group-swipe-track,
+.group-swipe-viewport.is-dragging .group-swipe-track {
   will-change: transform;
 }
 

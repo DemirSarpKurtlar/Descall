@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { memoStableProps } from "../../lib/memoStableProps.js";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Settings, Check, Shield, Smile } from "../ui/Icon.jsx";
@@ -143,7 +144,7 @@ function RailButton({
 
 
 
-export default function NavigationRail({
+function NavigationRail({
   activeView,
   onViewChange,
   onAdminClick,
@@ -601,3 +602,6 @@ export default function NavigationRail({
     </nav>
   );
 }
+
+// AppLayout re-renders on every list / unread change; the rail only on its own props.
+export default memoStableProps(NavigationRail, "NavigationRail");
