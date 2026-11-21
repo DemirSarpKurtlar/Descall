@@ -684,6 +684,33 @@ for (const label of ["popout-1", "acct-42"]) {
   for (const label of labels) assert.equal(capsFor(label).length, 1, `${label} is covered by exactly one capability`);
 }
 
+
+// 3f. Shell-side event parity with main.cjs (read from the Rust sources) ----------------------
+{
+  const src = join(here, "..", "src-tauri", "src");
+  const stateRs = readFileSync(join(src, "state.rs"), "utf8");
+  const at = stateRs.indexOf("pub fn show_main");
+  const showMain = stateRs.slice(at, stateRs.indexOf("\n}\n", at));
+  // mainWindow.on('show') sent app:visibility false and the content box; focus alone was not
+  // enough (Windows can refuse it after a tray / notification click: animations stayed paused).
+  assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "show_main: app:visibility false");
+  assert.match(showMain, /to_main\(app, "window:content-box"/, "show_main: content box");
+  const bootRs = readFileSync(join(src, "boot.rs"), "utf8");
+  assert.match(bootRs, /WindowEvent::Moved\(_\) => \{\s*publish_content_box\(&win\);\s*save_window_state_soon\(&win\);/, "a drag saves the window state debounced");
+  assert.ok(!/WindowEvent::Moved\(_\) => \{[^}]*save_window_state\(&win\)/.test(bootRs), "not on every Moved event");
+  const updatesRs = readFileSync(join(src, "commands", "updates.rs"), "utf8");
+  assert.match(updatesRs, /"available": version\.is_some\(\) \|\| ready/, "check-for-updates answers available");
+  assert.match(updatesRs, /"phase": phase/, "update:error carries the phase");
+  assert.match(updatesRs, /map_err\(\|e\| \(e\.to_string\(\), "download"\)\)/, "a failed download is phase download");
+  const appRs = readFileSync(join(src, "commands", "app.rs"), "utf8");
+  assert.match(appRs, /descall_shell::bridge::sets_ui_locale\(window\.label\(\)\)/, "admin windows may set the language (main.cjs app:locale)");
+  const adminRs = readFileSync(join(src, "admin.rs"), "utf8");
+  assert.match(adminRs, /install_browser_guards\(&win\)/, "admin windows get the WebView2 browser guards");
+  assert.match(adminRs, /is_safe_external_url\(url\.as_str\(\)\)[\s\S]{0,200}open_url/, "admin window.open opens the default browser");
+  const mainRsSrc = readFileSync(join(src, "main.rs"), "utf8");
+  assert.match(mainRsSrc, /"app:main-error", descall_shell::bridge::panic_summary\(/, "panics reach onMainError as a mainErrors.cjs summary");
+}
+
 // 4. Commands exist in main.rs -----------------------------------------------------------------
 const handler = mainRs.slice(mainRs.indexOf("generate_handler!["), mainRs.indexOf("])", mainRs.indexOf("generate_handler![")));
 const registered = new Set([...handler.matchAll(/::(\w+),/g)].map((m) => m[1]));

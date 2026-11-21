@@ -274,6 +274,24 @@ fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
     let _ = std::fs::write(path, v.to_string());
 }
 
+/// main.cjs saveWindowStateSoon: a drag or a resize fires Moved / Resized many times a second;
+/// write window-state.json once the window has been still for 400 ms, not on every event (each
+/// write read and rewrote the file on the UI thread while the user dragged the window).
+static SAVE_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+pub const SAVE_STATE_DEBOUNCE_MS: u64 = 400;
+
+fn save_window_state_soon<R: Runtime>(w: &WebviewWindow<R>) {
+    use std::sync::atomic::Ordering;
+    let gen = SAVE_GEN.fetch_add(1, Ordering::AcqRel) + 1;
+    let w = w.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(SAVE_STATE_DEBOUNCE_MS)).await;
+        if SAVE_GEN.load(Ordering::Acquire) == gen {
+            save_window_state(&w);
+        }
+    });
+}
+
 // ---- cold start (launchVisibility.cjs) --------------------------------------------------------
 
 const RELAUNCH_MARKER: &str = "updater-relaunch.json";
@@ -363,12 +381,12 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                     visibility(&win, true);
                 } else {
                     publish_content_box(&win);
-                    save_window_state(&win);
+                    save_window_state_soon(&win);
                 }
             }
             WindowEvent::Moved(_) => {
                 publish_content_box(&win);
-                save_window_state(&win);
+                save_window_state_soon(&win);
             }
             WindowEvent::Focused(true) => visibility(&win, false),
             WindowEvent::ScaleFactorChanged { .. } => publish_content_box(&win),
