@@ -78,9 +78,10 @@ import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, hapticSelection, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
 
-// Android Chromium honours the bubble's touch-action: pan-y, so the reply swipe
-// listens passively there (lib/messageReplySwipe.js passiveMove).
-const REPLY_SWIPE_PASSIVE = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || "");
+// Android Chromium drops a horizontal-first pan on the pan-y bubble by itself;
+// elsewhere (WebKit) the list is frozen while a reply drag runs
+// (lib/messageReplySwipe.js freezeScroll). The listeners are passive everywhere.
+const REPLY_SWIPE_FREEZE = !(typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || ""));
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
 import { attachStickToBottom, JUMP_BUTTON_PX } from "../../lib/stickToBottom";
 import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
@@ -1694,7 +1695,7 @@ function MessageBubbleView({
     return attachReplySwipe(el, {
       getDirection: () => "right",
       getEdgeWidth: () => swipeBackEdgeBand(),
-      passiveMove: REPLY_SWIPE_PASSIVE,
+      freezeScroll: REPLY_SWIPE_FREEZE,
       shouldIgnore: (target) => {
         if (replyLive.current.editing) return true;
         const node = target?.nodeType === 1 ? target : target?.parentElement;

@@ -195,7 +195,7 @@ function LegacySwipeRevealRow({
 
   return (
     <div
-      className="group-swipe-viewport"
+      className={`group-swipe-viewport${visualOffset !== 0 ? " is-dragging" : ""}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -204,7 +204,8 @@ function LegacySwipeRevealRow({
       <div
         className="group-swipe-track"
         style={{
-          transform: `translate3d(${visualOffset}px,0,0)`,
+          // At rest no 3D transform: it promoted every row to its own layer.
+          transform: visualOffset !== 0 ? `translate3d(${visualOffset}px,0,0)` : "none",
           transition: isDragging ? "none" : "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)",
         }}
       >

@@ -329,4 +329,24 @@ assert.ok(/velocity,\s*response: decision/.test(hook) && /dampingRatio: 1/.test(
 assert.ok(!/canGoBack: false/.test(layout), "root tabs are inert (no rubber-band, no previous page)");
 assert.ok(/SPRING_COMPLETE_MS = 3\d\d;/.test(hook) && /SPRING_CANCEL_MS = 3\d\d;/.test(hook), "spring response 0.3–0.4 s");
 
+// Scroll cost (round 2): a touchstart opens every scroll, so it reads nothing
+// from the DOM; overlays / surface / target are checked once a rightward drag
+// passes the slop, and the document touchmove is passive outside a swipe.
+{
+  const start = hook
+    .slice(hook.indexOf("function onTouchStart"), hook.indexOf("function hasEnabledEntry"))
+    .replace(/\/\/[^\n]*/g, "");
+  assert.ok(start.length > 0, "onTouchStart found");
+  for (const call of ["pickEntry(", "querySelectorAll", "getComputedStyle", "getBoundingClientRect", "getClientRects", "inspectTouchTarget(", "findBlockingOverlay("]) {
+    assert.ok(!start.includes(call), `touchstart stays free of ${call}`);
+  }
+  assert.ok(/resolveCandidate\(candidate\)/.test(hook) && /function preLock\(dx, dy\)/.test(hook), "start checks deferred to the first rightward move");
+  assert.ok(/el\?\.closest\?\.\(SWIPE_BACK_BLOCKERS\)/.test(hook), "touch inside an overlay is rejected by closest() first");
+  assert.ok(/document\[method\]\("touchmove", onTouchMove, \{ capture: true, passive: true \}\)/.test(hook), "document touchmove is passive");
+  const blocking = hook.match(/passive: false/g) || [];
+  assert.ok(blocking.length === 2 && /function blockScrollWhileDragging\(on\)/.test(hook), "the only blocking touchmove is added for a recognised swipe");
+  assert.ok(/blockScrollWhileDragging\(true\);/.test(hook) && /blockScrollWhileDragging\(false\);/.test(hook), "blocking listener added on lock, removed on touchend");
+  assert.ok(/unfreezeScrollers\(s\.frozen\)/.test(hook), "scrollers frozen for a swipe are restored on teardown");
+}
+
 console.log("edgeSwipeBack.selftest ok");
