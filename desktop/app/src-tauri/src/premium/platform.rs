@@ -23,6 +23,9 @@ mod other {
     pub fn cursor_pos() -> Option<(i32, i32)> {
         None
     }
+    pub fn mouse_button_down() -> bool {
+        false
+    }
     pub fn set_opacity(_hwnd: isize, _alpha: f64) {}
     pub fn start_watcher(_emit: Emit) {}
     pub fn save_dialog(_owner: isize, _name: &str, _dir: Option<PathBuf>, _ext: &str) -> Option<PathBuf> {
@@ -55,7 +58,7 @@ mod win {
     use windows::Win32::System::RemoteDesktop::{WTSRegisterSessionNotification, NOTIFY_FOR_THIS_SESSION};
     use windows::Win32::System::SystemInformation::GetTickCount;
     use windows::Win32::System::Threading::{GetCurrentProcessId, GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
-    use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, GetLastInputInfo, LASTINPUTINFO, VK_LBUTTON, VK_RBUTTON};
     use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
     use windows::Win32::UI::Shell::{
         DefSubclassProc, FileSaveDialog, IFileSaveDialog, IShellItem, ITaskbarList3, SHCreateItemFromParsingName, SetWindowSubclass, TaskbarList, FOS_OVERWRITEPROMPT,
@@ -82,6 +85,11 @@ mod win {
             }
             (GetTickCount().wrapping_sub(info.dwTime) / 1000) as u64
         }
+    }
+
+    /// A mouse button is held (a window drag is still going on). Read only, no hook.
+    pub fn mouse_button_down() -> bool {
+        unsafe { (GetAsyncKeyState(VK_LBUTTON.0 as i32) as u16 & 0x8000) != 0 || (GetAsyncKeyState(VK_RBUTTON.0 as i32) as u16 & 0x8000) != 0 }
     }
 
     pub fn cursor_pos() -> Option<(i32, i32)> {

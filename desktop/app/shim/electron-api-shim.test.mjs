@@ -522,7 +522,14 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(winsRs, /run_on_main_thread\(move \|\| platform::set_opacity\(hw, alpha\)\)/, "opacity is queued behind tao's style changes");
   const ovRs = readFileSync(join(srcDir, "premium", "overlay.rs"), "utf8");
   assert.ok(ovRs.indexOf("let _ = w.show();") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after show");
+  // Tauri reports window moves during a drag (Electron's 'moved' came after the drop): widget
+  // positions and edge snapping wait until no mouse button is held.
+  for (const f of ["widgets.rs", "advanced_window_mgmt.rs"]) {
+    const src = readFileSync(join(srcDir, "premium", "features", f), "utf8");
+    assert.match(src, /if platform::mouse_button_down\(\)[^{]*\{\s*h\.tick\(/, `${f}: waits for the drop`);
+  }
   const platRs = readFileSync(join(srcDir, "premium", "platform.rs"), "utf8");
+  assert.equal((platRs.match(/pub fn mouse_button_down\(\) -> bool/g) || []).length, 2, "mouse_button_down on Windows and the stub");
   assert.match(platRs, /if ex & WS_EX_TRANSPARENT\.0 as isize == 0 \{\s*SetWindowLongPtrW\(h, GWL_EXSTYLE, ex & !\(WS_EX_LAYERED/, "a click-through HUD at 100 % keeps WS_EX_LAYERED");
 }
 

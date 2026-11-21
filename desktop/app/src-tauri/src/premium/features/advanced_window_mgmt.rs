@@ -13,7 +13,7 @@ use tauri::Manager;
 
 use super::Gen;
 use crate::premium::logic::geom::{self, Rect};
-use crate::premium::{lock, ok, wins, Bus, Caller, Feature, From, Host};
+use crate::premium::{lock, ok, platform, wins, Bus, Caller, Feature, From, Host};
 
 #[derive(Default)]
 pub struct F {
@@ -128,6 +128,11 @@ impl Feature for F {
                 h.tick("advanced_window_mgmt", "rescue", g, 300);
             }
             Bus::Tick { key: "advanced_window_mgmt", tag: "snap", gen } => {
+                // Still dragging (paused): snap after the drop, as Electron's 'moved' did.
+                if platform::mouse_button_down() && lock(&self.moves).values().any(|g| g == gen) {
+                    h.tick("advanced_window_mgmt", "snap", *gen, 300);
+                    return;
+                }
                 let label = lock(&self.moves).iter().find(|(_, g)| **g == *gen).map(|(l, _)| l.clone());
                 if let Some(label) = label {
                     lock(&self.moves).remove(&label);
