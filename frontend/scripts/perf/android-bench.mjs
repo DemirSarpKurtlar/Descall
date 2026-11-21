@@ -122,7 +122,13 @@ const PROFILES = {
 /* ---------------- in-page probes (run before any app script) ---------------- */
 
 function installNativeShell([platform, memoryGb]) {
-  window.CapacitorCustomPlatform = undefined;
+  // @capacitor/core replaces window.Capacitor.getPlatform when it loads and
+  // derives the platform from window.androidBridge / webkit.messageHandlers
+  // .bridge, so a fake getPlatform alone turns into "web" after boot (and
+  // e.g. the iOS-only edge swipe-back listeners ran on the Android profile).
+  // A custom platform keeps every later check on the profile's platform;
+  // plugins: {} so plugin calls still fall through to "not implemented".
+  window.CapacitorCustomPlatform = { name: platform, plugins: {} };
   const calls = [];
   window.__benchNativeCalls = calls;
   window.Capacitor = {
