@@ -431,7 +431,8 @@ async function interaction(page, cdp, act, readySrc) {
   const info = await page.evaluate(() => ({ input: window.__bench.lastInput, ev: window.__bench.ev.slice() }));
   const m1 = await metrics(cdp);
   const input = info.input || tStart;
-  const evMax = info.ev.reduce((a, e) => Math.max(a, e.d), 0);
+  // Event Timing entries arrive late: keep only this interaction's events.
+  const evMax = info.ev.filter((e) => e.s >= tStart - 1).reduce((a, e) => Math.max(a, e.d), 0);
   return { ok: res.ok, latencyMs: Math.round(res.t - input), inpMs: Math.round(evMax), cost: metricDelta(m0, m1), profile: prof, inputAt: input };
 }
 
