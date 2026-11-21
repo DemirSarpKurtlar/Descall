@@ -707,6 +707,11 @@ for (const label of ["popout-1", "acct-42"]) {
   const adminRs = readFileSync(join(src, "admin.rs"), "utf8");
   assert.match(adminRs, /install_browser_guards\(&win\)/, "admin windows get the WebView2 browser guards");
   assert.match(adminRs, /is_safe_external_url\(url\.as_str\(\)\)[\s\S]{0,200}open_url/, "admin window.open opens the default browser");
+  const overlayRs = readFileSync(join(src, "commands", "overlay.rs"), "utf8");
+  for (const cmd of ["overlay_show", "overlay_update", "overlay_hide"]) {
+    const at = overlayRs.indexOf(`pub fn ${cmd}<`);
+    assert.ok(at > 0 && /if !from_main\(&window\) \{\s*return;/.test(overlayRs.slice(at, at + 300)), `${cmd}: only the main window drives the voice overlay`);
+  }
   const mainRsSrc = readFileSync(join(src, "main.rs"), "utf8");
   assert.match(mainRsSrc, /"app:main-error", descall_shell::bridge::panic_summary\(/, "panics reach onMainError as a mainErrors.cjs summary");
 }

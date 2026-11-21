@@ -111,9 +111,19 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
         .ok()
 }
 
+/// The voice overlay follows the main window's call only. A Descall+ pop-out or extra-account
+/// window runs the app too (useElectronOverlay); without this its idle call state hid or
+/// overwrote the card of the call running in the main window.
+fn from_main<R: Runtime>(window: &WebviewWindow<R>) -> bool {
+    window.label() == state::MAIN
+}
+
 /// electronAPI.overlayShow(payload) -> descall:overlay:show.
 #[tauri::command]
-pub fn overlay_show<R: Runtime>(app: AppHandle<R>, payload: Value) {
+pub fn overlay_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
+    if !from_main(&window) {
+        return;
+    }
     *app.state::<Overlay>().idle_gen.lock().unwrap() += 1;
     merge(&app, &payload, &[("connected", Value::Bool(true))]);
     if let Some(w) = ensure(&app) {
@@ -128,7 +138,10 @@ pub fn overlay_show<R: Runtime>(app: AppHandle<R>, payload: Value) {
 
 /// electronAPI.overlayUpdate(payload) -> descall:overlay:update (only while visible).
 #[tauri::command]
-pub fn overlay_update<R: Runtime>(app: AppHandle<R>, payload: Value) {
+pub fn overlay_update<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
+    if !from_main(&window) {
+        return;
+    }
     merge(&app, &payload, &[]);
     if is_visible(&app) {
         push(&app);
@@ -137,7 +150,10 @@ pub fn overlay_update<R: Runtime>(app: AppHandle<R>, payload: Value) {
 
 /// electronAPI.overlayHide() -> descall:overlay:hide; destroyed after 60 s hidden.
 #[tauri::command]
-pub fn overlay_hide<R: Runtime>(app: AppHandle<R>) {
+pub fn overlay_hide<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) {
+    if !from_main(&window) {
+        return;
+    }
     merge(&app, &Value::Null, &[("connected", Value::Bool(false))]);
     let Some(w) = app.get_webview_window(LABEL) else { return };
     let _ = w.hide();
