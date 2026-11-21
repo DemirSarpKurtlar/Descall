@@ -31,6 +31,11 @@ assert.match(stats, /className="st-tb" \{\.\.\.\(electron \? \{ "data-tauri-drag
 assert.match(stats, /onDoubleClick=\{electron \? titleBarDoubleClick\(/);
 assert.match(lock, /className="pgl-bar" data-tauri-drag-region="deep"/, "app lock bar drags in Tauri");
 assert.match(css, /html\.tauri-app \[data-tauri-drag-region\],\s*html\.tauri-app \[data-tauri-drag-region\] \*,\s*html\.tauri-app \.st3 \.st-tb,\s*html\.tauri-app \.st3 \.st-tb \* \{[^}]*-webkit-app-region:\s*no-drag !important;[^}]*app-region:\s*no-drag !important;/, "no native caption under any Tauri drag bar");
+// Scene themes give #root z-index 1: inside #root the bar sat under every <body> modal.
+// It renders into its own host, the first child of <body> (harness: elementFromPoint over a
+// body modal hit the modal with data-theme="emberfall").
+assert.match(jsx, /document\.body\.insertBefore\(host, document\.body\.firstChild\)/, "title bar host is a body layer");
+assert.match(jsx, /return host \? createPortal\(bar, host\) : bar;/, "title bar is portaled out of #root");
 // Restore glyph while maximized (was the same square, smaller).
 assert.match(jsx, /isMaximized \? \([\s\S]{0,120}<svg className="win-restore-glyph"/, "restore glyph while maximized");
 

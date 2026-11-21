@@ -1,8 +1,27 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Minus, Square, X } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
 import { ELECTRON_TITLEBAR_H, electronContentBox } from "../lib/electronViewport";
+
+/**
+ * The bar lives in its own host, the first child of <body>, not inside #root. The scene
+ * themes (emberfall, borealis, starwell, chromeveil, iriscape) give #root z-index 1, which
+ * capped the bar's z-index inside #root: every modal portaled to <body> then covered the
+ * bar and its window buttons. As a direct body layer its z-index (--z-titlebar) is global.
+ */
+const HOST_ID = "descall-titlebar-host";
+function titleBarHost() {
+  if (typeof document === "undefined" || !document.body) return null;
+  let host = document.getElementById(HOST_ID);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = HOST_ID;
+    document.body.insertBefore(host, document.body.firstChild);
+  }
+  return host;
+}
 
 /**
  * Frameless Electron title bar, always mounted while the desktop app runs.
@@ -77,8 +96,9 @@ export default function TitleBar() {
   }, [isElectron]);
 
   if (!isElectron) return null;
+  const host = titleBarHost();
 
-  return (
+  const bar = (
     // data-tauri-drag-region="deep": the Tauri shell drags (and double-click maximizes) from
     // anywhere on the bar except its buttons; Electron uses -webkit-app-region instead.
     <div className="titlebar" role="banner" data-tauri-drag-region="deep">
@@ -125,4 +145,5 @@ export default function TitleBar() {
       </div>
     </div>
   );
+  return host ? createPortal(bar, host) : bar;
 }
