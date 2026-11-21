@@ -16,6 +16,7 @@ import { useGlassShell } from "../layout/glass/GlassShell";
 import "./ProfileSheet.css";
 import { MICheck } from "./ProfileSheetIcons.jsx";
 import useModalFocus from "../../hooks/useModalFocus";
+import { memoStableProps } from "../../lib/memoStableProps.js";
 
 // Mockup #30: eight reasons, "Spam veya dolandırıcılık" covers spam + scam.
 export const REPORT_SHEET_REASONS = [
@@ -29,7 +30,7 @@ export const REPORT_SHEET_REASONS = [
   { id: "other", labelKey: "report.rOther" },
 ];
 
-export default function ReportUserModal({
+function ReportUserModal({
   open,
   onClose,
   targetId,
@@ -321,3 +322,7 @@ export default function ReportUserModal({
     document.body
   );
 }
+
+// Mounted closed in lists that re-render on every presence / unread change; parents pass
+// inline handlers, so it skips those renders while its own props are unchanged.
+export default memoStableProps(ReportUserModal, "ReportUserModal");
