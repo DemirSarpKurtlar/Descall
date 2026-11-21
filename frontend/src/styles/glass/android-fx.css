@@ -22,7 +22,7 @@
 html.glass-ui.g-fx-lean {
   --g-blur: 18px;
   --g-blur-heavy: 24px;
-  --g-blur-chip: 0px;
+  --g-blur-chip: 10px;
   --g-saturate: 150%;
   --g-saturate-heavy: 150%;
   --g-saturate-chip: 100%;
@@ -44,7 +44,18 @@ html.glass-ui.g-fx-lean {
   --frost-saturate: 140%;
 }
 
-/* Chips and lenses: small, numerous, mostly over the static ambient. */
+/* A call keeps its own, smaller budget (call.css html.g-in-call): the lean
+   tokens above must not raise it again. Call chips over video keep a light
+   blur (--g-blur-chip) so the video does not show through sharp. */
+html.glass-ui.g-fx-lean.g-in-call {
+  --g-blur: 12px;
+  --g-blur-heavy: 12px;
+  --g-blur-chip: 8px;
+  --g-saturate: 100%;
+  --g-saturate-heavy: 100%;
+}
+
+/* Chips (.g-chip material): small, numerous, mostly over the static ambient. */
 html.glass-ui.g-fx-lean .g-chip {
   background:
     linear-gradient(var(--g-chip-bg), var(--g-chip-bg)),
