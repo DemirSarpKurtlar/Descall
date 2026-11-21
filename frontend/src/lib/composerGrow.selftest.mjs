@@ -1,6 +1,8 @@
 // Selftest: composer auto-grow caps (5 lines iPhone, 8 iPad) and Enter rules.
 import assert from "node:assert/strict";
 import {
+  shouldSendOnLineBreakInput,
+  LINE_BREAK_ENTER_MS,
   composerDeviceClass, maxComposerHeight, composerHeight, isImeEnter, shouldSendOnEnter,
   IPHONE_MAX_LINES, IPAD_MAX_LINES, DESKTOP_MAX_PX,
 } from "./composerGrow.js";
@@ -32,5 +34,21 @@ assert.equal(shouldSendOnEnter({ key: "Enter", keyCode: 229 }), false);
 assert.equal(shouldSendOnEnter({ key: "Enter" }, { composing: true }), false);
 assert.equal(shouldSendOnEnter({ key: "a" }), false);
 assert.equal(isImeEnter(null), false);
+
+// Soft keyboard newline committed as text (Samsung Keyboard, composing Gboard): sends on touch.
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: true }), true);
+assert.equal(shouldSendOnLineBreakInput("insertParagraph", { coarse: true }), true);
+assert.equal(shouldSendOnLineBreakInput("insertText", { coarse: true }), false);
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: false }), false, "desktop keeps its keydown path");
+assert.equal(
+  shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: true, at: 1000 }, now: 1000 + LINE_BREAK_ENTER_MS - 1 }),
+  false,
+  "Shift+Enter right before is a real newline",
+);
+assert.equal(
+  shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: true, at: 1000 }, now: 1000 + LINE_BREAK_ENTER_MS + 500 }),
+  true,
+);
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: false, at: 1000 }, now: 1001 }), true);
 
 console.log("composerGrow selftest OK");
