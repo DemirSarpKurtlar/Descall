@@ -23,6 +23,15 @@ export function isDesktopApp() {
   return Boolean(bridge());
 }
 
+/**
+ * Inside the desktop app (Electron preload or the Tauri shell) but without the Descall+ bridge:
+ * the bridge script failed to load. Settings > Descall+ says so instead of "desktop app only".
+ */
+export function desktopBridgeMissing() {
+  if (typeof window === "undefined" || bridge()) return false;
+  return Boolean(window.__TAURI_INTERNALS__ || window.isTauri || window.electronAPI);
+}
+
 function readLocal(key) {
   try {
     const raw = window.localStorage.getItem(LS_PREFIX + key);

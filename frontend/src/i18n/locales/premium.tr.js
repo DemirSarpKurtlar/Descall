@@ -11,6 +11,13 @@ export const PREMIUM_TR = {
     "ultraTip": "Descall Ultra üyesi"
   },
   "hub": {
+    "bridge": {
+      "title": "Descall+ masaüstü bağlantısı başlatılamadı",
+      "body": "Bu pencere masaüstü özelliklerine bağlanamadı, bu yüzden kısayollar ve diğer masaüstü özellikleri kapalı. Uygulamayı yeniden başlat; sorun sürerse uygulamayı güncelle.",
+      "pill": "Bağlantı yok",
+      "tile": "Masaüstü bağlantısı yok",
+      "reload": "Yeniden yükle"
+    },
     "gate": {
       "title": "Masaüstü özellikleri bu bilgisayarda kilitli",
       "checking": "Üyeliğin bu bilgisayarda doğrulanıyor. Birkaç saniye sürebilir.",

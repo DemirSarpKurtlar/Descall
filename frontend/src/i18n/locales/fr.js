@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "La connexion bureau de Descall+ n'a pas démarré",
+        "body": "Cette fenêtre n'a pas pu se connecter aux fonctions de bureau : les raccourcis et les autres fonctions de bureau sont désactivés. Redémarre l'app ; si cela continue, mets-la à jour.",
+        "pill": "Non connecté",
+        "tile": "Connexion bureau absente",
+        "reload": "Recharger"
+      },
       "gate": {
         "title": "Les fonctions bureau sont verrouillées sur cet ordinateur",
         "checking": "Vérification de ton abonnement sur cet ordinateur. Cela peut prendre quelques secondes.",

@@ -28,7 +28,7 @@ import { FEATURES, FEATURE_KEYS, PLAN_COIN, tierAllows, featuresForPlan } from "
 import { PREMIUM_CATEGORIES, daysUntil } from "./categories.js";
 import { usePremium, redeemPremiumCode } from "./usePremium.js";
 import { redeemErrorKey } from "./redeemError.js";
-import { isDesktopApp, getFeatureSettings, onFeatureSettings } from "./featureSettings.js";
+import { isDesktopApp, desktopBridgeMissing, getFeatureSettings, onFeatureSettings } from "./featureSettings.js";
 import PremiumBadge from "./PremiumBadge.jsx";
 import StoryCategory, { StoryResults } from "./story/StoryCategory.jsx";
 import "./premium.css";
@@ -274,7 +274,7 @@ function CategoryTile({ cat, count, premium, desktop, onOpen }) {
   if (locked) {
     foot = <span className="pp-tile-why"><Lock size={11} />{allUltra || premium.plan === "plus" ? t("premium.features.lockedUltra") : t("premium.features.lockedPlus")}</span>;
   } else if (count.usable === 0 && allDesktop && !desktop) {
-    foot = <span className="pp-tile-why"><Monitor size={11} />{t("premium.hub.desktopOnly")}</span>;
+    foot = <span className="pp-tile-why"><Monitor size={11} />{t(desktopBridgeMissing() ? "premium.hub.bridge.tile" : "premium.hub.desktopOnly")}</span>;
   } else {
     const pct = count.usable ? Math.round((count.on / count.usable) * 100) : 0;
     foot = (
@@ -390,11 +390,40 @@ function DesktopGateNotice({ premium }) {
   );
 }
 
+/**
+ * Desktop app without the Descall+ bridge (its script did not load): every desktop feature is
+ * off, so say that plainly with a code instead of "available in the desktop app".
+ */
+function BridgeMissingNotice() {
+  const { t } = useLocale();
+  useEffect(() => {
+    import("../utils/errorHandler.js")
+      .then((m) => m.reportHandled("[premium] desktop bridge missing", { source: "premium" }))
+      .catch(() => {});
+  }, []);
+  return (
+    <section className="us-section" data-testid="premium-bridge-missing" data-gate-code="bridge-missing">
+      <div className="us-card pp-gate" role="status">
+        <Lock size={18} aria-hidden="true" />
+        <div className="pp-gate-text">
+          <b>{t("premium.hub.bridge.title")}</b>
+          <p>{t("premium.hub.bridge.body")}</p>
+          <p className="pp-gate-code">{t("premium.hub.gate.code", { code: "bridge-missing" })}</p>
+        </div>
+        <button type="button" className="us-btn ghost" onClick={() => window.location.reload()}>
+          {t("premium.hub.bridge.reload")}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function PremiumSettingsTab() {
   const { t } = useLocale();
   const premium = usePremium();
   const ios = isNativeIOS();
   const desktop = isDesktopApp();
+  const bridgeMissing = !desktop && desktopBridgeMissing();
   const settingsMap = useAllFeatureSettings();
   const counts = useCounts(premium, desktop, settingsMap);
   const [view, setView] = useState({ type: "home" });
@@ -436,7 +465,7 @@ export default function PremiumSettingsTab() {
     return (
       <div className="us-tab pp-tab" data-testid="premium-tab" data-feature-total={FEATURE_KEYS.length} ref={rootRef}>
         <BackLink onBack={() => go({ type: "home" })} />
-        {desktop ? <DesktopGateNotice premium={premium} /> : null}
+        {desktop ? <DesktopGateNotice premium={premium} /> : bridgeMissing ? <BridgeMissingNotice /> : null}
         <StoryCategory
           cat={cat}
           premium={premium}
@@ -473,7 +502,7 @@ export default function PremiumSettingsTab() {
   return (
     <div className="us-tab pp-tab" data-testid="premium-tab" data-feature-total={FEATURE_KEYS.length} ref={rootRef}>
       <StatusHero premium={premium} onCount={premium.plan ? counts.totalOn : null} />
-      {desktop ? <DesktopGateNotice premium={premium} /> : null}
+      {desktop ? <DesktopGateNotice premium={premium} /> : bridgeMissing ? <BridgeMissingNotice /> : null}
 
       <section className="us-section" aria-labelledby="pp-feat-title">
         <h4 className="us-section-label" id="pp-feat-title">{t("premium.features.title")}</h4>

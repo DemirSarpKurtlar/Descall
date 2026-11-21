@@ -16,7 +16,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { FEATURES } from "../features.js";
 import { PREMIUM_CHAPTERS, storyNumber } from "../chapters.js";
-import { useFeatureSettings } from "../featureSettings.js";
+import { desktopBridgeMissing, useFeatureSettings } from "../featureSettings.js";
 import { Ico } from "./icons.jsx";
 import { PREVIEWS, summarize } from "./previews.jsx";
 import { HEROES } from "./heroes.jsx";
@@ -65,7 +65,7 @@ export function FeatureCard({ fkey, num, catIcon, catColor = "blue", premium, de
       {block === "ultra" ? t("premium.features.lockedUltra") : t("premium.features.lockedPlus")}
     </span>
   ) : block === "desktop" ? (
-    <span className="pp-pill"><Ico n="monitor" size={11} sw={2.4} />{t("premium.features.desktop")}</span>
+    <span className="pp-pill"><Ico n="monitor" size={11} sw={2.4} />{t(desktopBridgeMissing() ? "premium.hub.bridge.pill" : "premium.features.desktop")}</span>
   ) : block === "soon" ? (
     <span className="pp-pill">{t("premium.features.soon")}</span>
   ) : (
