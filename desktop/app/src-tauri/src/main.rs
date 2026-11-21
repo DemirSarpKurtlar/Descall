@@ -224,6 +224,7 @@ fn main() {
             commands::app::app_boot_retry,
             commands::app::app_boot_state,
             commands::app::app_reduced_transparency,
+            commands::app::app_log,
             commands::app::voice_set_busy,
             commands::app::activity_set_busy,
             commands::window::window_minimize,

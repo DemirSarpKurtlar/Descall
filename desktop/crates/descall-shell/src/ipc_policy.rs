@@ -50,6 +50,7 @@ const ADMIN: &[&str] = &[
     "app_boot_retry",
     "app_boot_state",
     "app_reduced_transparency",
+    "app_log",
     "voice_set_busy",
     "activity_set_busy",
     "window_minimize",

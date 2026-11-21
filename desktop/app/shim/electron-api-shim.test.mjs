@@ -48,7 +48,7 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null } = {}) {
   const invokes = [];
   const winListeners = new Map();
   const listeners = new Map();
@@ -85,7 +85,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false } = 
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
     navigator: {},
     URL,
-    console,
+    console: consoleImpl || Object.create(console), // the shim wraps warn / error: never the real console
     Promise,
     Uint8Array,
     ArrayBuffer,
@@ -417,6 +417,23 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(notifyRs, /crate::tray_menu::suppress_notification\(&app, &payload\.options\)/, "the snooze gates desktop cards");
   const trayRs = readFileSync(join(src, "src", "tray.rs"), "utf8");
   assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
+}
+
+// Page warnings / errors to main.log (app_log), like Electron's console-message logging.
+{
+  const sink = [];
+  const s = loadShim({ boot: { version: "4.0.0" }, consoleImpl: { warn: (...a) => sink.push(["warn", a]), error: (...a) => sink.push(["error", a]), log() {} } });
+  s.ctx.console.warn("[Shop] empty", { a: 1 });
+  s.ctx.console.error(new Error("boom"));
+  const logs = () => s.invokes.filter((c) => c[0] === "app_log").map((c) => c[1]);
+  deq(logs(), [{ level: "warn", message: '[Shop] empty {"a":1}' }, { level: "error", message: "Error: boom" }], "console warn / error reach app_log");
+  assert.equal(sink.length, 2, "the page's own console still prints");
+  s.dispatch("error", { message: "x is not defined", filename: "https://tauri.localhost/assets/index.js?v=1", lineno: 7 });
+  assert.equal(logs()[2].message, "uncaught: x is not defined @ https://tauri.localhost/assets/index.js:7");
+  s.dispatch("unhandledrejection", { reason: new Error("nope") });
+  assert.equal(logs()[3].message, "unhandled rejection: Error: nope");
+  for (let i = 0; i < 200; i++) s.ctx.console.warn("spam", i);
+  assert.equal(logs().length, 80, "at most 80 lines per page load");
 }
 
 // HUD bridge (premium-hud-shim.js): an unsubscribe before listen() resolved must still unlisten.

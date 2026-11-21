@@ -63,6 +63,28 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
     }
 }
 
+/// Page warnings and errors to main.log (Electron: console-message -> main.log): the shim
+/// sends console.warn / console.error of the first minute, uncaught errors, unhandled
+/// rejections and CSP violations. Tokens are dropped, lines capped and rate limited.
+#[tauri::command]
+pub fn app_log<R: Runtime>(window: WebviewWindow<R>, level: String, message: String) {
+    use descall_shell::logfile;
+    static RATE: std::sync::Mutex<(u64, u32)> = std::sync::Mutex::new((0, 0));
+    let Ok(mut rate) = RATE.lock() else { return };
+    let (next, allowed) = logfile::renderer_rate(*rate, state::now_ms());
+    *rate = next;
+    drop(rate);
+    if !allowed {
+        return;
+    }
+    let line = logfile::renderer_message(&message);
+    if level == "error" {
+        log::error!("[renderer:{}] {line}", window.label());
+    } else {
+        log::warn!("[renderer:{}] {line}", window.label());
+    }
+}
+
 /// native-theme:reduced-transparency (sendSync in Electron; the shim answers from the boot
 /// snapshot and this command refreshes it).
 #[tauri::command]

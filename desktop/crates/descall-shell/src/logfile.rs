@@ -69,9 +69,71 @@ pub fn format_line(unix_ms: u64, level: Level, message: &str) -> String {
     format!("[{y:04}-{mo:02}-{d:02} {h:02}:{mi:02}:{s:02}.{ms:03}] [{name}] {one}\n")
 }
 
+/// Renderer lines per minute that reach the file (a page in an error loop must not churn it).
+pub const RENDERER_PER_MINUTE: u32 = 120;
+
+/// Fixed one-minute window: `(window start, count)` -> (new state, may log).
+pub fn renderer_rate(state: (u64, u32), now_ms: u64) -> ((u64, u32), bool) {
+    let (start, n) = state;
+    if now_ms.saturating_sub(start) >= 60_000 || now_ms < start {
+        ((now_ms, 1), true)
+    } else if n < RENDERER_PER_MINUTE {
+        ((start, n + 1), true)
+    } else {
+        ((start, n), false)
+    }
+}
+
+/// A page console line for main.log (Electron: console-message, 400 characters, 2400 for CSP
+/// reports): one line, sign-in tokens (JWTs, Bearer values) replaced.
+pub fn renderer_message(message: &str) -> String {
+    let max = if message.contains("Content Security Policy") || message.starts_with("CSP ") { 2400 } else { 400 };
+    let mut out = String::with_capacity(message.len().min(max));
+    let mut bearer = false;
+    for (i, word) in message.split_whitespace().enumerate() {
+        if i > 0 {
+            out.push(' ');
+        }
+        let jwt = word.split(['"', '\'', '=', ':', ',', '(', ')']).any(|w| w.starts_with("eyJ") && w.matches('.').count() >= 2 && w.len() > 20);
+        if bearer || jwt {
+            out.push_str("<token>");
+        } else {
+            out.push_str(word);
+        }
+        bearer = word.eq_ignore_ascii_case("bearer");
+    }
+    out.chars().take(max).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn renderer_lines_drop_tokens_and_are_capped() {
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJlLXNpZ25hdHVyZQ";
+        let m = renderer_message(&format!("fetch failed Authorization: Bearer abc.def.ghi token={jwt} done"));
+        assert!(!m.contains("abc.def.ghi") && !m.contains(jwt), "{m}");
+        assert_eq!(m, "fetch failed Authorization: Bearer <token> <token> done");
+        assert_eq!(renderer_message("a\n  b\tc"), "a b c");
+        assert_eq!(renderer_message(&"x".repeat(5000)).len(), 400);
+        assert_eq!(renderer_message(&format!("CSP img-src blocked {}", "y".repeat(5000))).chars().count(), 2400);
+        assert_eq!(renderer_message("[Shop] state ready"), "[Shop] state ready");
+    }
+
+    #[test]
+    fn renderer_lines_are_rate_limited() {
+        let mut s = (0u64, 0u32);
+        let mut ok = 0;
+        for i in 0..500 {
+            let (n, allowed) = renderer_rate(s, 1_000 + i);
+            s = n;
+            ok += allowed as u32;
+        }
+        assert_eq!(ok, RENDERER_PER_MINUTE);
+        let (_, allowed) = renderer_rate(s, 1_000 + 60_000);
+        assert!(allowed, "a new minute opens again");
+    }
 
     #[test]
     fn lines_look_like_electron_log() {
