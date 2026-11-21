@@ -73,6 +73,11 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
                 };
                 if permission_allowed(k, &uri, cfg!(debug_assertions)) {
                     args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                } else if kind != COREWEBVIEW2_PERMISSION_KIND_MULTIPLE_AUTOMATIC_DOWNLOADS {
+                    // Electron's handler said no without asking (notifications, location,
+                    // clipboard read...); left at "default", WebView2 showed its own Edge
+                    // prompt ("tauri.localhost wants to show notifications") over the app.
+                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_DENY)?;
                 }
                 Ok(())
             }));

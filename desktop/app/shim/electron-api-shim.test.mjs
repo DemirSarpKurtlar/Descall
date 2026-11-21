@@ -339,6 +339,8 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(mainRs, /\.on_download\(webview::on_download\)/, "main window: page downloads handled by the shell");
   assert.match(readFileSync(join(here, "..", "src-tauri", "src", "admin.rs"), "utf8"), /\.on_download\(crate::webview::on_download\)/, "admin windows: exports handled by the shell");
   const webviewRsDl = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  // Permissions Electron refused without asking are refused, not left to WebView2's prompt.
+  assert.match(webviewRsDl, /SetState\(COREWEBVIEW2_PERMISSION_STATE_DENY\)/, "no Edge permission prompts over the app");
   assert.match(webviewRsDl, /unique_path\(/, "downloads never overwrite a file");
   assert.match(webviewRsDl, /reveal_item_in_dir/, "the finished file is shown in Explorer");
   // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
