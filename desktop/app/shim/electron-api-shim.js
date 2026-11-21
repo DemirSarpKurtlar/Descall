@@ -256,7 +256,29 @@
     }
     return false;
   };
+  // Title bars drag through data-tauri-drag-region (Tauri's drag script). Same walk as that
+  // script: a clickable element without the attribute blocks it, "deep" covers the subtree.
+  const CLICKABLE = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|LABEL|SUMMARY)$/;
+  const ROLES = /^(button|link|menuitem|tab|checkbox|radio|switch|option)$/;
+  const inDragRegion = (e) => {
+    const path = typeof e.composedPath === "function" ? e.composedPath() : [];
+    for (const el of path) {
+      if (!el || el.nodeType !== 1 || typeof el.getAttribute !== "function") continue;
+      const attr = el.getAttribute("data-tauri-drag-region");
+      const clickable = CLICKABLE.test(el.tagName) || ROLES.test(el.getAttribute("role") || "")
+        || (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false")
+        || (el.hasAttribute("tabindex") && el.getAttribute("tabindex") !== "-1");
+      if (clickable && attr === null) return false;
+      if (attr === null) continue;
+      if (attr === "false") return false;
+      if (attr === "deep") return true;
+      return el === path[0];
+    }
+    return false;
+  };
   window.addEventListener("contextmenu", (e) => {
+    // Right-click on a title bar: the Windows window menu, as on Electron's native caption.
+    if (!e.defaultPrevented && inDragRegion(e)) fire("window_system_menu");
     if (!isEditable(e.target)) e.preventDefault();
   });
   const blockedKey = (e) => {

@@ -215,6 +215,7 @@ fn main() {
             commands::window::window_is_focused,
             commands::window::window_focus,
             commands::window::window_set_zoom,
+            commands::window::window_system_menu,
             commands::updates::updates_check,
             commands::updates::updates_restart,
             commands::updates::updates_status,

@@ -60,7 +60,7 @@ function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } 
     for (const fn of winListeners.get("keydown") || []) fn(ev);
     return ev;
   };
-  return { api: window.electronAPI, invokes, emit, key, sessionStorage };
+  return { api: window.electronAPI, invokes, emit, key, sessionStorage, winListeners };
 }
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r; }); return { promise, resolve }; };
@@ -139,6 +139,36 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.equal(b.api.zoom.get(), 1.5, "out-of-range values are ignored");
   session.setItem("__descall_zoom", "abc");
   assert.equal(loadShim({ sessionStorage: session }).api.zoom.get(), 1, "a bad stored value falls back to 1");
+}
+
+// 3b. Right-click on a title bar opens the Windows window menu (Electron's native caption did);
+//     never on its buttons, never elsewhere, never when the app showed its own menu.
+{
+  const s = loadShim();
+  const el = (tagName, attrs = {}, parentElement = null) => ({
+    nodeType: 1, tagName, parentElement, isContentEditable: false,
+    getAttribute: (n) => (n in attrs ? attrs[n] : null),
+    hasAttribute: (n) => n in attrs,
+  });
+  const pathOf = (node) => { const p = []; for (let n = node; n; n = n.parentElement) p.push(n); return p; };
+  const menu = (target, prevented = false) => {
+    const before = s.invokes.filter(([c]) => c === "window_system_menu").length;
+    const ev = { target, defaultPrevented: prevented, composedPath: () => pathOf(target), preventDefault() { this.defaultPrevented = true; } };
+    for (const fn of s.winListeners.get("contextmenu") || []) fn(ev);
+    return s.invokes.filter(([c]) => c === "window_system_menu").length - before;
+  };
+  const bar = el("DIV", { "data-tauri-drag-region": "deep", class: "titlebar" });
+  const brand = el("SPAN", {}, el("DIV", {}, bar));
+  const button = el("SVG", {}, el("BUTTON", {}, el("DIV", {}, bar)));
+  const shallow = el("DIV", { "data-tauri-drag-region": "" });
+  assert.equal(menu(bar), 1, "on the bar itself");
+  assert.equal(menu(brand), 1, "anywhere inside a deep bar");
+  assert.equal(menu(button), 0, "not on a window button");
+  assert.equal(menu(el("DIV", { role: "button" }, bar)), 0, "not on role=button");
+  assert.equal(menu(el("DIV", {}, el("MAIN"))), 0, "not outside a title bar");
+  assert.equal(menu(shallow), 1, "a bare attribute counts on the element itself");
+  assert.equal(menu(el("SPAN", {}, shallow)), 0, "but not on its children");
+  assert.equal(menu(brand, true), 0, "the app's own menu wins");
 }
 
 // 4. Shell-side window contracts (src-tauri; the Rust has its own #[test]s for the pure parts).
