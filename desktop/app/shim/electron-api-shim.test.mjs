@@ -726,6 +726,13 @@ for (const label of ["popout-1", "acct-42"]) {
   const watch = bootRs.slice(watchAt, bootRs.indexOf("\n}\n", watchAt));
   assert.match(watch, /app\.emit\("native-theme:reduced-transparency-changed", now\)/, "reduced transparency change goes to every window");
   assert.ok(!/to_main\(&app, "native-theme/.test(watch), "not to the main window only");
+  // mainWindow 'minimize' / 'restore': backgrounded true once, then false on restore even
+  // when Windows does not give the restored window the focus.
+  const resizedAt = bootRs.indexOf("WindowEvent::Resized(_) =>");
+  const resized = bootRs.slice(resizedAt, bootRs.indexOf("WindowEvent::Moved", resizedAt));
+  assert.match(resized, /minimized\.swap\(minimized,/, "the minimized state is tracked");
+  assert.match(resized, /if !was_minimized \{\s*visibility\(&win, true\);/, "minimize: backgrounded");
+  assert.match(resized, /if was_minimized \{\s*visibility\(&win, false\);/, "restore: not backgrounded");
 }
 
 // 4. Commands exist in main.rs -----------------------------------------------------------------

@@ -393,9 +393,18 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 if changed {
                     crate::state::to_main(app, "window:maximized", maximized);
                 }
-                if win.is_minimized().unwrap_or(false) {
-                    visibility(&win, true);
+                let minimized = win.is_minimized().unwrap_or(false);
+                let was_minimized = crate::state::shell(app).minimized.swap(minimized, std::sync::atomic::Ordering::AcqRel);
+                if minimized {
+                    if !was_minimized {
+                        visibility(&win, true); // mainWindow 'minimize'
+                    }
                 } else {
+                    // mainWindow 'restore' sent app:visibility false on its own, focus or not:
+                    // a restore without the focus kept the page's animations paused.
+                    if was_minimized {
+                        visibility(&win, false);
+                    }
                     publish_content_box(&win);
                     save_window_state_soon(&win);
                 }

@@ -26,6 +26,8 @@ pub struct Shell {
     pub has_tray: AtomicBool,
     pub boot: Mutex<BootWatch>,
     pub last_maximized: Mutex<Option<bool>>,
+    /// The main window is minimized: the next non-minimized resize is mainWindow 'restore'.
+    pub minimized: AtomicBool,
 }
 
 #[derive(Default)]
