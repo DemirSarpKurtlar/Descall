@@ -62,3 +62,19 @@ export function nestedOverlayOpen(panel, doc = typeof document !== "undefined" ?
   }
   return false;
 }
+
+/**
+ * A click on the Settings shell closes Settings only when it lands on the shell's own backdrop:
+ * inside the shell's DOM and outside the panel. React portals bubble events through the React
+ * tree, so a click on the backdrop of the photo / banner picker or the crop dialog (rendered in
+ * <body>, children of UserPanel in React) reached the shell's onClick with a target outside the
+ * panel and closed the whole Settings window together with the picker (owner report, Nov 2026).
+ */
+export function shellClickClosesSettings(event, panel) {
+  const shell = event?.currentTarget;
+  const target = event?.target;
+  if (!shell || !target || typeof shell.contains !== "function") return false;
+  if (!shell.contains(target)) return false; // a portaled layer: not our backdrop
+  if (panel && typeof panel.contains === "function" && panel.contains(target)) return false;
+  return true;
+}

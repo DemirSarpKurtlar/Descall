@@ -21,6 +21,13 @@ html.app-idle :is(.spin, .animate-spin, [class*="spinner"], [class*="loader"], [
   animation-play-state: running !important;
 }
 
+/* A dialog or menu that mounts while one of these classes is on must still finish its
+   one-shot entrance. Paused at its first frame, a `backwards` / `both` fade from opacity 0
+   left it invisible but clickable (the scrims in overlay.css have the same exemption). */
+html:is(.app-backgrounded, .app-hidden, .app-idle) :is([role="dialog"], [role="alertdialog"], [role="menu"]) {
+  animation-play-state: running !important;
+}
+
 /* server-voice-26: Market 2.0 voice tile skins are decorative loops. In a voice call the
    window never goes app-idle, so pause them once the window loses focus (Descall behind
    a game). Speaking rings and spinners are not touched. */

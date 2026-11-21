@@ -108,8 +108,14 @@ html[data-theme="light"] .s3-gone span { background: rgba(16, 18, 28, 0.06); col
 .s3-th .rd { width: 20px; height: 20px; border-radius: 50%; margin: 0 auto 4px; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); color: #fff; }
 html[data-theme="light"] .s3-th .rd { box-shadow: inset 0 0 0 1.5px rgba(16, 18, 28, 0.3); }
 .s3-th .on .rd { background: var(--ac); box-shadow: none; display: grid; place-items: center; }
-.s3-store { margin-top: 0; }
+/* Tema: one grouped card. The tiles are its top cell and "Mağaza temaları" its bottom row,
+   split by the same hairline the rows use (inset like a cell without an icon). */
+.s3-store { margin-top: 0; position: relative; }
+.s3-th + .s3-store::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 0.5px; background: var(--s3-hair); z-index: 1; pointer-events: none; }
 .s3-store .s3-row.is-open .s3-chev { transform: rotate(90deg); }
+/* The label keeps its width (ui-audit-high #102), so with no value the chevron / check
+   would sit right after it: push it to the trailing edge like every other row. */
+.s3-store .s3-row .lab + :is(.s3-chev, .s3-check) { margin-left: auto; }
 .s3-theme-dot { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.3); overflow: hidden; }
 
 .s3-sw { display: flex; justify-content: space-between; padding: 14px 16px; }
