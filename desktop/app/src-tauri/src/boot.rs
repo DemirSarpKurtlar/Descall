@@ -328,6 +328,22 @@ fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
 }
 
+/// "Descall keeps running in the background" the first time the window closes to the tray
+/// (main.cjs 'close': same text, same marker file name). show_capsule builds its window off
+/// the UI thread, so this is safe inside the window event handler.
+fn background_notice<R: Runtime>(app: &AppHandle<R>) {
+    let Some(dir) = crate::state::data_dir(app) else { return };
+    let marker = dir.join("background-notice-shown");
+    if marker.exists() {
+        return;
+    }
+    if std::fs::write(&marker, crate::state::now_ms().to_string()).is_err() {
+        log::warn!("[window] background notice marker not saved, it shows again next time");
+    }
+    let body = crate::state::et(app, "notice.background", &[]);
+    let _ = crate::commands::notify::show_capsule(app, "Descall", &json!({ "body": body, "tag": "descall-background" }));
+}
+
 pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     let win = w.clone();
     w.on_window_event(move |e| {
@@ -342,6 +358,7 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 save_window_state(&win);
                 if crate::state::shell(app).has_tray.load(std::sync::atomic::Ordering::Acquire) {
                     let _ = win.hide();
+                    background_notice(app);
                 } else {
                     let _ = win.minimize();
                 }

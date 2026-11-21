@@ -12,6 +12,7 @@
 // 4. notification_show keeps main.cjs order: "Descall in front" before the reply toast.
 // 5. The tray icon is the embedded app icon at the small icon size, not the 32 px one.
 // 6. Taskbar thumbnail buttons and the unread badge come back after the tray.
+// 7. The first close to the tray shows the "keeps running in the background" capsule.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -205,6 +206,21 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(platform, /ThumbBarUpdateButtons\(hw, &list\)\.is_err\(\)/, "update falls back to add");
   const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
   assert.match(tb, /Bus::Focus\(l, true\) if l == "main" =>[\s\S]{0,120}set_badge/, "badge re-applied when the window comes back");
+}
+
+// ---- 7: first close to the tray tells where Descall went (main.cjs 'close') ---------------------------
+{
+  const boot = codeOnly(read("desktop/app/src-tauri/src/boot.rs"));
+  const close = boot.slice(boot.indexOf("WindowEvent::CloseRequested"), boot.indexOf("WindowEvent::Resized"));
+  assert.match(close, /win\.hide\(\);\s*background_notice\(app\);/, "notice right after hiding to the tray");
+  const fn = boot.slice(boot.indexOf("fn background_notice"), boot.indexOf("pub fn bind_window_events"));
+  assert.match(fn, /"background-notice-shown"/, "same marker file as Electron: once");
+  assert.match(fn, /et\(app, "notice\.background"/, "shell text, all locales");
+  assert.match(fn, /show_capsule\(/);
+  for (const l of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+    const j = JSON.parse(read(`frontend/electron/i18n/${l}.json`));
+    assert.ok(j.notice && j.notice.background, `${l}: notice.background`);
+  }
 }
 
 console.log("shell-notif.test: ok");
