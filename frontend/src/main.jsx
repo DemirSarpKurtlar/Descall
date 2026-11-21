@@ -83,6 +83,13 @@ const isAdminPanelWindow = /^\/admin\/panel\/?$/.test(path);
 const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow;
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
+const isNativeAndroid = (() => {
+  try {
+    return isNativeApp && window.Capacitor?.getPlatform?.() === "android";
+  } catch {
+    return false;
+  }
+})();
 
 /**
  * Schedule third-party analytics only after an explicit cookie accept.
@@ -211,6 +218,7 @@ async function bootApp() {
     }
     if (isNativeApp) {
       document.documentElement.classList.add("native-app");
+      if (isNativeAndroid) document.documentElement.classList.add("native-android");
     }
     document.documentElement.setAttribute("data-marketing-ready", "1");
     document.getElementById("seo-static")?.remove();
@@ -245,6 +253,8 @@ async function bootApp() {
       import("./components/ErrorBoundary"),
       // Same cascade order as before: app styles, then the skeleton's.
       import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
+      // Android app: Inter (the mockup face iOS matches with SF Pro) + status-bar gap.
+      isNativeAndroid ? import("./styles/android-native.css").catch(() => {}) : null,
       import("./i18n/index.js").then((m) => m.loadI18nCatalogs()),
       // iPhone + mobile web Liquid Glass (html.glass-ui) and desktop Liquid Glass
       // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).

@@ -2,6 +2,8 @@
 <resources>
     <color name="colorPrimary">#393C4D</color>
     <color name="colorPrimaryDark">#12141C</color>
-    <color name="colorAccent">#FF4655</color>
+    <!-- Brand blue (glass brand token): text selection handles, caret and edge glow in
+         the WebView follow the accent, like the iPhone tint color. -->
+    <color name="colorAccent">#587AF6</color>
     <color name="splash_background">#1E1F22</color>
 </resources>

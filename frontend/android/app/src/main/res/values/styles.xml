@@ -17,6 +17,11 @@
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
         <item name="android:windowBackground">@color/splash_background</item>
+        <!-- The app theme does not inherit AppTheme, so it had AppCompat's teal
+             accent: teal selection handles and caret in every text field. -->
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorControlActivated">@color/colorAccent</item>
+        <item name="android:colorAccent">@color/colorAccent</item>
     </style>
 
 
