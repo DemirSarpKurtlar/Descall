@@ -86,12 +86,50 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
     }
 }
 
+/// Electron's native menu (main.cjs 'context-menu'): on an editable field Undo, Redo, Cut,
+/// Copy, Paste, Select all; elsewhere only Copy, and only while text is selected.
+#[cfg_attr(not(windows), allow(dead_code))]
+const EDIT_MENU: &[&str] = &["undo", "redo", "cut", "copy", "paste", "selectAll"];
+
+/// Which WebView2 menu items (name, is_separator) stay so the menu matches Electron's. WebView2
+/// adds Emoji, Paste as plain text, Search the web, Share, Web capture, Inspect and the like;
+/// those go. Separators survive only between two kept items. All false = show no menu.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub fn electron_menu_items(editable: bool, has_selection: bool, items: &[(String, bool)]) -> Vec<bool> {
+    let wanted = |name: &str| -> bool {
+        if editable {
+            EDIT_MENU.contains(&name)
+        } else {
+            has_selection && name == "copy"
+        }
+    };
+    let mut keep: Vec<bool> = items.iter().map(|(name, sep)| !*sep && wanted(name.as_str())).collect();
+    let mut seen_item = false;
+    let mut pending: Option<usize> = None;
+    for (i, (_, sep)) in items.iter().enumerate() {
+        if *sep {
+            if seen_item && pending.is_none() {
+                pending = Some(i);
+            }
+        } else if keep[i] {
+            if let Some(p) = pending.take() {
+                keep[p] = true;
+            }
+            seen_item = true;
+        }
+    }
+    keep
+}
+
 /// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
 /// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
 /// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
-/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (cut,
-/// copy, paste). The page's own menus call preventDefault, so WebView2 never asks for them.
-/// electron-api-shim.js has the same rules on the page side.
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu is trimmed to Electron's
+/// ([`electron_menu_items`]: edit items on a field, Copy on selected text, else none). The
+/// page's own menus call preventDefault, so WebView2 never asks for them. Autofill pop-ups
+/// (WebView2 offers saved names, e-mails and addresses under the login and search fields; the
+/// Electron app never did) and password saving go off. electron-api-shim.js has the same rules
+/// on the page side.
 pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
     {
@@ -103,6 +141,10 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
                 if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
                     let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
                 }
+                if let Ok(s4) = settings.cast::<ICoreWebView2Settings4>() {
+                    let _ = s4.SetIsGeneralAutofillEnabled(false);
+                    let _ = s4.SetIsPasswordAutosaveEnabled(false);
+                }
                 if let Ok(s6) = settings.cast::<ICoreWebView2Settings6>() {
                     let _ = s6.SetIsSwipeNavigationEnabled(false);
                 }
@@ -113,8 +155,29 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
                 let target = args.ContextMenuTarget()?;
                 let mut editable = windows_core::BOOL(0);
                 target.IsEditable(&mut editable)?;
-                if !editable.as_bool() {
+                let mut selection = windows_core::BOOL(0);
+                let _ = target.HasSelection(&mut selection);
+                let menu = args.MenuItems()?;
+                let mut count = 0u32;
+                menu.Count(&mut count)?;
+                let mut items = Vec::with_capacity(count as usize);
+                for i in 0..count {
+                    let item = menu.GetValueAtIndex(i)?;
+                    let mut name = windows_core::PWSTR::null();
+                    item.Name(&mut name)?;
+                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
+                    item.Kind(&mut kind)?;
+                    items.push((webview2_com::take_pwstr(name), kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR));
+                }
+                let keep = electron_menu_items(editable.as_bool(), selection.as_bool(), &items);
+                if !keep.iter().any(|k| *k) {
                     args.SetHandled(true)?;
+                    return Ok(());
+                }
+                for i in (0..count).rev() {
+                    if !keep[i as usize] {
+                        menu.RemoveValueAtIndex(i)?;
+                    }
                 }
                 Ok(())
             }));
@@ -140,5 +203,39 @@ pub fn ask_retry(title: &str, detail: &str) -> bool {
     {
         let _ = (title, detail);
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::electron_menu_items;
+
+    fn menu(spec: &[&str]) -> Vec<(String, bool)> {
+        spec.iter().map(|s| if *s == "-" { (String::new(), true) } else { (s.to_string(), false) }).collect()
+    }
+    fn kept(spec: &[&str], keep: &[bool]) -> Vec<String> {
+        spec.iter().zip(keep).filter(|(_, k)| **k).map(|(s, _)| s.to_string()).collect()
+    }
+
+    #[test]
+    fn editable_field_gets_electrons_edit_menu() {
+        let spec = ["emoji", "-", "undo", "redo", "-", "cut", "copy", "paste", "pasteAndMatchStyle", "-", "selectAll", "-", "other", "inspectElement"];
+        let keep = electron_menu_items(true, false, &menu(&spec));
+        assert_eq!(kept(&spec, &keep), ["undo", "redo", "-", "cut", "copy", "paste", "-", "selectAll"]);
+    }
+
+    #[test]
+    fn selected_text_gets_copy_only() {
+        let spec = ["copy", "-", "share", "webCapture", "-", "inspectElement"];
+        assert_eq!(kept(&spec, &electron_menu_items(false, true, &menu(&spec))), ["copy"]);
+    }
+
+    #[test]
+    fn page_without_selection_gets_no_menu() {
+        let spec = ["back", "forward", "reload", "-", "saveAs", "print", "-", "inspectElement"];
+        assert!(!electron_menu_items(false, false, &menu(&spec)).iter().any(|k| *k));
+        // A link or image without a selection: nothing either (the page's own menus handle those).
+        let link = ["openLinkInNewWindow", "copyLinkLocation", "-", "copy"];
+        assert!(!electron_menu_items(false, false, &menu(&link)).iter().any(|k| *k));
     }
 }

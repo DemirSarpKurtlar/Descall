@@ -264,6 +264,14 @@ for (const [path, args, cmd, expected] of CASES) {
   const composer = el("DIV", { isContentEditable: true });
   assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN", { parentElement: composer }) })).defaultPrevented, false, "contenteditable composer keeps it");
   assert.ok(s.winListeners.get("contextmenu").every((l) => !l.capture), "bubble phase: the app's own menus run first");
+  // Selected text: Electron showed Copy there; the shell trims WebView2's menu to that item.
+  s.window.getSelection = () => ({ toString: () => "Bu akşam oyun" });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN") })).defaultPrevented, false, "selected text keeps the (Copy) menu");
+  s.window.getSelection = () => ({ toString: () => "  \n" });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN") })).defaultPrevented, true, "a blank selection is no selection");
+  s.window.getSelection = () => { throw new Error("detached"); };
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "no selection API: no menu");
+  delete s.window.getSelection;
   const key = (k, mods = {}) => s.dispatch("keydown", ev({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })).defaultPrevented;
   for (const [k, m] of [["F5"], ["r", { ctrlKey: true }], ["R", { ctrlKey: true, shiftKey: true }], ["ArrowLeft", { altKey: true }], ["ArrowRight", { altKey: true }], ["p", { ctrlKey: true }], ["BrowserBack"], ["I", { ctrlKey: true, shiftKey: true }], ["F12"]]) {
     assert.equal(key(k, m), true, `${k} ${JSON.stringify(m || {})} blocked`);
@@ -276,6 +284,15 @@ for (const [path, args, cmd, expected] of CASES) {
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");
   assert.match(webviewRs, /add_ContextMenuRequested/, "WebView2 context menu handler installed");
+  // Electron's native menu, not WebView2's (Emoji, Share, Web capture, Inspect...), and no
+  // autofill pop-ups under the login / search fields (Electron never showed any).
+  assert.match(webviewRs, /const EDIT_MENU: &\[&str\] = &\["undo", "redo", "cut", "copy", "paste", "selectAll"\];/);
+  assert.match(webviewRs, /electron_menu_items\(editable\.as_bool\(\), selection\.as_bool\(\), &items\)/, "menu trimmed per target");
+  assert.match(webviewRs, /menu\.RemoveValueAtIndex\(i\)\?/, "the extra WebView2 items are removed");
+  assert.match(webviewRs, /SetIsGeneralAutofillEnabled\(false\)/, "WebView2 autofill suggestions off");
+  assert.match(webviewRs, /SetIsPasswordAutosaveEnabled\(false\)/, "WebView2 password saving off");
+  const adminRs = readFileSync(join(here, "..", "src-tauri", "src", "admin.rs"), "utf8");
+  assert.match(adminRs, /crate::webview::install_browser_guards\(&win\)/, "admin windows get the same WebView2 guards");
   assert.match(mainRs, /webview::install_browser_guards\(&w\)/, "main window gets the WebView2 guards");
 }
 

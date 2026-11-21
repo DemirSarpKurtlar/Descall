@@ -230,8 +230,13 @@
     }
     return false;
   };
+  // Selected text keeps the menu too: Electron offered Copy there (main.cjs 'context-menu'), and
+  // the shell trims WebView2's menu to that one item (webview.rs electron_menu_items).
+  const hasSelection = () => {
+    try { return String((window.getSelection && window.getSelection()) || "").trim().length > 0; } catch (_) { return false; }
+  };
   window.addEventListener("contextmenu", (e) => {
-    if (!isEditable(e.target)) e.preventDefault();
+    if (!isEditable(e.target) && !hasSelection()) e.preventDefault();
   });
   const blockedKey = (e) => {
     const k = String(e.key || "");
