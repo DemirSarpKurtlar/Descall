@@ -5,12 +5,12 @@ use descall_shell::occlusion::{self, Insets, Rect};
 use tauri::{Manager, Runtime, WebviewWindow};
 
 #[tauri::command]
-pub fn window_minimize<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_minimize<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.minimize();
 }
 
 #[tauri::command]
-pub fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
     if window.is_maximized().unwrap_or(false) {
         let _ = window.unmaximize();
     } else {
@@ -21,7 +21,7 @@ pub fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
 /// window:close: the main window hides to the tray (CloseRequested in boot.rs); other
 /// windows close.
 #[tauri::command]
-pub fn window_close<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_close<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.close();
 }
 

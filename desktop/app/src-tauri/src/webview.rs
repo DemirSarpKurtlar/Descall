@@ -86,6 +86,48 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
     }
 }
 
+/// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
+/// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
+/// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (cut,
+/// copy, paste). The page's own menus call preventDefault, so WebView2 never asks for them.
+/// electron-api-shim.js has the same rules on the page side.
+pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(|pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::*;
+            use windows_core::Interface;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            if let Ok(settings) = core.Settings() {
+                if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
+                    let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
+                }
+                if let Ok(s6) = settings.cast::<ICoreWebView2Settings6>() {
+                    let _ = s6.SetIsSwipeNavigationEnabled(false);
+                }
+            }
+            let Ok(core11) = core.cast::<ICoreWebView2_11>() else { return };
+            let handler = webview2_com::ContextMenuRequestedEventHandler::create(Box::new(|_, args| {
+                let Some(args) = args else { return Ok(()) };
+                let target = args.ContextMenuTarget()?;
+                let mut editable = windows_core::BOOL(0);
+                target.IsEditable(&mut editable)?;
+                if !editable.as_bool() {
+                    args.SetHandled(true)?;
+                }
+                Ok(())
+            }));
+            let mut token = 0i64;
+            let _ = core11.add_ContextMenuRequested(&handler, &mut token);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window;
+    }
+}
+
 /// Native "Descall could not open" with Retry / Cancel(quit). Blocking; call off the UI thread.
 pub fn ask_retry(title: &str, detail: &str) -> bool {
     #[cfg(windows)]

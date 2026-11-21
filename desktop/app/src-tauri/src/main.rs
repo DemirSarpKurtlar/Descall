@@ -168,6 +168,7 @@ fn main() {
             }
             boot::bind_window_events(&w);
             webview::install_permission_handler(&w);
+            webview::install_browser_guards(&w);
             tray::create(&handle);
             premium_hooks::install(&handle);
 

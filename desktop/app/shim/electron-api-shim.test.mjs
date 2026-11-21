@@ -48,16 +48,18 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {} } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false } = {}) {
   const invokes = [];
+  const winListeners = new Map();
   const listeners = new Map();
   const unlistened = [];
   const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
-  const window = {
-    __DESCALL_BOOT__: boot,
-    __TAURI_INTERNALS__: { metadata: { currentWebview: { label: boot.mode === "admin" ? "admin" : "main" } } },
-    __TAURI__: {
-      core: { invoke: (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(responses[cmd] ?? null); } },
+  const answer = (cmd, args) => {
+    invokes.push([cmd, args]);
+    return fail.includes(cmd) ? Promise.reject(new Error(`${cmd} failed`)) : Promise.resolve(responses[cmd] ?? null);
+  };
+  const tauriGlobal = {
+      core: { invoke: answer },
       event: {
         listen: (event, handler) => {
           if (!listeners.has(event)) listeners.set(event, []);
@@ -65,12 +67,19 @@ function loadShim({ boot = {}, responses = {} } = {}) {
           return Promise.resolve(() => { unlistened.push(event); listeners.set(event, listeners.get(event).filter((h) => h !== handler)); });
         },
       },
-    },
   };
+  const window = {
+    __DESCALL_BOOT__: boot,
+    __TAURI_INTERNALS__: { metadata: { currentWebview: { label: boot.mode === "admin" ? "admin" : "main" } }, invoke: answer, transformCallback: () => 1 },
+    addEventListener: (type, fn, capture) => { if (!winListeners.has(type)) winListeners.set(type, []); winListeners.get(type).push({ fn, capture: Boolean(capture) }); },
+  };
+  // Real Tauri order: plugin init scripts (premium-shim.js) run BEFORE the withGlobalTauri
+  // bundle defines window.__TAURI__; the window's own scripts (electron-api-shim.js) after it.
+  if (!realOrder) window.__TAURI__ = tauriGlobal;
   window.top = window;
   const ctx = {
     window,
-    document: { addEventListener: () => {} },
+    document: { addEventListener: () => {}, documentElement: { classList: { _s: new Set(), add(c) { this._s.add(c); } } } },
     localStorage: store(),
     sessionStorage: store(),
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
@@ -84,9 +93,11 @@ function loadShim({ boot = {}, responses = {} } = {}) {
   // Same order as Tauri: plugin init scripts (premium-shim.js) run before the window's own.
   vm.createContext(ctx);
   vm.runInContext(premiumShimSrc, ctx, { filename: "premium-shim.js" });
+  window.__TAURI__ = tauriGlobal;
   vm.runInContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
   const emit = (event, payload) => (listeners.get(event) || []).forEach((h) => h({ payload }));
-  return { api: window.electronAPI, premium: window.descallPremium, window, invokes, listeners, unlistened, emit, ctx };
+  const dispatch = (type, ev) => { for (const l of winListeners.get(type) || []) l.fn(ev); return ev; };
+  return { api: window.electronAPI, premium: window.descallPremium, window, invokes, listeners, unlistened, emit, ctx, dispatch, winListeners };
 }
 // Values from the vm realm have other prototypes: compare their JSON shape.
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -208,6 +219,64 @@ for (const [path, args, cmd, expected] of CASES) {
   await assert.rejects(s.premium.invoke("app-version"), /premium channel expected/);
   assert.equal(typeof s.premium.on("nope", () => {}), "function");
   called.add("premium_invoke");
+}
+
+{
+  // Real init order (no window.__TAURI__ while premium-shim.js runs): the bridge must still
+  // exist (it was missing: Settings > Descall+ showed every desktop feature as locked).
+  const s = loadShim({ realOrder: true });
+  assert.ok(s.premium && typeof s.premium.invoke === "function", "descallPremium with the real Tauri script order");
+  assert.ok(s.window.__descallNativeClip, "native clip bridge with the real order");
+  await s.premium.invoke("premium:settings:get", "global_mute");
+  deq(s.invokes[0], ["premium_invoke", { channel: "premium:settings:get", args: ["global_mute"] }]);
+  s.premium.on("premium:settings-changed", () => {});
+  await tick();
+  assert.ok((s.listeners.get("premium:settings-changed") || []).length === 1, "premium on() listens with the real order");
+}
+{
+  // Title bar buttons: shell command, then Tauri's window command when it fails.
+  for (const [member, cmd, core] of [["minimizeWindow", "window_minimize", "minimize"], ["maximizeWindow", "window_toggle_maximize", "toggle_maximize"], ["closeWindow", "window_close", "close"]]) {
+    const s = loadShim({ fail: [cmd] });
+    s.ctx.console = { warn() {}, log() {}, error() {} };
+    s.api[member]();
+    await tick(); await tick();
+    deq(s.invokes.map((c) => c[0]), [cmd, `plugin:window|${core}`], `${member} falls back to plugin:window|${core}`);
+  }
+  const def = JSON.parse(readFileSync(join(here, "..", "src-tauri", "capabilities", "default.json"), "utf8"));
+  assert.ok(def.windows.includes("main"), "the main window is in the app capability");
+  for (const perm of ["core:window:allow-minimize", "core:window:allow-toggle-maximize", "core:window:allow-close", "core:window:allow-start-dragging", "core:window:allow-internal-toggle-maximize"]) {
+    assert.ok(def.permissions.includes(perm), `capability has ${perm}`);
+  }
+  const winRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "window.rs"), "utf8");
+  for (const cmd of ["window_minimize", "window_toggle_maximize", "window_close"]) {
+    assert.match(winRs, new RegExp(`pub async fn ${cmd}<`), `${cmd} is async (off the UI thread, like Tauri's own window commands)`);
+  }
+}
+{
+  // No browser context menu outside editable fields; browser shortcuts never navigate.
+  const s = loadShim();
+  const ev = (extra) => ({ defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, ...extra });
+  const el = (tag, extra = {}) => ({ nodeType: 1, tagName: tag, parentElement: null, isContentEditable: false, ...extra });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "no menu on plain content");
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("IMG") })).defaultPrevented, true, "no menu on images");
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("INPUT", { type: "text" }) })).defaultPrevented, false, "inputs keep cut/copy/paste");
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("TEXTAREA") })).defaultPrevented, false, "textareas keep the native menu");
+  const composer = el("DIV", { isContentEditable: true });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN", { parentElement: composer }) })).defaultPrevented, false, "contenteditable composer keeps it");
+  assert.ok(s.winListeners.get("contextmenu").every((l) => !l.capture), "bubble phase: the app's own menus run first");
+  const key = (k, mods = {}) => s.dispatch("keydown", ev({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })).defaultPrevented;
+  for (const [k, m] of [["F5"], ["r", { ctrlKey: true }], ["R", { ctrlKey: true, shiftKey: true }], ["ArrowLeft", { altKey: true }], ["ArrowRight", { altKey: true }], ["p", { ctrlKey: true }], ["BrowserBack"], ["I", { ctrlKey: true, shiftKey: true }], ["F12"]]) {
+    assert.equal(key(k, m), true, `${k} ${JSON.stringify(m || {})} blocked`);
+  }
+  for (const [k, m] of [["c", { ctrlKey: true }], ["v", { ctrlKey: true }], ["x", { ctrlKey: true }], ["a", { ctrlKey: true }], ["z", { ctrlKey: true }], ["k", { ctrlKey: true }], ["ArrowLeft"], ["Enter"]]) {
+    assert.equal(key(k, m), false, `${k} ${JSON.stringify(m || {})} stays with the app`);
+  }
+  assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
+  assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
+  const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");
+  assert.match(webviewRs, /add_ContextMenuRequested/, "WebView2 context menu handler installed");
+  assert.match(mainRs, /webview::install_browser_guards\(&w\)/, "main window gets the WebView2 guards");
 }
 
 // Admin windows: the same constants adminPreload.cjs answers, with no IPC.
