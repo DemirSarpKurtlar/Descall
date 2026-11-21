@@ -38,6 +38,20 @@ export function syncAndroidSystemBars(force = false) {
   return style;
 }
 
+/**
+ * Pure: the inputs the theme scheme depends on. The observer below fires on every
+ * class / style change of <html>, and some of those happen on every scroll frame
+ * (inline custom properties, scroll state classes); reading --g-scheme with
+ * getComputedStyle there forced a full style recalc per frame (Android DM list
+ * scroll: 474 ms of style, 43 dropped frames vs 13 on iPhone). Only a change of
+ * these inputs can change the scheme.
+ */
+export function schemeInputsKey(el) {
+  if (!el) return "";
+  const inlineScheme = el.style?.getPropertyValue?.("--g-scheme") || "";
+  return `${el.getAttribute?.("data-theme") || ""}|${el.className || ""}|${inlineScheme}`;
+}
+
 export function installAndroidSystemBars() {
   if (typeof document === "undefined" || observer) return;
   try {
@@ -47,17 +61,29 @@ export function installAndroidSystemBars() {
   }
   syncAndroidSystemBars(true);
   if (typeof MutationObserver !== "function") return;
-  let raf = 0;
+  const root = document.documentElement;
+  let lastKey = schemeInputsKey(root);
+  let pending = 0;
+  const idle = typeof window.requestIdleCallback === "function"
+    ? (fn) => window.requestIdleCallback(fn, { timeout: 600 })
+    : (fn) => window.setTimeout(fn, 120);
   observer = new MutationObserver(() => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = 0;
+    const key = schemeInputsKey(root);
+    if (key === lastKey || pending) return;
+    // Read the computed scheme when the page is idle (after the scroll / animation
+    // that toggled the class), not inside the frame.
+    pending = idle(() => {
+      pending = 0;
+      lastKey = schemeInputsKey(root);
       syncAndroidSystemBars();
     });
   });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+  observer.observe(root, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
   // Coming back from the background (theme may have followed the system).
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") syncAndroidSystemBars(true);
+    if (document.visibilityState === "visible") {
+      lastKey = schemeInputsKey(root);
+      syncAndroidSystemBars(true);
+    }
   });
 }
