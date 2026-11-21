@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(CallKeepAlivePlugin.class);
     registerPlugin(DescallDeepLinkPlugin.class);
     registerPlugin(DescallPushConfigPlugin.class);
+    registerPlugin(DescallHapticsPlugin.class);
     super.onCreate(savedInstanceState);
 
     getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -31,8 +32,14 @@ public class MainActivity extends BridgeActivity {
       }
 
       private void finishActivity() {
+        // Hand this one back press to the system (finish, or on Android 12+
+        // move the root task to the back), then take the next one again.
+        // Leaving the callback disabled meant that after the app came back
+        // from the background every back gesture left it instead of closing
+        // the open sheet or chat.
         setEnabled(false);
         getOnBackPressedDispatcher().onBackPressed();
+        setEnabled(true);
       }
     });
   }
