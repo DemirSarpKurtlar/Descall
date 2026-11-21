@@ -45,13 +45,31 @@ pub fn shell_url(page: &str) -> tauri::Url {
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 
+/// The app commands, behind the per-window policy (descall_shell::ipc_policy): the shell's own pages
+/// (capsules, overlay, HUD, launcher, tray panel) reach their bridge's commands only.
+fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    move |invoke| {
+        let label = invoke.message.webview_ref().label().to_string();
+        if !descall_shell::ipc_policy::allowed(&label, invoke.message.command()) {
+            log::warn!("[ipc] {label} may not call {}", invoke.message.command());
+            invoke.resolver.reject("forbidden");
+            return true;
+        }
+        inner(invoke)
+    }
+}
+
 /// Main-process errors reach the page (electronAPI.onMainError) and the log.
 fn install_panic_hook() {
     let default = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         log::error!("[main] panic: {info}");
         if let Some(app) = APP.get() {
-            state::to_main(app, "app:main-error", serde_json::json!({ "message": info.to_string() }));
+            // Message only: the location and any path in it would name the build machine's
+            // and the user's folders (descall_shell::crash).
+            let p = info.payload();
+            let text = p.downcast_ref::<&str>().copied().or_else(|| p.downcast_ref::<String>().map(String::as_str));
+            state::to_main(app, "app:main-error", serde_json::json!({ "message": descall_shell::crash::page_message(text) }));
         }
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
@@ -198,7 +216,7 @@ fn main() {
             commands::updates::schedule_background_checks(&handle);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(guarded(tauri::generate_handler![
             commands::app::app_version,
             commands::app::app_set_locale,
             commands::app::app_boot_retry,
@@ -243,7 +261,7 @@ fn main() {
             tray_menu::tray_set_state,
             tray_menu::tray_menu_state,
             tray_menu::tray_menu_act,
-        ])
+        ]))
         .build(assets::with_nested_routes(tauri::generate_context!()))
         .expect("Descall failed to start");
 

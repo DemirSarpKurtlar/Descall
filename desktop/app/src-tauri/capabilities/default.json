@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "App windows and Descall shell pages (capsules, overlay): only these may invoke the shell.",
+  "description": "App windows (main, Descall+ pop-outs and account windows, admin windows): only the plugin calls the shims and Tauri's own drag region make. Events in, window buttons and dragging, links to the default browser (http, https, mailto, tel), web notifications. No clipboard, shortcut, updater, deep-link, menu, tray or event emit from pages (the shell does those natively). App commands are limited per window in src/ipc_policy.rs. No remote origin is listed, so web pages never get IPC.",
   "windows": [
     "main",
     "admin",
@@ -9,29 +9,18 @@
     "popout-*",
     "pip",
     "sidebar",
-    "widget-*",
-    "launcher",
-    "notif-*",
-    "overlay",
-    "hud-*",
     "acct-*"
   ],
   "permissions": [
-    "core:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-internal-toggle-maximize",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
-    "core:webview:allow-set-webview-zoom",
     "notification:default",
-    "clipboard-manager:allow-read-image",
-    "clipboard-manager:allow-write-text",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
-    "updater:default",
-    "deep-link:default",
     "opener:allow-open-url",
-    "opener:default"
+    "opener:allow-default-urls"
   ]
 }

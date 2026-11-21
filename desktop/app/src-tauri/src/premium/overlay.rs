@@ -105,6 +105,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .visible_on_all_workspaces(true)
                 .initialization_script(HUD_SHIM)
                 .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
+                .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
                 .build();
             match built {
                 Ok(w) => w,
