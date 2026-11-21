@@ -13,6 +13,7 @@
     "launcher",
     "notif-*",
     "overlay",
+    "overlay-*",
     "hud-*",
     "acct-*"
   ],

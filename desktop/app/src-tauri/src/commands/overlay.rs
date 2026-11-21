@@ -1,35 +1,52 @@
 //! Always-on-top voice overlay (electron/overlayWindow.cjs): a transparent, frameless card in
 //! the top-right corner of the primary work area with mute / deafen / leave. The card is
-//! overlayHtml.cjs, served by descall-shell://localhost/overlay.html. A hidden overlay is
-//! destroyed after 60 s to free its renderer.
+//! overlayHtml.cjs, served by descall-shell://localhost/overlay.html.
+//!
+//! Electron showed the card with showInactive(). Tauri has no inactive show: show() on a
+//! hidden window is ShowWindow(SW_SHOW), which activates it and takes the focus away from
+//! Descall's own window (joining a call) or from a full-screen game. So every overlay window
+//! is born visible and unfocused (tao shows it with SW_SHOWNOACTIVATE) and is never hidden
+//! and shown again: hiding destroys it, the next call gets a new window ("overlay-<n>", so a
+//! window that is still being destroyed never answers for the new one). A position the user
+//! dragged the card to is kept for 60 s, like Electron's idle window.
 
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde_json::{json, Map, Value};
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 use crate::state::{self, to_main};
 
-pub const LABEL: &str = "overlay";
+/// Window labels are `overlay-<n>` (capabilities/default.json lists `overlay-*`).
+pub const LABEL_PREFIX: &str = "overlay-";
 const CARD_W: f64 = 280.0;
 const CARD_H: f64 = 104.0;
 const PAD: f64 = 14.0;
 const WIDTH: f64 = CARD_W + PAD * 2.0;
 const HEIGHT: f64 = CARD_H + PAD * 2.0 + 4.0;
 const MARGIN: f64 = 16.0;
-const IDLE_DESTROY: Duration = Duration::from_secs(60);
+/// Electron kept a hidden overlay (and where it was dragged) for 60 s.
+const KEEP_POSITION: Duration = Duration::from_secs(60);
+
+#[derive(Default)]
+struct Live {
+    /// Label of the current overlay window and whether its page has loaded.
+    window: Option<(String, bool)>,
+    next: u64,
+    /// Logical position of the last overlay (it can be dragged) and when it closed.
+    last_pos: Option<(f64, f64, Instant)>,
+}
 
 pub struct Overlay {
     state: Mutex<Map<String, Value>>,
-    loaded: Mutex<bool>,
-    idle_gen: Mutex<u64>,
+    live: Mutex<Live>,
 }
 
 impl Default for Overlay {
     fn default() -> Self {
         let v = json!({ "title": "", "muted": false, "deafened": false, "connected": false, "pending": false, "kind": "dm", "since": 0, "lang": "en", "avatarUrl": "", "brandRgb": "" });
-        Overlay { state: Mutex::new(v.as_object().cloned().unwrap_or_default()), loaded: Mutex::new(false), idle_gen: Mutex::new(0) }
+        Overlay { state: Mutex::new(v.as_object().cloned().unwrap_or_default()), live: Mutex::new(Live::default()) }
     }
 }
 
@@ -48,27 +65,24 @@ fn merge<R: Runtime>(app: &AppHandle<R>, payload: &Value, extra: &[(&str, Value)
     s.insert("lang".into(), Value::String(state::locale(app)));
 }
 
+/// The current overlay window and whether its page has loaded.
+fn current<R: Runtime>(app: &AppHandle<R>) -> Option<(WebviewWindow<R>, bool)> {
+    let (label, loaded) = app.state::<Overlay>().live.lock().unwrap().window.clone()?;
+    app.get_webview_window(&label).map(|w| (w, loaded))
+}
+
 fn push<R: Runtime>(app: &AppHandle<R>) {
-    let o = app.state::<Overlay>();
-    if !*o.loaded.lock().unwrap() {
-        return;
-    }
-    let js = format!("window.__overlayUpdate && window.__overlayUpdate({});", Value::Object(o.state.lock().unwrap().clone()));
-    if let Some(w) = app.get_webview_window(LABEL) {
-        let _ = w.eval(&js);
-    }
+    let Some((w, true)) = current(app) else { return };
+    let js = format!("window.__overlayUpdate && window.__overlayUpdate({});", Value::Object(app.state::<Overlay>().state.lock().unwrap().clone()));
+    let _ = w.eval(&js);
 }
 
 pub fn is_visible<R: Runtime>(app: &AppHandle<R>) -> bool {
-    app.get_webview_window(LABEL).is_some_and(|w| w.is_visible().unwrap_or(false))
+    current(app).is_some()
 }
 
-fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
-    if let Some(w) = app.get_webview_window(LABEL) {
-        return Some(w);
-    }
-    *app.state::<Overlay>().loaded.lock().unwrap() = false;
-    let (x, y) = match app.primary_monitor().ok().flatten() {
+fn default_position<R: Runtime>(app: &AppHandle<R>) -> (f64, f64) {
+    match app.primary_monitor().ok().flatten() {
         Some(m) => {
             let s = m.scale_factor();
             let wa = m.work_area();
@@ -77,9 +91,27 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
             ((wx + ww - WIDTH - MARGIN + PAD).max(wx), (wy + MARGIN - PAD).max(wy))
         }
         None => (100.0, 100.0),
+    }
+}
+
+/// Create the overlay window when there is none. Born visible: see the module comment.
+fn ensure<R: Runtime>(app: &AppHandle<R>) {
+    if current(app).is_some() {
+        return;
+    }
+    let (label, kept) = {
+        let o = app.state::<Overlay>();
+        let mut live = o.live.lock().unwrap();
+        live.next += 1;
+        let label = format!("{LABEL_PREFIX}{}", live.next);
+        live.window = Some((label.clone(), false));
+        let kept = live.last_pos.filter(|p| p.2.elapsed() < KEEP_POSITION).map(|p| (p.0, p.1));
+        (label, kept)
     };
+    let (x, y) = kept.unwrap_or_else(|| default_position(app));
     let app_load = app.clone();
-    WebviewWindowBuilder::new(app, LABEL, WebviewUrl::CustomProtocol(crate::shell_url("overlay.html")))
+    let mine = label.clone();
+    let built = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("overlay.html")))
         .title("Descall")
         .inner_size(WIDTH, HEIGHT)
         .position(x, y)
@@ -92,85 +124,82 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
         .always_on_top(true)
         .skip_taskbar(true)
         .visible_on_all_workspaces(true)
+        // Shown without activation (SW_SHOWNOACTIVATE); the page is transparent until drawn.
         .focused(false)
-        .visible(false)
+        .visible(true)
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(format!("window.__DESCALL_OVERLAY__ = {};", json!({ "locale": state::locale(app) })))
-        .on_page_load(move |w, p| {
+        .on_page_load(move |_w, p| {
             if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
-                *app_load.state::<Overlay>().loaded.lock().unwrap() = true;
-                let connected = app_load.state::<Overlay>().state.lock().unwrap().get("connected").and_then(Value::as_bool).unwrap_or(false);
-                if connected {
-                    let _ = w.show();
-                    push(&app_load);
+                {
+                    let o = app_load.state::<Overlay>();
+                    let mut live = o.live.lock().unwrap();
+                    match live.window.as_mut() {
+                        Some((l, loaded)) if l.as_str() == mine.as_str() => *loaded = true,
+                        _ => return,
+                    }
                 }
+                push(&app_load);
             }
         })
-        .build()
-        .ok()
+        .build();
+    if let Err(e) = built {
+        log::warn!("[overlay] window failed: {e}");
+        app.state::<Overlay>().live.lock().unwrap().window = None;
+    }
 }
 
 /// electronAPI.overlayShow(payload) -> descall:overlay:show.
 #[tauri::command]
 pub fn overlay_show<R: Runtime>(app: AppHandle<R>, payload: Value) {
-    *app.state::<Overlay>().idle_gen.lock().unwrap() += 1;
     merge(&app, &payload, &[("connected", Value::Bool(true))]);
-    if let Some(w) = ensure(&app) {
-        if *app.state::<Overlay>().loaded.lock().unwrap() {
-            if !w.is_visible().unwrap_or(false) {
-                let _ = w.show();
-            }
-            push(&app);
-        }
-    }
+    ensure(&app);
+    push(&app);
 }
 
-/// electronAPI.overlayUpdate(payload) -> descall:overlay:update (only while visible).
+/// electronAPI.overlayUpdate(payload) -> descall:overlay:update (only while shown).
 #[tauri::command]
 pub fn overlay_update<R: Runtime>(app: AppHandle<R>, payload: Value) {
     merge(&app, &payload, &[]);
-    if is_visible(&app) {
-        push(&app);
-    }
+    push(&app);
 }
 
-/// electronAPI.overlayHide() -> descall:overlay:hide; destroyed after 60 s hidden.
+/// electronAPI.overlayHide() -> descall:overlay:hide. The window goes away (see the module
+/// comment); where it was is remembered for the next one.
 #[tauri::command]
 pub fn overlay_hide<R: Runtime>(app: AppHandle<R>) {
     merge(&app, &Value::Null, &[("connected", Value::Bool(false))]);
-    let Some(w) = app.get_webview_window(LABEL) else { return };
-    let _ = w.hide();
-    let gen = {
-        let o = app.state::<Overlay>();
-        let mut g = o.idle_gen.lock().unwrap();
-        *g += 1;
-        *g
+    let Some((w, _)) = current(&app) else {
+        app.state::<Overlay>().live.lock().unwrap().window = None;
+        return;
     };
-    let app2 = app.clone();
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(IDLE_DESTROY).await;
-        let current = *app2.state::<Overlay>().idle_gen.lock().unwrap();
-        if current == gen && !is_visible(&app2) {
-            if let Some(w) = app2.get_webview_window(LABEL) {
-                let _ = w.destroy();
-            }
-        }
+    let pos = w.outer_position().ok().map(|p| {
+        let s = w.scale_factor().unwrap_or(1.0);
+        (p.x as f64 / s, p.y as f64 / s, Instant::now())
     });
+    {
+        let o = app.state::<Overlay>();
+        let mut live = o.live.lock().unwrap();
+        live.window = None;
+        if pos.is_some() {
+            live.last_pos = pos;
+        }
+    }
+    let _ = w.destroy();
 }
 
 /// The UI language changed: relabel a visible overlay.
 pub fn refresh_language<R: Runtime>(app: &AppHandle<R>) {
     merge(app, &Value::Null, &[]);
-    if is_visible(app) {
-        push(app);
-    }
+    push(app);
 }
 
 /// window.overlayAPI.action(type) from the overlay page -> descall:overlay:action to the app.
 #[tauri::command]
 pub fn overlay_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, action: String) {
-    if window.label() != LABEL || !matches!(action.as_str(), "mute" | "deafen" | "leave") {
+    let mine = app.state::<Overlay>().live.lock().unwrap().window.as_ref().is_some_and(|(l, _)| l == window.label());
+    if !mine || !matches!(action.as_str(), "mute" | "deafen" | "leave") {
         return;
     }
     to_main(&app, "descall:overlay:action", action);

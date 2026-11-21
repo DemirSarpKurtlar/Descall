@@ -179,8 +179,9 @@ fn reveal<R: Runtime>(app: &AppHandle<R>, id: u64) {
         c.shown = true;
         c.label.clone()
     };
+    // Already on screen (born visible, see show_capsule): no show() here, which would be
+    // SW_SHOW and take the focus.
     if let Some(w) = app.get_webview_window(&label) {
-        let _ = w.show();
         let _ = w.set_always_on_top(true);
     }
     reposition_all(app);
@@ -314,9 +315,14 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
         .always_on_top(true)
         .skip_taskbar(true)
         .visible_on_all_workspaces(true)
-        .focused(call)
+        // Electron showed capsules with showInactive(). Tauri's show() on a hidden window is
+        // ShowWindow(SW_SHOW): it activates the capsule and takes the focus from the app the
+        // user is in (a full-screen game minimizes). A window born visible and unfocused is
+        // shown with SW_SHOWNOACTIVATE instead; the transparent page is empty until the card
+        // is drawn. Calls stay focusable so a clicked card can take the keyboard.
+        .focused(false)
         .focusable(call)
-        .visible(false)
+        .visible(true)
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
@@ -354,14 +360,41 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     // turn a DM into a native reply toast.
     let Some(filtered) = crate::premium::notify_filter(serde_json::json!({ "title": payload.title, "options": payload.options })) else { return };
     let options = filtered.get("options").cloned().unwrap_or(Value::Null);
-    if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
-        let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
-        let data = options.get("data").cloned().unwrap_or(Value::Null);
-        if crate::premium::show_quick_reply(&payload.title, body, conv, data) {
-            return;
+    let data = options.get("data").cloned().unwrap_or(Value::Null);
+    let data_type = str_of(&data, "type");
+    let call = notif::is_call(data_type);
+    let require_interaction = options.get("requireInteraction").and_then(Value::as_bool).unwrap_or(false);
+    // Same order as main.cjs showAppNotification: with Descall in front the app shows it
+    // already, so no reply toast, no capsule and no taskbar flash.
+    if notif::skip_in_front(main_in_front(&app), call, require_interaction) {
+        return;
+    }
+    flash_taskbar(&app, data_type);
+    // Quick reply never takes a call. The toast reads like Electron's: data.from /
+    // data.preview first (a group toast names the sender, not the group).
+    if !call {
+        if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
+            let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
+            let (title, body) = notif::reply_toast_text(&payload.title, body, &data);
+            if crate::premium::show_quick_reply(&title, &body, conv, data.clone()) {
+                return;
+            }
         }
     }
     let _ = show_capsule(&app, &payload.title, &options);
+}
+
+/// The taskbar button flashes a few times for a mention, a DM or a call while Descall is
+/// open but not in front (Electron never flashed). Hidden to the tray there is no button.
+fn flash_taskbar<R: Runtime>(app: &AppHandle<R>, data_type: &str) {
+    if !notif::flashes_taskbar(data_type) {
+        return;
+    }
+    let Some(w) = state::main_window(app) else { return };
+    if !w.is_visible().unwrap_or(false) {
+        return;
+    }
+    let _ = w.request_user_attention(Some(tauri::UserAttentionType::Informational));
 }
 
 /// electronAPI.closeNotification({ tag } | { tags }): incoming-call capsules close when the

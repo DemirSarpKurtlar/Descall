@@ -57,6 +57,26 @@ pub fn card_height(is_call: bool, kind: Kind) -> f64 {
     }
 }
 
+/// main.cjs showAppNotification: with Descall in front the in-app UI already shows a call
+/// and any message that does not ask for interaction, so the shell shows nothing (no reply
+/// toast, no capsule, no taskbar flash).
+pub fn skip_in_front(main_in_front: bool, call: bool, require_interaction: bool) -> bool {
+    main_in_front && (call || !require_interaction)
+}
+
+/// Mentions, DMs and calls flash the taskbar button while Descall is not in front.
+pub fn flashes_taskbar(data_type: &str) -> bool {
+    matches!(data_type, "mention" | "dm" | "call" | "group-call")
+}
+
+/// Title and text of a quick reply toast (main.cjs: data.from || title, data.preview || body).
+pub fn reply_toast_text(title: &str, body: &str, data: &serde_json::Value) -> (String, String) {
+    let pick = |key: &str, fallback: &str| {
+        data.get(key).and_then(serde_json::Value::as_str).filter(|s| !s.is_empty()).unwrap_or(fallback).to_string()
+    };
+    (pick("from", title), pick("preview", body))
+}
+
 /// Capsule width for a work area: 480 DIPs, narrower on very small screens.
 pub fn capsule_width(area_width: f64) -> f64 {
     NOTIF_WIDTH.min((area_width - 24.0).floor()).max(300.0)
@@ -141,5 +161,19 @@ mod tests {
         assert_eq!(card_height(false, kind_of("announcement")), NOTIF_HEIGHT_NOTICE);
         assert_eq!(card_height(true, Kind::Notice), NOTIF_HEIGHT_CALL);
         assert_eq!(kind_of("friend-online"), Kind::Online);
+    }
+
+    #[test]
+    fn in_front_order_flash_and_reply_text() {
+        assert!(skip_in_front(true, false, false), "a DM while Descall is in front: nothing");
+        assert!(skip_in_front(true, true, true), "a call while in front: the in-app card");
+        assert!(!skip_in_front(true, false, true), "a mention asks for interaction: capsule");
+        assert!(!skip_in_front(false, false, false));
+        assert!(flashes_taskbar("mention") && flashes_taskbar("dm") && flashes_taskbar("call") && flashes_taskbar("group-call"));
+        assert!(!flashes_taskbar("friend-online") && !flashes_taskbar("group") && !flashes_taskbar(""));
+        let data = serde_json::json!({ "from": "Mert", "preview": "kaleci kim?" });
+        assert_eq!(reply_toast_text("Hafta Sonu Ekibi", "Mert: kaleci kim?", &data), ("Mert".to_string(), "kaleci kim?".to_string()));
+        let bare = serde_json::json!({ "from": "" });
+        assert_eq!(reply_toast_text("Ayşe", "selam", &bare), ("Ayşe".to_string(), "selam".to_string()));
     }
 }
