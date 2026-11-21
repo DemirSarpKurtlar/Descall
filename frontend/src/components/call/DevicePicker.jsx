@@ -16,6 +16,7 @@ import {
 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { hapticSelection } from "../../lib/fluid/haptics";
+import { motionBlur } from "../../lib/motionBlur.js";
 
 /*
  * In-call device menus (2.10.113). Liquid Glass: one heavy frosted surface
@@ -179,7 +180,7 @@ export function CallDeviceMenu({ open, anchorRef, alignRef, title, groups = [], 
   const spring = reduce ? { duration: 0.12 } : { type: "spring", bounce: 0, duration: 0.34 };
   const hidden = reduce
     ? { opacity: 0 }
-    : { opacity: 0, scale: 0.82, y: fitsAbove ? 10 : -10, filter: "blur(6px)" };
+    : { opacity: 0, scale: 0.82, y: fitsAbove ? 10 : -10, ...motionBlur(6) };
 
   return createPortal(
     <AnimatePresence>
@@ -194,7 +195,7 @@ export function CallDeviceMenu({ open, anchorRef, alignRef, title, groups = [], 
           data-fitsabove={fitsAbove ? "1" : "0"}
           style={{ ...style, transformOrigin, maxWidth: Math.min(DEVICE_MENU_MAX_W, vw - EDGE * 2) }}
           initial={hidden}
-          animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+          animate={{ opacity: 1, scale: 1, y: 0, ...motionBlur(0) }}
           exit={hidden}
           transition={spring}
           onPointerDown={(event) => event.stopPropagation()}

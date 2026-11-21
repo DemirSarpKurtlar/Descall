@@ -47,7 +47,8 @@ assert.match(css, /\.g-theme-drift,[\s\S]*?\.g-theme-sheen,[\s\S]*?\.g-glass::be
 
 // The jump-to-bottom glass button never animates filter on Android.
 const list = read("components/chat/MessageList.jsx");
-assert.match(list, /function jumpBlur\(px\)[\s\S]*?native-android[\s\S]*?return \{\};/, "jump button blur is skipped on Android");
-assert.doesNotMatch(list, /filter:\s*"blur\(6px\)"/, "jump button blur goes through jumpBlur");
+assert.match(read("lib/motionBlur.js"), /native-android[\s\S]*?\? \{\} :/, "motionBlur is a no-op on Android");
+assert.match(list, /\.\.\.motionBlur\(6\)/, "jump button uses motionBlur");
+assert.doesNotMatch(list, /filter:\s*"blur\(6px\)"/, "jump button blur goes through motionBlur");
 
 console.log("androidMotion selftest ok");
