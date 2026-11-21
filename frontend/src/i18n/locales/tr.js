@@ -25,6 +25,7 @@ import { SHOP_MERCH_TR } from "./shopMerch.tr.js";
 import { MOD_DESK_TR, MOD_DESK_API_TR } from "./modDesk.tr.js";
 import { GAMES_ADMIN_TR } from "./gamesAdmin.tr.js";
 import { SYSX_TR } from "./sysx.tr.js";
+import { ATOK_TR } from "./atok.tr.js";
 import { AUDIT_LOG_TR } from "./auditLog.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
@@ -108,6 +109,7 @@ export const nested = {
   modDesk: MOD_DESK_TR,
   gamesAdmin: GAMES_ADMIN_TR,
   sysx: SYSX_TR,
+  atok: ATOK_TR,
   auditLog: AUDIT_LOG_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,

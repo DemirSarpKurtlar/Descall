@@ -29,6 +29,7 @@ import { SHOP_MERCH_DE } from "./shopMerch.de.js";
 import { MOD_DESK_DE, MOD_DESK_API_DE } from "./modDesk.de.js";
 import { GAMES_ADMIN_DE } from "./gamesAdmin.de.js";
 import { SYSX_DE } from "./sysx.de.js";
+import { ATOK_DE } from "./atok.de.js";
 import { AUDIT_LOG_DE } from "./auditLog.de.js";
 import { LIVE_POPUP_DE } from "./livePopup.de.js";
 import { ANNC_DE } from "./annc.de.js";
@@ -79,6 +80,7 @@ export const nested = {
   "modDesk": MOD_DESK_DE,
   "gamesAdmin": GAMES_ADMIN_DE,
   "sysx": SYSX_DE,
+  "atok": ATOK_DE,
   "auditLog": AUDIT_LOG_DE,
   "livePopup": LIVE_POPUP_DE,
   "annc": ANNC_DE,
