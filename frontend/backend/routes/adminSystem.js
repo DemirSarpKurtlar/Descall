@@ -548,6 +548,7 @@ router.post("/system/backup", (req, res) => {
 
 /** The restart needs a code entered in the last two minutes, not just this session's token. */
 function freshStepUp(req) {
+  if (req.apiToken) return true; // Admin Token: acts directly (owner decision)
   if (!req.adminTotpKnown) return true; // 2FA migration not applied: nothing to check
   const raw = req.get("x-admin-step-up");
   try {

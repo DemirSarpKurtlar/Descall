@@ -9,6 +9,8 @@
  *    (X-Admin-Step-Up header); otherwise 403 STEP_UP_REQUIRED and the panel asks
  *    for a code, then retries.
  *  - POST /step-up { code } issues that token.
+ *  - Admin Token (dsk_admin_…, lib/adminTokens): owner decision, a token acts directly,
+ *    so both checks count as passed for a request authenticated with one.
  * Until supabase/migrations/20261031_totp_two_factor.sql is applied the TOTP
  * columns are missing and both checks stand down (one warning), so applying the
  * migration is what switches enforcement on.
@@ -55,6 +57,13 @@ async function totpEnabled(userId) {
 }
 
 async function requireAdmin2fa(req, res, next) {
+  // Admin Token (owner decision): a token counts as an owner who already passed 2FA and
+  // step-up; creating one needed the owner's code. requireStepUp lets it through below.
+  if (req.apiToken) {
+    req.adminTotpKnown = true;
+    req.adminTotpCheckFailed = false;
+    return next();
+  }
   const on = await totpEnabled(req.user?.id);
   if (on === false) {
     return res.status(403).json({
@@ -68,6 +77,7 @@ async function requireAdmin2fa(req, res, next) {
 }
 
 function stepUpValid(req) {
+  if (req.apiToken) return true;
   const raw = req.get ? req.get(STEP_UP_HEADER) : req.headers?.[STEP_UP_HEADER];
   if (!raw) return false;
   try {
@@ -82,6 +92,7 @@ function requireStepUp(req, res, next) {
   const method = String(req.method || "GET").toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return next();
   if (STEP_UP_EXEMPT.some((re) => re.test(req.path || ""))) return next();
+  if (req.apiToken) return next();
   if (req.adminTotpCheckFailed) {
     return res.status(503).json(apiError("Could not check your verification code status. Try again.", null, { code: "ADMIN_2FA_CHECK_FAILED" }));
   }

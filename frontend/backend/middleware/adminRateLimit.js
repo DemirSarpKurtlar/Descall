@@ -20,7 +20,9 @@ function adminRateLimit(req, res, next) {
   if (!id) return next();
   const write = !["GET", "HEAD", "OPTIONS"].includes(String(req.method).toUpperCase());
   const kind = write ? "write" : "read";
-  const verdict = recordFailure(`admin:${kind}:${id}`, LIMITS[kind]);
+  // Admin Token: each token has its own budget, so a busy bot never locks the owner's panel.
+  const key = req.apiToken?.id ? `admin:${kind}:${id}:t:${req.apiToken.id}` : `admin:${kind}:${id}`;
+  const verdict = recordFailure(key, LIMITS[kind]);
   if (verdict.ok) return next();
   res.set("Retry-After", String(Math.max(1, verdict.retryAfterSec || 60)));
   return res.status(429).json({ error: MESSAGE, code: "ADMIN_RATE_LIMITED" });

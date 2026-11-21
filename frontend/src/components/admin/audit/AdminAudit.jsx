@@ -54,10 +54,11 @@ function download(filename, mime, content) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export default function AdminAudit({ socket, onGoto }) {
+export default function AdminAudit({ socket, onGoto, initialQuery = null }) {
   const { t, locale } = useLocale();
   const { can, owner, navigate } = useAdminPerms();
-  const [tokens, setTokens] = useState([]);
+  // Admin Token › "İşlem kaydında gör" opens the console pre-filtered (text = the token's name).
+  const [tokens, setTokens] = useState(() => (initialQuery ? queryToTokens(initialQuery) : []));
   const [merge, setMerge] = useState(true);
   const [page, setPage] = useState({ loading: true, more: false, entries: [], users: {}, servers: {}, nextCursor: null, err: "", durable: true });
   const [summary, setSummary] = useState({ loading: true, data: null, err: "" });

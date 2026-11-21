@@ -458,6 +458,7 @@ export const AUDIT_LOG_PT_BR = {
     "unknown": "?"
   },
   "sec": {
+    "adminToken": "Admin Token",
     "overview": "Visão geral",
     "directory": "Usuários",
     "people": "Ficha do usuário",

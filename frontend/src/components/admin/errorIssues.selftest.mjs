@@ -13,7 +13,7 @@ const css = rd("../../styles/admin-errors.css");
 
 assert.match(panel, /\{ id: "errors", label: "admin\.errors", icon: Bug \}/);
 assert.match(panel, /tab === "errors" && <ErrorIssuesTab \/>/);
-assert.match(rd("./adminNav.js"), /"security", "errors", "audit"/);
+assert.match(rd("./adminNav.js"), /"security", (?:"adminToken", )?"errors", "audit"/);
 assert.match(perms, /"errors",/);
 assert.match(perms, /\[\/\^\\\/error-groups\(\\\/\|\$\)\/, "errors"\]/);
 assert.ok(!existsSync(new URL("./AdminErrorLogs.jsx", import.meta.url)), "old unused tab removed");

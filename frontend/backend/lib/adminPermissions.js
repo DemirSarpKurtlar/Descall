@@ -62,6 +62,8 @@ const OWNER_ONLY = Object.freeze(["staff"]);
  */
 const RULES = [
   [/^\/step-up$/, null],
+  // Admin Token tab and the OpenAPI document: owner only, checked by routes/adminTokens.js.
+  [/^\/(tokens|openapi\.json)(\/|$)/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
   [/^\/staff(\/|$)/, "staff"],
   [/^\/agent(\/|$)/, "agent"],

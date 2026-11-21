@@ -33,6 +33,18 @@ function socketAuthMiddleware(socket, next) {
     return next(new Error("Too many connections. Try again shortly."));
   }
   recordFailure(`socket:${socketIp(socket)}`, { windowMs: 60 * 1000, max: 120 });
+  // Admin Token (dsk_admin_…): auth.token or an Authorization header (non-browser clients).
+  {
+    const tokens = require("../lib/adminTokens/auth");
+    const secret = tokens.socketSecret(socket);
+    if (typeof secret === "string" && secret.startsWith("dsk_admin_")) {
+      tokens
+        .authenticateSocket(socket, secret)
+        .then((r) => (r.ok ? next() : next(new Error(`Authentication failed: ${r.body?.error || "invalid token."}`))))
+        .catch(() => next(new Error("Authentication failed: session check failed.")));
+      return undefined;
+    }
+  }
   const token = socket.handshake.auth?.token;
 
   if (!token) {

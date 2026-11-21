@@ -2,7 +2,7 @@
 // Yöneticiler (3.3.0): section groups follow the menu, legacy null = all, owner-only wiring.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { menuSections } from "./adminNav.js";
+import { menuSections, OWNER_ONLY_TABS } from "./adminNav.js";
 
 const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 const src = rd("./AdminStaff.jsx");
@@ -15,7 +15,8 @@ const grantable = [...backend.match(/GRANTABLE_SECTIONS = Object\.freeze\(\[([\s
 const menu = menuSections();
 for (const id of grantable) assert.ok(menu.includes(id), `section ${id} is in the menu`);
 for (const id of menu) {
-  if (id === "overview" || id === "staff") continue;
+  // Owner-only pages (Admin Token) are never granted; the client adds them for the owner.
+  if (id === "overview" || id === "staff" || OWNER_ONLY_TABS.includes(id)) continue;
   assert.ok(grantable.includes(id), `menu entry ${id} is grantable on the server`);
 }
 assert.ok(menu.includes("staff"), "Yöneticiler is listed in the menu");

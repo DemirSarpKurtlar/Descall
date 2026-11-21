@@ -11,6 +11,7 @@
 const MAX_META_CHARS = 4000;
 const PAUSE_MS = 10 * 60 * 1000;
 const SECRET_KEY = /pass(word)?|token|secret|code|otp|hash|authorization|cookie/i;
+const TOKEN_TAG_KEYS = new Set(["actor_via", "token_id", "token_name"]);
 
 let pausedUntil = 0;
 let warned = false;
@@ -40,7 +41,8 @@ function cleanMeta(meta) {
   if (!meta || typeof meta !== "object") return {};
   const out = {};
   for (const [k, v] of Object.entries(meta)) {
-    if (SECRET_KEY.test(k)) continue;
+    // Admin Token tag (token_id / token_name are ids and labels, never the secret).
+    if (SECRET_KEY.test(k) && !TOKEN_TAG_KEYS.has(k)) continue;
     if (v === undefined || typeof v === "function") continue;
     out[k] = v;
   }

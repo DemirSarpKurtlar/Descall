@@ -458,6 +458,7 @@ export const AUDIT_LOG_TR = {
     "unknown": "?"
   },
   "sec": {
+    "adminToken": "Admin Token",
     "overview": "Genel bakış",
     "directory": "Kullanıcılar",
     "people": "Kullanıcı dosyası",
