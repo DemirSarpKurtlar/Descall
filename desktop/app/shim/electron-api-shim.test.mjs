@@ -56,7 +56,9 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false } = 
   const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
   const answer = (cmd, args) => {
     invokes.push([cmd, args]);
-    return fail.includes(cmd) ? Promise.reject(new Error(`${cmd} failed`)) : Promise.resolve(responses[cmd] ?? null);
+    if (fail.includes(cmd)) return Promise.reject(new Error(`${cmd} failed`));
+    const r = typeof responses[cmd] === "function" ? responses[cmd](args) : responses[cmd];
+    return Promise.resolve(r ?? null);
   };
   const tauriGlobal = {
       core: { invoke: answer },
@@ -89,6 +91,8 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false } = 
     Promise,
     Uint8Array,
     ArrayBuffer,
+    setTimeout,
+    clearTimeout,
   };
   // Same order as Tauri: plugin init scripts (premium-shim.js) run before the window's own.
   vm.createContext(ctx);
@@ -232,6 +236,66 @@ for (const [path, args, cmd, expected] of CASES) {
   s.premium.on("premium:settings-changed", () => {});
   await tick();
   assert.ok((s.listeners.get("premium:settings-changed") || []).length === 1, "premium on() listens with the real order");
+}
+{
+  // Descall+ state pushes made before the shell's own membership check passed ("locked")
+  // are sent again once the feature runs (command center / workspace hotkeys stayed dead).
+  let running = [];
+  const answers = [];
+  const s = loadShim({
+    realOrder: true,
+    responses: {
+      premium_invoke: ({ channel, args }) => {
+        if (channel === "premium:status") return { ok: true, keys: running, running };
+        const r = running.includes(channel.split(":")[1]) ? { ok: true, hotkey: args[0] } : { ok: false, error: "locked" };
+        answers.push([channel, args[0], r.ok]);
+        return r;
+      },
+    },
+  });
+  assert.equal((await s.premium.invoke("premium:command_center:hotkey", "CommandOrControl+Shift+K")).error, "locked", "the renderer still sees the first answer");
+  await s.premium.invoke("premium:command_center:hotkey", "CommandOrControl+Alt+K"); // newer state wins
+  await s.premium.invoke("premium:global_mute:status"); // not a state push: never replayed
+  running = ["command_center", "global_mute"];
+  await new Promise((r) => setTimeout(r, 1150));
+  await tick(); await tick();
+  deq(answers.filter((a) => a[2]), [["premium:command_center:hotkey", "CommandOrControl+Alt+K", true]], "the newest hotkey is registered once the feature runs");
+  const statusPolls = s.invokes.filter((c) => c[1] && c[1].channel === "premium:status").length;
+  await new Promise((r) => setTimeout(r, 1700));
+  assert.equal(s.invokes.filter((c) => c[1] && c[1].channel === "premium:status").length, statusPolls, "polling stops when nothing waits");
+  assert.ok(!answers.some((a) => a[0] === "premium:global_mute:status" && a[2]), "status reads are not replayed");
+}
+{
+  // Switching a feature on: later calls wait for the settings:set, and a "locked" answer right
+  // after it (host still starting the feature on its bus thread) is retried.
+  let started = false;
+  const order = [];
+  let releaseSet;
+  const s = loadShim({
+    responses: {
+      premium_invoke: ({ channel, args }) => {
+        order.push(channel);
+        if (channel === "premium:settings:set") {
+          return new Promise((r) => { releaseSet = () => { setTimeout(() => { started = true; }, 200); r({ ok: true, settings: args[1] }); }; });
+        }
+        if (channel === "premium:global_ptt:status") return started ? { ok: true, mode: "hold" } : { ok: false, error: "locked" };
+        return { ok: true };
+      },
+    },
+  });
+  const set = s.premium.invoke("premium:settings:set", "global_ptt", { enabled: true });
+  const status = s.premium.invoke("premium:global_ptt:status");
+  await tick(); await tick();
+  deq(order, ["premium:settings:set"], "the status read waits for the settings:set in flight");
+  releaseSet();
+  await set;
+  deq(await status, { ok: true, mode: "hold" }, "locked right after switching on is retried until the feature runs");
+  assert.ok(order.filter((c) => c === "premium:global_ptt:status").length >= 2, "retried");
+  started = false;
+  await new Promise((r) => setTimeout(r, 2100));
+  const before = order.length;
+  deq(await s.premium.invoke("premium:global_ptt:status"), { ok: false, error: "locked" }, "no retries long after a settings:set");
+  assert.equal(order.length, before + 1);
 }
 {
   // Title bar buttons: shell command, then Tauri's window command when it fails.
