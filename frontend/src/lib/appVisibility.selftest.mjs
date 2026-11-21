@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 // The module imports a CSS file; test the pure helper by evaluating its source.
 const src = readFileSync(new URL("./appVisibility.js", import.meta.url), "utf8");
 const body = src.replace(/^import .*$/gm, "").replace(/export /g, "");
-const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { applyAppVisibility, installAppVisibility, installIdlePause, installPageHiddenPause, idleDelayFor, readPowerState, BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS, IDLE_MS, IDLE_MS_SAVER };`)();
+const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { applyAppVisibility, installAppVisibility, installIdlePause, installPageHiddenPause, idleDelayFor, readPowerState, clearStalePause, BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS, IDLE_MS, IDLE_MS_SAVER };`)();
 const cls = new Set();
 const root = { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) } };
 assert.equal(mod.applyAppVisibility(root, { backgrounded: true }), true);
@@ -64,6 +64,21 @@ assert.equal(typeof mod.installAppVisibility({}), "function", "web / iOS: no-op"
   busyCb(true);
   assert.equal(cls.has("app-idle"), false, "a call starting wakes it");
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel", "touchstart", "blur", "focus"]) assert.ok((listeners[ev] || []).length, ev);
+  // Owner report Nov 2026 (desktop app: photo picker / crop dialog opened and vanished): a
+  // pause class the shell left on while the window is on screen. A press or a key proves the
+  // window is up, so it clears them before the click opens anything; a hover does not.
+  const fireE = (ev) => (listeners[ev] || []).forEach((f) => f({ type: ev }));
+  fire("focus");
+  cls.add("app-backgrounded"); cls.add("app-hidden"); cls.add("app-blurred");
+  fireE("pointermove");
+  assert.ok(cls.has("app-backgrounded") && cls.has("app-hidden"), "a pointer passing over does not clear them");
+  fireE("pointerdown");
+  assert.equal(cls.has("app-backgrounded"), false, "a press clears a stale backgrounded");
+  assert.equal(cls.has("app-hidden"), false, "a press clears a stale hidden");
+  assert.equal(cls.has("app-blurred"), false, "a press clears a stale blurred");
+  cls.add("app-backgrounded");
+  fireE("keydown");
+  assert.equal(cls.has("app-backgrounded"), false, "a key clears it too");
   off();
   assert.equal((listeners.blur || []).length, 0, "cleanup removes listeners");
   assert.equal(cls.has("app-idle"), false);
@@ -128,6 +143,17 @@ assert.match(pauseCss, /html\.app-blurred :is\(\.vt2-skin, \.vt2-skin \*\)[\s\S]
 assert.match(pauseCss, /html\.app-idle \*,[\s\S]*?animation-play-state: paused !important;/);
 assert.match(pauseCss, /html\.app-idle :is\(\.spin,[\s\S]*?animation-play-state: running !important;/, "spinners keep running");
 assert.match(read("../main.jsx"), /m\.installIdlePause\(\)/);
+// The global pause must never freeze a modal's one-shot entrance at its first frame: the
+// scrim fade (`backwards`, from opacity 0) held the picker / crop dialog invisible but
+// clickable, so a click "elsewhere" hit its scrim and closed it.
+{
+  const overlay = read("../styles/overlay.css");
+  const block = overlay.slice(overlay.indexOf("/* OVERLAY-BACKDROPS:END */"), overlay.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.match(block, /animation: dc-overlay-fade 180ms ease-out backwards;[\s\S]*?animation-play-state: running !important;/, "every scrim's fade runs even under app-idle / app-hidden / app-backgrounded");
+  assert.match(pauseCss, /html:is\(\.app-backgrounded, \.app-hidden, \.app-idle\) :is\(\[role="dialog"\], \[role="alertdialog"\], \[role="menu"\]\) \{\s*animation-play-state: running !important;/, "dialogs and menus finish their entrance");
+  // The exemption has to outrank the pause rule: (0,5,0)+ and (0,2,1)+ beat html.app-idle * (0,1,1).
+  assert.match(overlay, /:root:root:root:root :is\(\s*\.modal-backdrop/, "scrim rule keeps its :root x4 weight");
+}
 assert.match(read("../styles/theme-scenes.css"), /animation: theme-scene-drift 32s ease-in-out 1 both;/);
 assert.doesNotMatch(read("../styles/design-tokens.css"), /theme-pulse-(glow|text) 2\.6s ease-in-out infinite/);
 assert.match(read("../styles/app-backgrounded.css"), /html\.app-backgrounded \*,[\s\S]*?animation-play-state: paused !important;/);

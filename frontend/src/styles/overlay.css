@@ -72,6 +72,16 @@
      scrim at full dim while its exit fades it out. Opacity only, the blur is
      never animated. */
   animation: dc-overlay-fade 180ms ease-out backwards;
+  /* Never paused (owner report, Nov 2026: the photo / banner picker and the crop dialog
+     opened and vanished in the desktop app). app-backgrounded.css pauses every animation
+     under html.app-idle / .app-hidden / .app-backgrounded, and the desktop shells can hold
+     those classes while the window is on screen (window blur from the native file dialog,
+     a stale "backgrounded" after restore, an occluded frameless window reporting hidden).
+     A scrim mounted then kept this fade paused at its first frame, and the `backwards` fill
+     held opacity 0 over Framer's inline opacity: the modal was invisible but still caught
+     clicks, so a click "elsewhere" landed on its scrim and closed it. A 180 ms one-shot
+     fade costs nothing to let run. */
+  animation-play-state: running !important;
 }
 @media (prefers-reduced-motion: reduce) {
   :root:root:root:root :is(
