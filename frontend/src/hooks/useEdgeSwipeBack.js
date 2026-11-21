@@ -173,7 +173,29 @@ export function cancelSwipeBackIfPending() {
   return true;
 }
 
+// Read on every touchstart on a message bubble (reply swipe edge band): a
+// getComputedStyle there forced a style recalc of the whole page at the start
+// of each scroll. The inset only changes with the viewport (rotation), so the
+// value is cached until the next resize.
+let safeAreaLeftCache = null;
+let safeAreaLeftWatch = false;
+
 function safeAreaLeft() {
+  if (safeAreaLeftCache != null) return safeAreaLeftCache;
+  const n = readSafeAreaLeft();
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    if (!safeAreaLeftWatch) {
+      safeAreaLeftWatch = true;
+      const reset = () => { safeAreaLeftCache = null; };
+      window.addEventListener("resize", reset, { passive: true });
+      window.addEventListener("orientationchange", reset, { passive: true });
+    }
+    safeAreaLeftCache = n;
+  }
+  return n;
+}
+
+function readSafeAreaLeft() {
   try {
     if (!safeAreaProbe || !safeAreaProbe.isConnected) {
       safeAreaProbe = document.createElement("div");
