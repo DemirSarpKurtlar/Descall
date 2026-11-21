@@ -23,6 +23,8 @@ export const CORE_EN = {
     retryPollingOnly: "Connection retry: switching to polling-only…",
     socketConnectFailed: "Socket connection failed. Check backend deploy status, backend URL, and CORS settings.",
     socketAuthFailed: "Socket authentication failed",
+    sessionExpired: "Your session has expired. Log in again to continue.",
+    sessionSignedOut: "You were signed out. Log in again to continue.",
     acceptFailed: "Failed to accept",
     declineFailed: "Failed to decline",
     serverFallback: "Server",

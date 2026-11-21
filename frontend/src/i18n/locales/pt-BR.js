@@ -3274,6 +3274,8 @@ export const nested = {
       "retryPollingFirst": "Nova tentativa de conexão: mudando para polling primeiro…",
       "retryPollingOnly": "Nova tentativa de conexão: mudando para só polling…",
       "socketAuthFailed": "Falha na autenticação do socket",
+      "sessionExpired": "Sua sessão expirou. Entre novamente para continuar.",
+      "sessionSignedOut": "Sua sessão foi encerrada. Entre novamente para continuar.",
       "socketConnectFailed": "Falha na conexão do socket. Verifique o status do deploy do backend, a URL do backend e as configurações de CORS.",
       "socketReconnectFailed": "Falha ao reconectar o socket. Verifique a URL do backend e o CORS."
     },

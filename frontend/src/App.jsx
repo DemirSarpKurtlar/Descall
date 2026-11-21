@@ -36,6 +36,7 @@ import AppBootSkeleton from "./components/boot/AppBootSkeleton";
 import BootErrorScreen from "./components/boot/BootErrorScreen";
 import { checkBootSession } from "./lib/bootSessionCheck";
 import { banStateFromError, banStateFromKick, isBanSocketMessage } from "./lib/banState.js";
+import { socketAuthFailureKind, socketAuthFailureKey } from "./lib/socketAuthError.js";
 import { getMyGroups, getGroupMessages } from "./api/groups";
 import { getBlockedUsers, getFriendsList, getFriendRequestsList } from "./api/friends";
 import { getDmPrefs, patchDmPref } from "./api/dmPrefs";
@@ -1883,6 +1884,16 @@ export default function App() {
         }
         return;
       }
+      // A rejected session is not a transport problem: sign out at once with a
+      // translated line instead of retrying transports and then showing the
+      // server's English text ("Authentication failed: token has expired.").
+      const authKind = socketAuthFailureKind(msg);
+      if (authKind === "expired" || authKind === "ended") {
+        socket.disconnect();
+        clearToken(); clearUser(); setMe(null);
+        setAuthError(t(socketAuthFailureKey(authKind)));
+        return;
+      }
       if (transportFallbackStepRef.current === 0) {
         transportFallbackStepRef.current = 1;
         setAuthError(t("core.app.retryPollingFirst"));
@@ -1895,14 +1906,13 @@ export default function App() {
         connectSocket(token, { transports: ["polling"] });
         return;
       }
-      if (msg.toLowerCase().includes("authentication failed") || msg.toLowerCase().includes("authentication required")) {
+      if (authKind) {
         clearToken(); clearUser(); setMe(null); socket.disconnect();
-      }
-      if (msg.toLowerCase().includes("xhr poll error")) {
-        setAuthError(t("core.app.socketConnectFailed"));
+        setAuthError(t(socketAuthFailureKey(authKind)));
         return;
       }
-      setAuthError(error?.message || t("core.app.socketAuthFailed"));
+      // Network / transport trouble: never the raw English transport error.
+      setAuthError(t("core.app.socketConnectFailed"));
     });
 
     let liveConnectedSeen = false;
