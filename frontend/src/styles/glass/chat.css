@@ -2014,7 +2014,16 @@ html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swi
   position: relative;
   width: 100%;
   transition: none !important;
+}
+/* Promoted only while open or moving (SwipeRevealRow toggles .is-revealing in
+   the same frame it writes the transform). At rest the inline
+   translate3d(0px, 0, 0) would still promote every row, so a closed row takes
+   no transform. Was Android-only (android-fx.css), now every platform. */
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal.is-revealing .group-swipe-track {
   will-change: transform;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal:not(.is-revealing) .group-swipe-track {
+  transform: none !important;
 }
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track > .group-row-front {
   position: relative;
