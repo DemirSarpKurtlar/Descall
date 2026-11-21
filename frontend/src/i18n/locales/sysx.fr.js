@@ -60,6 +60,21 @@ export const SYSX_FR = {
     "dbUnit": "ms de réponse",
     "uptime": "Disponibilité"
   },
+  "memAlert": {
+    "title": {
+      "warn": "Mémoire élevée",
+      "bad": "Mémoire critique",
+      "peak": "Pic de mémoire aujourd'hui"
+    },
+    "body": {
+      "warn": "Le serveur utilise {rss} / {limit} Mo ({pct} %) ; il reste à {sustained} % ou plus depuis {min} minutes.",
+      "bad": "Le serveur utilise {rss} / {limit} Mo ({pct} %). Si la mémoire est pleine, le serveur redémarre et tout le monde est déconnecté.",
+      "peak": "Normal pour l'instant ({pct} %), mais il a atteint {peak} % aujourd'hui."
+    },
+    "advice": "Passe l'Instance Type sur Render à Standard ({gb} Go).",
+    "watch": "Rien à faire pour l'instant ; si cela se reproduit, envisage un plan plus grand.",
+    "plan": "Ouvrir le plan Render"
+  },
   "flags": {
     "title": "Feature flags",
     "count": "{n} flags",

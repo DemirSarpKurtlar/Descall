@@ -60,6 +60,21 @@ export const SYSX_EN = {
     "dbUnit": "ms response",
     "uptime": "Uptime"
   },
+  "memAlert": {
+    "title": {
+      "warn": "Memory is high",
+      "bad": "Memory is critical",
+      "peak": "Memory peaked today"
+    },
+    "body": {
+      "warn": "The server uses {rss} / {limit} MB ({pct}%); it has stayed at {sustained}% or more for {min} minutes.",
+      "bad": "The server uses {rss} / {limit} MB ({pct}%). If memory runs out the server restarts and everyone is disconnected.",
+      "peak": "Normal right now ({pct}%), but it reached {peak}% today."
+    },
+    "advice": "Upgrade the Instance Type on Render to Standard ({gb} GB).",
+    "watch": "Nothing to do yet; if it happens again, consider a bigger plan.",
+    "plan": "Open the Render plan"
+  },
   "flags": {
     "title": "Feature flags",
     "count": "{n} flags",

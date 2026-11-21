@@ -60,6 +60,21 @@ export const SYSX_DE = {
     "dbUnit": "ms Antwort",
     "uptime": "Laufzeit"
   },
+  "memAlert": {
+    "title": {
+      "warn": "Hohe Speicherauslastung",
+      "bad": "Speicher kritisch",
+      "peak": "Speicherspitze heute"
+    },
+    "body": {
+      "warn": "Der Server nutzt {rss} / {limit} MB ({pct} %); seit {min} Minuten liegt er bei {sustained} % oder mehr.",
+      "bad": "Der Server nutzt {rss} / {limit} MB ({pct} %). Ist der Speicher voll, startet der Server neu und alle Verbindungen brechen ab.",
+      "peak": "Im Moment normal ({pct} %), heute aber bis {peak} %."
+    },
+    "advice": "Stelle den Instance Type bei Render auf Standard ({gb} GB) um.",
+    "watch": "Noch nichts zu tun; wenn es wieder passiert, einen größeren Plan erwägen.",
+    "plan": "Render-Plan öffnen"
+  },
   "flags": {
     "title": "Feature-Flags",
     "count": "{n} Flags",

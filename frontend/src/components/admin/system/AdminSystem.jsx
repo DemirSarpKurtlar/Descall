@@ -26,7 +26,7 @@ import { adminRawFetch } from "../../../lib/adminStepUp";
 import { getToken } from "../../../lib/storage";
 import { Download, GitBranch, Layers, Power, RefreshCw, Undo2, X } from "../../ui/Icon.jsx";
 import FlagDrawer, { FlagsHistoryDrawer } from "./FlagDrawer.jsx";
-import { BackupCard, BroadcastCard, EdgeCard, FlagsCard, HealthTiles, KillCard, LimitsCard } from "./SystemCards.jsx";
+import { BackupCard, BroadcastCard, EdgeCard, FlagsCard, HealthTiles, KillCard, LimitsCard, MemoryAlert } from "./SystemCards.jsx";
 import { BroadcastDialog, ConfirmDialog, RestartDialog, SwitchConfirm } from "./SystemDialogs.jsx";
 import { bytesParts, cuttingKeys, liveForLabel, normalizeRule } from "./systemModel.js";
 import "../../../styles/admin-system.css";
@@ -368,6 +368,7 @@ export default function AdminSystem({ socket, onGoto }) {
         </div>
       ) : null}
 
+      <MemoryAlert alert={health?.memoryAlert} />
       <HealthTiles health={health} loading={!health} />
 
       <div className="asx-g3">

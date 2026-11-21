@@ -99,6 +99,42 @@ function levels(s) {
   return out;
 }
 
+/** Thresholds of the memory alert on Yönetici Paneli › Sistem. */
+const MEM_WARN_PCT = 80;
+const MEM_BAD_PCT = 90;
+/** Samples (20 s each) the "sustained" check looks at: 5 minutes. */
+const MEM_WINDOW = 15;
+
+/**
+ * Memory alert for the Sistem banner. Pure, tested.
+ * - "bad": memory is at 90 % of the limit now, or has stayed there for the window.
+ * - "warn": memory has stayed at 80 % or more for the window (a deploy or a single GC
+ *   spike does not count: 80 % of the window's samples must be at or above it).
+ * - "peak": fine now, but today's peak reached 90 % (worth a look, no action yet).
+ * - "ok" / "unknown" otherwise.
+ * `recommendMb` is the next plan size worth moving to (2 GB, then double).
+ */
+function memoryAlert({ rssSeries = [], rssMb = null, memLimitMb = null, peakRssMb = null } = {}) {
+  const limit = Number(memLimitMb);
+  if (!Number.isFinite(limit) || limit <= 0 || rssMb == null) {
+    return { level: "unknown", pct: null, sustainedPct: null, peakPct: null, windowMin: 0, rssMb, memLimitMb, recommendMb: null };
+  }
+  const pctOf = (mb) => Math.round((Number(mb) / limit) * 1000) / 10;
+  const pct = pctOf(rssMb);
+  const win = rssSeries.filter((v) => Number.isFinite(Number(v)) && v != null).slice(-MEM_WINDOW).map(pctOf);
+  // The value 80 % of the window is at or above (the 20th percentile).
+  const sorted = [...win].sort((a, b) => a - b);
+  const sustainedPct = sorted.length >= Math.ceil(MEM_WINDOW / 2) ? sorted[Math.floor(sorted.length * 0.2)] : null;
+  const peakPct = peakRssMb ? pctOf(Math.max(Number(peakRssMb), rssMb)) : pct;
+  let level = "ok";
+  if (pct >= MEM_BAD_PCT || (sustainedPct != null && sustainedPct >= MEM_BAD_PCT)) level = "bad";
+  else if (sustainedPct != null && sustainedPct >= MEM_WARN_PCT) level = "warn";
+  else if (peakPct >= MEM_BAD_PCT) level = "peak";
+  const windowMin = Math.round((win.length * SAMPLE_MS) / 60000);
+  const recommendMb = limit < 2048 ? 2048 : limit * 2;
+  return { level, pct, sustainedPct, peakPct, windowMin, rssMb, memLimitMb: limit, recommendMb };
+}
+
 async function loadToday(day) {
   if (today.loaded && today.day === day) return;
   today.day = day;
@@ -248,6 +284,7 @@ function snapshot(extra = {}) {
     sampleMs: SAMPLE_MS,
     current: cur,
     levels: levels(cur),
+    memoryAlert: memoryAlert({ rssSeries: series("rssMb"), rssMb: rssNow, memLimitMb, peakRssMb: today.day === istanbulDay() ? today.peakRssMb : null }),
     series: {
       cpu: series("cpu"),
       rss: series("rssMb"),
@@ -324,6 +361,9 @@ module.exports = {
   sample,
   snapshot,
   levels,
+  memoryAlert,
+  MEM_WARN_PCT,
+  MEM_BAD_PCT,
   dailyHistory,
   memoryLimitMb,
   istanbulDay,
