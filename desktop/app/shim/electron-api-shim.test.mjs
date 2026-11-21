@@ -283,6 +283,15 @@ for (const [path, args, cmd, expected] of CASES) {
     assert.equal(key(k, m), false, `${k} ${JSON.stringify(m || {})} stays with the app`);
   }
   assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
+  // F11: maximize / restore like Electron's windowKeys.cjs (never on repeat or with modifiers).
+  const toggles = () => s.invokes.filter((c) => c[0] === "window_toggle_maximize").length;
+  assert.equal(key("F11"), true, "F11 handled");
+  assert.equal(toggles(), 1, "F11 toggles maximize");
+  key("F11", { repeat: true });
+  key("F11", { shiftKey: true });
+  key("F11", { altKey: true });
+  key("F11", { ctrlKey: true });
+  assert.equal(toggles(), 1, "not on auto-repeat or with a modifier");
   assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");

@@ -249,6 +249,12 @@
   };
   window.addEventListener("keydown", (e) => {
     if (blockedKey(e)) e.preventDefault();
+    // F11 maximizes / restores the window (Electron windowKeys.cjs): key down only, no
+    // auto-repeat, no Ctrl / Shift / Alt.
+    if ((e.key === "F11" || e.code === "F11") && !e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      winCmd("window_toggle_maximize", "toggle_maximize");
+    }
   }, true);
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
