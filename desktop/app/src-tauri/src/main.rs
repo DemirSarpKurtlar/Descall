@@ -122,6 +122,10 @@ fn main() {
                 .visible(false)
                 .background_color(tauri::window::Color(11, 12, 18, 255))
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
+                // HTML5 drag and drop (files into a chat, avatar / banner pickers, server and
+                // folder reordering) like Electron. Tauri's own handler swallows every drop
+                // on Windows and the page got no dragenter / drop at all.
+                .disable_drag_drop_handler()
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)
@@ -130,14 +134,16 @@ fn main() {
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {
                         return r;
                     }
-                    // Other about:blank windows keep their opener; any other http(s) link opens
-                    // in the default browser (setWindowOpenHandler).
+                    // App pages may open (admin windows above); any http(s) link opens in the
+                    // default browser (setWindowOpenHandler). A plain about:blank is denied like
+                    // in Electron: window.open("about:blank", "_blank", "noopener") from a
+                    // private file chip left an empty Descall window behind.
                     if admin::is_admin_url(&url) {
                         let h = nav_app.clone();
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if url.as_str() == "about:blank" || boot::is_app_url(&url) {
+                    if boot::is_app_url(&url) {
                         return NewWindowResponse::Allow;
                     }
                     if descall_shell::trust::is_safe_external_url(url.as_str()) {

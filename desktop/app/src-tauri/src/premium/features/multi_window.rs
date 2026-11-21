@@ -66,6 +66,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {

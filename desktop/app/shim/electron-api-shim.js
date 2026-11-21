@@ -257,9 +257,13 @@
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).
-  document.addEventListener("click", (e) => {
+  // Bubble phase on window, after React's root listener: a link the app handles itself
+  // (preventDefault, e.g. a private file chip that first fetches a fresh signed URL) is left
+  // alone, as Electron only acted on the navigation the page did not cancel. The capture
+  // listener on document ran first and opened the stale URL in the browser as well.
+  window.addEventListener("click", (e) => {
     const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-    if (!a || e.defaultPrevented) return;
+    if (!a || e.defaultPrevented || e.button > 1) return;
     let url;
     try { url = new URL(a.href, location.href); } catch (_) { return; }
     const external = url.origin !== location.origin && (/^https?:$/.test(url.protocol) || url.protocol === "mailto:");
@@ -267,5 +271,5 @@
       e.preventDefault();
       invoke("plugin:opener|open_url", { url: url.href }).catch(noop);
     }
-  }, true);
+  });
 })();

@@ -278,6 +278,41 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(webviewRs, /add_ContextMenuRequested/, "WebView2 context menu handler installed");
   assert.match(mainRs, /webview::install_browser_guards\(&w\)/, "main window gets the WebView2 guards");
 }
+{
+  // External links: after the app's own handlers (bubble on window), never over a link the
+  // app cancelled (private file chip: it fetches a fresh signed URL first).
+  const s = loadShim();
+  const ev = (href, extra = {}) => ({
+    defaultPrevented: false,
+    button: 0,
+    preventDefault() { this.defaultPrevented = true; },
+    target: { closest: (sel) => (sel === "a[href]" && href ? { href } : null) },
+    ...extra,
+  });
+  const opened = () => s.invokes.filter((c) => c[0] === "plugin:opener|open_url").map((c) => c[1].url);
+  const clicks = s.winListeners.get("click") || [];
+  assert.equal(clicks.length, 1, "one link listener on window");
+  assert.equal(clicks[0].capture, false, "bubble phase: React's handlers run first");
+  assert.equal(s.dispatch("click", ev("https://example.com/a")).defaultPrevented, true, "http(s) link: default browser");
+  deq(opened(), ["https://example.com/a"]);
+  s.dispatch("click", ev("https://example.com/cancelled", { defaultPrevented: true }));
+  deq(opened(), ["https://example.com/a"], "a link the app cancelled is left alone");
+  assert.equal(s.dispatch("click", ev("https://tauri.localhost/settings")).defaultPrevented, false, "app links stay in the app");
+  s.dispatch("click", ev("mailto:a@b.c"));
+  deq(opened(), ["https://example.com/a", "mailto:a@b.c"], "mailto opens the mail app");
+  s.dispatch("click", ev("javascript:alert(1)"));
+  s.dispatch("click", ev("file:///C:/x"));
+  deq(opened(), ["https://example.com/a", "mailto:a@b.c"], "never javascript: or file:");
+
+  // HTML5 drag and drop reaches the page (files into chats, reordering): Tauri's own drop
+  // handler swallows every drop on Windows unless it is turned off per window.
+  assert.match(mainRs, /\.disable_drag_drop_handler\(\)/, "main window: HTML5 drag and drop");
+  for (const f of ["admin.rs", "premium/features/multi_account.rs", "premium/features/multi_window.rs"]) {
+    assert.match(readFileSync(join(here, "..", "src-tauri", "src", f), "utf8"), /\.disable_drag_drop_handler\(\)/, `${f}: HTML5 drag and drop`);
+  }
+  // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
+  assert.doesNotMatch(mainRs, /url\.as_str\(\) == "about:blank"/, "no empty about:blank windows");
+}
 
 // Admin windows: the same constants adminPreload.cjs answers, with no IPC.
 {
