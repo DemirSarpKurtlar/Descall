@@ -68,24 +68,23 @@ html.native-android .composer-root.is-sending {
 /* 5. Theme scenes (glass/theme-scenes.css): the drift / curtain / twinkle /
    sheen layers sit under every blurred glass surface, so each frame of a 30-70 s
    loop forces the WebView to re-blur every toolbar, tab bar and bubble that
-   overlaps it, forever, even with no input. On Android the scene holds still
-   (the reduced-motion pose: same colours, no drift); the chromeveil / iriscape
-   rim on every glass button (a background-position loop, a repaint per button
-   per frame) keeps its gradient without moving. */
-html.native-android.glass-ui .g-theme-drift,
-html.native-android.glass-ui .g-theme-specks,
-html.native-android.glass-ui .g-theme-sheen,
-html.native-android.glass-ui[data-theme] .g-glass::before,
-html.native-android.glass-ui[data-theme] .g-chip::before {
-  animation: none !important;
+   overlaps it. Play, then settle (lib/sceneIntro.js): the scene and the
+   chromeveil / iriscape rim run for a few seconds after launch, a theme change
+   or a return to the foreground (html.g-scene-live), then hold still where they
+   are (paused, not reset: no jump). The sheen, a passing highlight, fades out
+   when the scene settles instead of freezing mid-sweep. */
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-drift,
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-specks,
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-sheen,
+html.native-android.glass-ui:not(.g-scene-live)[data-theme] .g-glass::before,
+html.native-android.glass-ui:not(.g-scene-live)[data-theme] .g-chip::before {
+  animation-play-state: paused !important;
 }
 html.native-android.glass-ui .g-theme-sheen {
-  left: 28%;
-  opacity: 0.4;
-  transform: none;
+  transition: opacity 0.9s ease;
 }
-html.native-android.glass-ui[data-theme="iriscape"] .g-theme-drift {
-  transform: none;
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-sheen {
+  opacity: 0;
 }
 
 /* 6. System "Remove animations" (Android accessibility) reaches the WebView as
