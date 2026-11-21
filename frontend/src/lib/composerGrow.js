@@ -46,3 +46,33 @@ export function shouldSendOnEnter(e, { composing = false } = {}) {
   if (composing || isImeEnter(e)) return false;
   return true;
 }
+
+/**
+ * Soft keyboards that commit "\n" as text instead of an Enter key (Samsung
+ * Keyboard, Gboard while a word is still composing) only show up as a
+ * beforeinput insertLineBreak / insertParagraph after a keydown that was
+ * "Unidentified" (keyCode 229) or a composing Enter. On a touch keyboard that
+ * newline sends like Enter does. A Shift+Enter keydown just before it is a
+ * real newline; an Enter the composer already handled never reaches
+ * beforeinput (its keydown was prevented).
+ * `lastEnter` is { shift, at } from the latest Enter keydown, or null.
+ */
+export const LINE_BREAK_ENTER_MS = 120;
+
+export function shouldSendOnLineBreakInput(inputType, { lastEnter = null, now = Date.now(), coarse = false } = {}) {
+  if (!coarse) return false;
+  if (inputType !== "insertLineBreak" && inputType !== "insertParagraph") return false;
+  if (lastEnter && lastEnter.shift && now - lastEnter.at <= LINE_BREAK_ENTER_MS) return false;
+  return true;
+}
+
+/**
+ * min-height that holds a box at its current border-box height while the
+ * field inside it is collapsed for measuring (min-height follows box-sizing).
+ */
+export function heldBoxHeight(borderBoxHeight, cs) {
+  const h = Number(borderBoxHeight) || 0;
+  if (!cs || cs.boxSizing === "border-box") return h;
+  const n = (v) => parseFloat(v) || 0;
+  return Math.max(0, h - n(cs.paddingTop) - n(cs.paddingBottom) - n(cs.borderTopWidth) - n(cs.borderBottomWidth));
+}

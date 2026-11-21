@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useT } from "../../context/localeContextInstance";
 import RouteLoadingScreen from "./RouteLoadingScreen";
+import { removeBootSplashNow } from "../../lib/bootSplashDirect.js";
 
 /** Set before first paint by index.html (native app + phone/touch web, never Electron). */
 function isMobileBootSurface() {
@@ -30,6 +31,40 @@ function isNativeBootSurface() {
   }
 }
 
+/** Native Capacitor shell on Android (html.native-app from index.html + Android WebView UA). */
+function isAndroidNativeBoot() {
+  try {
+    return isNativeBootSurface() && /Android/i.test(navigator.userAgent || "");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Android cold start: the release above only schedules the dismiss (timer, then
+ * index.html's paint check, then another timer). The app's first commit runs
+ * all its mount effects right here, so on a throttled phone those hops waited
+ * 0.6-2 s behind long tasks while the finished first screen sat under the
+ * splash. This placeholder unmounting means the app tree is committed: start
+ * the fade now, in the same frame, unless another hold is still up or a new
+ * boot placeholder replaced this one.
+ */
+function handOffAndroidBootSplash() {
+  try {
+    if (Number(window.__descallBootHolds || 0) > 0) return;
+    if (document.querySelector("#root .descall-boot-splash")) return;
+    // Something real is in #root (textContent: no forced layout, unlike innerText).
+    const root = document.getElementById("root");
+    if (!root || !root.firstElementChild || !String(root.textContent || "").trim()) return;
+    const splash = document.getElementById("boot-splash");
+    if (!splash || splash.classList.contains("boot-splash--hide")) return;
+    if (splash.getAttribute("data-boot-failed") === "1") return;
+    removeBootSplashNow();
+  } catch {
+    /* index.html's own dismiss still runs */
+  }
+}
+
 /**
  * Mobile: never a skeleton. Keep the launch-style splash (Aurora: deep
  * gradient, blurred blobs and the frosted Konsept 2 tile, same picture as the
@@ -42,7 +77,11 @@ function MobileBootSplash() {
   const t = useT();
   useEffect(() => {
     const hold = typeof window !== "undefined" ? window.__descallHoldBootSplash : null;
-    return typeof hold === "function" ? hold() : undefined;
+    const release = typeof hold === "function" ? hold() : null;
+    return () => {
+      if (release) release();
+      if (isAndroidNativeBoot()) handOffAndroidBootSplash();
+    };
   }, []);
   return (
     <div className="descall-boot-splash" role="status" aria-busy="true" aria-label={t("Loading")}>

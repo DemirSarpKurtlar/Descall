@@ -801,10 +801,15 @@ export function setNoiseSuppressedTrackEnabled(enabled) {
  * even with no call. WASM is loaded into memory; worklet scripts go into the
  * HTTP cache. The context is created on the first voice session.
  */
+let workletsWarmed = false;
+
 export function preloadNoiseSuppression() {
   if (!isNoiseSuppressionEnabled()) return;
   ensureWasm().catch(() => {});
-  if (typeof fetch === "function") {
+  // HTTP-cache warm-up of the worklet scripts: once per page (boot, call hooks and
+  // the voice panel all call this; each used to fetch the four files again).
+  if (!workletsWarmed && typeof fetch === "function") {
+    workletsWarmed = true;
     for (const url of [gtcrnWorkletPath, rnnoiseWorkletPath, speexWorkletPath, softGateWorkletPath]) {
       fetch(url).catch(() => {});
     }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
+import { memo, useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
 import { createPortal } from "react-dom";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -32,7 +32,7 @@ import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { getComposerInput, registerComposerInput } from "../../lib/composerFocus";
-import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
+import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter, shouldSendOnLineBreakInput, heldBoxHeight } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
@@ -93,7 +93,7 @@ function formatSlowmode(seconds, locale) {
   return unit(n, "second");
 }
 
-export default function MessageComposer({
+function MessageComposer({
   onSend,
   disabled = false,
   activeDmUser,
@@ -362,9 +362,44 @@ export default function MessageComposer({
   }, [replyTo?.id]);
 
   // Reply focus registry (lib/composerFocus).
+  // Latest keydown handler and the last Enter keydown, for the soft-keyboard
+  // newline path below (the listener is native, attached once per textarea).
+  const keyDownRef = useRef(null);
+  const lastEnterRef = useRef(null);
+  const lineBreakCleanupRef = useRef(null);
   const setInputEl = useCallback((el) => {
+    lineBreakCleanupRef.current?.();
+    lineBreakCleanupRef.current = null;
     inputRef.current = el;
-    if (el) registerComposerInput(el);
+    if (!el) return;
+    registerComposerInput(el);
+    // Samsung Keyboard / composing Gboard commit the send key as "\n" text
+    // (keydown 229), which skipped Enter-to-send and grew the field instead.
+    const onBeforeInput = (event) => {
+      let coarse = false;
+      try { coarse = window.matchMedia("(pointer: coarse)").matches; } catch { /* old engine */ }
+      if (!shouldSendOnLineBreakInput(event.inputType, { lastEnter: lastEnterRef.current, now: Date.now(), coarse })) return;
+      let prevented = false;
+      composingRef.current = false;
+      keyDownRef.current?.({
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        shiftKey: false,
+        metaKey: false,
+        ctrlKey: false,
+        altKey: false,
+        isComposing: false,
+        nativeEvent: { isComposing: false, keyCode: 13 },
+        target: el,
+        currentTarget: el,
+        preventDefault: () => { prevented = true; },
+        stopPropagation: () => {},
+      });
+      if (prevented) event.preventDefault();
+    };
+    el.addEventListener("beforeinput", onBeforeInput);
+    lineBreakCleanupRef.current = () => el.removeEventListener("beforeinput", onBeforeInput);
   }, []);
 
   // IME composition (Japanese/Chinese/Korean, dead keys): Enter commits the
@@ -390,9 +425,18 @@ export default function MessageComposer({
     const minHeight = parseFloat(cs.minHeight) || 0;
     const maxHeight = maxComposerHeight({ device: composerDevice, lineHeight, paddingY, borderY });
     const prevScroll = el.scrollTop;
+    // Measuring collapses the field to one line for a forced layout. Hold its
+    // box at the current height meanwhile: where the composer is in the flow
+    // (iPad, desktop), the chat list above would grow for that layout and the
+    // browser would clamp its scrollTop, leaving the newest message under the
+    // composer and the list unpinned after the next keystroke (Nov 2026).
+    const box = el.parentElement;
+    const heldMin = box ? box.style.minHeight : "";
+    if (box) box.style.minHeight = `${heldBoxHeight(box.getBoundingClientRect().height, window.getComputedStyle(box))}px`;
     el.style.height = "auto";
     const { height, scroll } = composerHeight({ scrollHeight: el.scrollHeight, minHeight, maxHeight, borderY });
     el.style.height = `${height}px`;
+    if (box) box.style.minHeight = heldMin;
     el.style.maxHeight = `${maxHeight}px`;
     el.style.overflowY = scroll ? "auto" : "hidden";
     if (scroll) {
@@ -976,6 +1020,7 @@ export default function MessageComposer({
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === "Enter") lastEnterRef.current = { shift: Boolean(e.shiftKey), at: Date.now() };
     // Enter inside an IME composition commits the candidate; never send.
     if (e.key === "Enter" && (composingRef.current || isImeEnter(e))) return;
     if (slashMenuOpen) {
@@ -1059,6 +1104,17 @@ export default function MessageComposer({
     if (e.key === "Escape" && replyTo) {
       onClearReply?.();
     }
+  };
+
+  keyDownRef.current = handleKeyDown;
+
+  // Android: a tap on Send moved focus to the button, so the keyboard dropped
+  // after every message and the whole chat jumped down and back up. Keep the
+  // caret in the field (iOS WebKit never focuses a tapped button).
+  const keepFocusOnSend = (e) => {
+    if (e.button > 0) return;
+    const el = inputRef.current;
+    if (el && typeof document !== "undefined" && document.activeElement === el) e.preventDefault();
   };
 
   // The textarea is swapped for the "Uploading..." bar while a file uploads, so it loses
@@ -2005,7 +2061,9 @@ export default function MessageComposer({
             e.preventDefault();
             openSchedule("new");
           }}
+          onMouseDown={keepFocusOnSend}
           onPointerDown={(e) => {
+            keepFocusOnSend(e);
             if (e.pointerType === "mouse" || editing || !schedTarget || !message.trim() || pendingAttach) return;
             clearTimeout(sendHoldRef.current);
             sendHoldRef.current = window.setTimeout(() => {
@@ -2031,3 +2089,7 @@ export default function MessageComposer({
     </div>
   );
 }
+
+// Memoized: ChatPanel re-renders on its own for typing indicators (lib/typingStore)
+// and its other local state; the composer's props are unchanged then, so it skips.
+export default memo(MessageComposer);

@@ -12,6 +12,17 @@
   position: relative;
 }
 
+/* Top-of-list probe for the IntersectionObserver (lib/pullToRefresh.js). */
+.ptr-sentinel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 .ptr-indicator {
   position: absolute;
   top: 0;

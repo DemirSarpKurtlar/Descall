@@ -1,0 +1,114 @@
+/* Android app motion (html.native-android, set in main.jsx for the Capacitor
+   Android shell only). The Android System WebView repaints on the main thread
+   whenever a non-composited property animates, so every loop or transition here
+   is moved to transform / opacity, bounded, or switched off while hidden.
+   iOS, phone web, desktop and Electron never get this class. */
+
+/* 1. Loading placeholders: the background-position shimmer repaints every
+   skeleton line on every frame (main-thread paint, 56 paint invalidations per
+   300 ms in the channel list). Same look at rest, then an opacity pulse that
+   the compositor runs, and only for a few cycles: a placeholder that is still
+   up after ~10 s stays still instead of burning frames. */
+html.native-android :is(
+  .skeleton,
+  .skeleton-line,
+  .profile-glass-skeleton,
+  .app-boot-skeleton__sk,
+  .server-channels-loading-bar,
+  .pfs-look-skel > span,
+  .pfs-look-skel .pls-row i
+) {
+  background-image: none !important;
+  animation: android-sk-pulse 0.9s cubic-bezier(0.45, 0, 0.55, 1) 12 alternate both !important;
+}
+html.native-android .skeleton,
+html.native-android .skeleton-line {
+  background-color: var(--border-2, rgba(255, 255, 255, 0.08));
+}
+html.native-android .server-channels-loading-bar {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+/* A blurred backdrop under an animating layer re-runs the blur every frame. */
+html.native-android .profile-glass-skeleton {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: color-mix(in srgb, var(--surface-3) 55%, transparent);
+}
+@keyframes android-sk-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.55; }
+}
+
+/* 2. Behind the Settings sheet the list and chat are visibility: hidden. Any
+   descendant with `transition: all` (row swipe actions, toolbar buttons) then
+   starts its own visibility transition: ~100 CSS transitions and a style pass
+   per frame while the sheet opens. Nothing hidden needs to animate. */
+html.native-android .app-root.g-shell.mobile-settings-open > :is(.app-sidebar-shell, .app-main-slot) *,
+html.native-android .app-root.g-shell.mobile-settings-open > :is(.app-sidebar-shell, .app-main-slot) *::before,
+html.native-android .app-root.g-shell.mobile-settings-open > :is(.app-sidebar-shell, .app-main-slot) *::after {
+  transition: none !important;
+}
+
+/* 3. The composer grows with its text (MessageComposer sets the height inline)
+   and the base rule is `transition: all`: keep only the colour feedback, never
+   height / padding. */
+html.native-android .composer-input {
+  transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 4. Message send: the composer glow is a box-shadow loop on a blurred glass
+   surface (repaint + re-blur per frame) exactly while the new bubble is laid
+   out and the list scrolls. The send button ripple (transform / opacity) stays
+   as the send feedback. */
+html.native-android .message-composer.is-sending,
+html.native-android .composer-root.is-sending {
+  animation: none;
+}
+
+/* 5. Theme scenes (glass/theme-scenes.css): the drift / curtain / twinkle /
+   sheen layers sit under every blurred glass surface, so each frame of a 30-70 s
+   loop forces the WebView to re-blur every toolbar, tab bar and bubble that
+   overlaps it. Play, then settle (lib/sceneIntro.js): the scene and the
+   chromeveil / iriscape rim run for a few seconds after launch, a theme change
+   or a return to the foreground (html.g-scene-live), then hold still where they
+   are (paused, not reset: no jump). The sheen, a passing highlight, fades out
+   when the scene settles instead of freezing mid-sweep. */
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-drift,
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-specks,
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-sheen,
+html.native-android.glass-ui:not(.g-scene-live)[data-theme] .g-glass::before,
+html.native-android.glass-ui:not(.g-scene-live)[data-theme] .g-chip::before {
+  animation-play-state: paused !important;
+}
+html.native-android.glass-ui .g-theme-sheen {
+  transition: opacity 0.9s ease;
+}
+html.native-android.glass-ui:not(.g-scene-live) .g-theme-sheen {
+  opacity: 0;
+}
+
+/* 6. System "Remove animations" (Android accessibility) reaches the WebView as
+   prefers-reduced-motion. Same contract as the in-app Reduce motion setting
+   (html.reduce-motion in settings-v3.css): effects land in their end state. */
+@media (prefers-reduced-motion: reduce) {
+  html.native-android *,
+  html.native-android *::before,
+  html.native-android *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  html.native-android :is(
+    .skeleton,
+    .skeleton-line,
+    .profile-glass-skeleton,
+    .app-boot-skeleton__sk,
+    .server-channels-loading-bar,
+    .pfs-look-skel > span,
+    .pfs-look-skel .pls-row i
+  ) {
+    animation: none !important;
+  }
+}

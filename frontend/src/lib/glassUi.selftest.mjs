@@ -11,6 +11,9 @@ import {
   GLASS_OVERRIDE_KEY,
   GLASS_THEME_COLOR,
   isLowMemoryDevice,
+  shouldUseLeanEffects,
+  FX_LEAN_CLASS,
+  ANDROID_CLASS,
 } from "./glassUi.js";
 import { deviceTier, liteReasons, isJanky, statusBarStyleFor } from "./glassDisplay.js";
 
@@ -35,6 +38,15 @@ assert.equal(shouldEnableGlass({ ...androidPhone, remoteFlag: false }), false, "
 assert.equal(shouldEnableGlass({ ...androidPhone, override: "0" }), false, "descall:glass=0 on Android");
 assert.equal(shouldEnableGlass({ ...androidPhone, buildFlag: false }), false, "VITE_GLASS_UI=0 on Android");
 assert.equal(shouldEnableGlass({ ...androidPhone, webRemoteFlag: false }), true, "desktopGlass does not gate the Android app");
+// Android effects tier (html.g-fx-lean): Android app by default, QA override both ways.
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: true }), true, "Android app -> lean effects");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: false }), false, "iPhone / web keep full effects");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: true, override: "0" }), false, "descall:fx-lean=0 restores full effects");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: false, override: "1" }), true, "descall:fx-lean=1 forces lean (QA)");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: true, solid: true }), false, "a11y-solid / a11y-contrast keep their opaque fills");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: false, override: "1", solid: true }), false);
+assert.equal(FX_LEAN_CLASS, "g-fx-lean");
+assert.equal(ANDROID_CLASS, "native-android");
 assert.equal(isLowMemoryDevice(2), true, "2 GB is low-end");
 assert.equal(isLowMemoryDevice(1), true);
 assert.equal(isLowMemoryDevice(4), false, "4 GB keeps full glass unless frames are slow");

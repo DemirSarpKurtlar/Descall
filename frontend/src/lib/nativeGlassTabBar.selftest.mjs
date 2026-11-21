@@ -7,6 +7,9 @@ import {
   badgesPayload,
   barStyleFor,
   barCovered,
+  createCoalescedCheck,
+  COVER_MIN_GAP_MS,
+  COVER_SETTLE_MS,
   useNativeGlassTabBar,
   loadPluginBox,
   nativeBarInUse,
@@ -46,6 +49,50 @@ assert.equal(barCovered(bar, rect, () => bar), false);
 assert.equal(barCovered(bar, rect, (x) => (x > 300 ? {} : child)), true, "sheet over one edge");
 assert.equal(barCovered(bar, { ...rect, width: 0, height: 0 }, () => bar), true, "display:none bar");
 assert.equal(barCovered(null, rect, () => bar), true);
+
+// iPhone idle energy: the cover check is event driven (no 250 ms poll), coalesced.
+{
+  let t = 1000;
+  const timers = new Map();
+  let nextId = 1;
+  const setT = (fn, ms) => { const id = nextId++; timers.set(id, { fn, at: t + ms }); return id; };
+  const clearT = (id) => timers.delete(id);
+  const advance = (ms) => {
+    const end = t + ms;
+    for (;;) {
+      const due = [...timers.entries()].filter(([, v]) => v.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
+      if (!due) break;
+      timers.delete(due[0]);
+      t = due[1].at;
+      due[1].fn();
+    }
+    t = end;
+  };
+  let checks = 0;
+  const w = createCoalescedCheck(() => { checks++; }, { setT, clearT, now: () => t });
+  advance(10_000);
+  assert.equal(checks, 0, "no pokes, no checks (idle screen does nothing)");
+  w.poke();
+  advance(0);
+  assert.equal(checks, 1, "first poke checks on the next turn");
+  for (let i = 0; i < 50; i++) { w.poke(); advance(10); } // a burst of mutations over 500 ms
+  const inBurst = checks;
+  assert.ok(inBurst <= 1 + Math.ceil(500 / COVER_MIN_GAP_MS) + 1, `burst is throttled (${inBurst})`);
+  advance(COVER_SETTLE_MS);
+  const settled = checks;
+  assert.ok(settled > inBurst && settled <= inBurst + 2, "pending + one trailing check once things settle");
+  advance(60_000);
+  assert.equal(checks, settled, "then nothing");
+  w.poke();
+  w.dispose();
+  advance(5_000);
+  assert.equal(checks, settled, "dispose cancels pending checks");
+}
+{
+  const hook = readFileSync(new URL("./nativeGlassTabBar.js", import.meta.url), "utf8");
+  assert.ok(!/setInterval\(/.test(hook), "no polling interval in the tab bar hook");
+  assert.match(hook, /new MutationObserver\(watch\.poke\)/);
+}
 
 // Web / no plugin: the hook never touches the plugin and reports inactive.
 const src = readFileSync(new URL("./nativeGlassTabBar.js", import.meta.url), "utf8");

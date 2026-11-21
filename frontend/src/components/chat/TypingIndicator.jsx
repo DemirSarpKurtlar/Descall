@@ -15,7 +15,30 @@ const DOT_VARIANTS = {
   }),
 };
 
+const DOT_STYLE = {
+  display: "inline-block",
+  width: 6,
+  height: 6,
+  borderRadius: "50%",
+  background: "var(--primary, #587af5)",
+  boxShadow: "0 0 6px var(--primary, #587af5)",
+};
+
 function TypingDots({ flareKey }) {
+  // Plain dots: the same bounce as DOT_VARIANTS as a CSS keyframe animation
+  // (styles.css .typing-dot-css), transform + opacity only, so it runs on the
+  // compositor instead of a framer-motion rAF loop writing three inline styles
+  // every frame for as long as someone types (Android main-thread cost).
+  // Flares keep framer: their CSS animations are layered on its inline values.
+  if (!flareKey) {
+    return (
+      <span aria-hidden style={{ display: "inline-flex", alignItems: "center", gap: 3, marginRight: 6 }}>
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="typing-dot typing-dot-css" style={DOT_STYLE} />
+        ))}
+      </span>
+    );
+  }
   return (
     <span
       aria-hidden

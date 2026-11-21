@@ -119,10 +119,28 @@ function findTouch(list, id) {
   return null;
 }
 
+/** Nearest ancestor the user scrolls vertically (the message list), or null. */
+function verticalScrollerOf(el) {
+  if (typeof window === "undefined" || typeof window.getComputedStyle !== "function") return null;
+  let node = el?.parentElement || null;
+  while (node && node !== document.body && node !== document.documentElement) {
+    if (node.scrollHeight > node.clientHeight + 1) {
+      const oy = window.getComputedStyle(node).overflowY;
+      if (oy === "auto" || oy === "scroll" || oy === "overlay") return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
 /**
  * Touch driver used by message bubbles. Listens to real touch events
- * (identifier, clientX/Y, timeStamp). Does not preventDefault until the
- * axis has locked horizontal, so vertical scrolling stays native.
+ * (identifier, clientX/Y, timeStamp). Every listener is passive, so a list
+ * scroll that starts on a bubble never waits for the main thread (one blocking
+ * touchmove per bubble made iOS dispatch each scroll synchronously). The bubble
+ * is touch-action: pan-y (no horizontal pan to cancel); once a reply drag is
+ * recognised the list under it is frozen (`freezeScroll`) so a diagonal finger
+ * cannot drift it, which preventDefault used to do.
  * Calls `onClaim` once when reply takes the gesture so a still-pending
  * swipe-back can stand down. An edge-band start never tracks.
  */
@@ -135,13 +153,25 @@ export function attachReplySwipe(el, {
   onHaptic = () => {},
   onReply = () => {},
   onCancel = () => {},
+  // Chromium (Android) drops a horizontal-first pan on a pan-y element by
+  // itself, so it needs no freeze. WebKit only pins the x axis: the vertical
+  // part of a diagonal drag would still scroll the list under the reply.
+  freezeScroll = true,
 } = {}) {
   if (!el || typeof el.addEventListener !== "function") return () => {};
   let gesture = null;
   let touchId = null;
   let claimed = false;
+  let frozen = null;
+
+  function unfreeze() {
+    if (!frozen) return;
+    frozen.el.style.overflowY = frozen.value;
+    frozen = null;
+  }
 
   function finish(commit) {
+    unfreeze();
     if (!gesture) return;
     const result = commit ? gesture.end() : { reply: false };
     gesture = null;
@@ -184,15 +214,22 @@ export function attachReplySwipe(el, {
     if (result.type === "abort") {
       gesture = null;
       touchId = null;
+      unfreeze();
       onCancel();
       return;
     }
     if (result.type !== "drag") return;
     if (!claimed) {
       claimed = true;
+      if (freezeScroll && !frozen) {
+        const scroller = verticalScrollerOf(el);
+        if (scroller) {
+          frozen = { el: scroller, value: scroller.style.overflowY };
+          scroller.style.overflowY = "hidden";
+        }
+      }
       onClaim();
     }
-    if (event.cancelable) event.preventDefault();
     onMove(result.x);
     if (result.crossed) onHaptic();
   }
@@ -205,12 +242,13 @@ export function attachReplySwipe(el, {
   }
 
   const startOpts = { passive: true };
-  const moveOpts = { passive: false };
+  const moveOpts = { passive: true };
   el.addEventListener("touchstart", onStart, startOpts);
   el.addEventListener("touchmove", handleMove, moveOpts);
   el.addEventListener("touchend", onEnd, startOpts);
   el.addEventListener("touchcancel", onEnd, startOpts);
   return () => {
+    unfreeze();
     el.removeEventListener("touchstart", onStart, startOpts);
     el.removeEventListener("touchmove", handleMove, moveOpts);
     el.removeEventListener("touchend", onEnd, startOpts);

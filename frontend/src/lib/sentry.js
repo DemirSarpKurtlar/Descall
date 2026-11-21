@@ -7,6 +7,8 @@
  * - The SDK is lazy-loaded after first paint (keeps the marketing JS budget); errors thrown
  *   before it loads are buffered and sent once it is ready.
  */
+import { afterFirstScreen } from "./afterFirstScreen.js";
+
 const SENTRY_DSN =
   "https://dd5fad1cc547154ece0dd5ff07edb982@o4512220968779776.ingest.de.sentry.io/4512221008035920";
 // eslint-disable-next-line no-undef
@@ -121,7 +123,16 @@ function loadSdk() {
         integrations: (defaults) =>
           defaults
             // Errors only: no release-health session pings.
-            .filter((i) => i.name !== "BrowserSession" && i.name !== "Breadcrumbs")
+            // No BrowserApiErrors: it wraps every requestAnimationFrame,
+            // setTimeout / setInterval and addEventListener callback in a
+            // try/catch closure (plus a mechanism object per call). On the
+            // scroll and gesture paths that run a rAF every frame this was the
+            // top third-party cost (scripts/perf/android-bench.mjs, Pixel 7 4x
+            // CPU: vendor-sentry wrap() 50-150 ms per scroll scenario and the
+            // largest item while idle). Errors thrown in those callbacks still
+            // reach window.onerror / unhandledrejection, which GlobalHandlers
+            // reports with the full same-origin stack.
+            .filter((i) => i.name !== "BrowserSession" && i.name !== "Breadcrumbs" && i.name !== "BrowserApiErrors")
             .concat(Sentry.breadcrumbsIntegration({ console: false })),
         ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications"],
         initialScope: { tags: { platform: sentryPlatform(isNativeIOS) } },
@@ -163,6 +174,13 @@ export function startErrorReporting() {
     if (typeof idle === "function") idle(() => loadSdk(), { timeout: 3000 });
     else window.setTimeout(() => loadSdk(), 1500);
   };
+  // Native app: the SDK (~85 KB, ~0.4 s of CPU on a throttled Pixel) waits for the
+  // first app screen instead of landing in the middle of the cold start. Errors
+  // before that are buffered (onEarlyError) like on the web.
+  if (isNativeShell()) {
+    afterFirstScreen(() => loadSdk(), { idleTimeoutMs: 3000 });
+    return;
+  }
   if (document.readyState === "complete") schedule();
   else window.addEventListener("load", schedule, { once: true });
 }

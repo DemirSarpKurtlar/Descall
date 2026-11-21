@@ -1,10 +1,14 @@
 /**
- * iOS haptics (Capacitor → UIKit feedback generators).
+ * Native haptics (iOS: Capacitor → UIKit feedback generators; Android:
+ * View.performHapticFeedback through window.DescallHaptics, see
+ * android/.../DescallHapticsPlugin.java).
  *
- * One helper for the whole app. `play()` is the native iOS shell only
- * (UIKit generators already respect the system Haptics switch). Tab-bar
- * lift and tick also run on the Android shell, and vibrate on mobile web.
- * Reduce Motion changes animation, not these taps, a commit still ticks.
+ * One helper for the whole app. `play()` runs on the native iOS shell and on
+ * an Android shell that ships the DescallHaptics bridge (both follow the
+ * system haptics / touch feedback switch). An older Android APK without the
+ * bridge keeps only the tab-bar lift and tick (Capacitor vibrator), and
+ * mobile web vibrates for those two. Reduce Motion changes animation, not
+ * these taps, a commit still ticks.
  *
  * Fire once per causal event. The same kind inside 50ms collapses so a
  * pointerdown and the click it synthesizes cannot double-buzz. Do not call
@@ -39,6 +43,35 @@ export function primeHaptics() {
   return loading;
 }
 
+/**
+ * Android shell bridge: synchronous, so the tick reaches the UI thread in the
+ * same frame as the press (no Capacitor message queue, no promise).
+ */
+function androidBridge() {
+  try {
+    const bridge = typeof window !== "undefined" ? window.DescallHaptics : null;
+    return bridge && typeof bridge.perform === "function" ? bridge : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Android shell with crisp system haptics (new APK). */
+export function hasAndroidSystemHaptics() {
+  return isNativeAndroid() && Boolean(androidBridge());
+}
+
+function performAndroid(kind) {
+  const bridge = androidBridge();
+  if (!bridge) return false;
+  try {
+    bridge.perform(kind);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function mark(kind, now = Date.now()) {
   const next = shouldEmitHaptic(last.kind ? last : null, kind, now, COALESCE_MS);
   last = next.last;
@@ -48,7 +81,10 @@ function mark(kind, now = Date.now()) {
 export { shouldEmitHaptic };
 
 function play(kind) {
-  if (!isNativeIOS()) return;
+  if (!isNativeIOS()) {
+    if (hasAndroidSystemHaptics() && mark(kind)) performAndroid(kind);
+    return;
+  }
   if (!mark(kind)) return;
   const run = (mod) => {
     if (!mod?.Haptics) return;
@@ -109,6 +145,7 @@ function playAnywhere(kind, vibrateMs) {
   }
   if (isNativeAndroid()) {
     if (!mark(kind)) return;
+    if (performAndroid(kind)) return;
     const run = (mod) => {
       if (!mod?.Haptics) return;
       try {
@@ -256,7 +293,10 @@ export function hapticKindForElement(target) {
  * Semantic events (send, failure, long-press, call, drag commit) stay explicit.
  */
 export function installIosHapticHints() {
-  if (!isNativeIOS() || typeof document === "undefined" || hintsInstalled) return;
+  if (typeof document === "undefined" || hintsInstalled) return;
+  // Android only with the system-haptics bridge: the Capacitor vibrator fallback
+  // is a 50-100 ms buzz, too heavy for every chip and toggle.
+  if (!isNativeIOS() && !hasAndroidSystemHaptics()) return;
   hintsInstalled = true;
   document.addEventListener("pointerdown", (event) => {
     if (event.button > 0) return;

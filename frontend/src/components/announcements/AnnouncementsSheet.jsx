@@ -15,6 +15,7 @@ import {
   visibleItems,
 } from "../../lib/announcementsFeed.js";
 import "../../styles/announcements.css";
+import { memoStableProps } from "../../lib/memoStableProps.js";
 
 export function useAnnouncements() {
   return useSyncExternalStore(subscribeAnnouncements, getAnnouncementsState, getAnnouncementsState);
@@ -40,7 +41,7 @@ function usePhoneSheet() {
  * sheet on iPhone. Pinned ones first (the admin's order), unread filter, mark all
  * read. Cards report "seen" when shown and "read" after staying in view.
  */
-export default function AnnouncementsSheet({ open, onClose, focusId = null }) {
+function AnnouncementsSheet({ open, onClose, focusId = null }) {
   const { t, locale } = useLocale();
   const state = useAnnouncements();
   const phone = usePhoneSheet();
@@ -264,3 +265,7 @@ export default function AnnouncementsSheet({ open, onClose, focusId = null }) {
     document.body
   );
 }
+
+// Mounted closed in lists that re-render on every presence / unread change; parents pass
+// inline handlers, so it skips those renders while its own props are unchanged.
+export default memoStableProps(AnnouncementsSheet, "AnnouncementsSheet");

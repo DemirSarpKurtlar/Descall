@@ -21,7 +21,7 @@ import AnnouncementsSheet, { useAnnouncements } from "../announcements/Announcem
 import { renameGroup as renameGroupApi, setGroupAvatar } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
-import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
+import { findOnlineUser, getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
 import GroupInviteModal from "../groups/GroupInviteModal";
 import GroupRenameSheet from "../groups/GroupRenameSheet";
 import { useToast } from "../../context/ToastContext";
@@ -576,8 +576,12 @@ export default function ServerSidebar({
 }
 
 function SidebarSectionContent({ expanded, children }) {
+  // presenceAffectsLayout={false}: the default gives every row below a new
+  // PresenceContext value per render, which re-rendered all memoized DM / group
+  // rows (300 rows) on every App render; the section body has no siblings to
+  // lay out around.
   return (
-    <AnimatePresence initial={false}>
+    <AnimatePresence initial={false} presenceAffectsLayout={false}>
       {expanded && (
         <motion.div
           key="section-body"
@@ -846,7 +850,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                     dm={dm}
                     isActive={activeDmUser?.id === dm.id}
                     unread={unread}
-                    presence={onlineUsers?.find((u) => u.id === dm.id)?.status || null}
+                    presence={findOnlineUser(onlineUsers, dm.id)?.status || null}
                     isOnline={isVisiblyOnline(onlineUsers, dm.id)}
                     isMobile={isMobile}
                     swipeOpen={isMobile && swipeOpenId === dm.id}

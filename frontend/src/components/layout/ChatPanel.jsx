@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, cloneElement, isValidElement } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, useSyncExternalStore, cloneElement, isValidElement } from "react";
 import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -18,6 +18,7 @@ import TypingIndicator from "../chat/TypingIndicator";
 import EmptyState from "../ui/EmptyState";
 import CallsView from "../calls/CallsView";
 import { getToken } from "../../lib/storage";
+import { subscribeTyping, getTypingSnapshot } from "../../lib/typingStore";
 import { API_BASE_URL } from "../../config/api";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
@@ -79,9 +80,9 @@ export default function ChatPanel({
   onGroupVideoCall,
   activity,
   friends,
-  typingDmUser,
-  typingGroupUsers,
-  typingChannelUsers,
+  typingDmUser: typingDmUserProp,
+  typingGroupUsers: typingGroupUsersProp,
+  typingChannelUsers: typingChannelUsersProp,
   onTypingDmStart,
   onTypingDmStop,
   onTypingGroupStart,
@@ -114,6 +115,12 @@ export default function ChatPanel({
   const { t, locale } = useLocale();
   const glass = useGlassUi();
   const messagesRef = useRef(null);
+  // Live typing comes from lib/typingStore (App no longer re-renders per typing
+  // event); explicit props still win so the panel can be driven directly.
+  const typingLive = useSyncExternalStore(subscribeTyping, getTypingSnapshot, getTypingSnapshot);
+  const typingDmUser = typingDmUserProp !== undefined ? typingDmUserProp : typingLive.dm;
+  const typingGroupUsers = typingGroupUsersProp !== undefined ? typingGroupUsersProp : typingLive.group;
+  const typingChannelUsers = typingChannelUsersProp !== undefined ? typingChannelUsersProp : typingLive.channel;
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showMembers, setShowMembers] = useState(false);

@@ -14,7 +14,9 @@
  *   - jump to bottom: opening lands at the newest message; scrolled up, a new
  *     message or a reaction never moves the list, the jump button shows with
  *     the unseen count and brings you down; pinned at the bottom, new
- *     messages keep you there.
+ *     messages keep you there;
+ *   - sending (multi-line, then a grouped single line) stays on the newest
+ *     message in every painted frame, and a growing composer keeps it in view.
  *
  * Run from frontend/ against a build that points at the mock (never production):
  *   VITE_API_BASE_URL=http://127.0.0.1:5361 VITE_SOCKET_URL=http://127.0.0.1:5361 \
@@ -52,10 +54,14 @@ const sender = (u) => ({ id: u.id, username: u.username, displayName: u.displayN
 const LINES = ['Bu akşam oyun gecesine geliyor musun?', 'Tabii, saat kaçta?', "21:00'de, önce sesli kanalda toplanırız.", 'Tamam 👍', 'Mert ve Zeynep de gelecek.', 'Süper!', 'Geçen haftaki klibi gördün mü?', 'Gördüm, efsaneydi 😂', 'Bu sefer takımları ben kurayım mı?', 'Olur, sen kur.'];
 let seq = 0;
 const dm = (from, text, minAgo) => ({ id: `e2e-m-${String(++seq).padStart(3, '0')}`, from: sender(from), to: { id: (from === ME ? PEER : ME).id }, text, mediaUrl: null, mediaType: null, timestamp: new Date(Date.now() - minAgo * 60000).toISOString(), deliveredAt: new Date(Date.now() - minAgo * 60000).toISOString(), readAt: new Date(Date.now() - minAgo * 60000).toISOString(), editHistory: [], reactions: [] });
+// A history long enough (>= 48 rows) that far-off rows are skipped
+// (hooks/useOffscreenRows) like in a real chat; the reader / composer / send
+// scroll checks below depend on it.
+const HISTORY = 80;
 function freshMessages() {
   seq = 0;
   const out = [];
-  for (let i = 0; i < 40; i++) out.push(dm(i % 3 === 1 ? ME : PEER, LINES[i % LINES.length], 120 - i * 2));
+  for (let i = 0; i < HISTORY; i++) out.push(dm(i % 3 === 1 ? ME : PEER, LINES[i % LINES.length], (HISTORY - i) * 2));
   return out;
 }
 
@@ -474,18 +480,61 @@ async function runDevice(browser, base, dev) {
   check(hs[1] > hs[0] && hs[2] > hs[1], `composer grows with the text (${hs.slice(0, 4).join(',')})`);
   check(Math.abs(ti.h - cap) <= 3, `composer stops at ${lines ? `${lines} lines` : '120px'} (${ti.h}px, cap ${cap}px, heights ${hs.join(',')})`);
   check(ti.scroll && /auto|scroll/.test(ti.oy), `past the cap it scrolls inside (${ti.oy})`);
+  await sleep(300);
+  m = await page.evaluate(metrics);
+  check(m.dist <= 1, `the growing composer keeps the newest message in view (distance ${m.dist})`);
   await shot(page, `${dev}-05-composer`);
   // IME: Enter during composition does not send.
   const sends0 = state.events.filter((e) => e.kind === 'send').length;
   await page.evaluate((s) => { const e = document.querySelector(s); e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 229, isComposing: true, bubbles: true, cancelable: true })); }, TA);
   await sleep(250);
   check(state.events.filter((e) => e.kind === 'send').length === sends0 && (await taInfo()).val.length > 0, 'Enter inside an IME composition does not send');
-  await page.keyboard.press('Enter');
+  // Sending keeps the conversation on the newest message in every painted
+  // frame (owner report Nov 2026: "after Enter the chat sometimes scrolls up a
+  // little"): optimistic row, server echo, composer back to one line.
+  const sendFrames = async (press) => {
+    const rec = page.evaluate(([sel, ms]) => new Promise((resolve) => {
+      // One sample per painted frame: the state after this frame's layout and
+      // ResizeObserver fix-ups (this observer runs after the app's), or, when
+      // nothing resized, the state the frame started with.
+      const sc = eval(sel); const out = []; const t0 = performance.now();
+      const first = document.querySelectorAll('.message-bubble[data-message-id]').length;
+      const sample = () => {
+        const bs = document.querySelectorAll('.message-bubble[data-message-id]');
+        const comp = document.querySelector('.composer-container');
+        const last = bs[bs.length - 1];
+        return { added: bs.length > first, d: Math.round(sc.scrollHeight - sc.clientHeight - sc.scrollTop),
+          hidden: last && comp ? Math.round(last.getBoundingClientRect().bottom - comp.getBoundingClientRect().top) : 0 };
+      };
+      let cur = null;
+      const ro = new ResizeObserver(() => { cur = sample(); });
+      [sc, document.querySelector('.message-list'), document.querySelector('.composer-container')].forEach((e) => e && ro.observe(e));
+      const tick = () => {
+        if (cur) out.push(cur);
+        cur = sample();
+        if (performance.now() - t0 < ms) requestAnimationFrame(tick); else { ro.disconnect(); resolve(out); }
+      };
+      requestAnimationFrame(tick);
+    }), [SCROLLER, 1400]);
+    await sleep(30);
+    await press();
+    return (await rec).filter((f) => f.added);
+  };
+  const sendCheck = (label, frames) => {
+    const off = frames.filter((f) => f.d > 1);
+    const last = frames[frames.length - 1];
+    check(frames.length > 0 && off.length === 0, `${label}: on the newest message in every frame after the send (${frames.length} frames, off-bottom ${JSON.stringify(off.slice(0, 4))})`);
+    check(last && last.d <= 1 && last.hidden <= 0, `${label}: the sent message ends fully above the composer (distance ${last && last.d}, overlap ${last && last.hidden}px)`);
+  };
+  sendCheck('multi-line send', await sendFrames(() => page.keyboard.press('Enter')));
   await sleep(500);
   const sent = state.events.filter((e) => e.kind === 'send');
   check(sent.length === sends0 + 1 && /Satır 1\nSatır 2/.test(sent[sent.length - 1].text || ''), 'Enter sends the multi-line message');
   ti = await taInfo();
   check(ti.val === '' && ti.h <= hs[0] + 2, `after send the composer is empty and back to one line (${ti.h}px)`);
+  await page.keyboard.type('Tek satır, aynı gruba.');
+  sendCheck('single-line send (grouped)', await sendFrames(() => page.keyboard.press('Enter')));
+  await sleep(400);
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
   await sleep(300);
 

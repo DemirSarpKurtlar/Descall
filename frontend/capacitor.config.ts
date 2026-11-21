@@ -15,7 +15,15 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
-    captureInput: true,
+    // The WebView's own input connection, as in Chrome. captureInput: true
+    // (on since the first import, no recorded reason) swapped it for a dummy
+    // BaseInputConnection: the keyboard saw a TYPE_NULL field, so no
+    // suggestions, autocorrect, auto-capitalization, glide or voice typing,
+    // and text it could not map to keys (emoji) was appended to
+    // activeElement.value by injected JS, past React's input events and not at
+    // all in contenteditable. The composer already handles real IME
+    // composition (isComposing / keyCode 229, src/lib/composerGrow.js).
+    captureInput: false,
     // Same dark surface as the Android 12+ splash (values/colors.xml
     // splash_background) and the in-app boot splash.
     backgroundColor: "#1E1F22",
@@ -36,9 +44,16 @@ const config: CapacitorConfig = {
     // navigation bar icons start light (DARK = light content). The in-app light
     // theme flips them at runtime (src/lib/androidSystemBars.js). viewport-fit
     // is cover in index.html; the hint avoids a first-frame inset jump.
+    // insetsHandling "native" (Capacitor's recommended mode): same insets
+    // handling as the default "css", minus re-writing four --safe-area-inset-*
+    // custom properties on <html> through evaluateJavascript on every insets
+    // change (keyboard open / close, rotation). Nothing reads those variables
+    // (the CSS uses env(safe-area-inset-*)), but each write restyled the whole
+    // document right as the keyboard animation started.
     SystemBars: {
       style: "DARK",
       initialViewportFitValueHint: "cover",
+      insetsHandling: "native",
     },
     PushNotifications: {
       // Foreground: banner without the system sound; the open app already

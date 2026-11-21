@@ -24,6 +24,7 @@ let refreshTimer = null;
 let inflight = null;
 let navigator = null;
 let detach = null;
+let loadedAt = 0;
 const pending = { seen: new Set(), read: new Set(), timer: null };
 const toastSeen = new Set();
 
@@ -133,6 +134,7 @@ export async function refreshAnnouncements() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       const items = sortItems(visibleItems(Array.isArray(data.announcements) ? data.announcements : []));
+      loadedAt = Date.now();
       set({ items, unread: unreadOf(items), loaded: true, loading: false, error: "", lang: data.lang || lang });
     } catch (err) {
       set({ loading: false, error: err?.message || "error", loaded: state.loaded });
@@ -278,7 +280,16 @@ export function attachAnnouncementsSocket(socket) {
       pushToast({ ...p, test: true });
     }
   };
-  const onConnect = () => scheduleRefresh(1500);
+  // The attach below already loads the feed; the socket's first connect comes
+  // a moment later at app open and loaded it a second time. Skip that one when
+  // the feed is fresh; every later reconnect reloads (events may have been missed).
+  let firstConnect = true;
+  const onConnect = () => {
+    const first = firstConnect;
+    firstConnect = false;
+    if (first && (inflight || (state.loaded && Date.now() - loadedAt < 15000))) return;
+    scheduleRefresh(1500);
+  };
   socket.on("announcement:new", onNew);
   socket.on("announcement:updated", onChange);
   socket.on("announcement:changed", onChange);

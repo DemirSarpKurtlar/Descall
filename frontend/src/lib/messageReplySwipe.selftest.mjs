@@ -199,7 +199,7 @@ function touchEvent(type, clientX, clientY, extra = {}) {
     onCancel: () => { seen.cancel += 1; },
   });
   assert.equal(el.opts("touchstart").passive, true, "start stays passive so the scroll can begin");
-  assert.equal(el.opts("touchmove").passive, false, "move can preventDefault after the axis locks");
+  assert.equal(el.opts("touchmove").passive, true, "move is passive: a list scroll never waits for the main thread");
 
   const start = touchEvent("touchstart", 120, 500, { timeStamp: 5 });
   el.fire("touchstart", start);
@@ -239,7 +239,7 @@ function touchEvent(type, clientX, clientY, extra = {}) {
 
   const lock = touchEvent("touchmove", 284, 482, { identifier: 4, timeStamp: 30 });
   el.fire("touchmove", lock);
-  assert.equal(lock.prevented, true);
+  assert.equal(lock.prevented, false, "passive: the list is frozen instead of preventDefault");
   assert.equal(seen.claim, 1);
   assert.equal(seen.xs[0], -16, "1:1 left, own message");
   assert.equal(seen.haptic, 0);
@@ -293,6 +293,43 @@ function touchEvent(type, clientX, clientY, extra = {}) {
   el.fire("touchstart", touchEvent("touchstart", 100, 100, { target: button }));
   el.fire("touchmove", touchEvent("touchmove", 160, 100, { target: button }));
   assert.equal(claimed, 0, "presses on buttons stay clicks");
+}
+
+/* Freeze instead of preventDefault: the list under a recognised reply drag
+   stops being user-scrollable until the finger lifts; a vertical scroll never
+   touches it. */
+{
+  const hadWindow = "window" in globalThis;
+  const hadDocument = "document" in globalThis;
+  const body = { tag: "body" };
+  globalThis.document = { body, documentElement: { tag: "html" } };
+  globalThis.window = { getComputedStyle: (n) => ({ overflowY: n.cssOverflowY || "visible" }) };
+  const list = { scrollHeight: 4000, clientHeight: 800, cssOverflowY: "auto", style: { overflowY: "" }, parentElement: body };
+  const row = { scrollHeight: 60, clientHeight: 60, style: {}, parentElement: list };
+  const run = (moves, opts = {}) => {
+    const el = Object.assign(fakeBubble(), { parentElement: row });
+    const seen = { during: null };
+    attachReplySwipe(el, {
+      getDirection: () => "right",
+      getEdgeWidth: () => 28,
+      onMove: () => { seen.during = list.style.overflowY; },
+      ...opts,
+    });
+    el.fire("touchstart", touchEvent("touchstart", 120, 500));
+    for (const [x, y] of moves) el.fire("touchmove", touchEvent("touchmove", x, y));
+    el.fire("touchend", touchEvent("touchend", 200, 500));
+    return seen;
+  };
+  const reply = run([[140, 502], [190, 504]]);
+  assert.equal(reply.during, "hidden", "list frozen while the reply drag runs");
+  assert.equal(list.style.overflowY, "", "and restored on touchend");
+  const scroll = run([[121, 560], [122, 620]]);
+  assert.equal(scroll.during, null);
+  assert.equal(list.style.overflowY, "", "a vertical scroll never freezes the list");
+  const android = run([[140, 502], [190, 504]], { freezeScroll: false });
+  assert.equal(android.during, "", "freezeScroll: false (Chromium pan-y) leaves the list alone");
+  if (!hadWindow) delete globalThis.window;
+  if (!hadDocument) delete globalThis.document;
 }
 
 /* Wiring: bubble yields the edge, claims by cancelling a pending back only. */

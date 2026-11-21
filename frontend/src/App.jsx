@@ -8,10 +8,13 @@ import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
-import AppLayout from "./components/layout/AppLayout";
-import GroupInviteLanding from "./components/groups/GroupInviteLanding";
-import ServerVanityLanding from "./components/servers/ServerVanityLanding";
-import ServerInviteLanding from "./components/servers/ServerInviteLanding";
+import AppLayoutView from "./components/layout/AppLayout";
+import { memoStableProps } from "./lib/memoStableProps.js";
+// Invite / vanity landings only render on their deep links: own chunks, so their
+// public-page CSS (glass-public*.css) is not part of every cold start.
+const GroupInviteLanding = lazy(() => import("./components/groups/GroupInviteLanding"));
+const ServerVanityLanding = lazy(() => import("./components/servers/ServerVanityLanding"));
+const ServerInviteLanding = lazy(() => import("./components/servers/ServerInviteLanding"));
 import {
   parseServerInviteFromLocation,
   serverInvitePath,
@@ -24,7 +27,9 @@ import {
   inviteLandingChannel,
 } from "./lib/serverInviteRoute";
 import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js";
-import MarketingApp from "./site/MarketingApp";
+// Logged-out web only: the native app and signed-in boots never render it, so the
+// marketing layout (JS + .mkt CSS) stays out of the App chunk's static graph.
+const MarketingApp = lazy(() => import("./site/MarketingApp"));
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
@@ -63,7 +68,7 @@ import {
   peekChatCache,
 } from "./lib/chatCache";
 import { emitRoomOnce, nextGroupRejoin } from "./lib/socketResubscribe";
-import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatPrefetchHandler } from "./lib/chatPrefetch";
+import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, startupPrefetchLimits, setChatPrefetchHandler } from "./lib/chatPrefetch";
 import { createSocket, rememberBootFriendsHash, forgetBootHashes } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
@@ -73,6 +78,7 @@ import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessa
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
+import { afterFirstScreen } from "./lib/afterFirstScreen.js";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { hasHeardAboutPendingFlag, markHeardAboutPending } from "./lib/heardAbout";
@@ -105,6 +111,7 @@ import {
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline, applyPresenceDelta } from "./lib/onlineRoster";
+import { setTypingDm, setTypingGroups, setTypingChannels } from "./lib/typingStore";
 import { fetchPublic, rememberEdgeApiBase } from "./lib/edgeApi";
 import { chooseRealtimeUrl, rememberRealtimeAdvice, parkEdgeRealtime, createEdgeFailureCounter } from "./lib/edgeRealtime";
 import { reportDiagnostic } from "./lib/sentry";
@@ -130,7 +137,7 @@ import {
 } from "./lib/nativePush";
 import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
-import SpecialBadgeHost from "./components/badges/SpecialBadgeHost.jsx";
+import SpecialBadgeHostView from "./components/badges/SpecialBadgeHost.jsx";
 import { noteEquipped as noteSpecialBadge } from "./lib/specialBadges";
 import { t as tRuntime } from "./i18n/runtime";
 import { formatDate } from "./i18n/format.js";
@@ -193,6 +200,10 @@ const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceG
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 // End-of-call DesCoin summary + wallet history drawer (owner pick: draft C + B receipt).
+// Inline handlers from this file no longer re-render the whole layout (lib/memoStableProps.js).
+const AppLayout = memoStableProps(AppLayoutView, "AppLayout");
+const CallTapCard = memoStableProps(CallTapCardView, "CallTapCard");
+const SpecialBadgeHost = memoStableProps(SpecialBadgeHostView, "SpecialBadgeHost");
 const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
@@ -200,7 +211,7 @@ const AnnouncementLive = lazy(() => import("./components/announcements/Announcem
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
-import CallTapCard from "./components/voice/CallTapCard";
+import CallTapCardView from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
@@ -541,6 +552,19 @@ export default function App() {
   const sessionEpochRef = useRef(0);
   const [bootError, setBootError] = useState(false);
   const [bootAttempt, setBootAttempt] = useState(0);
+  // Hosts the first screen never shows (call coin summary, promo popup, live
+  // announcements) mount once it is up: their chunks and fetches no longer
+  // compete with the chat list on a cold start (lib/afterFirstScreen.js).
+  const [afterBoot, setAfterBoot] = useState(false);
+  useEffect(() => {
+    let live = true;
+    afterFirstScreen(() => {
+      if (live) setAfterBoot(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
   // Sign-out or another account: profiles cached for the last session (profile window and hover
   // card, lib/profileCache.js) are dropped instead of painting instantly for the new one.
@@ -597,6 +621,8 @@ export default function App() {
   const listCommitRef = useRef({ friends: false, groups: false, servers: false });
   const groupsFlightRef = useRef(null);
   const serversFlightRef = useRef(null);
+  // When the group / server lists last loaded (ms), see the socket `connected` handler.
+  const listsLoadedAtRef = useRef({ groups: 0, servers: 0 });
   // Servers joined on this device and when (lib/serverListMerge.js): a list request
   // that started before the join must not drop them.
   const localJoinsRef = useRef(new Map());
@@ -629,14 +655,15 @@ export default function App() {
   const [friendNotice, setFriendNotice] = useState("");
   const [notifPermission, setNotifPermission] = useState(() => notificationService.getPermissionState());
   const [socketApi, setSocketApi] = useState(null);
-  const [typingDmUser, setTypingDmUser] = useState(null);
-  // groupId -> Map<userId, {id, username}>
-  const [typingGroupUsers, setTypingGroupUsers] = useState({});
-  // channelId -> Map<userId, {id, username}>
-  const [typingChannelUsers, setTypingChannelUsers] = useState({});
-  // Every chat's typing (the state above only follows the open chat, see typing:update).
-  const typingGroupAllRef = useRef(typingGroupUsers);
-  const typingChannelAllRef = useRef(typingChannelUsers);
+  // Typing lives in lib/typingStore.js, not App state: only ChatPanel subscribes,
+  // so a typing event re-renders the chat header, not App and the whole layout.
+  // dm: user | null; group: groupId -> Map<userId, user>; channel: channelId -> Map.
+  const setTypingDmUser = setTypingDm;
+  const setTypingGroupUsers = setTypingGroups;
+  const setTypingChannelUsers = setTypingChannels;
+  // Every chat's typing (the store only follows the open chat, see typing:update).
+  const typingGroupAllRef = useRef({});
+  const typingChannelAllRef = useRef({});
   const [dmHasMore, setDmHasMore] = useState(true);
   const [loadingOlderDm, setLoadingOlderDm] = useState(false);
   const [reconnectState, setReconnectState] = useState("idle");
@@ -1064,6 +1091,7 @@ export default function App() {
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       listCommitRef.current.servers = true;
+      listsLoadedAtRef.current.servers = Date.now();
       setServersLoadError(false);
       setServersLoaded(true);
       syncServerChannelMeta();
@@ -1877,14 +1905,24 @@ export default function App() {
       setAuthError(error?.message || t("core.app.socketAuthFailed"));
     });
 
+    let liveConnectedSeen = false;
     socket.on("connected", (payload) => {
       if (payload?.user) {
         // Merge, never let a thin socket payload wipe displayName / bio / banner.
         commitSessionUser({ ...(getUser() || me || {}), ...payload.user });
       }
-      fetchGroupsRef.current?.();
+      // socket.js fires a synthetic `connected` (no user) right away so the lists
+      // load before the socket is up; the server's own `connected` follows a moment
+      // later. Loading both again then cost 5 duplicate requests at every app open
+      // (groups, servers, channel unread, folders, channel mutes). Skip that first
+      // live one when the lists loaded in the last 15 s: rooms are restored by the
+      // `connect` handler (rejoinGroups / rejoinServers). Every later reconnect refreshes.
+      const firstLive = Boolean(payload?.user) && !liveConnectedSeen;
+      if (payload?.user) liveConnectedSeen = true;
+      const fresh = (at) => firstLive && at > 0 && Date.now() - at < 15000;
+      if (!fresh(listsLoadedAtRef.current.groups)) fetchGroupsRef.current?.();
       // Refresh on connect, session bootstrap / handleRefresh already load via REST.
-      fetchServersRef.current?.();
+      if (!fresh(listsLoadedAtRef.current.servers)) fetchServersRef.current?.();
     });
 
     socket.on("status:current", ({ status } = {}) => {
@@ -3448,6 +3486,7 @@ export default function App() {
     try {
       const raw = await getMyGroups();
       const groups = normalizeGroups(raw);
+      listsLoadedAtRef.current.groups = Date.now();
       setMyGroups(groups);
       // Server unread counts (polish messaging-10): messages that came while I was away.
       setGroupUnread((prev) => {
@@ -4864,7 +4903,7 @@ export default function App() {
 
   useEffect(() => {
     if (!me?.id || !friendsLoaded || !groupsLoaded || !serversLoaded) return undefined;
-    const plan = planStartupPrefetch({ dms: sortedDms, groups: sortedGroups, servers: myServers });
+    const plan = planStartupPrefetch({ dms: sortedDms, groups: sortedGroups, servers: myServers, ...startupPrefetchLimits() });
     for (const id of plan.dmIds) requestChatPrefetch("dm", id);
     for (const id of plan.groupIds) requestChatPrefetch("group", id);
     for (const channel of plan.channels) {
@@ -5171,14 +5210,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
         <TitleBar />
-        <ServerInviteLanding
-          code={serverInviteCode}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
-          onJoined={handleServerInviteJoined}
-          onNeedAuth={openServerInviteAuth}
-          onDismiss={dismissServerInvite}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <ServerInviteLanding
+            code={serverInviteCode}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
+            onJoined={handleServerInviteJoined}
+            onNeedAuth={openServerInviteAuth}
+            onDismiss={dismissServerInvite}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5189,14 +5230,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
         <TitleBar />
-        <ServerVanityLanding
-          slug={serverVanitySlug}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
-          onJoined={handleServerVanityJoined}
-          onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
-          onDismiss={dismissServerVanity}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <ServerVanityLanding
+            slug={serverVanitySlug}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
+            onJoined={handleServerVanityJoined}
+            onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
+            onDismiss={dismissServerVanity}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5207,14 +5250,16 @@ export default function App() {
       <>
         <SeoHead forceNoindex title={t("core.seo.groupInviteTitle")} description={t("core.seo.groupInviteDesc")} />
         <TitleBar />
-        <GroupInviteLanding
-          code={inviteCode}
-          me={me}
-          autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
-          onJoined={handleInviteJoined}
-          onNeedLogin={(mode) => openLandingAuth("group", mode)}
-          onDismiss={dismissInvite}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <GroupInviteLanding
+            code={inviteCode}
+            me={me}
+            autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
+            onJoined={handleInviteJoined}
+            onNeedLogin={(mode) => openLandingAuth("group", mode)}
+            onDismiss={dismissInvite}
+          />
+        </Suspense>
       </>
     );
   }
@@ -5278,14 +5323,16 @@ export default function App() {
     return (
       <>
         <TitleBar />
-        <MarketingApp
-          onLogin={handleLogin}
-          onRegister={handleRegister}
-          onGoogleLogin={handleGoogleLogin}
-          onVerify2fa={handleVerify2fa}
-          authLoading={authLoading}
-          authError={authError}
-        />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <MarketingApp
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+            onGoogleLogin={handleGoogleLogin}
+            onVerify2fa={handleVerify2fa}
+            authLoading={authLoading}
+            authError={authError}
+          />
+        </Suspense>
         {banLayer}
       </>
     );
@@ -5637,12 +5684,13 @@ export default function App() {
 
         <SpecialBadgeHost socket={socketApi} meId={me?.id || null} />
 
-        {me?.id ? (
+        {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
           </Suspense>
         ) : null}
 
+        {afterBoot ? (
         <Suspense fallback={null}>
           <PromoHost
             socket={socketApi}
@@ -5652,8 +5700,9 @@ export default function App() {
             onBalance={(balance) => setMe((prev) => (prev ? { ...prev, descoinBalance: balance } : prev))}
           />
         </Suspense>
+        ) : null}
 
-        {me?.id ? (
+        {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <AnnouncementLive socket={socketApi} enabled={Boolean(me?.id)} navigate={navigate} />
           </Suspense>
@@ -6239,9 +6288,6 @@ export default function App() {
           onDismissActiveBanner={groupCall?.dismissActiveBanner}
           notifPermission={notifPermission}
           onRequestNotifPermission={handleRequestNotifPermission}
-          typingDmUser={typingDmUser}
-          typingGroupUsers={typingGroupUsers}
-          typingChannelUsers={typingChannelUsers}
           onTypingDmStart={emitTypingDmStart}
           onTypingDmStop={emitTypingDmStop}
           onTypingGroupStart={emitTypingGroupStart}

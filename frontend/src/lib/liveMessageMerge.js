@@ -7,6 +7,16 @@
  */
 
 /**
+ * The server copy of an optimistic row. `clientKey` remembers the optimistic
+ * id: the row gets a new React key (the real id), and MessageBubble skips the
+ * enter animation for it, so the bubble you just sent does not drop back and
+ * slide in a second time when the echo lands.
+ */
+function confirmOptimistic(optimistic, real) {
+  return { ...real, sending: false, clientKey: optimistic.clientKey || optimistic.id };
+}
+
+/**
  * Merge an incoming DM `dm:message` payload into the current conversation rows.
  * @param {Array} cur existing messages for this peer (may be empty)
  * @param {object} msg normalized incoming message (must have id; may have tempId)
@@ -21,7 +31,7 @@ export function mergeIncomingDmMessage(cur, msg, myId) {
   if (isSelf && msg.tempId) {
     const hasTemp = list.some((m) => m && m.id === msg.tempId);
     if (hasTemp) {
-      return list.map((m) => (m.id === msg.tempId ? { ...msg, sending: false } : m));
+      return list.map((m) => (m.id === msg.tempId ? confirmOptimistic(m, msg) : m));
     }
   }
   if (list.some((m) => m && m.id === msg.id)) return list;
@@ -38,7 +48,7 @@ export function mergeIncomingChatMessage(cur, normalized, tempId) {
   const list = Array.isArray(cur) ? cur : [];
   if (!normalized || !normalized.id) return list;
   if (tempId && list.some((m) => m && m.id === tempId)) {
-    return list.map((m) => (m.id === tempId ? { ...normalized, sending: false } : m));
+    return list.map((m) => (m.id === tempId ? confirmOptimistic(m, normalized) : m));
   }
   if (list.some((m) => m && m.id === normalized.id)) return list;
   return [...list, normalized];

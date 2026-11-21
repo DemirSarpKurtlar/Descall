@@ -2014,7 +2014,16 @@ html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swi
   position: relative;
   width: 100%;
   transition: none !important;
+}
+/* Promoted only while open or moving (SwipeRevealRow toggles .is-revealing in
+   the same frame it writes the transform). At rest the inline
+   translate3d(0px, 0, 0) would still promote every row, so a closed row takes
+   no transform. Was Android-only (android-fx.css), now every platform. */
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal.is-revealing .group-swipe-track {
   will-change: transform;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal:not(.is-revealing) .group-swipe-track {
+  transform: none !important;
 }
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track > .group-row-front {
   position: relative;
@@ -2074,4 +2083,27 @@ html.glass-ui .app-root.g-shell .group-swipe-btn:active svg { transform: scale(0
 html.glass-ui .app-root.g-shell .group-swipe-btn svg { transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @media (prefers-reduced-motion: reduce) {
   html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-btn { transition: none; }
+}
+
+/* Blur over blur (all glass-ui platforms, iOS included; the Android lean tier
+   in android-fx.css goes further).
+   - Header capsules sit inside the conversation top-edge frost (.g-edge-conv,
+     rendered under the same condition: 92-97% opaque edge color over a 10px
+     blur of the messages). Their own 26px pass re-blurred that near-uniform
+     frost on every scroll frame: three extra passes for a difference of a
+     few color units. Same tinted fill, no pass of their own; the frost
+     underneath still follows the scroll.
+   - The long-press bar and menu sit on the message scrim, which already blurs
+     the chat at 40px under a 62% dim. A 48px frost on top of that reads the
+     same as 24px but costs twice the kernel on every frame of the menu
+     spring. */
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-ui:not(.g-fx-lean):not(.glass-lite) .g-msg-pop {
+  --frost-blur: 24px;
 }

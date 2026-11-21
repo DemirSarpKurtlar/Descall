@@ -12,6 +12,7 @@ import { installDragClickGuard } from "./lib/dragClickGuard.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 import { installWaapiCommitOnCancel } from "./lib/waapiCommitOnCancel.js";
+import { afterFirstScreen } from "./lib/afterFirstScreen.js";
 
 // framer-motion WAAPI hand-off: no one-frame flash when a menu, modal or
 // Settings finishes fading (lib/waapiCommitOnCancel.js). Before any render.
@@ -83,6 +84,13 @@ const isAdminPanelWindow = /^\/admin\/panel\/?$/.test(path);
 const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow;
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
+const isNativeAndroid = (() => {
+  try {
+    return isNativeApp && window.Capacitor?.getPlatform?.() === "android";
+  } catch {
+    return false;
+  }
+})();
 
 /**
  * Schedule third-party analytics only after an explicit cookie accept.
@@ -113,13 +121,34 @@ function scheduleAnalytics({ preferMarketing }) {
   }
 }
 
+function isNativeAndroidShell() {
+  try {
+    return isNativeApp && window.Capacitor?.getPlatform?.() === "android";
+  } catch {
+    return false;
+  }
+}
+
 function preloadAppStyles() {
+  const loadStyles = () => {
+    import("./styles/blackjack.css").catch(() => {});
+    import("./styles/slot-cabinet.css").catch(() => {});
+    import("./styles/coinflip.css").catch(() => {});
+  };
+  // Android app: no noise-suppression warm-up at boot (about 410 KB of WASM
+  // compiled and 90 KB of worklets read on every app open, call or not); the
+  // call paths warm it when a call rings or a voice channel is joined, which
+  // gives it seconds before the mic opens. The game styles wait until the app
+  // is idle: each inserted sheet restyles the whole document mid-boot.
+  if (isNativeAndroidShell()) {
+    const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 1));
+    window.setTimeout(() => idle(loadStyles, { timeout: 4000 }), 6000);
+    return;
+  }
   import("./lib/noiseSuppression")
     .then((m) => m.preloadNoiseSuppression?.())
     .catch(() => {});
-  import("./styles/blackjack.css").catch(() => {});
-  import("./styles/slot-cabinet.css").catch(() => {});
-  import("./styles/coinflip.css").catch(() => {});
+  loadStyles();
 }
 
 
@@ -211,6 +240,7 @@ async function bootApp() {
     }
     if (isNativeApp) {
       document.documentElement.classList.add("native-app");
+      if (isNativeAndroid) document.documentElement.classList.add("native-android");
     }
     document.documentElement.setAttribute("data-marketing-ready", "1");
     document.getElementById("seo-static")?.remove();
@@ -245,13 +275,20 @@ async function bootApp() {
       import("./components/ErrorBoundary"),
       // Same cascade order as before: app styles, then the skeleton's.
       import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
+      // Android app: Inter (the mockup face iOS matches with SF Pro) + status-bar gap.
+      isNativeAndroid ? import("./styles/android-native.css").catch(() => {}) : null,
       import("./i18n/index.js").then((m) => m.loadI18nCatalogs()),
       // iPhone + mobile web Liquid Glass (html.glass-ui) and desktop Liquid Glass
       // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).
       import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {}),
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
-      // 3.7.15: Electron minimized / tray → pause animations (no-op elsewhere).
-      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); }).catch(() => {}),
+      // 3.7.15: Electron minimized / tray → pause animations; idle / hidden page
+      // (iOS background, locked phone in a call) → pause them too.
+      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause(); }).catch(() => {}),
+      // Cosmetic loops (name effects, frames, shop previews) pause while scrolled out of view.
+      import("./lib/cosmeticMotion.js").then((m) => m.installCosmeticMotion()).catch(() => {}),
+      // Android: premium theme scenes play for a few seconds, then hold still.
+      isNativeAndroid ? import("./lib/sceneIntro.js").then((m) => m.installSceneIntro()).catch(() => {}) : null,
     ]);
 
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
@@ -334,8 +371,19 @@ async function boot() {
     isElectron: isElectronDesktop,
     isNativeApp,
   });
+  // Signed-in app: /auth/me, the friends list and the DM previews go out now,
+  // in parallel with the App chunk; App's own calls take these promises
+  // (lib/bootPrefetch.js, one request each, a plain request on any miss).
+  if (!preferMarketingShell && hasSession && !isAdminWindow) {
+    const token = getToken();
+    import("./api/bootPrefetch.js")
+      .then((m) => m.startBootPrefetch(token))
+      .catch(() => {});
+  }
   scheduleAnalytics({ preferMarketing: preferMarketingShell });
-  if (!preferMarketingShell) preloadAppStyles();
+  // Warm-ups only (noise-suppression WASM + worklets, game CSS): after the first
+  // screen, not while the App chunk evaluates (cold start is CPU bound on Android).
+  if (!preferMarketingShell) afterFirstScreen(preloadAppStyles);
 
   if (preferMarketingShell) {
     scheduleMarketingHydration(() => {

@@ -19,8 +19,8 @@
  *   because WebKit has no `overflow-anchor`).
  * - In-place updates (reaction, edit, delivered tick) never scroll: only an
  *   appended message, an own message or the first paint call onMessages.
- * - A new message while pinned glides over a short distance; reduced motion
- *   (or a long jump) is instant.
+ * - A new message from someone else while pinned glides over a short
+ *   distance; your own message, reduced motion or a long jump is instant.
  */
 
 export const STICK_TO_BOTTOM_PX = 24;
@@ -66,8 +66,11 @@ export function pinnedAfterScroll({ pinned, metrics, last = null, programmatic =
 }
 
 /** Scroll behaviour for a pin caused by a new message. */
-export function pinBehavior({ reducedMotion = false, distance = 0, initial = false } = {}) {
-  if (initial || reducedMotion) return "auto";
+export function pinBehavior({ reducedMotion = false, distance = 0, initial = false, own = false } = {}) {
+  // Your own message lands at once: a glide leaves it under the composer for
+  // a few frames, and a glide still running when a resize re-pins can end at
+  // its old target, above the new bottom.
+  if (initial || own || reducedMotion) return "auto";
   if (distance <= 1 || distance > SMOOTH_MAX_PX) return "auto";
   return "smooth";
 }
@@ -299,7 +302,7 @@ export function attachStickToBottom(scroller, {
         return;
       }
       const distance = distanceFromBottom(readMetrics(scroller));
-      pinNow(pinBehavior({ reducedMotion: prefersReducedMotion(), distance, initial }));
+      pinNow(pinBehavior({ reducedMotion: prefersReducedMotion(), distance, initial, own }));
     },
     /** "Go to message" / search jump: no pinning or anchoring for `ms`. */
     suspendPin(ms = 1500) {

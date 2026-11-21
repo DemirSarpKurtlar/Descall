@@ -1,0 +1,144 @@
+/* Android app only (main.jsx loads this file and sets html.native-android).
+
+   Every UI font stack is "-apple-system, SF Pro, Inter, system-ui": the iPhone
+   gets SF Pro, and the approved Liquid Glass mockup was drawn in Inter, the
+   stack's first off-Apple face. Android has neither, so the app fell through
+   to Roboto: static 400 / 500 / 700 only (the 600 / 650 titles snapped to
+   bold) and SF-tuned negative tracking that reads cramped in Roboto.
+
+   Declaring Inter here makes the existing stacks resolve to it, so Android
+   draws the same letterforms, weights and tracking as the mockup and the
+   iPhone. The latin files are already in the build (the marketing site uses
+   them; cyrillic adds 31 KB) and the app reads them from the APK: no network.
+   Latin + latin-ext + cyrillic cover all seven app locales; other scripts
+   (emoji, CJK, Arabic) keep the system font through unicode-range.
+   "fallback": at most 100 ms of invisible text, and a swap only inside the
+   first 3 s (the boot splash, whose text already asks for Inter); a file
+   that is somehow slower stays on Roboto for the session instead. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 600;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 600;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Cyrillic (ru locale): fetched only when a Cyrillic glyph is on screen. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url("../../node_modules/@fontsource/inter/files/inter-cyrillic-400-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url("../../node_modules/@fontsource/inter/files/inter-cyrillic-500-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 600;
+  src: url("../../node_modules/@fontsource/inter/files/inter-cyrillic-600-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url("../../node_modules/@fontsource/inter/files/inter-cyrillic-700-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+/* Status-bar gap. On iPhone the chrome tucks 2 px under the Dynamic Island
+   (tokens.css). An Android status bar carries the clock and icons across its
+   whole height, so the glass toolbar starts a few px below it instead of
+   overlapping. WebView < 140 pads the view and reports an inset of 0: keep a
+   small gap there too so the toolbar never touches the top edge. */
+html.glass-ui.native-android {
+  --g-chrome-top: max(8px, calc(env(safe-area-inset-top, 0px) + 4px));
+}
+
+/* Selected text in fields: the brand tint the iPhone uses, not the WebView's
+   default highlight (the handles follow colorAccent in styles.xml). */
+html.native-android ::selection {
+  background-color: rgba(88, 122, 246, 0.4);
+}
+
+/* Bottom-docked glass (tab bar, composer, call bar). The iPhone rule floats
+   it 10 px into the home-indicator inset, which also suits Android gesture
+   navigation (24 px inset -> 14 px). With three-button navigation the inset
+   is 48 px of buttons, so the bar sat on top of them: above a 32 px inset it
+   floats 8 px over the navigation bar instead. */
+html.glass-ui.native-android .app-root.g-shell {
+  --g-bar-bottom: max(
+    12px,
+    calc(env(safe-area-inset-bottom, 0px) - 10px),
+    min(calc(env(safe-area-inset-bottom, 0px) + 8px), calc((env(safe-area-inset-bottom, 0px) - 32px) * 100)),
+    calc(var(--g-vv-lift, 0px) + 8px)
+  );
+}

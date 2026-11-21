@@ -1,7 +1,9 @@
 // Selftest: composer auto-grow caps (5 lines iPhone, 8 iPad) and Enter rules.
 import assert from "node:assert/strict";
 import {
-  composerDeviceClass, maxComposerHeight, composerHeight, isImeEnter, shouldSendOnEnter,
+  shouldSendOnLineBreakInput,
+  LINE_BREAK_ENTER_MS,
+  composerDeviceClass, maxComposerHeight, composerHeight, isImeEnter, shouldSendOnEnter, heldBoxHeight,
   IPHONE_MAX_LINES, IPAD_MAX_LINES, DESKTOP_MAX_PX,
 } from "./composerGrow.js";
 
@@ -32,5 +34,37 @@ assert.equal(shouldSendOnEnter({ key: "Enter", keyCode: 229 }), false);
 assert.equal(shouldSendOnEnter({ key: "Enter" }, { composing: true }), false);
 assert.equal(shouldSendOnEnter({ key: "a" }), false);
 assert.equal(isImeEnter(null), false);
+
+// Soft keyboard newline committed as text (Samsung Keyboard, composing Gboard): sends on touch.
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: true }), true);
+assert.equal(shouldSendOnLineBreakInput("insertParagraph", { coarse: true }), true);
+assert.equal(shouldSendOnLineBreakInput("insertText", { coarse: true }), false);
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: false }), false, "desktop keeps its keydown path");
+assert.equal(
+  shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: true, at: 1000 }, now: 1000 + LINE_BREAK_ENTER_MS - 1 }),
+  false,
+  "Shift+Enter right before is a real newline",
+);
+assert.equal(
+  shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: true, at: 1000 }, now: 1000 + LINE_BREAK_ENTER_MS + 500 }),
+  true,
+);
+assert.equal(shouldSendOnLineBreakInput("insertLineBreak", { coarse: true, lastEnter: { shift: false, at: 1000 }, now: 1001 }), true);
+
+// Measuring holds the field's box at its height (Nov 2026: on iPad / desktop
+// the collapse made the chat list above taller for one forced layout, the
+// browser clamped its scrollTop and the newest message slid under the
+// composer). min-height follows box-sizing.
+assert.equal(heldBoxHeight(96, { boxSizing: "border-box", paddingTop: "14px", paddingBottom: "14px" }), 96);
+assert.equal(heldBoxHeight(96, { boxSizing: "content-box", paddingTop: "14px", paddingBottom: "14px", borderTopWidth: "1px", borderBottomWidth: "1px" }), 66);
+assert.equal(heldBoxHeight(96, null), 96);
+assert.equal(heldBoxHeight(10, { boxSizing: "content-box", paddingTop: "14px" }), 0);
+{
+  const src = (await import("node:fs")).readFileSync(new URL("../components/chat/MessageComposer.jsx", import.meta.url), "utf8");
+  const grow = src.slice(src.indexOf("const prevScroll = el.scrollTop;"), src.indexOf("el.style.maxHeight = `${maxHeight}px`;"));
+  const hold = grow.indexOf("box.style.minHeight = `${heldBoxHeight(");
+  assert.ok(hold >= 0 && hold < grow.indexOf('el.style.height = "auto"'), "box held before the field collapses");
+  assert.ok(grow.lastIndexOf("box.style.minHeight = heldMin") > grow.lastIndexOf("el.style.height = `${height}px`"), "released after the final height is set");
+}
 
 console.log("composerGrow selftest OK");
