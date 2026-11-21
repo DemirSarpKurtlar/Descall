@@ -436,13 +436,17 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
     });
 }
 
-/// Windows "Transparency effects" switch: tell the page when it flips.
+/// Windows "Transparency effects" switch: tell the page when it flips. The thread waits for
+/// a registry change notification (Electron: nativeTheme 'updated'); it polled every 3 s
+/// before, waking the CPU for the whole run.
 pub fn watch_reduced_transparency<R: Runtime>(app: &AppHandle<R>) {
     let app = app.clone();
     std::thread::spawn(move || {
         let mut last = crate::platform::reduced_transparency();
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(3));
+            if !crate::platform::wait_personalize_change() {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+            }
             let now = crate::platform::reduced_transparency();
             if now != last {
                 last = now;
