@@ -14,6 +14,15 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(DescallPushConfigPlugin.class);
     super.onCreate(savedInstanceState);
 
+    // The WebView multiplies every CSS font size by the system font scale
+    // (1.15-1.3 on many phones), so the fixed-size glass chrome (tab labels,
+    // toolbar chips, list rows) overflowed and Android drew bigger, clipped
+    // text where the iPhone does not. Text size is the in-app Appearance
+    // setting (--ui-font-scale) on both platforms instead.
+    if (getBridge() != null && getBridge().getWebView() != null) {
+      getBridge().getWebView().getSettings().setTextZoom(100);
+    }
+
     getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
       @Override
       public void handleOnBackPressed() {

@@ -43,4 +43,9 @@ const noActionBar = styles.slice(styles.indexOf('name="AppTheme.NoActionBar"'), 
 assert.match(noActionBar, /<item name="colorAccent">@color\/colorAccent<\/item>/, "the activity theme carries the accent");
 assert.match(noActionBar, /<item name="colorControlActivated">@color\/colorAccent<\/item>/);
 
+// System font scale must not multiply the glass chrome (the iPhone WebView does not either).
+const mainActivity = readFileSync(join(here, "..", "..", "android", "app", "src", "main", "java", "com", "descall", "app", "MainActivity.java"), "utf8");
+assert.match(mainActivity, /getWebView\(\)\.getSettings\(\)\.setTextZoom\(100\);/, "Android WebView text zoom pinned to 100");
+assert(mainActivity.indexOf("setTextZoom(100)") > mainActivity.indexOf("super.onCreate("), "after the bridge creates the WebView");
+
 console.log("androidNative.selftest: ok");
