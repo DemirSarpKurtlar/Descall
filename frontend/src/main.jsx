@@ -120,13 +120,34 @@ function scheduleAnalytics({ preferMarketing }) {
   }
 }
 
+function isNativeAndroidShell() {
+  try {
+    return isNativeApp && window.Capacitor?.getPlatform?.() === "android";
+  } catch {
+    return false;
+  }
+}
+
 function preloadAppStyles() {
+  const loadStyles = () => {
+    import("./styles/blackjack.css").catch(() => {});
+    import("./styles/slot-cabinet.css").catch(() => {});
+    import("./styles/coinflip.css").catch(() => {});
+  };
+  // Android app: no noise-suppression warm-up at boot (about 410 KB of WASM
+  // compiled and 90 KB of worklets read on every app open, call or not); the
+  // call paths warm it when a call rings or a voice channel is joined, which
+  // gives it seconds before the mic opens. The game styles wait until the app
+  // is idle: each inserted sheet restyles the whole document mid-boot.
+  if (isNativeAndroidShell()) {
+    const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 1));
+    window.setTimeout(() => idle(loadStyles, { timeout: 4000 }), 6000);
+    return;
+  }
   import("./lib/noiseSuppression")
     .then((m) => m.preloadNoiseSuppression?.())
     .catch(() => {});
-  import("./styles/blackjack.css").catch(() => {});
-  import("./styles/slot-cabinet.css").catch(() => {});
-  import("./styles/coinflip.css").catch(() => {});
+  loadStyles();
 }
 
 
