@@ -20,14 +20,18 @@
 //! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
 //! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
 //! | `dist_path`         | appProtocolPath.cjs resolveDistFile     | (nested ./assets URLs)                |
+//! | `main_errors`       | mainErrors.cjs (+ crash file)           | mainErrors.selftest.mjs               |
+//! | `deep_link`         | (new: descall:// from argv)             | (new)                                 |
 
 pub mod clipboard;
 pub mod csp;
+pub mod deep_link;
 pub mod deferral;
 pub mod dist_path;
 pub mod download;
 pub mod i18n;
 pub mod launch;
+pub mod main_errors;
 pub mod notif;
 pub mod occlusion;
 pub mod pages;
