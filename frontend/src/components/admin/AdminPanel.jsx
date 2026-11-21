@@ -54,8 +54,11 @@ import AdminServerReview from "./AdminServerReview.jsx";
 import AdminGames from "./games/AdminGames.jsx";
 // İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx
 import AdminAudit from "./audit/AdminAudit.jsx";
+// Admin Token (owner only, Draft B "Liste ve çalışma alanı"): tokens/AdminTokens.jsx
+import AdminTokens from "./tokens/AdminTokens.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
-import { sectionOfTab } from "./adminNav.js";
+import { sectionOfTab, withOwnerTabs } from "./adminNav.js";
+import { KeyRound } from "../ui/Icon.jsx";
 import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
@@ -126,6 +129,8 @@ const TABS = [
   { id: "premiumPlans", label: "premiumAdmin.navPlans", icon: SlidersHorizontal },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
+  // Admin Token (owner pick Draft B "Liste ve çalışma alanı"): owner only, bot tokens + MCP.
+  { id: "adminToken", label: "atok.nav", icon: KeyRound },
   { id: "errors", label: "admin.errors", icon: Bug },
   { id: "audit", label: "admin.audit", icon: FileText },
   // Yöneticiler (3.3.0): owner only; grants sections to the other admins.
@@ -147,7 +152,7 @@ function useAdminPermissions(socket) {
   const [perm, setPerm] = useState({ sections: null, owner: false });
   const load = useCallback(() => {
     adminFetch("/me/permissions")
-      .then((d) => setPerm({ sections: Array.isArray(d?.sections) ? d.sections : ["overview"], owner: Boolean(d?.owner) }))
+      .then((d) => setPerm({ sections: withOwnerTabs(Array.isArray(d?.sections) ? d.sections : ["overview"], Boolean(d?.owner)), owner: Boolean(d?.owner) }))
       .catch(() => setPerm((p) => (p.sections ? p : { sections: ["overview"], owner: false })));
   }, []);
   useEffect(() => {
@@ -201,6 +206,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const adminLayout = useAdminLayout();
   /** Every section switch goes through here (Kayıt İstatistikleri is a section since 3.1). */
   const selectTab = useCallback((id) => setTab(id), []);
+  // Admin Token › "İşlem kaydında gör" opens İşlem kaydı filtered by the token's name.
+  const [auditQuery, setAuditQuery] = useState(null);
+  useEffect(() => {
+    if (tab !== "audit") setAuditQuery(null);
+  }, [tab]);
   // Sistem › "Küfür filtresi Moderasyon'a taşındı" opens Moderasyon on İçerik filtreleri.
   const [moderationTab, setModerationTab] = useState(null);
   useEffect(() => {
@@ -969,7 +979,25 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         )}
 
         {/* İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx */}
-        {tab === "audit" && <AdminAudit socket={socket} onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")} />}
+        {tab === "audit" && (
+          <AdminAudit
+            key={auditQuery?.at || "audit"}
+            socket={socket}
+            initialQuery={auditQuery?.q ? { q: auditQuery.q } : null}
+            onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")}
+          />
+        )}
+
+        {/* Admin Token (owner pick Draft B "Liste ve çalışma alanı"): tokens/AdminTokens.jsx */}
+        {tab === "adminToken" && perm.owner && (
+          <AdminTokens
+            viewerUsername={viewerUsername}
+            onGoto={(id, opts = {}) => {
+              if (id === "audit") setAuditQuery(opts.q ? { q: opts.q, at: Date.now() } : null);
+              selectTab(tabs.some((x) => x.id === id) ? id : "overview");
+            }}
+          />
+        )}
       </div>
       )}
       </Fragment>

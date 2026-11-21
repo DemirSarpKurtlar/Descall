@@ -15,7 +15,8 @@ export const ADMIN_NAV_GROUPS = [
     "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
   ]],
   ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
-  ["system", ["system", "security", "errors", "audit", "staff"]],
+  // Admin Token (owner only) sits under Güvenlik, like the draft's breadcrumb.
+  ["system", ["system", "security", "adminToken", "errors", "audit", "staff"]],
 ];
 
 const GROUP_LABEL = {
@@ -49,6 +50,18 @@ export const TAB_SECTION = Object.freeze({
 
 /** Label of a section that is not a page of its own (Yöneticiler screen). */
 export const SECTION_LABEL = Object.freeze({ premium: "premiumAdmin.navGroup" });
+
+/**
+ * Pages only the owner sees, whatever the server lists: Admin Token (bot tokens that act as
+ * the owner account; the server checks userIsSuperAdmin on every /admin/tokens call).
+ */
+export const OWNER_ONLY_TABS = Object.freeze(["adminToken"]);
+
+/** The sections a viewer may open: the server's list, plus the owner-only pages for the owner. */
+export function withOwnerTabs(sections, owner) {
+  const list = (Array.isArray(sections) ? sections : ["overview"]).filter((s) => !OWNER_ONLY_TABS.includes(s));
+  return owner ? [...list, ...OWNER_ONLY_TABS] : list;
+}
 
 /** Permission section of a menu page (its own id unless listed in TAB_SECTION). */
 export function sectionOfTab(id) {
