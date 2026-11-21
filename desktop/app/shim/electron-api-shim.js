@@ -86,6 +86,15 @@
     return BOOT.token || null;
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
+  // Signed out: the Descall+ desktop features (global hotkeys, push-to-talk input, tray
+  // entries) stop at once, as Electron main resets its gate on secure-token:clear. The page
+  // keeps its plan in memory and only pushes it again on the next sign-in.
+  const premiumSignedOut = () => {
+    try {
+      const p = window.descallPremium;
+      if (p && typeof p.invoke === "function") p.invoke("premium:entitlements", { keys: [], plan: null, token: "" }).catch(() => {});
+    } catch (_) { /* ignore */ }
+  };
 
   let zoomFactor = 1;
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
@@ -197,8 +206,8 @@
     overlayUpdate: ADMIN ? noop : (payload) => fire("overlay_update", { payload: payload || {} }),
     secureToken: {
       get: () => tokenCache,
-      set: (token) => { const v = String(token || ""); remember(v); fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined); return true; },
-      clear: () => { remember(""); fire("token_clear"); return true; },
+      set: (token) => { const v = String(token || ""); remember(v); fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined); if (!v) premiumSignedOut(); return true; },
+      clear: () => { remember(""); fire("token_clear"); premiumSignedOut(); return true; },
     },
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
 

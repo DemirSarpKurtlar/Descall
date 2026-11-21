@@ -168,6 +168,10 @@ for (const [path, args, cmd, expected] of CASES) {
   const out = get(s.api, path)(...args);
   if (out && typeof out.then === "function") await out;
   await tick();
+  // Signing out also stops the Descall+ desktop features (Electron: gate.reset()).
+  const signOut = cmd === "token_clear" ? [["premium_invoke", { channel: "premium:entitlements", args: [{ keys: [], plan: null, token: "" }] }]] : [];
+  deq(s.invokes.slice(1), signOut, `${path}: Descall+ sign-out push`);
+  s.invokes.splice(1);
   deq(s.invokes.map((c) => c[0]), [cmd], `${path} -> ${cmd}`);
   deq(s.invokes[0][1], expected, `${path} args`);
   called.add(cmd);
