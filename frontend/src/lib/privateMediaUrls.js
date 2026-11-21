@@ -95,6 +95,37 @@ export function refreshMediaUrl(url, { fetchImpl = globalThis.fetch } = {}) {
 }
 
 /**
+ * Open a private file (chat file chip) with a fresh signed URL, from a click handler.
+ * window.open(..., "noopener") always returns null, so the old popup + "noopener" never got
+ * the fresh URL (an empty tab on the web, an empty Descall window in the Tauri app). Web: a
+ * popup opened now (still inside the click, so not blocked), cut from its opener, then sent
+ * to the fresh URL. Desktop shells (Electron, Tauri) open http(s) in the default browser and
+ * refuse about:blank, so they get the fresh URL once it is known.
+ */
+export function openFreshMediaUrl(rawUrl, { win = typeof window !== "undefined" ? window : undefined, refresh = refreshMediaUrl } = {}) {
+  if (!win || typeof win.open !== "function") return Promise.resolve(null);
+  const desktop = Boolean(win.electronAPI?.isElectron);
+  let popup = null;
+  if (!desktop) {
+    try {
+      popup = win.open("about:blank", "_blank");
+      if (popup) popup.opener = null;
+    } catch {
+      popup = null;
+    }
+  }
+  return refresh(rawUrl).then((next) => {
+    if (popup) {
+      if (next) popup.location.href = next;
+      else popup.close?.();
+    } else if (next) {
+      win.open(next, "_blank", "noopener,noreferrer");
+    }
+    return next;
+  });
+}
+
+/**
  * React hook: returns the URL to render plus an onError handler for <img>/<video>/<audio>.
  * Non-private URLs (GIF providers, avatars) pass straight through.
  */
