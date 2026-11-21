@@ -140,6 +140,14 @@ function windowBuilders() {
   assert.match(args, /--disable-renderer-backgrounding/, "a minimised call keeps its renderer priority");
 }
 
+// ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)
+{
+  const main = stripRust(readFileSync(join(srcRoot, "main.rs"), "utf8"));
+  const started = main.slice(main.indexOf("PageLoadEvent::Started"), main.indexOf("PageLoadEvent::Finished"));
+  assert.match(started, /reset_voice\(/, "busy flags reset on reload");
+  assert.match(started, /overlay::overlay_hide\(/, "a stale card would stay on top and keep updates deferred");
+}
+
 // ---- 3. CSP for the media pipeline --------------------------------------------------------------
 {
   const csp = tauriConf.app.security.csp;

@@ -150,6 +150,9 @@ fn main() {
                     PageLoadEvent::Started => {
                         // A reload drops any live call; the update deferral treats it as "call ended".
                         commands::updates::reset_voice(&load_app);
+                        // The mini call card goes with the call (Electron resetVoiceBusyFromLifecycle);
+                        // a stale visible card also kept the update deferral "busy" for good.
+                        commands::overlay::overlay_hide(load_app.clone());
                         commands::screen::stop_on_navigation(&load_app);
                         boot::arm_paint_watchdog(&w);
                     }
