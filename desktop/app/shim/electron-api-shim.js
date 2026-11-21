@@ -230,8 +230,12 @@
     }
     return false;
   };
+  // Selected text keeps a menu too (Electron offered Copy; webview.rs trims it to Copy).
+  const hasSelection = () => {
+    try { return Boolean(window.getSelection && String(window.getSelection() || "").trim()); } catch (_) { return false; }
+  };
   window.addEventListener("contextmenu", (e) => {
-    if (!isEditable(e.target)) e.preventDefault();
+    if (!isEditable(e.target) && !hasSelection()) e.preventDefault();
   });
   const blockedKey = (e) => {
     const k = String(e.key || "");

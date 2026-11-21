@@ -89,8 +89,9 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
 /// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
 /// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
 /// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
-/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (cut,
-/// copy, paste). The page's own menus call preventDefault, so WebView2 never asks for them.
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (undo,
+/// redo, cut, copy, paste, select all) and on selected text (Copy), as Electron's own menu.
+/// The page's own menus call preventDefault, so WebView2 never asks for them.
 /// electron-api-shim.js has the same rules on the page side.
 pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
@@ -113,7 +114,44 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
                 let target = args.ContextMenuTarget()?;
                 let mut editable = windows_core::BOOL(0);
                 target.IsEditable(&mut editable)?;
-                if !editable.as_bool() {
+                let mut selection = windows_core::BOOL(0);
+                let _ = target.HasSelection(&mut selection);
+                let editable = editable.as_bool();
+                if !editable && !selection.as_bool() {
+                    args.SetHandled(true)?;
+                    return Ok(());
+                }
+                // Electron's menu: undo / redo / cut / copy / paste / select all in fields, Copy
+                // for selected text (descall_shell::clipboard::context_menu_keep).
+                let items = args.MenuItems()?;
+                let mut count = 0u32;
+                items.Count(&mut count)?;
+                let mut last_sep = true; // no separator at the top
+                let mut i = 0u32;
+                while i < count {
+                    let item = items.GetValueAtIndex(i)?;
+                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
+                    item.Kind(&mut kind)?;
+                    let keep = if kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR {
+                        !last_sep
+                    } else {
+                        let mut name = windows_core::PWSTR::null();
+                        item.Name(&mut name)?;
+                        descall_shell::clipboard::context_menu_keep(&webview2_com::take_pwstr(name), editable)
+                    };
+                    if keep {
+                        last_sep = kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR;
+                        i += 1;
+                    } else {
+                        items.RemoveValueAtIndex(i)?;
+                        count -= 1;
+                    }
+                }
+                if count > 0 && last_sep {
+                    items.RemoveValueAtIndex(count - 1)?;
+                    count -= 1;
+                }
+                if count == 0 {
                     args.SetHandled(true)?;
                 }
                 Ok(())

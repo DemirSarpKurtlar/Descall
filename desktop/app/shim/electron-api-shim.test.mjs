@@ -264,6 +264,17 @@ for (const [path, args, cmd, expected] of CASES) {
   const composer = el("DIV", { isContentEditable: true });
   assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN", { parentElement: composer }) })).defaultPrevented, false, "contenteditable composer keeps it");
   assert.ok(s.winListeners.get("contextmenu").every((l) => !l.capture), "bubble phase: the app's own menus run first");
+  // Selected text on plain content: Electron's menu offered Copy; WebView2's is trimmed to it.
+  s.window.getSelection = () => ({ toString: () => "selected words" });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, false, "selected text keeps a (Copy) menu");
+  s.window.getSelection = () => ({ toString: () => "   " });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "a blank selection does not");
+  delete s.window.getSelection;
+  const webviewRsMenu = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  assert.match(webviewRsMenu, /HasSelection/, "WebView2 keeps the menu for selected text");
+  assert.match(webviewRsMenu, /context_menu_keep/, "WebView2 menu trimmed to Electron's items");
+  const clipRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  assert.match(clipRs, /"undo" \| "redo" \| "cut" \| "copy" \| "paste"/, "editable fields: undo, redo, cut, copy, paste");
   const key = (k, mods = {}) => s.dispatch("keydown", ev({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })).defaultPrevented;
   for (const [k, m] of [["F5"], ["r", { ctrlKey: true }], ["R", { ctrlKey: true, shiftKey: true }], ["ArrowLeft", { altKey: true }], ["ArrowRight", { altKey: true }], ["p", { ctrlKey: true }], ["BrowserBack"], ["I", { ctrlKey: true, shiftKey: true }], ["F12"]]) {
     assert.equal(key(k, m), true, `${k} ${JSON.stringify(m || {})} blocked`);
