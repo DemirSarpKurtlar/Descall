@@ -148,17 +148,14 @@ fn main() {
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {
                         return r;
                     }
-                    // Other about:blank windows keep their opener; any other http(s) link opens
-                    // in the default browser (setWindowOpenHandler).
+                    // Admin routes get their own window; web and mail links open in the default
+                    // browser; nothing else opens (setWindowOpenHandler: no in-app popups).
                     if admin::is_admin_url(&url) {
                         let h = nav_app.clone();
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if url.as_str() == "about:blank" || boot::is_app_url(&url) {
-                        return NewWindowResponse::Allow;
-                    }
-                    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+                    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
                         use tauri_plugin_opener::OpenerExt;
                         let _ = nav_app.opener().open_url(url.as_str(), None::<&str>);
                     }

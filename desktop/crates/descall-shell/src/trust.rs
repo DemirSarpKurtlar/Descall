@@ -54,6 +54,25 @@ pub fn is_safe_external_url(url: &str) -> bool {
     }
 }
 
+/// What the main window does with a `window.open` that is not a Descall+ portal or an admin
+/// route (Electron setWindowOpenHandler): web and mail links go to the OS, everything else is
+/// refused. No in-app popup: a default WebView2 popup has no navigation guard, no shim and
+/// its own devtools, and `window.open("about:blank", "_blank", "noopener")` (private file
+/// chips) left an empty white window on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowOpen {
+    External,
+    Deny,
+}
+
+pub fn main_window_open(url: &str) -> WindowOpen {
+    if is_safe_external_url(url) && !is_app_url(url, true) && !is_shell_url(url) {
+        WindowOpen::External
+    } else {
+        WindowOpen::Deny
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! appTrust.selftest.mjs, with the Tauri origin in place of descall://app.
@@ -113,6 +132,16 @@ mod tests {
         assert!(is_shell_url("https://descall-shell.localhost/notif.html?id=3"));
         assert!(!is_shell_url("https://descall-shell.localhost.evil/notif.html"));
         assert!(!is_app_url("https://descall-shell.localhost/notif.html", false), "shell pages are not the app");
+    }
+
+    #[test]
+    fn main_window_never_opens_in_app_popups() {
+        for u in ["about:blank", "about:blank#x", "https://tauri.localhost/settings", "https://tauri.localhost/admin/panel", "http://localhost:5173/", "https://descall-shell.localhost/notif.html", "blob:https://tauri.localhost/1-2", "javascript:alert(1)", "file:///C:/x", "ms-settings:privacy", ""] {
+            assert_eq!(main_window_open(u), WindowOpen::Deny, "{u}");
+        }
+        for u in ["https://descall.com/download", "http://example.com/x", "mailto:contact@descall.com", "https://xyz.supabase.co/storage/v1/object/sign/a.pdf?token=t"] {
+            assert_eq!(main_window_open(u), WindowOpen::External, "{u}");
+        }
     }
 
     #[test]
