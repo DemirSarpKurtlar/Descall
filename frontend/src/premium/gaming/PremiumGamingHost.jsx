@@ -21,6 +21,7 @@ import { applyProfile, mergeProfiles, profileName } from "./workspaceProfiles.js
 import { configureClip, saveClip, stopClip, useClipState } from "./clipController.js";
 import { acceleratorLabel, publishTray, setTrayHandler } from "../../lib/desktopTray.js";
 import { captureClipboard } from "./clipboardHistory.js";
+import { widgetsAfterMove } from "./widgetMoves.js";
 import { recentTargets, sendFileTo } from "./sendMedia.js";
 import AppLockScreen from "./AppLockScreen.jsx";
 import "./gaming.css";
@@ -262,8 +263,8 @@ export default function PremiumGamingHost({
   useEffect(() => {
     if (!widgetsOn) return undefined;
     return pon("premium:widgets:moved", (m) => {
-      if (!m?.id) return;
-      updateWidgets({ widgets: (widgets.widgets || []).map((w) => (w.id === m.id ? { ...w, x: m.x, y: m.y } : w)) });
+      const next = widgetsAfterMove(widgets.widgets || [], m);
+      if (next) updateWidgets({ widgets: next });
     });
   }, [widgetsOn, widgets.widgets, updateWidgets]);
   useEffect(() => {
