@@ -142,6 +142,9 @@ fn main() {
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
+                // HTML5 drag and drop (chat file drops, server reordering) needs WebView2's own
+                // handler; Tauri's replaces it on Windows and the page never sees a drop.
+                .disable_drag_drop_handler()
                 .on_navigation(boot::is_app_url)
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).

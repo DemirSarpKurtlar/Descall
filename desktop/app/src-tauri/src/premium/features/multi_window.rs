@@ -68,6 +68,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .use_https_scheme(true)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
+        .disable_drag_drop_handler()
         .on_new_window(|u, _| {
             if u.scheme() == "https" {
                 if let Some(h) = crate::premium::host() {

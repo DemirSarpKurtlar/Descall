@@ -46,6 +46,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .initialization_script(script)
         .on_navigation(move |next| crate::boot::is_app_url(next) && spec(next.path()).map(|s| s.0) == Some(label))
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+        .disable_drag_drop_handler()
         .build();
     match built {
         Ok(win) => {

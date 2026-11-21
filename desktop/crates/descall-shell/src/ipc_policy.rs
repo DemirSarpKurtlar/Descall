@@ -355,6 +355,21 @@ mod capability_tests {
         }
     }
 
+    /// Windows that take HTML5 drops (chat files, server reordering, the quick drop zone) keep
+    /// WebView2's own drag and drop: Tauri's handler swallows every drop on Windows.
+    #[test]
+    fn drop_targets_keep_html5_drag_and_drop() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+            ("premium/overlay.rs", include_str!("../../../app/src-tauri/src/premium/overlay.rs")),
+        ] {
+            assert!(src.contains(".disable_drag_drop_handler()"), "{file}: HTML5 drops would never reach the page");
+        }
+    }
+
     #[test]
     fn devtools_stay_off_in_release() {
         let cargo = include_str!("../../../app/src-tauri/Cargo.toml");

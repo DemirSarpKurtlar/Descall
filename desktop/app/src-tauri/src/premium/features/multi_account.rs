@@ -109,6 +109,7 @@ fn open(h: &Host, id: &str) -> Value {
         .use_https_scheme(true)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
+        .disable_drag_drop_handler()
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .build();
     match built {

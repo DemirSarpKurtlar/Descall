@@ -106,6 +106,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .initialization_script(HUD_SHIM)
                 .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
                 .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+                .disable_drag_drop_handler() // quick drop zone: HTML5 file drops
                 .build();
             match built {
                 Ok(w) => w,
