@@ -10,7 +10,7 @@
 //    the same way (including the legacy (event, info) callbacks and removeAllListeners).
 // 4. Every command the shim can call is registered in src-tauri/src/main.rs.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -471,6 +471,58 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   down(el(true, true));
   down(el(false, false));
   assert.equal(t.dragged(), 1, "a press on '.drag' (not on its buttons / list) moves the window");
+}
+
+// 7. Every shell / Descall+ window the Rust side builds (static check of the builder chains).
+{
+  const srcDir = join(here, "..", "src-tauri", "src");
+  const rsFiles = [];
+  const walkRs = (d) => {
+    for (const n of readdirSync(d)) {
+      const p = join(d, n);
+      if (statSync(p).isDirectory()) walkRs(p);
+      else if (n.endsWith(".rs")) rsFiles.push(p);
+    }
+  };
+  walkRs(srcDir);
+  const chains = [];
+  for (const f of rsFiles) {
+    const src = readFileSync(f, "utf8");
+    let at = src.indexOf("WebviewWindowBuilder::new(");
+    while (at >= 0) {
+      const end = src.indexOf(".build()", at);
+      const chain = src.slice(at, end);
+      const label = chain.match(/WebviewWindowBuilder::new\([^,]+,\s*([^,]+),/);
+      chains.push({ file: f.slice(srcDir.length + 1), label: label ? label[1].trim() : "?", chain });
+      at = src.indexOf("WebviewWindowBuilder::new(", end);
+    }
+  }
+  assert.ok(chains.length >= 10, `window builders found: ${chains.length}`);
+  for (const c of chains) {
+    // WebView2: windows sharing the main window's user data folder with other browser
+    // arguments fail to start (ERROR_INVALID_STATE): HUDs, widgets, quick drop, pop-outs and
+    // the launcher never opened. Portals reuse the opener's environment (window_features).
+    const ok = /\.additional_browser_args\((crate::)?BROWSER_ARGS\)/.test(c.chain) || /\.window_features\(features\)/.test(c.chain);
+    assert.ok(ok, `${c.file} (${c.label}): same WebView2 environment as the main window`);
+  }
+  // Tauri's own file-drop handler replaces WebView2's drop target and kills HTML5 drag and
+  // drop: off in every window that runs the app or the quick drop zone.
+  for (const [file, why] of [["main.rs", "main window"], ["premium/features/multi_window.rs", "pop-outs"], ["premium/features/multi_account.rs", "account windows"], ["premium/overlay.rs", "quick drop / HUD windows"]]) {
+    const c = chains.find((x) => x.file === file);
+    assert.ok(c && /\.disable_drag_drop_handler\(\)/.test(c.chain), `${why}: HTML5 drag and drop enabled (disable_drag_drop_handler)`);
+  }
+  for (const file of ["premium/features/multi_window.rs", "premium/features/multi_account.rs"]) {
+    const src = readFileSync(join(srcDir, file), "utf8");
+    assert.match(src, /crate::webview::install_browser_guards\(&w\)/, `${file}: no browser menu / shortcuts`);
+    assert.match(src, /crate::webview::install_permission_handler\(&w\)/, `${file}: media permissions as in the main window`);
+  }
+  // Opacity survives tao's style rewrites (show, pin, click-through, restore).
+  const winsRs = readFileSync(join(srcDir, "premium", "wins.rs"), "utf8");
+  assert.match(winsRs, /run_on_main_thread\(move \|\| platform::set_opacity\(hw, alpha\)\)/, "opacity is queued behind tao's style changes");
+  const ovRs = readFileSync(join(srcDir, "premium", "overlay.rs"), "utf8");
+  assert.ok(ovRs.indexOf("let _ = w.show();") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after show");
+  const platRs = readFileSync(join(srcDir, "premium", "platform.rs"), "utf8");
+  assert.match(platRs, /if ex & WS_EX_TRANSPARENT\.0 as isize == 0 \{\s*SetWindowLongPtrW\(h, GWL_EXSTYLE, ex & !\(WS_EX_LAYERED/, "a click-through HUD at 100 % keeps WS_EX_LAYERED");
 }
 
 console.log("electron-api-shim.test: ok");

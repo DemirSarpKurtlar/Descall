@@ -123,6 +123,10 @@ fn main() {
                 .background_color(tauri::window::Color(11, 12, 18, 255))
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
                 .additional_browser_args(BROWSER_ARGS)
+                // Tauri replaces WebView2's drop target with its own file-drop handler, which
+                // kills every HTML5 drag and drop in the page (files dropped on a chat, list
+                // reordering). Electron never did that; the page handles its own drops.
+                .disable_drag_drop_handler()
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)
                 .on_new_window(move |url, features| {

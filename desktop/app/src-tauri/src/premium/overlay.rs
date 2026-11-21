@@ -103,6 +103,13 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .focusable(o.focusable)
                 .visible(false)
                 .visible_on_all_workspaces(true)
+                // Same WebView2 browser arguments as the main window: windows that share its
+                // user data folder with other arguments fail to start (ERROR_INVALID_STATE),
+                // so no HUD, widget or drop zone ever opened.
+                .additional_browser_args(crate::BROWSER_ARGS)
+                // The quick drop zone reads dropped files through HTML5 drop events, which
+                // Tauri's own file-drop handler would swallow.
+                .disable_drag_drop_handler()
                 .initialization_script(HUD_SHIM)
                 .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
                 .build();
@@ -118,8 +125,9 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
     };
     wins::set_bounds(&w, bounds);
     let _ = w.set_ignore_cursor_events(o.click_through);
-    wins::set_opacity(&w, o.opacity.clamp(0.2, 1.0));
     let _ = w.show();
+    // After show and click-through: both make tao rewrite the window style (wins::set_opacity).
+    wins::set_opacity(&w, o.opacity.clamp(0.2, 1.0));
 }
 
 pub fn send(h: &Host, id: &str, state: Value) -> bool {

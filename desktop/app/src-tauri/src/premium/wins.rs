@@ -79,9 +79,13 @@ pub fn hwnd(w: &WebviewWindow) -> Option<isize> {
     }
 }
 
+/// tao rewrites GWL_EXSTYLE from its own flags whenever it applies a style change on the main
+/// thread (show, always-on-top, click-through, minimize / restore), which drops the
+/// WS_EX_LAYERED bit set here: the opacity was lost as soon as a window was shown or pinned.
+/// Queued on the main thread, it runs after the changes tao has queued before it.
 pub fn set_opacity(w: &WebviewWindow, alpha: f64) {
     if let Some(hw) = hwnd(w) {
-        platform::set_opacity(hw, alpha);
+        let _ = w.run_on_main_thread(move || platform::set_opacity(hw, alpha));
     }
 }
 
@@ -255,6 +259,12 @@ pub fn on_bus(h: &Host, ev: &Bus) {
         _ => return,
     };
     let Some(entry) = lock(&h.windows).get(label).cloned() else { return };
+    // Restored from the taskbar (or resized): tao rewrote the window style, opacity again.
+    if matches!(ev, Bus::Resized(_)) && matches!(entry.kind.as_str(), "call" | "sidebar" | "popout") {
+        if let Some(w) = h.app.get_webview_window(label) {
+            set_opacity(&w, opacity_for(h, &entry.kind));
+        }
+    }
     if !matches!(entry.kind.as_str(), "call" | "popout") {
         return;
     }

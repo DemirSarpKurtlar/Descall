@@ -66,6 +66,11 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        // Same WebView2 browser arguments as the main window (shared user data folder; other
+        // arguments make the WebView2 environment fail with ERROR_INVALID_STATE).
+        .additional_browser_args(crate::BROWSER_ARGS)
+        // HTML5 drag and drop (files on the chat) as in the main window.
+        .disable_drag_drop_handler()
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {
@@ -88,6 +93,9 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     if let Some(b) = b {
         wins::set_bounds(&w, b);
     }
+    // No browser menu / shortcuts, media without prompts: as in the main window.
+    crate::webview::install_permission_handler(&w);
+    crate::webview::install_browser_guards(&w);
     wins::track(h, &label, "popout", "multi_window", json!({ "route": r }));
     wins::apply_behaviour(h, &label, "popout");
     let _ = w.show();

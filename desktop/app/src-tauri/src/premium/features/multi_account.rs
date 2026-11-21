@@ -107,12 +107,18 @@ fn open(h: &Host, id: &str) -> Value {
         .decorations(false)
         .data_directory(dir(h, id).join("webview"))
         .use_https_scheme(true)
+        // Its own user data folder, but the same arguments as the main window (autoplay,
+        // no background throttling of a call in this window) and HTML5 drag and drop.
+        .additional_browser_args(crate::BROWSER_ARGS)
+        .disable_drag_drop_handler()
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .build();
     match built {
-        Ok(_) => {
+        Ok(w) => {
+            crate::webview::install_permission_handler(&w);
+            crate::webview::install_browser_guards(&w);
             wins::track(h, &label, "account", "multi_account", json!({ "id": id }));
             ok(json!({ "id": id }))
         }

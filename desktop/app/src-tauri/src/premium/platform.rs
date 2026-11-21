@@ -64,7 +64,7 @@ mod win {
     use windows::Win32::UI::WindowsAndMessaging::{
         CreateIconIndirect, CreateWindowExW, DefWindowProcW, DestroyIcon, DispatchMessageW, GetCursorPos, GetMessageW, GetWindowLongPtrW, RegisterClassW, SetLayeredWindowAttributes,
         SetWindowLongPtrW, TranslateMessage, GWL_EXSTYLE, HICON, ICONINFO, LWA_ALPHA, MSG, WM_COMMAND, WM_DISPLAYCHANGE, WM_SETTINGCHANGE, WM_WTSSESSION_CHANGE, WNDCLASSW,
-        WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_POPUP,
+        WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_POPUP,
     };
 
     use crate::premium::logic::badge;
@@ -98,7 +98,11 @@ mod win {
             if alpha >= 0.999 {
                 if ex & WS_EX_LAYERED.0 as isize != 0 {
                     let _ = SetLayeredWindowAttributes(h, Default::default(), 255, LWA_ALPHA);
-                    SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+                    // Click-through (tao's set_ignore_cursor_events: WS_EX_TRANSPARENT) only
+                    // works on a layered window: a HUD at 100 % keeps the style.
+                    if ex & WS_EX_TRANSPARENT.0 as isize == 0 {
+                        SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+                    }
                 }
                 return;
             }
