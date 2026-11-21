@@ -415,4 +415,62 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
 }
 
+// 6. Descall+ HUD / widget / quick drop windows (premium-hud-shim.js).
+{
+  const hudSrc = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  const loadHud = () => {
+    const invokes = [];
+    const handlers = [];
+    let releaseListen;
+    const listenGate = new Promise((r) => { releaseListen = r; });
+    let dragged = 0;
+    const docListeners = new Map();
+    const appended = [];
+    const doc = {
+      documentElement: { appendChild: (n) => appended.push(n) },
+      head: null,
+      getElementById: (id) => appended.find((n) => n.id === id) || null,
+      createElement: (tag) => ({ tag, id: "", textContent: "" }),
+      addEventListener: (type, fn) => { if (!docListeners.has(type)) docListeners.set(type, []); docListeners.get(type).push(fn); },
+    };
+    const T = {
+      core: { invoke: (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(cmd === "premium_blob_put" ? { __blob: 7 } : null); } },
+      // Tauri's listen() is an IPC round trip: it resolves later.
+      event: { listen: (ev, h) => { handlers.push([ev, h]); return listenGate.then(() => () => {}); } },
+      window: { getCurrentWindow: () => ({ startDragging: () => { dragged += 1; return Promise.resolve(); } }) },
+    };
+    const window = { __TAURI__: T };
+    window.top = window;
+    const ctx = { window, document: doc, Promise, Set, String, Array, Object, console };
+    vm.createContext(ctx);
+    vm.runInContext(hudSrc, ctx, { filename: "premium-hud-shim.js" });
+    return { hud: window.descallHud, invokes, handlers, releaseListen, appended, docListeners, dragged: () => dragged };
+  };
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  const t = loadHud();
+  t.hud.onState(() => {});
+  t.hud.action("ready");
+  await flush();
+  assert.ok(!t.invokes.some(([c, a]) => c === "premium_hud_action" && a.kind === "ready"), "'ready' waits until the state listener is registered");
+  t.releaseListen();
+  await flush();
+  await flush();
+  deq(t.invokes.filter(([c]) => c === "premium_hud_action"), [["premium_hud_action", { kind: "ready", payload: null }]], "'ready' goes out once the listener is live");
+  assert.equal(t.handlers[0][0], "descall:hud:state");
+  t.hud.action("close");
+  t.hud.action("evil");
+  await flush();
+  deq(t.invokes.filter(([c]) => c === "premium_hud_action").map(([, a]) => a.kind), ["ready", "close"], "whitelisted actions only");
+  // WebView2 turns CSS drag regions into a native caption that swallows clicks inside them
+  // (quick drop close button and target list): the shim switches them off and drags itself.
+  const st = t.appended.find((n) => n.id === "descall-hud-tauri");
+  assert.ok(st && st.textContent.includes(".drag,.drag *,.nodrag{-webkit-app-region:no-drag!important;app-region:no-drag!important}"), "no CSS drag region in HUD pages");
+  const down = (target) => t.docListeners.get("mousedown").forEach((fn) => fn({ button: 0, target }));
+  const el = (inDrag, onButton) => ({ closest: (sel) => (sel === ".drag" ? inDrag : onButton) });
+  down(el(true, false));
+  down(el(true, true));
+  down(el(false, false));
+  assert.equal(t.dragged(), 1, "a press on '.drag' (not on its buttons / list) moves the window");
+}
+
 console.log("electron-api-shim.test: ok");
