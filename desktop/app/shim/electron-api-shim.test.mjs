@@ -444,6 +444,15 @@ const fromNative = new Set([...nativeSrc.matchAll(/invoke\("(\w+)"/g)].map((m) =
 assert.ok(fromNative.has("screen_share_start") && fromNative.has("screen_thumbnails"), "native lane commands found");
 for (const cmd of fromNative) assert.ok(registered.has(cmd), `${cmd} (native screen share) is registered in main.rs`);
 assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\)/, "main.rs injects the native lane");
+{
+  // Free-form Descall+ hotkeys (command center, workspace profiles, media keys, clip) never take
+  // an accelerator away from another feature (Electron compat.cjs only replaced its own).
+  const hk = readFileSync(join(here, "..", "src-tauri", "src", "premium", "hotkeys.rs"), "utf8");
+  const at = hk.indexOf("pub fn register_extra");
+  const body = hk.slice(at, hk.indexOf("pub fn unregister_owner", at));
+  assert.ok(at > 0 && /let mine = [^;]*extras\.get\(owner\)/.test(body), "register_extra checks this owner's own list");
+  assert.match(body, /\} else if self\.gs\(\)\.is_registered\(p\.as_str\(\)\) \{\s*return false;\s*\}/, "an accelerator held elsewhere is refused, not unregistered");
+}
 // Descall+ page bridges (premium plugin, HUD and launcher windows).
 for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js", "tray-menu-shim.js"]) {
   const src = readFileSync(join(here, f), "utf8");
