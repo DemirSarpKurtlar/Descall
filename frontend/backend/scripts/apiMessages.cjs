@@ -32,6 +32,13 @@ const INTERNAL_ONLY = new Set([
   "lib/descoinAntibot/alerts.js",
   // Admin agent: tool descriptions written for the Claude model, never shown in the app.
   "lib/adminAgent/tools.js",
+  // Admin Token MCP endpoint: tool descriptions and protocol errors for bots (MCP clients),
+  // never shown in the app (the app never sends dsk_admin_ tokens).
+  "lib/adminTokens/mcp.js",
+  "routes/mcp.js",
+  // Admin Token tab (owner only): the panel shows its own Turkish text per error code
+  // (TOKENS_UNAVAILABLE, TOKEN_NOT_FOUND, NAME_REQUIRED, ... in the tab's contract).
+  "routes/adminTokens.js",
 ]);
 
 // Developer / diagnostic text: never shown in the app (logs, health checks, protocol

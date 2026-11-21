@@ -32,6 +32,8 @@ const API_PREFIXES = [
   "/debug",
   "/calls",
   "/socket.io",
+  // Admin Token MCP endpoint (bots, never a page).
+  "/mcp",
 ];
 
 function isApiOrInfraPath(pathname) {

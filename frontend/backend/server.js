@@ -501,6 +501,14 @@ app.get("*", (req, res, next) => {
   });
 });
 
+// Admin Token MCP endpoint (Streamable HTTP, lib/adminTokens/mcp.js). Admin tokens only;
+// JSON body errors on /mcp answer as JSON-RPC parse errors.
+{
+  const mcpRoutes = require("./routes/mcp");
+  app.use("/mcp", mcpRoutes);
+  app.use("/mcp", mcpRoutes.parseErrorHandler);
+}
+
 // Register main routes (both with and without /api prefix)
 app.use("/auth", authRoutes);
 // DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.
@@ -778,7 +786,7 @@ app.get(["/invite/:code", "/i/:code"], (req, res) => {
 // disambiguation for /groups, /friends, /calls, /servers, are set up above, before
 // those routers are mounted.
 const API_PREFIXES = [
-  "/api", "/auth", "/admin", "/media", "/groups",
+  "/api", "/auth", "/admin", "/media", "/groups", "/mcp",
   "/friends", "/servers", "/reactions", "/health", "/debug", "/calls",
   "/sitemap.xml", "/sitemap-pages.xml", "/sitemap-invites.xml",
   "/sitemap-announcements.xml", "/sitemap.html", "/sitemap.xsl", "/robots.txt",

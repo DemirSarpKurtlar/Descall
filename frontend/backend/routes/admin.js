@@ -104,6 +104,8 @@ router.use(require("./adminDesktopMigration"));
 router.use(require("./adminAnnouncements"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
 router.use("/premium", require("./adminPremium"));
+// Admin Token (owner only): tokens, usage, alerts, auto-pause, and GET /openapi.json.
+router.use(require("./adminTokens"));
 
 router.get("/directory", async (req, res) => {
   try {
