@@ -39,7 +39,9 @@ pub enum BackgroundMode {
 }
 
 pub fn has_arg<S: AsRef<str>>(argv: &[S], flag: &str) -> bool {
-    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty()).any(|raw| {
+    // A URL argument (an OS link such as descall://... that a web page can start the app
+    // with) never carries launch flags, whatever text it holds.
+    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty() && !a.contains("://")).any(|raw| {
         if raw == flag {
             return true;
         }
@@ -87,6 +89,14 @@ mod tests {
     //! launchVisibility.selftest.mjs.
     use super::*;
     const EXE: &str = r"C:\Program Files\Descall\Descall.exe";
+
+    #[test]
+    fn url_arguments_never_carry_flags() {
+        assert!(!is_autostart_launch(&[EXE, "descall://open --autostart --hidden"]));
+        assert!(!is_autostart_launch(&[EXE, "https://x.example/ --hidden"]));
+        assert!(is_autostart_launch(&[EXE, "--autostart --hidden"]), "a joined flag string still counts");
+        assert_eq!(decide_cold_start(&[EXE, "descall://x --hidden"], None, false).action, StartAction::Show);
+    }
 
     #[test]
     fn manual_launch_ignores_stale_flags() {
