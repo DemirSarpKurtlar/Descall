@@ -10,6 +10,7 @@
 //    activation (Electron showInactive): born visible and unfocused, never show() later.
 // 4. notification_show keeps main.cjs order: "Descall in front" before the reply toast.
 // 5. The tray icon is the embedded app icon at the small icon size, not the 32 px one.
+// 6. Taskbar thumbnail buttons and the unread badge come back after the tray.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -163,6 +164,23 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(tray, /SM_CXSMICON/, "small icon metric");
   assert.match(tray, /from_app_icon_resource\(size\)/, "embedded app icon at that size");
   assert.ok(create.indexOf("small_icon()") >= 0 && create.indexOf("small_icon()") < create.indexOf("default_window_icon"), "small icon first, window icon as fallback");
+}
+
+// ---- 6: taskbar buttons and badge survive the tray ---------------------------------------------
+{
+  // Hiding to the tray removes the taskbar button; the new one has no thumbnail toolbar and
+  // ThumbBarUpdateButtons alone never brings the mute / deafen / leave buttons back
+  // (Electron re-added them on 'show').
+  const platform = codeOnly(read("desktop/app/src-tauri/src/premium/platform.rs"));
+  const proc = platform.slice(platform.indexOf("unsafe extern \"system\" fn thumb_proc"), platform.indexOf("fn icon_for"));
+  assert.match(platform, /RegisterWindowMessageW\(w!\("TaskbarButtonCreated"\)\)/);
+  assert.match(proc, /taskbar_created\(\)/, "the subclass hears TaskbarButtonCreated");
+  assert.match(proc, /s\.added = false/, "and adds the toolbar again");
+  assert.match(proc, /set_thumb_buttons\(/);
+  assert.match(platform, /state\.last = buttons\.to_vec\(\)/, "the last buttons are kept for that");
+  assert.match(platform, /ThumbBarUpdateButtons\(hw, &list\)\.is_err\(\)/, "update falls back to add");
+  const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
+  assert.match(tb, /Bus::Focus\(l, true\) if l == "main" =>[\s\S]{0,120}set_badge/, "badge re-applied when the window comes back");
 }
 
 console.log("shell-notif.test: ok");
