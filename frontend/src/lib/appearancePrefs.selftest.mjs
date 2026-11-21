@@ -103,4 +103,16 @@ assert.match(css, /calc\(15\.5px \* var\(--ui-font-scale, 1\)\)/);
 assert.match(css, /rgba\(var\(--g-brand-rgb, 88, 122, 246\), 0\.26\)/);
 assert.match(readFileSync(join(here, "../styles.css"), "utf8"), /@import '\.\/styles\/settings-v3\.css';/);
 
+// Tema (owner report Nov 2026): the theme tiles and "Mağaza temaları" are ONE grouped card
+// (tiles on top, the shop row as its bottom row, hairline between), not two cards with a gap.
+{
+  const group = pane.match(/<S3Group className="s3-themes">([\s\S]*?)<\/S3Group>/);
+  assert.ok(group, "one S3Group holds the theme card");
+  assert.match(group[1], /<ThemeCards [^>]*\/>\s*<div className="s3-store">[\s\S]*shell\.appearance\.shopThemes/, "tiles first, then the shop row, in the same group");
+  assert.doesNotMatch(pane, /className="s3-group s3-th"/, "the tiles are not a card of their own");
+  assert.doesNotMatch(pane, /<S3Group className="s3-store">/, "the shop row is not a card of its own");
+  assert.match(css, /\.s3-th \+ \.s3-store::before \{[^}]*height: 0\.5px; background: var\(--s3-hair\)/, "hairline between the tiles and the row");
+  assert.match(css, /\.s3-store \.s3-row \.lab \+ :is\(\.s3-chev, \.s3-check\) \{ margin-left: auto; \}/, "chevron / check on the trailing edge");
+}
+
 console.log("appearancePrefs.selftest ok");
