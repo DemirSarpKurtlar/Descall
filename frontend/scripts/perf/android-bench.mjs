@@ -965,6 +965,8 @@ function report(all) {
     lines.push(...profLines("Hot functions, friends list scroll", r.friendsScroll && r.friendsScroll.profile));
     lines.push(...profLines("Hot functions, 1000-msg chat scroll", r.msgScroll.profile));
     lines.push(...profLines("Hot functions, open chat", r.openChat.profile));
+    lines.push(...profLines("Hot functions, back to list", r.closeChat.profile));
+    lines.push(...profLines("Hot functions, long-press sheet", r.openSheet.profile));
     lines.push(...profLines("Hot functions, tab switch -> Arkadaşlar", r.tabSwitch && r.tabSwitch["Arkadaşlar"] && r.tabSwitch["Arkadaşlar"].profile));
     lines.push(...profLines("Hot functions, idle 3 s", r.idle.profile));
     if (r.perRun) lines.push("Per run:", ...r.perRun.map((x, i) => `- run ${i + 1}: ${JSON.stringify(x)}`), "");
