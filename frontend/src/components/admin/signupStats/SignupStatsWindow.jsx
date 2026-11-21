@@ -786,7 +786,16 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
       {standalone ? null : <div className="st3-dim" onClick={chrome === "desktop" ? undefined : close} />}
       <div ref={winRef} className={`st-win${max ? " max" : ""}`} style={style}>
         {chrome === "desktop" || electron ? (
-          <div className="st-tb" onPointerDown={startDrag} onDoubleClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
+          <div
+            className="st-tb"
+            data-tauri-drag-region={electron ? "deep" : undefined}
+            onPointerDown={startDrag}
+            onDoubleClick={() => {
+              // Tauri's drag script already maximizes on the double click (data-tauri-drag-region).
+              if (!electron) setMax((v) => !v);
+              else if (!window.electronAPI.isTauri) window.electronAPI.maximizeWindow?.();
+            }}
+          >
             <img src={logoIcon} alt="" />
             <span>{windowTitle}</span>
             <span className="sp" />

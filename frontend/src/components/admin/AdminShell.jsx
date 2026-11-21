@@ -110,7 +110,9 @@ function TitleBar({ t }) {
     return () => { if (typeof off === "function") off(); };
   }, [api]);
   return (
-    <div className="adm-titlebar" onDoubleClick={() => api?.maximizeWindow?.()}>
+    // Tauri: the bar drags (and a double click maximizes) through data-tauri-drag-region, not the
+    // CSS drag region WebView2 turns into a caption; a second toggle here would undo it.
+    <div className="adm-titlebar" data-tauri-drag-region="deep" onDoubleClick={() => { if (!api?.isTauri) api?.maximizeWindow?.(); }}>
       <img src={logoIcon} alt="" />
       <span className="adm-titlebar-name">descall</span>
       <span className="adm-titlebar-sub">{t("admin.windowTitle")}</span>
