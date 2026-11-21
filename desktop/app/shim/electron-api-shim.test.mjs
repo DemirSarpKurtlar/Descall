@@ -451,6 +451,12 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   for (const file of ["main.rs", "admin.rs", "premium/overlay.rs", "premium/features/multi_window.rs", "premium/features/multi_account.rs"]) {
     assert.match(rs(file), /\.disable_drag_drop_handler\(\)/, `${file}: HTML5 drag and drop reaches the page`);
   }
+  // HUD / widget / quick drop pages: a CSS drag region would be a WebView2 caption over their
+  // close button and target picker; premium-hud-shim.js drags them instead.
+  const hud = rs("premium/hud/hud.html");
+  assert.doesNotMatch(hud, /app-region\s*:\s*drag/, "no CSS drag region on the HUD pages");
+  const hudShim = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  assert.match(hudShim, /closest\("\.drag"\)[\s\S]{0,80}closest\("\.nodrag, select, button, input"\)[\s\S]{0,200}startDragging\(\)/, "the HUD shim drags .drag except its controls");
 }
 
 console.log("electron-api-shim.test: ok");
