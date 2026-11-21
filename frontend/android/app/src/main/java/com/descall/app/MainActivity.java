@@ -1,6 +1,7 @@
 package com.descall.app;
 
 import android.app.ActivityManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,7 +10,9 @@ import android.os.SystemClock;
 import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.SystemBarStyle;
 import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 
@@ -51,6 +54,16 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(DescallDeepLinkPlugin.class);
     registerPlugin(DescallPushConfigPlugin.class);
     super.onCreate(savedInstanceState);
+
+    // Edge to edge on every Android version, the layout Android 15+ already
+    // enforces (and the one the app is built for: Capacitor SystemBars passes
+    // the insets to env(safe-area-inset-*) like iOS). On Android 14 and lower
+    // the post-splash theme otherwise left opaque black AppCompat status and
+    // navigation bars over the app's own top / bottom colors, switching from
+    // the #1E1F22 splash bars to black at the handoff. Light icons to start
+    // with; SystemBars (style DARK) and src/lib/androidSystemBars.js keep them
+    // in step with the in-app theme.
+    EdgeToEdge.enable(this, SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT));
 
     tuneWebView();
     pollWebSplash();
