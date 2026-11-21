@@ -154,7 +154,7 @@ const CASES = [
   ["showNotification", ["Ayşe", { body: "selam", tag: "dm:1", data: { type: "dm" } }], "notification_show", { payload: { title: "Ayşe", options: { body: "selam", tag: "dm:1", data: { type: "dm" } } } }],
   ["closeNotification", [{ tag: "call:1" }], "notification_close", { payload: { tag: "call:1" } }],
   ["closeNotification", [], "notification_close", { payload: {} }],
-  ["getScreenSources", [], "screen_sources", undefined],
+  ["getScreenSources", [], "screen_sources", { thumbnails: true }],
   ["isWindowFocused", [], "window_is_focused", undefined],
   ["focusWindow", [], "window_focus", undefined],
   ["scanProcesses", [], "processes_scan", undefined],
@@ -193,6 +193,8 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(s.api.secureToken.set("new.tok.en"), true);
   assert.equal(s.api.secureToken.get(), "new.tok.en");
   assert.equal(s.ctx.sessionStorage.getItem("__descall_token_override"), "new.tok.en", "survives a boot-retry reload");
+  assert.equal(s.api.secureToken.set("x".repeat(16 * 1024 + 1)), false, "a token the store refuses answers false");
+  assert.equal(s.api.secureToken.get(), "new.tok.en", "and is not cached");
   assert.equal(s.api.secureToken.clear(), true);
   assert.equal(s.api.secureToken.get(), null);
   assert.equal(await s.api.selectDisplaySource("screen:0:0"), false, "no native lane loaded -> false");

@@ -45,7 +45,18 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(script)
         .on_navigation(move |next| crate::boot::is_app_url(next) && spec(next.path()).map(|s| s.0) == Some(label))
-        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+        // window.open from an admin page (a user's profile link, a log URL): the default browser
+        // for a safe external URL, as adminStatsWindow.cjs openExternalSafely; never a new window.
+        .on_new_window({
+            let app = app.clone();
+            move |url, _| {
+                if descall_shell::trust::is_safe_external_url(url.as_str()) && !crate::boot::is_app_url(&url) {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = app.opener().open_url(url.as_str(), None::<&str>);
+                }
+                tauri::webview::NewWindowResponse::Deny
+            }
+        })
         .build();
     match built {
         Ok(win) => {

@@ -234,7 +234,8 @@
         // main.cjs answers [] on any capture error; the picker never sees a rejection.
         try {
           const ns = nativeShare();
-          const list = ns ? await ns.getSources() : await invoke("screen_sources");
+          // Electron always sent thumbnails (desktopCapturer thumbnailSize 320x240).
+          const list = ns ? await ns.getSources() : await invoke("screen_sources", { thumbnails: true });
           return (Array.isArray(list) ? list : []).filter((s) => s && typeof s.id === "string").map(toElectronSource);
         } catch (_) {
           return [];
@@ -257,7 +258,15 @@
     overlayUpdate: ADMIN ? noop : (payload) => fire("overlay_update", { payload: payload || {} }),
     secureToken: {
       get: () => tokenCache,
-      set: (token) => { const v = String(token || ""); remember(v); fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined); return true; },
+      // true / false like the sendSync reply; a token the store refuses (over 16 KB,
+      // commands/system.rs) is not cached either.
+      set: (token) => {
+        const v = String(token || "");
+        if (v.length > 16 * 1024) return false;
+        remember(v);
+        fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined);
+        return true;
+      },
       clear: () => { remember(""); fire("token_clear"); return true; },
     },
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
