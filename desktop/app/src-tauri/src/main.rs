@@ -60,6 +60,7 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    errors::init_early();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".

@@ -16,6 +16,14 @@ static CRASH_PATH: OnceLock<PathBuf> = OnceLock::new();
 /// Set once the app handle exists: the hook can emit to a page that is already attached.
 static EMIT: OnceLock<Box<dyn Fn(&Summary) + Send + Sync>> = OnceLock::new();
 
+/// First thing in main(): panics during plugin setup (before `init`) still reach the crash
+/// file. Same folder as Tauri's app_data_dir: `%APPDATA%\<identifier>`.
+pub fn init_early() {
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        let _ = CRASH_PATH.set(PathBuf::from(appdata).join(descall_migrate::paths::NEW_APP_ID).join(CRASH_FILE));
+    }
+}
+
 /// Call in setup, once the data folder is known.
 pub fn init<R: Runtime>(app: &AppHandle<R>) {
     if let Some(dir) = crate::state::data_dir(app) {
