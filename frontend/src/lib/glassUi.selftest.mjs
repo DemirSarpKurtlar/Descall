@@ -43,6 +43,8 @@ assert.equal(shouldUseLeanEffects({ isNativeAndroid: true }), true, "Android app
 assert.equal(shouldUseLeanEffects({ isNativeAndroid: false }), false, "iPhone / web keep full effects");
 assert.equal(shouldUseLeanEffects({ isNativeAndroid: true, override: "0" }), false, "descall:fx-lean=0 restores full effects");
 assert.equal(shouldUseLeanEffects({ isNativeAndroid: false, override: "1" }), true, "descall:fx-lean=1 forces lean (QA)");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: true, solid: true }), false, "a11y-solid / a11y-contrast keep their opaque fills");
+assert.equal(shouldUseLeanEffects({ isNativeAndroid: false, override: "1", solid: true }), false);
 assert.equal(FX_LEAN_CLASS, "g-fx-lean");
 assert.equal(ANDROID_CLASS, "native-android");
 assert.equal(isLowMemoryDevice(2), true, "2 GB is low-end");

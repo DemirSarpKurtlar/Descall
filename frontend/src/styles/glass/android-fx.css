@@ -39,7 +39,7 @@ html.glass-ui.g-fx-lean {
 
 /* Menus, sheets, alerts, toasts (frost.css): 86-88% opaque base, so a 20px
    radius and a lighter saturate stage read the same as 48px / 180%. */
-html.g-fx-lean {
+html.glass-ui.g-fx-lean {
   --frost-blur: 20px;
   --frost-saturate: 140%;
 }
@@ -93,7 +93,10 @@ html.glass-ui.g-fx-lean .g-scrim.g-msg-scrim {
 }
 
 /* overlay.css gives every other scrim a 32px blur with !important. */
-html.glass-ui.g-fx-lean :is(.g-scrim, .g-attach-scrim, .g-giphy-scrim, .grp-menu-catcher):not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .g-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .g-attach-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .g-giphy-scrim:not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .grp-menu-catcher:not(.g-msg-scrim),
 html.glass-ui.g-fx-lean .server-voice-menu-backdrop {
   background: rgba(5, 6, 10, 0.68) !important;
   -webkit-backdrop-filter: blur(12px) !important;
@@ -113,17 +116,17 @@ html.glass-ui.g-fx-lean .g-searchbar {
   backdrop-filter: none !important;
 }
 
-html.g-fx-lean .g-alert-scrim {
+html.glass-ui.g-fx-lean .g-alert-scrim {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
 /* Buttons and chips inside an alert / report sheet sit on the sheet's own
    frost: no second pass. */
-html.g-fx-lean .g-alert-btn,
-html.g-fx-lean .report-reason-chip,
-html.g-fx-lean .report-modal-close,
-html.g-fx-lean .report-btn.ghost {
+html.glass-ui.g-fx-lean .g-alert-btn,
+html.glass-ui.g-fx-lean .report-reason-chip,
+html.glass-ui.g-fx-lean .report-modal-close,
+html.glass-ui.g-fx-lean .report-btn.ghost {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -179,7 +182,7 @@ html.glass-ui.g-fx-lean .g-lens[data-pressed]::after {
 }
 
 /* ── Low-end Android (glass-lite): no live blur anywhere ── */
-html.g-fx-lean.glass-lite {
+html.glass-ui.g-fx-lean.glass-lite {
   --frost-blur: 8px;
   --frost-saturate: 100%;
 }

@@ -201,7 +201,10 @@ export const ANDROID_CLASS = "native-android";
 /** Android probe: a median frame slower than ~40 fps drops to glass-lite (no live blur). */
 export const GLASS_ANDROID_FRAME_SLOW_MS = 25;
 
-export function shouldUseLeanEffects({ isNativeAndroid = false, override = null } = {}) {
+export function shouldUseLeanEffects({ isNativeAndroid = false, override = null, solid = false } = {}) {
+  // Reduce Transparency / Increase Contrast already drop every blur; their
+  // opaque fills must not be replaced by the tier's translucent ones.
+  if (solid) return false;
   if (override === "0") return false;
   if (override === "1") return true;
   return Boolean(isNativeAndroid);
@@ -233,13 +236,18 @@ function applyWebGlassFallback(w) {
     manual: readStorage(w, GLASS_DESKTOP_LITE_KEY),
     fpsLow: phoneFpsLow || isLowMemoryDevice(w?.navigator?.deviceMemory),
   });
+  const solid = reducedTransparency || forcedColors || readStorage(w, "descall:reduce-transparency") === "1";
   doc.classList.toggle("glass-lite", lite);
+  doc.classList.toggle("a11y-solid", solid);
+  doc.classList.toggle("a11y-contrast", contrastMore);
   doc.classList.toggle(
     FX_LEAN_CLASS,
-    shouldUseLeanEffects({ isNativeAndroid: nativeShellPlatform(w) === "android", override: readStorage(w, FX_LEAN_KEY) })
+    shouldUseLeanEffects({
+      isNativeAndroid: nativeShellPlatform(w) === "android",
+      override: readStorage(w, FX_LEAN_KEY),
+      solid: solid || contrastMore,
+    })
   );
-  doc.classList.toggle("a11y-solid", reducedTransparency || forcedColors || readStorage(w, "descall:reduce-transparency") === "1");
-  doc.classList.toggle("a11y-contrast", contrastMore);
 }
 
 function clearWebGlassFallback(w) {
