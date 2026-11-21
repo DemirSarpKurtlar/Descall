@@ -457,6 +457,47 @@ assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\
   assert.ok(at > 0 && /let mine = [^;]*extras\.get\(owner\)/.test(body), "register_extra checks this owner's own list");
   assert.match(body, /\} else if self\.gs\(\)\.is_registered\(p\.as_str\(\)\) \{\s*return false;\s*\}/, "an accelerator held elsewhere is refused, not unregistered");
 }
+{
+  // Quick launcher window: same members and channels as launcherPreload.cjs, also when the
+  // global API bundle (window.__TAURI__) does not exist yet.
+  const exposed = {};
+  const ipcCalls = [];
+  const electron = {
+    contextBridge: { exposeInMainWorld: (n, api) => { exposed[n] = api; } },
+    ipcRenderer: { invoke: (ch, ...a) => { ipcCalls.push([ch, a]); return Promise.resolve(null); }, on: (ch) => ipcCalls.push(["on", ch]) },
+  };
+  vm.runInNewContext(readFileSync(join(electronDir, "premium", "launcher", "launcherPreload.cjs"), "utf8"), { require: () => electron, String, Boolean });
+  const src = readFileSync(join(here, "premium-launcher-shim.js"), "utf8");
+  for (const withGlobal of [false, true]) {
+    const invokes = [];
+    const answer = (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(cmd === "plugin:event|listen" ? 1 : null); };
+    const handlers = [];
+    const window = { __TAURI_INTERNALS__: { invoke: answer, transformCallback: (fn) => { handlers.push(fn); return handlers.length; } } };
+    if (withGlobal) window.__TAURI__ = { core: { invoke: answer }, event: { listen: (event, h) => { handlers.push(h); invokes.push(["listen", { event }]); return Promise.resolve(() => {}); } } };
+    window.top = window;
+    vm.runInNewContext(src, { window, String, Boolean, Object, Promise });
+    const api = window.launcherAPI;
+    assert.ok(api, `launcherAPI exists (global bundle: ${withGlobal})`);
+    deq(Object.keys(api).sort(), Object.keys(exposed.launcherAPI).sort(), "launcherAPI members as Electron");
+    await api.strings();
+    await api.query("x".repeat(200));
+    await api.run({ id: "srv:1", focus: 1 });
+    await api.close();
+    ipcCalls.length = 0;
+    await exposed.launcherAPI.strings();
+    await exposed.launcherAPI.query("x".repeat(200));
+    await exposed.launcherAPI.run({ id: "srv:1", focus: 1 });
+    await exposed.launcherAPI.close();
+    const got = invokes.filter((c) => c[0] === "premium_invoke").map((c) => [c[1].channel, c[1].args]);
+    deq(got, ipcCalls.map(([ch, a]) => [ch, a]), "same channels and arguments as the Electron preload");
+    let reset = null;
+    api.onReset((s) => { reset = s; });
+    await tick();
+    assert.ok(invokes.some((c) => (c[0] === "plugin:event|listen" || c[0] === "listen") && c[1].event === "premium:launcher:reset"), "onReset listens to premium:launcher:reset");
+    handlers[handlers.length - 1]({ payload: { lang: "tr" } });
+    deq(reset, { lang: "tr" }, "reset strings reach the page");
+  }
+}
 // Descall+ page bridges (premium plugin, HUD and launcher windows).
 for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js", "tray-menu-shim.js"]) {
   const src = readFileSync(join(here, f), "utf8");
