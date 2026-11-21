@@ -105,6 +105,10 @@ export function openSignupStatsWindow(layout) {
   if (!isElectron() || layout !== "desktop") return false;
   try {
     const w = window.open(STATS_PATH, "descall-signup-stats");
+    // Tauri: the shell opens the stats window natively (src-tauri/src/admin.rs) and denies the
+    // page's window.open, which returns null although the window did open (adminNav.js does
+    // the same); false here also opened the in-app copy over the main window.
+    if (!w && window.electronAPI?.isTauri) return true;
     return Boolean(w);
   } catch {
     return false;
