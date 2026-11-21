@@ -384,6 +384,8 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     // turn a DM into a native reply toast.
     let Some(filtered) = crate::premium::notify_filter(serde_json::json!({ "title": payload.title, "options": payload.options })) else { return };
     let options = filtered.get("options").cloned().unwrap_or(Value::Null);
+    // The filtered title: app_lock replaces the sender with "Descall" while locked.
+    let title = filtered.get("title").and_then(Value::as_str).unwrap_or(payload.title.as_str()).to_string();
     let data = options.get("data").cloned().unwrap_or(Value::Null);
     let data_type = str_of(&data, "type");
     let call = notif::is_call(data_type);
@@ -399,13 +401,13 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     if !call {
         if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
             let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
-            let (title, body) = notif::reply_toast_text(&payload.title, body, &data);
-            if crate::premium::show_quick_reply(&title, &body, conv, data.clone()) {
+            let (toast_title, toast_body) = notif::reply_toast_text(&title, body, &data);
+            if crate::premium::show_quick_reply(&toast_title, &toast_body, conv, data.clone()) {
                 return;
             }
         }
     }
-    let _ = show_capsule(&app, &payload.title, &options);
+    let _ = show_capsule(&app, &title, &options);
 }
 
 /// The taskbar button flashes a few times for a mention, a DM or a call while Descall is

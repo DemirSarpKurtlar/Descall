@@ -15,6 +15,7 @@
 // 7. The first close to the tray shows the "keeps running in the background" capsule.
 // 8. A Descall+ "toast" style notification opens the chat when clicked.
 // 9. Unread messages put a dot on the tray icon.
+// 10. While Descall+ app lock is locked, notifications show nothing personal.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -257,6 +258,27 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(fn, /unread_dot_rgba\(rgba, \*w\)/);
   assert.match(fn, /else \{ rgba\.clone\(\) \}/, "no unread: the plain icon again");
   assert.match(codeOnly(read("desktop/crates/descall-shell/src/tray_panel.rs")), /fn unread_dot_on_the_tray_icon\(\)/, "pixel rules unit-tested in Rust");
+}
+
+// ---- 10: app lock redacts notifications (Electron notifyHooks.registerFinal) ----------------------
+{
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const filter = mod.slice(mod.indexOf("pub fn notify_filter"), mod.indexOf("pub fn show_quick_reply"));
+  assert.ok(filter.indexOf("quick_reply::filter") >= 0 && filter.indexOf("quick_reply::filter") < filter.indexOf("f.notify_filter(h, p)?"), "final filters run after quick reply");
+  const lockRs = codeOnly(read("desktop/app/src-tauri/src/premium/features/app_lock.rs"));
+  assert.match(lockRs, /fn notify_filter\(&self, h: &Host, payload: Value\) -> Option<Value> \{\s*if !self\.locked\.load/, "only while locked");
+  assert.match(lockRs, /redact_locked\(&payload, &crate::state::et\(&h\.app, "notif\.locked"/, "Electron's text (shell catalogs)");
+  const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
+  const show = notify.slice(notify.indexOf("pub fn notification_show"), notify.indexOf("fn flash_taskbar"));
+  assert.match(show, /let title = filtered\.get\("title"\)/, "the capsule uses the filtered title");
+  assert.doesNotMatch(show.slice(show.indexOf("let title = filtered")), /payload\.title\b(?!\.as_str\(\)\))/, "never the raw sender after filtering");
+  // The Rust port keeps Electron's rules (appLockRedact.cjs), checked side by side here.
+  const { redactLockedNotification, LOCKED_TAG } = await import(join(repo, "frontend/electron/premium/appLockRedact.cjs"));
+  const rules = codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs"));
+  assert.match(rules, new RegExp(`pub const LOCKED_TAG: &str = "${LOCKED_TAG}"`), "same tag");
+  const e = redactLockedNotification({ title: "Ayşe", options: { body: "gizli", data: { type: "dm", from: "Ayşe" } } }, { lockedText: "L" });
+  assert.deepEqual(Object.keys(e.options).sort(), ["avatarUrl", "body", "data", "requireInteraction", "silent", "tag"]);
+  for (const k of Object.keys(e.options)) assert.match(rules.slice(rules.indexOf("pub fn redact_locked")), new RegExp(`"${k}":`), `Rust sets options.${k}`);
 }
 
 console.log("shell-notif.test: ok");

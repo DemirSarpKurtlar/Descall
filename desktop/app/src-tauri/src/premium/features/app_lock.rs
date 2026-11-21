@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 
 use super::Poll;
 use crate::premium::logic::pin::{hash_pin, lockout_ms, valid_pin, verify_pin};
-use crate::premium::logic::rules::{num, truthy};
+use crate::premium::logic::rules::{num, redact_locked, truthy};
 use crate::premium::{arg, lock, now_ms, ok, platform, Bus, Caller, Feature, From, Host};
 
 #[derive(Clone)]
@@ -242,5 +242,13 @@ impl Feature for F {
             }
             _ => {}
         }
+    }
+    /// While locked, a capsule or toast shows nothing personal (Electron app_lock.cjs
+    /// notificationFilter with appLockRedact.cjs; the Tauri shell showed sender and text).
+    fn notify_filter(&self, h: &Host, payload: Value) -> Option<Value> {
+        if !self.locked.load(Ordering::Relaxed) {
+            return Some(payload);
+        }
+        Some(redact_locked(&payload, &crate::state::et(&h.app, "notif.locked", &[])))
     }
 }
