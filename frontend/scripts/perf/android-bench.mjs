@@ -99,16 +99,21 @@ const IPHONE = pw.devices["iPhone 15"] || pw.devices["iPhone 14"];
 const ANDROID_WV_UA = String(PIXEL.userAgent || "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36")
   .replace(/\(Linux; Android ([^;)]+); ([^)]+)\)/, "(Linux; Android $1; $2; wv)")
   .replace(/Chrome\//, "Version/4.0 Chrome/");
+// Both native shells run edge to edge (Android targetSdk 36 WebView, iOS
+// WKWebView under the status bar), so the page gets the whole screen. The
+// Playwright viewports are browser-tab sizes (iPhone 15: 393x659 under the
+// Safari bars), which would give the iPhone profile 22% fewer pixels and rows.
+const FULL = (d) => ({ ...(d.screen || d.viewport) });
 const PROFILES = {
   android: {
     platform: "android",
-    ctx: { viewport: PIXEL.viewport, screen: PIXEL.screen || PIXEL.viewport, deviceScaleFactor: PIXEL.deviceScaleFactor, isMobile: true, hasTouch: true, userAgent: ANDROID_WV_UA },
+    ctx: { viewport: FULL(PIXEL), screen: PIXEL.screen || PIXEL.viewport, deviceScaleFactor: PIXEL.deviceScaleFactor, isMobile: true, hasTouch: true, userAgent: ANDROID_WV_UA },
     cpu: Number(args.cpu || args.cpuAndroid || 4),
     memoryGb: 8,
   },
   iphone: {
     platform: "ios",
-    ctx: { viewport: IPHONE.viewport, screen: IPHONE.screen || IPHONE.viewport, deviceScaleFactor: IPHONE.deviceScaleFactor, isMobile: true, hasTouch: true, userAgent: IPHONE.userAgent },
+    ctx: { viewport: FULL(IPHONE), screen: IPHONE.screen || IPHONE.viewport, deviceScaleFactor: IPHONE.deviceScaleFactor, isMobile: true, hasTouch: true, userAgent: IPHONE.userAgent },
     cpu: Number(args.cpu || args.cpuIphone || 4),
     memoryGb: 0,
   },
@@ -338,6 +343,24 @@ async function profStop(cdp) {
   if (!r || !r.profile) return null;
   const { nodes, samples = [], timeDeltas = [] } = r.profile;
   const byId = new Map(nodes.map((n) => [n.id, n]));
+  const parent = new Map();
+  for (const n of nodes) for (const c of n.children || []) parent.set(c, n.id);
+  const fileOf = (url) => String(url || "").split("/").pop().replace(/-[A-Za-z0-9_-]{8}\.js$/, ".js");
+  const frameKey = (cf) => `${fileOf(cf.url)}:${cf.functionName || "(anon)"}:${cf.lineNumber + 1}:${cf.columnNumber + 1}`;
+  // Native / DOM functions (querySelectorAll, getClientRects, rAF) have no
+  // URL: name the nearest app frame that called them, so the hotspot points
+  // at a component instead of at the browser.
+  const callerOf = (id) => {
+    let p = parent.get(id);
+    for (let i = 0; p && i < 40; i++) {
+      const cf = byId.get(p).callFrame;
+      if (cf.url && !/^(chrome|devtools|extensions)/.test(cf.url) && !cf.url.includes("vendor-")) return frameKey(cf);
+      p = parent.get(p);
+    }
+    p = parent.get(id);
+    const cf = p && byId.get(p).callFrame;
+    return cf && cf.url ? frameKey(cf) : "";
+  };
   const self = new Map();
   for (let i = 0; i < samples.length; i++) self.set(samples[i], (self.get(samples[i]) || 0) + (timeDeltas[i] || 0));
   const agg = {};
@@ -348,13 +371,18 @@ async function profStop(cdp) {
     const cf = n.callFrame;
     total += us;
     if (cf.functionName === "(idle)" || cf.functionName === "(program)") continue;
-    const file = String(cf.url || "").split("/").pop().replace(/-[A-Za-z0-9_-]{8}\.js$/, ".js");
-    const k = cf.url ? `${file}:${cf.functionName || "(anon)"}:${cf.lineNumber + 1}:${cf.columnNumber + 1}` : cf.functionName;
+    let k;
+    if (cf.url) k = frameKey(cf);
+    else if (/^\((garbage collector|root)\)$/.test(cf.functionName)) k = cf.functionName;
+    else {
+      const by = callerOf(id);
+      k = `${cf.functionName || "(native)"}${by ? ` <- ${by}` : ""}`;
+    }
     agg[k] = (agg[k] || 0) + us;
   }
   const byChunk = {};
   for (const [k, us] of Object.entries(agg)) {
-    const c = k.includes(":") && k.split(":")[0].endsWith(".js") ? k.split(":")[0] : k;
+    const c = k.includes(":") && k.split(":")[0].endsWith(".js") ? k.split(":")[0] : k.split(" <- ")[0];
     byChunk[c] = (byChunk[c] || 0) + us;
   }
   const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, us]) => [k, Math.round(us / 1000)]);
@@ -404,7 +432,7 @@ async function interaction(page, cdp, act, readySrc) {
   const m1 = await metrics(cdp);
   const input = info.input || tStart;
   const evMax = info.ev.reduce((a, e) => Math.max(a, e.d), 0);
-  return { ok: res.ok, latencyMs: Math.round(res.t - input), inpMs: Math.round(evMax), cost: metricDelta(m0, m1), profile: prof };
+  return { ok: res.ok, latencyMs: Math.round(res.t - input), inpMs: Math.round(evMax), cost: metricDelta(m0, m1), profile: prof, inputAt: input };
 }
 
 /* ---------------- layers / material ---------------- */
@@ -421,7 +449,6 @@ async function layerSnapshot(page, cdp) {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   for (let i = 0; i < 20 && !layers; i++) await sleep(100);
   cdp.off("LayerTree.layerTreeDidChange", onChange);
-  await cdp.send("LayerTree.disable").catch(() => {});
   const list = (layers || []).filter((l) => l.drawsContent);
   const big = list
     .map((l) => ({ id: l.layerId, node: l.backendNodeId, area: Math.round(l.width * l.height), w: Math.round(l.width), h: Math.round(l.height) }))
@@ -440,6 +467,40 @@ async function layerSnapshot(page, cdp) {
     delete b.node;
     delete b.id;
   }
+  // Which elements own the layers (grouped by tag.class), with one
+  // compositing reason sample each: the "why so many layers" evidence.
+  const owners = {};
+  const reasonOf = {};
+  for (const l of layers || []) {
+    if (!l.backendNodeId) {
+      owners["(pseudo / anonymous)"] = (owners["(pseudo / anonymous)"] || 0) + 1;
+      continue;
+    }
+    let el = "?";
+    try {
+      const { node } = await cdp.send("DOM.describeNode", { backendNodeId: l.backendNodeId });
+      const attrs = node.attributes || [];
+      const ci = attrs.indexOf("class");
+      const cls = ci >= 0 ? String(attrs[ci + 1] || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).join(".") : "";
+      el = `${String(node.localName || node.nodeName).toLowerCase()}${cls ? "." + cls : ""}`;
+    } catch {
+      /* detached */
+    }
+    owners[el] = (owners[el] || 0) + 1;
+    if (!reasonOf[el]) {
+      try {
+        const { compositingReasonIds = [] } = await cdp.send("LayerTree.compositingReasons", { layerId: l.layerId });
+        reasonOf[el] = compositingReasonIds.slice(0, 2).join("+");
+      } catch {
+        reasonOf[el] = "";
+      }
+    }
+  }
+  const byOwner = Object.entries(owners)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([k, n]) => [`${k}${reasonOf[k] ? ` (${reasonOf[k]})` : ""}`, n]);
+  await cdp.send("LayerTree.disable").catch(() => {});
   const viewportArea = await page.evaluate(() => innerWidth * innerHeight * devicePixelRatio * devicePixelRatio);
   const totalArea = list.reduce((a, l) => a + l.width * l.height, 0);
   return {
@@ -447,7 +508,9 @@ async function layerSnapshot(page, cdp) {
     drawingLayers: list.length,
     layerAreaScreens: r1(totalArea / Math.max(1, viewportArea / 1)),
     biggest: big,
+    byOwner,
   };
+  /* LayerTree stays enabled until here (compositingReasons needs it). */
 }
 
 async function materialSnapshot(page) {
@@ -515,7 +578,11 @@ async function materialSnapshot(page) {
 
 const READY = {
   chatOpen: "() => document.querySelectorAll('.message-bubble').length > 20",
-  chatClosed: "() => [...document.querySelectorAll('.dm-item')].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.left < innerWidth / 2; }) && !document.querySelector('.message-bubble')",
+  // The list is back when a chat row is really on top under its own centre
+  // (hit test), not when the chat DOM is gone: an exit animation or a kept
+  // mounted chat panel must not count as "still closing".
+  chatClosed: "() => [...document.querySelectorAll('.dm-item')].some((e) => { const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.left >= 0 && r.left < innerWidth / 2 && r.top > 0 && r.bottom < innerHeight)) return false; const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })",
+  chatUnmounted: "() => !document.querySelector('.message-bubble')",
   sheetOpen: "() => { const e = document.querySelector('.g-msg-pop, .g-msg-menu, .message-context-menu, [role=menu]'); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; }",
 };
 
@@ -634,7 +701,12 @@ async function runDevice(browser, base, name) {
     await sleep(1500);
     if (i < ROUNDS - 1) {
       const back = await hitPoint(page, '[data-mobile-back="1"]');
-      if (back) backs.push(await interaction(page, cdp, () => tapPoint(cdp, back.x, back.y), READY.chatClosed));
+      if (back) {
+        backs.push(await interaction(page, cdp, () => tapPoint(cdp, back.x, back.y), READY.chatClosed));
+        // How long the 1000-message chat DOM lingers after the list is back.
+        const gone = await page.evaluate(([src]) => window.__bench.waitFrame(src, 8000), [READY.chatUnmounted]);
+        backs[backs.length - 1].unmountMs = gone.ok ? Math.round(gone.t - (backs[backs.length - 1].inputAt || 0)) : null;
+      }
       else await page.goBack().catch(() => {});
       await sleep(1200);
     }
@@ -778,6 +850,7 @@ function summarizeInteractions(list) {
     scriptMs: sum("scriptMs"),
     styleMs: sum("styleMs"),
     layoutMs: sum("layoutMs"),
+    unmountMs: median(ok.map((x) => x.unmountMs).filter((x) => x != null)),
     runs: list.map((x) => (x.ok ? x.latencyMs : x.error || "timeout")),
     profile: mergeProfiles(ok.map((x) => x.profile).filter(Boolean)),
   };
@@ -820,10 +893,12 @@ function mergeRuns(runs) {
     firstInteractive: r.boot.firstInteractive,
     bootLongTaskMs: r.boot.longTaskMs,
     openChat: r.openChat.latencyMs,
+    back: r.closeChat.latencyMs,
+    msgScrollLongTaskMs: r.msgScroll.longTaskMs,
     chatListDropped: r.chatListScroll.dropped,
     msgDropped: r.msgScroll.dropped,
     friendsDropped: r.friendsScroll ? r.friendsScroll.dropped : null,
-    htmlClass: r.materialBoot.htmlClass,
+    htmlClass: r.materialBoot.htmlClass.split(" ").filter((c) => /glass|native|lite|solid/.test(c)).join(" "),
   }));
   return out;
 }
@@ -854,7 +929,8 @@ function report(all) {
   lines.push(row("open chat latency ms (median / max)", (r) => `${r.openChat.latencyMs} / ${r.openChat.latencyMax}`));
   lines.push(row("open chat INP ms", (r) => r.openChat.inpMs));
   lines.push(row("open chat script / style / layout ms", (r) => `${r.openChat.scriptMs} / ${r.openChat.styleMs} / ${r.openChat.layoutMs}`));
-  lines.push(row("back to list latency ms", (r) => r.closeChat.latencyMs));
+  lines.push(row("back to list latency ms (list hit-testable)", (r) => r.closeChat.latencyMs));
+  lines.push(row("back: chat DOM unmounted after ms", (r) => r.closeChat.unmountMs));
   lines.push(row("long-press sheet latency ms (incl. 650 hold)", (r) => r.openSheet.latencyMs));
   for (const t of ["Arkadaşlar", "Sunucular", "Gruplar", "Sohbetler"]) lines.push(row(`tab -> ${t} ms (median / max)`, (r) => `${r.tabSwitch[t].latencyMs} / ${r.tabSwitch[t].latencyMax}`));
   lines.push(row("idle 3 s script / style ms", (r) => `${r.idle.cost.scriptMs} / ${r.idle.cost.styleMs}`));
@@ -880,6 +956,8 @@ function report(all) {
     lines.push("Visible backdrop-filter elements (chat):", ...r.materialChat.backdropTop.map(([k, v]) => `- ${v}x ${k}`), "");
     lines.push("background-attachment: fixed (chat):", ...(r.materialChat.fixedBackgroundTop || []).map(([k, v]) => `- ${v}x ${k}`), "");
     lines.push("Running animations (boot):", ...r.materialBoot.animationsTop.map(([k, v]) => `- ${v}x ${k}`), "");
+    lines.push("Layer owners (boot, element x count, compositing reason):", ...(r.layersBoot.byOwner || []).map(([k, v]) => `- ${v}x ${k}`), "");
+    lines.push("Layer owners (chat):", ...(r.layersChat.byOwner || []).map(([k, v]) => `- ${v}x ${k}`), "");
     lines.push("Biggest layers (chat):", ...r.layersChat.biggest.map((b) => `- ${b.w}x${b.h} ${b.el}`), "");
     lines.push("Longest frames in message scroll:", ...r.msgScroll.loafTop.map((l) => `- ${Math.round(l.d)} ms (style+layout ${Math.round(l.style)} ms) ${l.scripts.map((s) => `${s.d}ms ${s.src} ${s.fn || s.inv}`).join("; ")}`), "");
     const profLines = (label, p) => (p ? [`${label} (CPU self time, ${p.totalMs} ms sampled):`, ...p.topFns.slice(0, 8).map(([k, v]) => `- ${v} ms ${k}`), `  by chunk: ${p.topChunks.map(([k, v]) => `${k} ${v}`).join(", ")}`, ""] : []);
@@ -924,11 +1002,21 @@ function report(all) {
         continue;
       }
       const runs = [];
-      for (let i = 0; i < RUNS; i++) {
+      // A renderer crash on a loaded, memory-tight machine is not a result:
+      // retry that run (up to 2 extra attempts) instead of losing it.
+      for (let i = 0, retries = 0; i < RUNS; i++) {
         try {
           log(`${d} run ${i + 1}/${RUNS}`);
           runs.push(await runDevice(browser, base, d));
         } catch (e) {
+          // runDevice closes its context only on success: drop the leftover.
+          for (const c of browser.contexts()) await c.close().catch(() => {});
+          if (/crash/i.test(e.message) && retries < 2) {
+            retries++;
+            log(d, "renderer crashed, retrying run", i + 1);
+            i--;
+            continue;
+          }
           runs.push({ error: e.stack });
           log(d, "FAIL", e.message);
         }
