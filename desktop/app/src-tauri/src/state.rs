@@ -68,6 +68,10 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        // Electron sent app:visibility on 'show' / 'restore', not only on 'focus': Windows can
+        // refuse the focus (foreground lock after a tray or notification click), and the page
+        // then kept its animations paused (html.app-backgrounded) until the next click.
+        to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
     }
 }
 

@@ -99,6 +99,10 @@
     return BOOT.token || null;
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
+  // Electron read the token file on every get(): a sign-in or sign-out in another owner window
+  // (admin, pop-out) was seen at once. The shell sends the new value to every owner window
+  // (commands/system.rs publish_token); extra-account windows never get the owner's.
+  on("secure-token:changed", (p) => { remember(p && typeof p.token === "string" ? p.token : ""); });
 
   // zoom.get() is synchronous (webFrame.getZoomFactor). WebView2 keeps the controller's zoom
   // across a reload (boot retry) while this script starts again at 1, so the factor last set is

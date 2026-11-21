@@ -20,7 +20,9 @@
 //! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
 //! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
 //! | `dist_path`         | appProtocolPath.cjs resolveDistFile     | (nested ./assets URLs)                |
+//! | `bridge`            | main.cjs per-sender IPC rules           | shim commands vs generate_handler!    |
 
+pub mod bridge;
 pub mod clipboard;
 pub mod csp;
 pub mod deferral;

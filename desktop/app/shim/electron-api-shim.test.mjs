@@ -10,7 +10,7 @@
 //    the same way (including the legacy (event, info) callbacks and removeAllListeners).
 // 4. Every command the shim can call is registered in src-tauri/src/main.rs.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -596,10 +596,99 @@ for (const label of ["popout-1", "acct-42"]) {
   assert.equal((await typed.api.readClipboardImage()).length, 3, "typed-array answer accepted");
 }
 
+{
+  // secureToken.get() is sync and per-window cached; a sign-in / sign-out in another owner
+  // window (the shell's secure-token:changed) updates it, as Electron's file read did.
+  const s = loadShim({ boot: { token: "old.tok.en" } });
+  await tick();
+  s.emit("secure-token:changed", { token: "new.tok.en" });
+  assert.equal(s.api.secureToken.get(), "new.tok.en", "another window signed in");
+  s.emit("secure-token:changed", { token: null });
+  assert.equal(s.api.secureToken.get(), null, "another window signed out");
+  assert.equal(s.ctx.sessionStorage.getItem("__descall_token_override"), "", "and a reload sees it too");
+  const acct = loadShim({ label: "acct-42", boot: { token: "acct.tok.en" } });
+  await tick();
+  acct.emit("secure-token:changed", { token: "owner.tok.en" }, "main");
+  assert.equal(acct.api.secureToken.get(), "acct.tok.en", "an extra-account window keeps its own session");
+  const systemRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "system.rs"), "utf8");
+  assert.match(systemRs, /pub const TOKEN_EVENT: &str = "secure-token:changed";/);
+  assert.match(systemRs, /crate::premium::signed_out\(\);/, "signing out resets the Descall+ gate (main.cjs premium.gate.reset())");
+}
+
+// 3e. Capabilities: every window a bridge runs in may use the plugin commands it calls -------
+{
+  const capDir = join(here, "..", "src-tauri", "capabilities");
+  const caps = ["default.json", "tray-menu.json"].map((f) => JSON.parse(readFileSync(join(capDir, f), "utf8")));
+  const glob = (pattern, label) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`).test(label);
+  const capsFor = (label) => caps.filter((c) => c.windows.some((w) => glob(w, label)));
+  // core:default bundles core:event:default (listen / unlisten), core:window:default, ...
+  const allowed = (label, perm) => capsFor(label).some((c) => c.permissions.includes(perm)
+    || (perm.startsWith("core:event:") && c.permissions.includes("core:default"))
+    || (perm === "opener:allow-open-url" && c.permissions.includes("opener:allow-open-url")));
+  // [shim, windows it is injected into (one sample label per glob)]
+  const WINDOWS = {
+    "electron-api-shim.js": ["main", "admin", "signup-stats", "popout-1", "acct-7"],
+    "premium-shim.js": ["main", "popout-1", "acct-7", "launcher"],
+    "native-screen-share.js": ["main", "popout-1"],
+    "premium-hud-shim.js": ["hud-1", "widget-clock"],
+    "premium-launcher-shim.js": ["launcher"],
+    "shell-notif.js": ["notif-1"],
+    "shell-overlay.js": ["overlay"],
+    "tray-menu-shim.js": ["tray-menu"],
+  };
+  const PLUGIN_PERM = {
+    "plugin:window|minimize": "core:window:allow-minimize",
+    "plugin:window|toggle_maximize": "core:window:allow-toggle-maximize",
+    "plugin:window|close": "core:window:allow-close",
+    "plugin:opener|open_url": "opener:allow-open-url",
+    "plugin:event|listen": "core:event:allow-listen",
+    "plugin:event|unlisten": "core:event:allow-unlisten",
+  };
+  for (const [file, labels] of Object.entries(WINDOWS)) {
+    const src = readFileSync(join(here, file), "utf8");
+    const needs = new Set();
+    for (const m of src.matchAll(/"(plugin:[a-z-]+\|[a-z_]+)"/g)) needs.add(m[1]);
+    for (const m of src.matchAll(/winCmd\("\w+", "(\w+)"\)/g)) needs.add(`plugin:window|${m[1]}`);
+    if (/\.listen\(/.test(src) || /plugin:event\|listen/.test(src)) { needs.add("plugin:event|listen"); needs.add("plugin:event|unlisten"); }
+    if (/startDragging\(/.test(src)) needs.add("core:window:allow-start-dragging");
+    for (const label of labels) {
+      assert.ok(capsFor(label).length > 0, `${label} (${file}) is in a capability`);
+      for (const need of needs) {
+        const perm = PLUGIN_PERM[need] || need;
+        assert.ok(allowed(label, perm), `${label} may use ${need} (${perm}) for ${file}`);
+      }
+    }
+  }
+  // Every window label the shell creates is in exactly one capability.
+  const rsFiles = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith(".rs")) rsFiles.push(readFileSync(p, "utf8"));
+    }
+  };
+  walk(join(here, "..", "src-tauri", "src"));
+  const rs = rsFiles.join("\n");
+  const labels = new Set(["main", "pip", "sidebar"]);
+  for (const m of rs.matchAll(/const LABEL: &str = "([a-z-]+)"/g)) labels.add(m[1]);
+  // format!("x-{...}") builds window labels, except these secret-store / log keys.
+  const NOT_WINDOWS = new Set(["account", "http"]);
+  for (const m of rs.matchAll(/format!\("([a-z]+)-\{/g)) if (!NOT_WINDOWS.has(m[1])) labels.add(`${m[1]}-1`);
+  for (const m of rs.matchAll(/Some\(\("([a-z-]+)", (?:STATS|PANEL)_PATH/g)) labels.add(m[1]);
+  for (const want of ["overlay", "launcher", "tray-menu", "admin", "signup-stats", "notif-1", "popout-1", "acct-1", "hud-1", "widget-1"]) {
+    assert.ok(labels.has(want), `window label ${want} found in the Rust sources`);
+  }
+  for (const label of labels) assert.equal(capsFor(label).length, 1, `${label} is covered by exactly one capability`);
+}
+
 // 4. Commands exist in main.rs -----------------------------------------------------------------
 const handler = mainRs.slice(mainRs.indexOf("generate_handler!["), mainRs.indexOf("])", mainRs.indexOf("generate_handler![")));
 const registered = new Set([...handler.matchAll(/::(\w+),/g)].map((m) => m[1]));
-const fromShim = new Set([...shimSrc.matchAll(/(?:invoke|fire)\("(\w+)"/g)].map((m) => m[1]));
+// Every plain string literal in the first argument, so fire(v ? "token_set" : "token_clear") counts both.
+const commandsIn = (src) => new Set([...src.matchAll(/\b(?:invoke|fire|winCmd)\(([^,)\n]*)/g)].flatMap((m) => [...m[1].matchAll(/"(\w+)"/g)].map((x) => x[1])));
+const fromShim = commandsIn(shimSrc);
+assert.ok(fromShim.has("token_set") && fromShim.has("token_clear") && fromShim.has("window_minimize"), "command parser sees ternaries and winCmd");
 for (const cmd of new Set([...called, ...fromShim])) assert.ok(registered.has(cmd), `${cmd} is registered in main.rs`);
 for (const cmd of ["notif_action", "overlay_action"]) assert.ok(registered.has(cmd), `${cmd} (shell pages) is registered`);
 // The native screen-share lane (native-screen-share.js) is injected into the same page.

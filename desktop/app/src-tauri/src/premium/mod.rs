@@ -878,6 +878,16 @@ pub fn is_aux_window(label: &str) -> bool {
 /// token_set / token_clear from an account window: stored for that account, not the owner.
 /// Returns false when `label` is not an account window (the shell handles it).
 #[allow(dead_code)]
+/// The owner signed out (secureToken.clear): drop the entitlement claim and the verified plan
+/// now, not at the next re-check (Electron: premium.gate.reset() in secure-token:clear).
+pub fn signed_out() {
+    if let Some(h) = host() {
+        if lock(&h.gate).reset() {
+            h.bus(Bus::Reconcile);
+        }
+    }
+}
+
 pub fn account_token(label: &str, token: Option<&str>) -> bool {
     host().is_some_and(|h| features::multi_account::store_token(h, label, token))
 }
