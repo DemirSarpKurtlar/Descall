@@ -1031,9 +1031,9 @@ function MessageList({
               type="button"
               className="msg-jump-btn g-glass g-heavy"
               aria-label={jump.unseen > 0 ? t("chatx.newMessagesJump", { count: jump.unseen }) : t("Scroll to bottom")}
-              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...jumpBlur(6) }}
+              animate={{ opacity: 1, scale: 1, y: 0, ...jumpBlur(0) }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, ...jumpBlur(6) }}
               transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
               whileTap={{ scale: 0.96 }}
               onClick={() => {
@@ -2655,6 +2655,18 @@ function bubbleKeyboardFocus() {
 const NEWS_MAX = 140;
 function ownMessage(m, myId) {
   return Boolean(m) && (m.from?.id === myId || m.sender_id === myId || m.userId === myId || String(m.id || "").startsWith("temp-"));
+}
+
+/* The jump button is heavy glass (backdrop-filter): animating its filter makes
+   the Android WebView re-run the backdrop blur on the main thread every frame
+   while the chat scrolls. Android gets the same spring on transform / opacity. */
+function jumpBlur(px) {
+  try {
+    if (document.documentElement.classList.contains("native-android")) return {};
+  } catch {
+    /* ignore */
+  }
+  return { filter: `blur(${px}px)` };
 }
 
 function prefersReducedMotionNow() {

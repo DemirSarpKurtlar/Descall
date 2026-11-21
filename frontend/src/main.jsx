@@ -211,6 +211,12 @@ async function bootApp() {
     }
     if (isNativeApp) {
       document.documentElement.classList.add("native-app");
+      // Android WebView motion scope (styles/android-motion.css).
+      try {
+        if (window.Capacitor?.getPlatform?.() === "android") document.documentElement.classList.add("native-android");
+      } catch {
+        /* ignore */
+      }
     }
     document.documentElement.setAttribute("data-marketing-ready", "1");
     document.getElementById("seo-static")?.remove();

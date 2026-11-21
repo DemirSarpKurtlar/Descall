@@ -89,6 +89,7 @@
 @import './styles/conversation-start.css';
 @import './styles/overlay.css';
 @import './styles/frost.css';
+@import './styles/android-motion.css';
 
 /* Typing indicator: anchored to the composer's top edge on every platform.
    Before 2.13.6 it was a sibling in normal flow under the messages list; on
