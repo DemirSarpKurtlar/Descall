@@ -9,6 +9,14 @@ duyuru gibi işlemler **hemen** uygulanır.
 Sekmeyi yalnızca sahip hesabı görür ve yönetir (kullanıcı adı `admin` veya
 `is_super_admin`). Diğer yöneticiler bu uçlara erişemez (`OWNER_ONLY`).
 
+**Tokenlar tokenları yönetemez.** Bir token Admin Token sayfalarını okuyabilir ve yalnızca
+yetkiyi azaltan işlemleri yapabilir: duraklatma, iptal etme, tümünü iptal etme ve bir
+uyarıdan duraklatma. Yeni token oluşturma, döndürme, iptali geri alma, devam ettirme, ad
+veya IP listesi değiştirme, bir uyarıyı yoksayma, "bu IP'ye izin ver" ve otomatik
+duraklatma ayarları yalnızca senin oturumunla (2FA koduyla) yapılır; token bunlarda
+`TOKEN_SELF_MANAGEMENT` (403) alır. Böylece sızan bir token kendine yeni token açamaz,
+kendini geri getiremez ve uyarıları susturamaz.
+
 ## 0. Önce migration uygulanmalı
 
 Özellik şu migration ile açılır:
@@ -40,11 +48,16 @@ Oluşturulan tablolar: `admin_api_tokens`, `admin_api_token_usage_hourly`,
 4. İstersen **IP izin listesi** gir (tek adres `203.0.113.7` veya aralık `203.0.113.0/24`,
    IPv6 de olur). Liste doluysa token yalnızca bu adreslerden çalışır.
 5. Authenticator kodunu gir (oluşturma, döndürme, geri alma ve tümünü iptal etme 2FA ister).
-6. Token **yalnızca bir kez** gösterilir: `dsk_admin_` ile başlayan 53 karakterlik metin.
+6. En fazla **50 etkin token** olabilir (`TOKEN_LIMIT`); yer açmak için birini iptal et.
+7. Token **yalnızca bir kez** gösterilir: `dsk_admin_` ile başlayan 53 karakterlik metin.
    Hemen kopyala ve güvenli bir yere (parola yöneticisi) kaydet. Sunucu tokenın kendisini
    saklamaz, yalnızca SHA-256 özetini saklar; kaybedersen geri getirilemez, döndürmen gerekir.
 
 Listede token `dsk_admin_7Hq2…k9Xa` biçiminde (ilk 4 ve son 4 karakter) görünür.
+
+Tokenı hangi adresten oluşturduğun kaydedilir. Token ilk kez başka bir adresten
+kullanılırsa uyarı oluşur (bot başka bir sunucuda çalışıyorsa bu beklenen bir uyarıdır;
+"Bu IP'ye izin ver" ile kapatabilirsin).
 
 ## 2. Claude Code ile bağlanma
 
@@ -119,6 +132,16 @@ Uyarılar:
 - **Yeni IP**: token son 7 günde kullanmadığı bir adresten çağrıldı.
 - **Yeni ülke**: son 7 günde görülmeyen bir ülkeden çağrıldı.
 - **Ani artış**: son 5 dakikada en az 50 istek ve olağan hızın 10 katından fazlası.
+- **İlk kullanım**: token ilk kez oluşturulduğu adresten başka bir adresten kullanıldı.
+- **Uzun aradan sonra**: 7 günden uzun kullanılmayan token, daha önce hiç görülmemiş bir
+  adresten yeniden kullanıldı.
+
+Adres ve ülke sıkı biçimde belirlenir: yalnızca tek bir Cloudflare geçişi kabul edilir ve
+ülke yalnızca Cloudflare'in `cf-ipcountry` bilgisinden alınır. Ülkesi bilinmeyen yeni bir
+adres (Cloudflare'siz doğrudan bağlantı, `XX`, `T1`) **yeni ülke** sayılır ve varsayılan
+ayarla tokenı duraklatır. Yerel, özel ağ veya Cloudflare adresi gibi güvenilmeyen adresler
+IP izin listesine hiçbir zaman uymaz ve her zaman yeni adres sayılır. Botu mümkünse
+Cloudflare arkasındaki API adresine bağla ve beklenen ilk uyarıyı "Bu IP'ye izin ver" ile kapat.
 
 Otomatik duraklatma açıksa ve ilgili kural seçiliyse token hemen duraklatılır (yeni ülke
 kuralında o istek de reddedilir). Uyarı sana canlı bildirim ve e-posta olarak gelir. Uyarı
@@ -127,12 +150,17 @@ kuralında o istek de reddedilir). Uyarı sana canlı bildirim ve e-posta olarak
 ## 6. Duraklatma, döndürme, iptal
 
 - **Duraklat / devam ettir**: token hemen durur, açık socket ve MCP oturumları kapanır.
+  Devam ettirme yalnızca senin oturumunla yapılır.
 - **Döndür (rotate)**: yeni bir token üretir. İstersen eski token 60 dakika veya 24 saat daha
   çalışır (geçiş süresi), böylece botu kesintisiz güncellersin. Geçiş süresi seçmezsen eski
-  token hemen geçersiz olur.
+  token hemen geçersiz olur. Eski tokenla açılmış socket ve MCP oturumları geçiş süresi
+  bitince (geçiş süresi yoksa hemen) kapanır; ikinci bir döndürme, önceki geçiş tokenını hemen kapatır.
 - **İptal et**: sebep seç (sızdı, kullanılmıyor, değiştirildi, diğer) ve onay için tokenın
   adını yaz. İptal **10 dakika** içinde 2FA ile geri alınabilir; sonra kalıcıdır.
 - **Tümünü iptal et**: tüm tokenları tek seferde iptal eder; onay için `TÜMÜNÜ İPTAL ET` yazılır.
+  Bir token da bunu yapabilir (yetkiyi yalnızca azaltır).
+
+Geçersiz tokenlarla çok deneme yapan bir adres (10 dakikada 30 hatalı token) bir süre engellenir.
 
 İptal ve duraklatma birkaç saniye içinde her yerde geçerli olur.
 

@@ -32,7 +32,10 @@ const MAX_SESSIONS = 200;
 const CALL_TIMEOUT_MS = 30 * 1000;
 const RESULT_MAX_CHARS = 100000;
 const KEEPALIVE_MS = 25 * 1000;
-const MCP_LIMIT = { windowMs: 60 * 1000, max: 600 };
+const MCP_LIMIT = Object.freeze({ windowMs: 60 * 1000, max: 600 });
+const MAX_BATCH = 20;
+const MAX_STREAMS_PER_SESSION = 2;
+let mcpLimit = MCP_LIMIT;
 
 const INSTRUCTIONS =
   "You are connected to the Descall admin API as the owner account (an owner admin token). " +
@@ -411,15 +414,21 @@ function openSessionCount(now = Date.now()) {
   return n;
 }
 
-// Revoke / pause / rotate close the token's sessions and streams.
-tokenAuth.onDrop((tokenId, _why, { keepHash = null } = {}) => {
-  let n = 0;
-  for (const [id, sess] of [...sessions]) {
-    if (sess.tokenId !== tokenId) continue;
-    if (keepHash && sess.secretHash === keepHash) continue;
-    if (endSession(id)) n += 1;
-  }
-  return n;
+// Revoke / pause / rotate / the end of a grace window close the sessions (and their
+// streams) opened with a secret that is no longer accepted.
+tokenAuth.registerLiveSource({
+  drop(tokenId, _why, { keepHashes = null } = {}) {
+    let n = 0;
+    for (const [id, sess] of [...sessions]) {
+      if (sess.tokenId !== tokenId) continue;
+      if (keepHashes && keepHashes.includes(sess.secretHash)) continue;
+      if (endSession(id)) n += 1;
+    }
+    return n;
+  },
+  ids() {
+    return [...new Set([...sessions.values()].map((x) => x.tokenId))];
+  },
 });
 
 /* ---------------- JSON-RPC ---------------- */
@@ -476,7 +485,7 @@ async function callTool(name, args, ctx) {
     if (err instanceof ToolInputError || err?.code === "BAD_INPUT") return { result: textResult(err.message, true), status: 400, destructiveKind: null, auditId: null };
     throw err;
   }
-  const reg = tokenAuth.registerMcpCall({ tokenId: ctx.row.id, ip: ctx.ip, country: ctx.country, tool: name, client: ctx.client });
+  const reg = tokenAuth.registerMcpCall({ tokenId: ctx.row.id, ip: ctx.ip, trusted: ctx.trusted, country: ctx.country, tool: name, client: ctx.client });
   try {
     const res = await (ctx.fetchImpl || fetch)(`${ctx.baseUrl}${req.path}`, {
       method: req.method,
@@ -555,6 +564,7 @@ async function handleMessage(msg, ctx) {
     const client = core.clientLabel({ clientInfo, userAgent: ctx.userAgent });
     pruneSessions();
     sessions.set(sessionId, { id: sessionId, tokenId: ctx.row.id, secretHash: ctx.secretHash, protocolVersion: version, clientInfo, client, createdAt: Date.now(), lastAt: Date.now(), streams: new Set() });
+    tokenAuth.startSweep();
     ctx.newSessionId = sessionId;
     ctx.client = client;
     recordCall("initialize", 200);
@@ -597,6 +607,23 @@ function originAllowed(req) {
   return require("../corsOrigins").isAllowedOrigin(origin);
 }
 
+/**
+ * The token's MCP budget: every JSON-RPC message (so each tools/call) and every GET /
+ * DELETE counts. Over the limit -> 429 with a JSON-RPC error; false means it was sent.
+ */
+function charge(res, tokenId, n) {
+  const { recordFailure } = require("../rateLimit");
+  for (let k = 0; k < n; k += 1) {
+    const verdict = recordFailure(`mcp:${tokenId}`, mcpLimit);
+    if (!verdict.ok) {
+      res.set("Retry-After", String(Math.max(1, verdict.retryAfterSec || 60)));
+      res.status(429).json({ ...rpcError(null, -32000, "Too many requests. Wait a minute and try again."), code: "MCP_RATE_LIMITED" });
+      return false;
+    }
+  }
+  return true;
+}
+
 /** Auth middleware for /mcp: admin tokens only. */
 async function mcpAuth(req, res, next) {
   try {
@@ -607,20 +634,14 @@ async function mcpAuth(req, res, next) {
       wwwAuthenticate(res, "An admin token (dsk_admin_...) is required.");
       return res.status(401).json({ error: "An admin token is required.", code: "TOKEN_REQUIRED" });
     }
-    const clientIp = require("../clientIp");
-    const ip = clientIp.ipOfRequest(req);
-    const country = core.countryOf(req.headers);
-    const result = await tokenAuth.authenticate({ secret, ip, country });
+    const { ip, trusted, country } = require("./clientAddress").ofRequest(req);
+    const result = await tokenAuth.authenticate({ secret, ip, trusted, country });
     if (!result.ok) {
       if (result.status === 401) wwwAuthenticate(res, result.body.error);
-      return res.status(result.status).json(result.body);
+      return tokenAuth.sendDenied(res, result);
     }
-    const { recordFailure } = require("../rateLimit");
-    const verdict = recordFailure(`mcp:${result.row.id}`, MCP_LIMIT);
-    if (!verdict.ok) {
-      res.set("Retry-After", String(Math.max(1, verdict.retryAfterSec || 60)));
-      return res.status(429).json({ error: "Too many requests. Wait a minute and try again.", code: "MCP_RATE_LIMITED" });
-    }
+    // GET and DELETE count once; a POST counts each JSON-RPC message (handlePost).
+    if (req.method !== "POST" && !charge(res, result.row.id, 1)) return undefined;
     try {
       usage.setIo(req.app?.get?.("io"));
     } catch {
@@ -628,7 +649,7 @@ async function mcpAuth(req, res, next) {
     }
     req.user = result.user;
     req.apiToken = { id: result.row.id, name: result.row.name };
-    req.mcp = { row: result.row, secret, secretHash: core.hashSecret(secret), ip, country, userAgent: req.get("user-agent") || "" };
+    req.mcp = { row: result.row, secret, secretHash: result.secretHash, ip, trusted, country, userAgent: req.get("user-agent") || "" };
     return next();
   } catch (err) {
     console.error("[mcp] auth:", err?.message || err);
@@ -650,6 +671,8 @@ function sessionOf(req, res, { required }) {
     return { sent: true };
   }
   sess.lastAt = Date.now();
+  // A client that moved to the rotated secret keeps its session under the new secret.
+  if (req.mcp.secretHash) sess.secretHash = req.mcp.secretHash;
   return { session: sess };
 }
 
@@ -669,6 +692,8 @@ async function handlePost(req, res) {
     }
     const messages = Array.isArray(body) ? body : [body];
     if (!messages.length) return res.status(400).json(rpcError(null, ERR.invalidRequest, "Empty batch."));
+    if (messages.length > MAX_BATCH) return res.status(400).json(rpcError(null, ERR.invalidRequest, `Batch too large (at most ${MAX_BATCH} messages).`));
+    if (!charge(res, req.mcp.row.id, messages.length)) return undefined;
     const hasInit = messages.some((m) => m && m.method === "initialize");
     if (hasInit && messages.length > 1) return res.status(400).json(rpcError(null, ERR.invalidRequest, "initialize must be sent on its own."));
     if (!hasInit && !versionOk(req, res)) return undefined;
@@ -704,6 +729,9 @@ function handleGet(req, res) {
   if (!versionOk(req, res)) return undefined;
   const sess = sessionOf(req, res, { required: true });
   if (sess.sent) return undefined;
+  if (sess.session.streams.size >= MAX_STREAMS_PER_SESSION) {
+    return res.status(429).json({ error: `At most ${MAX_STREAMS_PER_SESSION} open streams per session.`, code: "MCP_TOO_MANY_STREAMS" });
+  }
   res.status(200);
   res.set({
     "Content-Type": "text/event-stream",
@@ -748,6 +776,10 @@ function parseErrorHandler(err, req, res, next) {
   return next(err);
 }
 
+function __setLimitForTests(limit) {
+  mcpLimit = limit || MCP_LIMIT;
+}
+
 function __resetForTests() {
   for (const id of [...sessions.keys()]) endSession(id);
   catalog = null;
@@ -771,5 +803,8 @@ module.exports = {
   parseErrorHandler,
   openSessionCount,
   endSession,
+  MAX_BATCH,
+  MAX_STREAMS_PER_SESSION,
+  __setLimitForTests,
   __resetForTests,
 };

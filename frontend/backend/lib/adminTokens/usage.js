@@ -28,6 +28,8 @@ const FLUSH_MS = 15 * 1000;
 const CALLS_PER_FLUSH = 10;
 const DESTRUCTIVE_PER_FLUSH = 200;
 const KNOWN_DAYS = 7;
+const BOOK_DAYS = 30;
+const UNTRUSTED_REPEAT_MS = 60 * 60 * 1000;
 const BURST_WINDOW_MIN = 5;
 const BURST_BASELINE_MIN = 60;
 const BURST_MIN = 50;
@@ -48,6 +50,7 @@ const known = new Map(); // tokenId -> { ready: Promise, ips: Map(ip -> { countr
 const minutes = new Map(); // tokenId -> Map(minuteIndex -> count)
 const lastBurst = new Map(); // tokenId -> ms
 const lastEmail = new Map(); // tokenId -> ms
+const untrustedSeen = new Map(); // `${tokenId}|${ip}` -> ms of the last untrusted-address alert
 let flushTimer = null;
 let flushing = null;
 let lastPruneAt = 0;
@@ -76,11 +79,13 @@ function knownFor(tokenId) {
   k = { ips: new Map(), ready: null };
   k.ready = (async () => {
     try {
-      const since = new Date(Date.now() - KNOWN_DAYS * 86400e3).toISOString();
-      const res = await store.db().from(store.TABLES.ips).select("ip, country, last_at").eq("token_id", tokenId).gte("last_at", since).limit(1000);
+      // The whole stored history (the ips table keeps 30 days): the last 7 days decide
+      // "new address", the rest tells an idle token's old addresses apart from new ones.
+      const since = new Date(Date.now() - BOOK_DAYS * 86400e3).toISOString();
+      const res = await store.db().from(store.TABLES.ips).select("ip, country, last_at").eq("token_id", tokenId).gte("last_at", since).limit(2000);
       if (!res?.error) for (const r of res.data || []) k.ips.set(r.ip, { country: r.country || null, lastAt: Date.parse(r.last_at) || 0 });
     } catch {
-      /* an empty book only means no alert for the first address */
+      /* an empty book: the first-use rule still applies */
     }
   })();
   known.set(tokenId, k);
@@ -91,31 +96,60 @@ function knownFor(tokenId) {
 /**
  * Before a token request runs: is the address new for this token? Raises the alert and,
  * per the owner's auto-pause rules, pauses the token.
+ *
+ *  - untrusted address (loopback, private, Cloudflare range, not an address): always new,
+ *    never remembered; one alert per token and address per hour.
+ *  - the first use ever: an alert unless it comes from the address the token was created from.
+ *  - a token idle for more than 7 days: an alert for an address it never used before.
+ *  - otherwise: an alert for an address not used in the last 7 days.
+ * Kind: new_country when the country is unknown (no verified Cloudflare hop, XX, T1) or
+ * not among the last 7 days' countries, else new_ip.
  * @returns {Promise<{ paused: boolean, alert: object|null }>}
  */
-async function checkAddress(row, { ip, country, now = Date.now() }) {
-  if (!row?.id || !ip || ip === "unknown") return { paused: false, alert: null };
-  // Loopback: this server calling itself (the admin agent's tools); never a new address.
-  if (/^(127\.|::1$)/.test(String(ip))) return { paused: false, alert: null };
+async function checkAddress(row, { ip, trusted = true, country = null, now = Date.now() }) {
+  if (!row?.id) return { paused: false, alert: null };
+  const addr = String(ip || "unknown");
   const k = knownFor(row.id);
   await k.ready;
-  const cutoff = now - KNOWN_DAYS * 86400e3;
-  for (const [addr, v] of k.ips) if (v.lastAt && v.lastAt < cutoff) k.ips.delete(addr);
-  const seen = k.ips.get(ip);
-  if (seen) {
+  const bookCut = now - BOOK_DAYS * 86400e3;
+  const recentCut = now - KNOWN_DAYS * 86400e3;
+  for (const [a, v] of k.ips) if (v.lastAt && v.lastAt < bookCut) k.ips.delete(a);
+  const recent = [...k.ips.entries()].filter(([, v]) => v.lastAt >= recentCut);
+  const countries = new Set(recent.map(([, v]) => v.country).filter(Boolean));
+  const latest = [...k.ips.entries()].sort((a, b) => b[1].lastAt - a[1].lastAt)[0] || null;
+  const previousIp = row.last_used_ip && row.last_used_ip !== addr ? row.last_used_ip : latest && latest[0] !== addr ? latest[0] : row.created_ip || null;
+  const previousCountry = row.last_used_country || [...countries][0] || null;
+  const kindFor = () => (!country || (countries.size > 0 && !countries.has(country)) ? "new_country" : "new_ip");
+
+  if (!trusted) {
+    const key = `${row.id}|${addr}`;
+    if (now - (untrustedSeen.get(key) || 0) < UNTRUSTED_REPEAT_MS) return { paused: false, alert: null };
+    untrustedSeen.set(key, now);
+    if (untrustedSeen.size > 2000) untrustedSeen.delete(untrustedSeen.keys().next().value);
+    const out = await raiseAlert(row, { kind: "new_country", ip: addr, country: null, detail: { previousIp, previousCountry, reason: "untrusted_address" }, now });
+    return { paused: Boolean(out?.autoPaused), alert: out?.alert || null };
+  }
+
+  const seen = k.ips.get(addr);
+  if (seen && seen.lastAt >= recentCut) {
     seen.lastAt = now;
     if (country && !seen.country) seen.country = country;
     return { paused: false, alert: null };
   }
-  const hadAny = k.ips.size > 0;
-  const countries = new Set([...k.ips.values()].map((v) => v.country).filter(Boolean));
-  const previousIp = row.last_used_ip && row.last_used_ip !== ip ? row.last_used_ip : [...k.ips.entries()].sort((a, b) => b[1].lastAt - a[1].lastAt)[0]?.[0] || null;
-  const previousCountry = row.last_used_country || [...countries][0] || null;
-  k.ips.set(ip, { country: country || null, lastAt: now });
-  if (!hadAny) return { paused: false, alert: null };
-  const kind = country && countries.size > 0 && !countries.has(country) ? "new_country" : "new_ip";
-  const detail = kind === "new_country" ? { previousIp, previousCountry } : { previousIp, previousCountry: previousCountry || null };
-  const out = await raiseAlert(row, { kind, ip, country: country || null, detail, now });
+  const everUsed = Boolean(row.last_used_at) || Number(row.request_count) > 0 || pendingCount(row.id) > 0 || k.ips.size > 0;
+  const idleDays = row.last_used_at ? Math.floor((now - Date.parse(row.last_used_at)) / 86400e3) : null;
+  k.ips.set(addr, { country: country || seen?.country || null, lastAt: now });
+  let detail;
+  if (recent.length) {
+    detail = { previousIp, previousCountry };
+  } else if (!everUsed) {
+    if (row.created_ip && row.created_ip === addr) return { paused: false, alert: null };
+    detail = { previousIp: row.created_ip || null, previousCountry: null, reason: "first_use" };
+  } else {
+    if (seen) return { paused: false, alert: null }; // an idle token back on an address it used before
+    detail = { previousIp, previousCountry, reason: "idle_return", ...(idleDays != null ? { idleDays } : {}) };
+  }
+  const out = await raiseAlert(row, { kind: kindFor(), ip: addr, country: country || null, detail, now });
   return { paused: Boolean(out?.autoPaused), alert: out?.alert || null };
 }
 
@@ -587,6 +621,11 @@ function rememberIp(tokenId, ip, country = null) {
   k.ips.set(ip, { country, lastAt: Date.now() });
 }
 
+/** Drop a token's in-memory address book (it is reloaded from the database on next use). */
+function forgetBook(tokenId) {
+  known.delete(String(tokenId));
+}
+
 function __setMailerForTests(fn) {
   mailOverride = fn;
 }
@@ -601,6 +640,7 @@ function __resetForTests() {
   minutes.clear();
   lastBurst.clear();
   lastEmail.clear();
+  untrustedSeen.clear();
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = null;
   flushing = null;
@@ -633,6 +673,7 @@ module.exports = {
   mcpLatencies,
   pendingCount,
   rememberIp,
+  forgetBook,
   __setMailerForTests,
   __resetForTests,
 };

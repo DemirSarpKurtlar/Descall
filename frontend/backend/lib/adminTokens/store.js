@@ -31,6 +31,8 @@ const SETTINGS_MS = 10 * 1000;
 const OWNER_MS = 10 * 1000;
 const DEFAULT_SETTINGS = Object.freeze({ enabled: true, rules: Object.freeze({ newCountry: true, newIp: false, burst: true }) });
 
+const core = () => require("./core");
+
 let dbOverride = null;
 const db = () => dbOverride || require("../../db/supabase");
 
@@ -141,9 +143,61 @@ async function getById(id) {
   return cleanRow(res.data);
 }
 
-async function listTokens() {
-  const res = check(await db().from(TABLES.tokens).select(TOKEN_COLS).order("created_at", { ascending: false }).limit(500));
-  return (res.data || []).map(cleanRow);
+const INACTIVE_LIST_MAX = 100;
+const ACTIVE_MAX = 50;
+
+/** Tokens that are neither revoked nor expired (every one, no limit; at most ACTIVE_MAX exist). */
+async function listActive({ now = Date.now() } = {}) {
+  const at = new Date(now).toISOString();
+  const res = check(
+    await db()
+      .from(TABLES.tokens)
+      .select(TOKEN_COLS)
+      .is("revoked_at", null)
+      .or(`expires_at.is.null,expires_at.gt.${at}`)
+      .order("created_at", { ascending: false })
+  );
+  return (res.data || []).map(cleanRow).filter((r) => core().statusOf(r, now) === "active" || core().statusOf(r, now) === "paused");
+}
+
+/**
+ * Every active (or paused) token, plus the newest INACTIVE_LIST_MAX expired and the newest
+ * INACTIVE_LIST_MAX revoked ones; newest first.
+ */
+async function listTokens({ now = Date.now() } = {}) {
+  const at = new Date(now).toISOString();
+  const active = await listActive({ now });
+  const expired = check(
+    await db().from(TABLES.tokens).select(TOKEN_COLS).is("revoked_at", null).lte("expires_at", at).order("expires_at", { ascending: false }).limit(INACTIVE_LIST_MAX)
+  );
+  const revoked = check(
+    await db().from(TABLES.tokens).select(TOKEN_COLS).not("revoked_at", "is", null).order("revoked_at", { ascending: false }).limit(INACTIVE_LIST_MAX)
+  );
+  const byId = new Map();
+  for (const r of [...active, ...(expired.data || []).map(cleanRow), ...(revoked.data || []).map(cleanRow)]) byId.set(r.id, r);
+  return [...byId.values()].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+}
+
+/**
+ * Revoke every token that is not revoked yet, in single updates (rows created meanwhile
+ * are caught by the next round). Returns the revoked rows ({ id, name }).
+ */
+async function revokeAllActive(patch, { maxRounds = 5 } = {}) {
+  const out = [];
+  for (let round = 0; round < maxRounds; round += 1) {
+    const res = check(
+      await db()
+        .from(TABLES.tokens)
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .is("revoked_at", null)
+        .select("id, name")
+    );
+    out.push(...(res.data || []));
+    const left = check(await db().from(TABLES.tokens).select("id").is("revoked_at", null).limit(1));
+    if (!(left.data || []).length) break;
+  }
+  invalidate();
+  return out;
 }
 
 async function insertToken(row) {
@@ -281,6 +335,10 @@ module.exports = {
   invalidate,
   getById,
   listTokens,
+  listActive,
+  revokeAllActive,
+  ACTIVE_MAX,
+  INACTIVE_LIST_MAX,
   insertToken,
   updateToken,
   ownerRow,

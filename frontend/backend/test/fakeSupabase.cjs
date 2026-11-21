@@ -77,6 +77,12 @@ function matchesOrGroups(row, groups) {
       const rowVal = row[col];
       if (op === "eq") return String(rowVal) === String(val);
       if (op === "gte") return Number(rowVal) >= Number(val);
+      if (op === "is" && val === "null") return rowVal === null || rowVal === undefined;
+      // Timestamps / text compare as strings (ISO dates sort that way), numbers as numbers.
+      if (op === "gt") {
+        if (rowVal === null || rowVal === undefined) return false;
+        return typeof rowVal === "number" ? rowVal > Number(val) : String(rowVal) > String(val);
+      }
       return true;
     })
   );

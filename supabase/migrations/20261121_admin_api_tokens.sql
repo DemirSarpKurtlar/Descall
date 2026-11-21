@@ -2,7 +2,10 @@
 --
 -- Personal access tokens for the owner account: a bot (Claude Code / Desktop through the
 -- MCP endpoint, scripts through the REST API) acts as the owner. Only the owner creates
--- and manages them; creating, rotating, restoring and revoke-all need a fresh 2FA code.
+-- and manages them, from an owner session with a fresh 2FA code (creating, rotating,
+-- restoring, resuming, renaming, the IP list, alert actions and the auto-pause settings).
+-- A request made with a token may only read the token pages and reduce power: pause,
+-- revoke and revoke-all. At most 50 tokens are active at a time.
 --
 -- admin_api_tokens: one row per token. The secret ("dsk_admin_" + 43 base64url chars) is
 --   never stored: secret_hash is its SHA-256 hex. prefix / last4 are for the list

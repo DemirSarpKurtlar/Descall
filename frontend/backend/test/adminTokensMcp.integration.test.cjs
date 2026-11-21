@@ -37,6 +37,9 @@ const { signToken, signStepUpToken } = require("../config/jwt");
 const adminRouter = require("../routes/admin");
 const mcpRoutes = require("../routes/mcp");
 const usage = require("../lib/adminTokens/usage");
+const mcpLib = require("../lib/adminTokens/mcp");
+const tokenAuth = require("../lib/adminTokens/auth");
+const store = require("../lib/adminTokens/store");
 const state = require("../runtime/sharedState");
 
 usage.__setMailerForTests(async () => ({ sent: true }));
@@ -69,7 +72,8 @@ async function startServer() {
   return { server, base: `http://127.0.0.1:${server.address().port}` };
 }
 
-const BOT = { "X-Forwarded-For": "203.0.113.40", "CF-IPCountry": "NL" };
+// The bot's address through one Cloudflare hop (173.245.48.5), as the strict token check expects.
+const BOT = { "X-Forwarded-For": "203.0.113.40, 173.245.48.5", "CF-IPCountry": "NL" };
 
 async function rpc(base, body, { token, session, headers = {}, raw = null } = {}) {
   const res = await fetch(`${base}/mcp`, {
@@ -97,7 +101,7 @@ async function rpc(base, body, { token, session, headers = {}, raw = null } = {}
 async function rest(base, method, path, { body, token, stepUp } = {}) {
   const res = await fetch(base + path, {
     method,
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(stepUp ? { "X-Admin-Step-Up": stepUp } : {}) },
+    headers: { "Content-Type": "application/json", ...BOT, ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(stepUp ? { "X-Admin-Step-Up": stepUp } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   return { status: res.status, body: await res.json().catch(() => ({})) };
@@ -159,6 +163,8 @@ const parseText = (r) => JSON.parse(r.body.result.content[0].text);
     assert(r.status === 200 && r.body.result.isError === false, `api_request: ${JSON.stringify(r.body).slice(0, 300)}`);
     const listed = parseText(r);
     assert(listed.available === true && listed.tokens.some((t) => t.id === tokenId), "api_request returns the endpoint's JSON");
+    r = await rpc(base, { jsonrpc: "2.0", id: 51, method: "tools/call", params: { name: "api_request", arguments: { method: "POST", path: "/api/admin/tokens", body: { name: "Bot made", expiresIn: "never" } } } }, { token: secret, session });
+    assert(r.body.result.isError === true && /TOKEN_SELF_MANAGEMENT/.test(r.body.result.content[0].text), `a token cannot mint tokens through MCP: ${JSON.stringify(r.body).slice(0, 300)}`);
     r = await rpc(base, { jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "api_request", arguments: { method: "GET", path: "/api/me/appearance" } } }, { token: secret, session });
     assert(r.status === 200 && r.body.result.isError === false, "api_request reaches app routes too");
     r = await rpc(base, { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "api_request", arguments: { method: "GET", path: "/admin/../etc" } } }, { token: secret, session });
@@ -203,6 +209,57 @@ const parseText = (r) => JSON.parse(r.body.result.content[0].text);
     assert(row.last_client === "Claude Code 2.4", `client label from clientInfo: ${row.last_client}`);
     r = await rest(base, "GET", "/api/admin/tokens", { token: ownerSession });
     assert(r.body.mcp.openSessions >= 1 && r.body.mcp.tools > 20 && r.body.mcp.p50Ms >= 0, `mcp summary: ${JSON.stringify(r.body.mcp)}`);
+
+    /* ---------------- limits: batch size, streams per session, tools/call budget ---------------- */
+    const batch = Array.from({ length: mcpLib.MAX_BATCH + 1 }, (_, n) => ({ jsonrpc: "2.0", id: 100 + n, method: "ping" }));
+    r = await rpc(base, batch, { token: secret, session });
+    assert(r.status === 400 && r.body.error.code === -32600 && /Batch too large/.test(r.body.error.message), `batch over ${mcpLib.MAX_BATCH}: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    r = await rpc(base, batch.slice(0, 2), { token: secret, session });
+    assert(r.status === 200 && Array.isArray(r.body) && r.body.length === 2, "a small batch still works");
+    const streamCtrls = [];
+    const openStream = async () => {
+      const c = new AbortController();
+      streamCtrls.push(c);
+      return fetch(`${base}/mcp`, { headers: { Authorization: `Bearer ${secret}`, Accept: "text/event-stream", "Mcp-Session-Id": session, ...BOT }, signal: c.signal });
+    };
+    const st1 = await openStream();
+    const st2 = await openStream();
+    const st3 = await openStream();
+    assert(st1.status === 200 && st2.status === 200 && st3.status === 429, `streams per session: ${st1.status} ${st2.status} ${st3.status}`);
+    for (const c of streamCtrls) c.abort();
+    await new Promise((res) => setTimeout(res, 50));
+
+    r = await rest(base, "POST", "/api/admin/tokens", { token: ownerSession, stepUp, body: { name: "Budget", expiresIn: "1d" } });
+    const budgetSecret = r.body.secret;
+    r = await rpc(base, init, { token: budgetSecret });
+    const budgetSession = r.headers.get("mcp-session-id");
+    mcpLib.__setLimitForTests({ windowMs: 60 * 1000, max: 3 });
+    const ping = (id) => rpc(base, { jsonrpc: "2.0", id, method: "tools/call", params: { name: "system_health", arguments: {} } }, { token: budgetSecret, session: budgetSession });
+    const budget = [];
+    for (let n = 0; n < 4; n += 1) budget.push((await ping(200 + n)).status);
+    mcpLib.__setLimitForTests(null);
+    assert(budget.slice(0, 2).every((x) => x === 200) && budget[3] === 429, `each tools/call counts against the MCP budget: ${budget}`);
+
+    /* ---------------- sessions follow the rotated secret ---------------- */
+    r = await rest(base, "POST", "/api/admin/tokens", { token: ownerSession, stepUp, body: { name: "Rotating", expiresIn: "1d" } });
+    const rot = r.body;
+    r = await rpc(base, init, { token: rot.secret });
+    const rotSession = r.headers.get("mcp-session-id");
+    r = await rest(base, "POST", `/api/admin/tokens/${rot.token.id}/rotate`, { token: ownerSession, stepUp, body: { graceMinutes: 60 } });
+    const rotSecret2 = r.body.secret;
+    r = await rpc(base, { jsonrpc: "2.0", id: 300, method: "ping" }, { token: rot.secret, session: rotSession });
+    assert(r.status === 200, "the old secret's session lives through the grace window");
+    fake._tables.admin_api_tokens.rows.find((x) => x.id === rot.token.id).grace_until = new Date(Date.now() - 1000).toISOString();
+    store.invalidate();
+    await tokenAuth.sweepNow();
+    r = await rpc(base, { jsonrpc: "2.0", id: 301, method: "ping" }, { token: rotSecret2, session: rotSession });
+    assert(r.status === 404, `the end of the grace window closes the old secret's session: ${r.status}`);
+    r = await rpc(base, init, { token: rotSecret2 });
+    const rotSession2 = r.headers.get("mcp-session-id");
+    r = await rest(base, "POST", `/api/admin/tokens/${rot.token.id}/rotate`, { token: ownerSession, stepUp, body: { graceMinutes: 0 } });
+    const rotSecret3 = r.body.secret;
+    r = await rpc(base, { jsonrpc: "2.0", id: 302, method: "ping" }, { token: rotSecret3, session: rotSession2 });
+    assert(r.status === 404, "rotate without grace closes the session at once");
 
     /* ---------------- GET stream, DELETE, revoked ---------------- */
     const ctrl = new AbortController();

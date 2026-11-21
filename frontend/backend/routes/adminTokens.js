@@ -48,6 +48,8 @@ const MSG = {
   BAD_GRACE: "Choose a grace period: 0, 60 or 1440 minutes.",
   BAD_ACTION: "Choose an action: dismiss, pause or allow_ip.",
   ALERT_NOT_FOUND: "Alert not found.",
+  TOKEN_SELF_MANAGEMENT: "An admin token can only read, pause and revoke tokens. Sign in as the owner for this.",
+  TOKEN_LIMIT: `At most ${store.ACTIVE_MAX} active admin tokens. Revoke one first.`,
 };
 
 function fail(res, status, code, vars) {
@@ -71,6 +73,26 @@ async function ownerOnly(req, res, next) {
 
 router.use(["/tokens", "/openapi.json"], ownerOnly);
 
+/**
+ * Lead decision: a request made with an admin token may read the token pages and only
+ * reduce power (pause, revoke, revoke-all, pause from an alert). Anything that adds power
+ * or hides evidence (create, rotate, restore, resume, rename, IP list, allow an address,
+ * dismiss an alert, auto-pause settings) needs an owner session.
+ */
+function sessionOnly(req, res) {
+  if (!req.apiToken) return false;
+  fail(res, 403, "TOKEN_SELF_MANAGEMENT");
+  return true;
+}
+
+/** Refuse when the active (not revoked, not expired) tokens are already at the cap. */
+async function overLimit(res, { except = null } = {}) {
+  const active = await store.listActive();
+  if (active.filter((r) => r.id !== except).length < store.ACTIVE_MAX) return false;
+  fail(res, 409, "TOKEN_LIMIT");
+  return true;
+}
+
 function audit(req, action, tokenId, meta = {}) {
   try {
     state.appendAudit(req.user.id, req.user.username, action, tokenId ? `token:${tokenId}` : "tokens", meta);
@@ -79,9 +101,11 @@ function audit(req, action, tokenId, meta = {}) {
   }
 }
 
+/** The creator's address as the token checks see it (strict); null when it cannot be trusted. */
 function clientIp(req) {
   try {
-    return require("../lib/clientIp").ipOfRequest(req);
+    const a = require("../lib/adminTokens/clientAddress").ofRequest(req);
+    return a.trusted ? a.ip : null;
   } catch {
     return null;
   }
@@ -197,6 +221,7 @@ router.get("/tokens", async (_req, res) => {
 
 router.post("/tokens", async (req, res) => {
   try {
+    if (sessionOnly(req, res)) return;
     if (!(await store.available())) return fail(res, 503, "TOKENS_UNAVAILABLE");
     const body = req.body || {};
     const name = core.cleanName(body.name);
@@ -206,6 +231,7 @@ router.post("/tokens", async (req, res) => {
     if (!exp.ok) return fail(res, 400, "BAD_EXPIRY");
     const allow = core.cleanAllowlist(body.ipAllowlist);
     if (!allow.ok) return fail(res, 400, "BAD_IP", { entry: allow.entry });
+    if (await overLimit(res)) return;
     const secret = core.newSecret();
     const { prefix, last4 } = core.displayParts(secret);
     const now = new Date().toISOString();
@@ -246,13 +272,9 @@ router.post("/tokens/revoke-all", async (req, res) => {
     const reason = body.reason == null || body.reason === "" ? "other" : String(body.reason);
     if (!core.REVOKE_REASONS.includes(reason)) return fail(res, 400, "BAD_REASON");
     const note = cleanNote(body.note);
-    const rows = (await store.listTokens()).filter((r) => !r.revoked_at);
-    const at = new Date().toISOString();
-    for (const r of rows) {
-      await store.updateToken(r.id, { revoked_at: at, revoked_by: req.user.id, revoke_reason: reason, revoke_note: note, grace_hash: null, grace_until: null });
-      tokenAuth.dropLiveConnections(r.id, "revoked");
-    }
-    store.invalidate();
+    // One update of every unrevoked row (repeated until none is left), then close what they keep open.
+    const rows = await store.revokeAllActive({ revoked_at: new Date().toISOString(), revoked_by: req.user.id, revoke_reason: reason, revoke_note: note, grace_hash: null, grace_until: null });
+    for (const r of rows) tokenAuth.dropLiveConnections(r.id, "revoked");
     audit(req, "security_token_revoke_all", null, { count: rows.length, reason, names: rows.map((r) => r.name).slice(0, 20) });
     res.json({ revoked: rows.length });
   } catch (e) {
@@ -262,6 +284,7 @@ router.post("/tokens/revoke-all", async (req, res) => {
 
 router.put("/tokens/auto-pause", async (req, res) => {
   try {
+    if (sessionOnly(req, res)) return;
     if (!(await store.available())) return fail(res, 503, "TOKENS_UNAVAILABLE");
     const body = req.body || {};
     const prev = await store.getSettings();
@@ -288,6 +311,7 @@ router.post("/tokens/alerts/:alertId", async (req, res) => {
     if (!ID_RE.test(req.params.alertId)) return fail(res, 404, "ALERT_NOT_FOUND");
     const action = String(req.body?.action || "");
     if (!["dismiss", "pause", "allow_ip"].includes(action)) return fail(res, 400, "BAD_ACTION");
+    if (action !== "pause" && sessionOnly(req, res)) return;
     const alert = await store.getAlert(req.params.alertId);
     if (!alert) return fail(res, 404, "ALERT_NOT_FOUND");
     let row = await store.getById(alert.token_id);
@@ -482,8 +506,12 @@ router.patch("/tokens/:id", async (req, res) => {
   try {
     const row = await loadToken(req, res);
     if (!row) return;
-    if (row.revoked_at) return fail(res, 409, "TOKEN_REVOKED");
     const body = req.body || {};
+    // From a token only { paused: true } is allowed.
+    if (req.apiToken && (body.name !== undefined || body.ipAllowlist !== undefined || (body.paused !== undefined && body.paused !== true))) {
+      return fail(res, 403, "TOKEN_SELF_MANAGEMENT");
+    }
+    if (row.revoked_at) return fail(res, 409, "TOKEN_REVOKED");
     const patch = {};
     const events = [];
     if (body.name !== undefined) {
@@ -528,7 +556,9 @@ router.post("/tokens/:id/rotate", async (req, res) => {
   try {
     const row = await loadToken(req, res);
     if (!row) return;
+    if (sessionOnly(req, res)) return;
     if (row.revoked_at) return fail(res, 409, "TOKEN_REVOKED");
+    if (core.statusOf(row) === "expired" && (await overLimit(res, { except: row.id }))) return;
     const grace = req.body?.graceMinutes === undefined || req.body?.graceMinutes === null ? 0 : Number(req.body.graceMinutes);
     if (!core.GRACE_OPTIONS.includes(grace)) return fail(res, 400, "BAD_GRACE");
     const secret = core.newSecret();
@@ -545,8 +575,12 @@ router.post("/tokens/:id/rotate", async (req, res) => {
       rotated_at: new Date(now).toISOString(),
       expires_at: exp.ok ? exp.value : row.expires_at,
     });
-    // Without a grace period the old secret's sockets and MCP streams close now.
-    if (!grace) tokenAuth.dropLiveConnections(row.id, "rotated", { keepHash: next.secret_hash });
+    // Connections stay only on the new secret and, with a grace window, the one just replaced:
+    // grace 0 closes the old secret's sockets and MCP sessions now, and a second rotate
+    // closes the ones still on the grace secret it overwrites. The rest close when the
+    // grace window ends.
+    tokenAuth.dropLiveConnections(row.id, "rotated", { keepHashes: grace ? [next.secret_hash, row.secret_hash] : [next.secret_hash] });
+    if (grace) tokenAuth.scheduleGraceEnd(row.id, next.grace_until);
     audit(req, "security_token_rotate", row.id, { name: row.name, graceMinutes: grace });
     res.set("Cache-Control", "no-store");
     res.json({ token: await oneTokenView(next), secret });
@@ -584,8 +618,10 @@ router.post("/tokens/:id/restore", async (req, res) => {
   try {
     const row = await loadToken(req, res);
     if (!row) return;
+    if (sessionOnly(req, res)) return;
     if (!row.revoked_at) return res.json({ token: await oneTokenView(row) });
     if (!core.restorableUntil(row)) return fail(res, 400, "RESTORE_EXPIRED");
+    if (core.statusOf({ ...row, revoked_at: null }) !== "expired" && (await overLimit(res, { except: row.id }))) return;
     const next = await store.updateToken(row.id, { revoked_at: null, revoked_by: null, revoke_reason: null, revoke_note: null });
     audit(req, "security_token_restore", row.id, { name: row.name, revokedAt: row.revoked_at });
     res.json({ token: await oneTokenView(next) });
