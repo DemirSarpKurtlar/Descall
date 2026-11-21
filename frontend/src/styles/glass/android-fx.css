@@ -37,6 +37,13 @@ html.glass-ui.g-fx-lean {
   --g-fx-fill-heavy: color-mix(in srgb, var(--g-solid-heavy) 86%, transparent);
 }
 
+/* Menus, sheets, alerts, toasts (frost.css): 86-88% opaque base, so a 20px
+   radius and a lighter saturate stage read the same as 48px / 180%. */
+html.g-fx-lean {
+  --frost-blur: 20px;
+  --frost-saturate: 140%;
+}
+
 /* Chips and lenses: small, numerous, mostly over the static ambient. */
 html.glass-ui.g-fx-lean .g-chip {
   background:
@@ -85,19 +92,30 @@ html.glass-ui.g-fx-lean .g-scrim.g-msg-scrim {
   backdrop-filter: blur(14px);
 }
 
-html.glass-ui.g-fx-lean .g-scrim {
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+/* overlay.css gives every other scrim a 32px blur with !important. */
+html.glass-ui.g-fx-lean :is(.g-scrim, .g-attach-scrim, .g-giphy-scrim, .grp-menu-catcher):not(.g-msg-scrim),
+html.glass-ui.g-fx-lean .server-voice-menu-backdrop {
+  background: rgba(5, 6, 10, 0.68) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Tab bar and list search capsule (overlay.css, !important): 86% opaque base,
+   so 40px vs 24px is not visible; the search capsule sits on the search frost
+   band and needs no pass of its own. */
+html.glass-ui.g-fx-lean .g-tabbar {
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+}
+
+html.glass-ui.g-fx-lean .g-searchbar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 html.g-fx-lean .g-alert-scrim {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-}
-
-html.g-fx-lean .g-alert {
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  backdrop-filter: blur(22px) saturate(150%);
 }
 
 /* Buttons and chips inside an alert / report sheet sit on the sheet's own
@@ -161,6 +179,16 @@ html.glass-ui.g-fx-lean .g-lens[data-pressed]::after {
 }
 
 /* ── Low-end Android (glass-lite): no live blur anywhere ── */
+html.g-fx-lean.glass-lite {
+  --frost-blur: 8px;
+  --frost-saturate: 100%;
+}
+
+html.glass-ui.g-fx-lean.glass-lite .g-tabbar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 html.glass-ui.g-fx-lean.glass-lite {
   --g-blur: 0px;
   --g-blur-heavy: 0px;
