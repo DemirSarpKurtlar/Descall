@@ -3,6 +3,7 @@
 
     <application
         android:allowBackup="false"
+        android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -23,7 +24,14 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
+
+            <!-- adjustResize: the window is never panned for the keyboard. Capacitor's
+                 SystemBars insets listener pads the decor view by the IME inset and the
+                 web app follows the visual viewport (src/lib/mobileViewport.js); with the
+                 old unspecified mode a pan could stack on top of that and the whole page
+                 jumped up. -->
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
