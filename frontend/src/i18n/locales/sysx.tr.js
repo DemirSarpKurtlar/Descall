@@ -60,6 +60,21 @@ export const SYSX_TR = {
     "dbUnit": "ms yanıt",
     "uptime": "Çalışma süresi"
   },
+  "memAlert": {
+    "title": {
+      "warn": "Bellek yüksek",
+      "bad": "Bellek kritik seviyede",
+      "peak": "Bugün bellek zirve yaptı"
+    },
+    "body": {
+      "warn": "Sunucu {rss} / {limit} MB kullanıyor (%{pct}); son {min} dakikadır %{sustained} ve üstünde.",
+      "bad": "Sunucu {rss} / {limit} MB kullanıyor (%{pct}). Bellek dolarsa sunucu yeniden başlar ve herkesin bağlantısı kopar.",
+      "peak": "Şu an normal (%{pct}), ama bugün %{peak} seviyesine çıktı."
+    },
+    "advice": "Render'da Instance Type'ı Standard'a ({gb} GB) yükseltmen önerilir.",
+    "watch": "Şimdilik bir şey yapmana gerek yok; tekrar ederse planı büyütmeyi düşün.",
+    "plan": "Render planını aç"
+  },
   "flags": {
     "title": "Özellik bayrakları",
     "count": "{n} bayrak",

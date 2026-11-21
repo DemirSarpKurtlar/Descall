@@ -7,12 +7,14 @@ import { useLocale } from "../../../context/LocaleContext";
 import { formatNumber } from "../../../i18n/format.js";
 import { formatAppDateTime } from "../../../lib/datetime";
 import {
+  AlertTriangle,
   ArrowRight,
   Clock,
   Cloud,
   Cpu,
   Database,
   Download,
+  ExternalLink,
   Eye,
   FileText,
   Gauge,
@@ -58,6 +60,56 @@ const L = (t, l) => (l ? t(l.key, l.vars) : "");
 
 function shortDate(at, locale) {
   return formatAppDateTime(at, locale, { day: "numeric", month: "short", year: undefined, hour: "2-digit", minute: "2-digit", second: undefined });
+}
+
+/* ---------------- memory alert ---------------- */
+
+/** Where the plan of the API service is changed (Render dashboard, Settings › Instance Type). */
+export const RENDER_PLAN_URL = "https://dashboard.render.com";
+
+/**
+ * Banner above the tiles when the server's memory runs high (systemHealth.memoryAlert):
+ * "warn" = 80 %+ for five minutes, "bad" = 90 %+, "peak" = today's peak reached 90 %.
+ */
+export function MemoryAlert({ alert }) {
+  const { t, locale } = useLocale();
+  if (!alert || !["warn", "bad", "peak"].includes(alert.level)) return null;
+  const n = (v) => formatNumber(v, locale);
+  const pct = (v) => (v == null ? "–" : formatNumber(Math.round(v), locale));
+  const gb = alert.recommendMb ? formatNumber(Math.round((alert.recommendMb / 1024) * 10) / 10, locale) : null;
+  const tone = alert.level === "bad" ? "is-bad" : alert.level === "warn" ? "is-warn" : "is-peak";
+  return (
+    <div className={`asx-memalert ${tone}`} role={alert.level === "peak" ? "status" : "alert"} data-testid="sys-mem-alert" data-level={alert.level}>
+      <span className="asx-memalert-ic" aria-hidden="true">
+        <AlertTriangle size={18} />
+      </span>
+      <div className="asx-memalert-body">
+        <b>{t(`sysx.memAlert.title.${alert.level}`)}</b>
+        <p>
+          {t(`sysx.memAlert.body.${alert.level}`, {
+            rss: n(alert.rssMb),
+            limit: n(alert.memLimitMb),
+            pct: pct(alert.pct),
+            sustained: pct(alert.sustainedPct),
+            peak: pct(alert.peakPct),
+            min: alert.windowMin,
+          })}{" "}
+          {alert.level !== "peak" && gb ? t("sysx.memAlert.advice", { gb }) : t("sysx.memAlert.watch")}
+        </p>
+        <div className="asx-memalert-meter" aria-hidden="true">
+          <i style={{ width: `${Math.min(100, Math.max(0, alert.pct || 0))}%` }} />
+          <s style={{ left: "80%" }} />
+          <s style={{ left: "90%" }} />
+        </div>
+      </div>
+      {alert.level !== "peak" ? (
+        <a className="asx-btn" href={RENDER_PLAN_URL} target="_blank" rel="noopener noreferrer" data-testid="sys-mem-plan">
+          <ExternalLink size={15} />
+          {t("sysx.memAlert.plan")}
+        </a>
+      ) : null}
+    </div>
+  );
 }
 
 /* ---------------- health tiles ---------------- */

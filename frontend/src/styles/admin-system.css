@@ -95,6 +95,26 @@ html.glass-desktop :is(.asx, .asx-scrim) :is(button, input, textarea, select, a,
 .asx-chip.is-gray { background: rgba(255, 255, 255, 0.08); color: var(--asx-t2); }
 
 /* ── health tiles ── */
+/* Memory alert banner (systemHealth.memoryAlert): opaque, above the tiles. */
+.asx-memalert { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: #1d1a22; box-shadow: inset 0 0 0 1px rgba(var(--asx-amber), 0.35); }
+.asx-memalert.is-bad { background: #241519; box-shadow: inset 0 0 0 1px rgba(var(--asx-red), 0.45); }
+.asx-memalert.is-peak { background: #161a26; box-shadow: inset 0 0 0 1px rgba(var(--asx-brand), 0.35); }
+.asx-memalert-ic { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #ffc773; background: rgba(var(--asx-amber), 0.14); }
+.asx-memalert.is-bad .asx-memalert-ic { color: #ff8a8d; background: rgba(var(--asx-red), 0.16); }
+.asx-memalert.is-peak .asx-memalert-ic { color: #a9b9ff; background: rgba(var(--asx-brand), 0.16); }
+.asx-memalert-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.asx-memalert-body b { font-size: var(--fs-13); font-weight: 650; }
+.asx-memalert-body p { margin: 0; font-size: var(--fs-12); color: rgba(255, 255, 255, 0.72); line-height: 1.45; font-variant-numeric: tabular-nums; }
+.asx-memalert-meter { position: relative; height: 6px; margin-top: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.asx-memalert-meter i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: #ffc773; }
+.asx-memalert.is-bad .asx-memalert-meter i { background: #ff6b6f; }
+.asx-memalert.is-peak .asx-memalert-meter i { background: #7b93ff; }
+.asx-memalert-meter s { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.45); }
+.asx-memalert .asx-btn { flex: none; color: inherit; text-decoration: none; box-sizing: border-box; }
+@media (max-width: 640px) {
+  .asx-memalert { flex-wrap: wrap; }
+  .asx-memalert .asx-btn { flex: 1 1 100%; width: auto; max-width: 100%; justify-content: center; }
+}
 .asx-hts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .asx-ht { padding: 11px 13px 8px; border-radius: 16px; background: var(--asx-tile); box-shadow: inset 0 0 0 1px var(--asx-hair); min-width: 0; }
 .asx-ht-l { display: flex; align-items: center; gap: 6px; font-size: var(--fs-12); font-weight: 600; color: var(--asx-t3); white-space: nowrap; min-width: 0; }
