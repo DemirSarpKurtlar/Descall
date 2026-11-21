@@ -301,41 +301,57 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
     });
     n.by_tag.lock().unwrap().insert(tag, id);
 
+    // The window is built off the UI thread: notification_show is a synchronous command (it
+    // runs on the UI thread, inside WebView2's IPC callback), and building a webview window
+    // there deadlocks on Windows (Tauri's documented WebView2 issue): the first capsule froze
+    // the app. The bookkeeping above already ran in order; a capsule dismissed while its
+    // window was still being built is destroyed as soon as the window exists.
+    let app_build = app.clone();
     let app_load = app.clone();
-    let built = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html")))
-        .title("Descall")
-        .inner_size(width + notif::SHADOW_PAD * 2.0, height + notif::SHADOW_PAD * 2.0)
-        .position(x, y)
-        .decorations(false)
-        .transparent(true)
-        .shadow(false)
-        .resizable(false)
-        .maximizable(false)
-        .minimizable(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .visible_on_all_workspaces(true)
-        // Electron showed capsules with showInactive(). Tauri's show() on a hidden window is
-        // ShowWindow(SW_SHOW): it activates the capsule and takes the focus from the app the
-        // user is in (a full-screen game minimizes). A window born visible and unfocused is
-        // shown with SW_SHOWNOACTIVATE instead; the transparent page is empty until the card
-        // is drawn. Calls stay focusable so a clicked card can take the keyboard.
-        .focused(false)
-        .focusable(call)
-        .visible(true)
-        .use_https_scheme(true)
-        .additional_browser_args(crate::BROWSER_ARGS)
-        .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
-        .on_page_load(move |_w, p| {
-            if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
-                reveal(&app_load, id);
+    tauri::async_runtime::spawn_blocking(move || {
+        let built = WebviewWindowBuilder::new(&app_build, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html")))
+            .title("Descall")
+            .inner_size(width + notif::SHADOW_PAD * 2.0, height + notif::SHADOW_PAD * 2.0)
+            .position(x, y)
+            .decorations(false)
+            .transparent(true)
+            .shadow(false)
+            .resizable(false)
+            .maximizable(false)
+            .minimizable(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible_on_all_workspaces(true)
+            // Electron showed capsules with showInactive(). Tauri's show() on a hidden window is
+            // ShowWindow(SW_SHOW): it activates the capsule and takes the focus from the app the
+            // user is in (a full-screen game minimizes). A window born visible and unfocused is
+            // shown with SW_SHOWNOACTIVATE instead; the transparent page is empty until the card
+            // is drawn. Calls stay focusable so a clicked card can take the keyboard.
+            .focused(false)
+            .focusable(call)
+            .visible(true)
+            .use_https_scheme(true)
+            .additional_browser_args(crate::BROWSER_ARGS)
+            .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
+            .on_page_load(move |_w, p| {
+                if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
+                    reveal(&app_load, id);
+                }
+            })
+            .build();
+        match built {
+            Ok(w) => {
+                let live = app_build.state::<Notifications>().list.lock().unwrap().iter().any(|c| c.id == id);
+                if !live {
+                    let _ = w.destroy();
+                }
             }
-        })
-        .build();
-    if built.is_err() {
-        dismiss(app, id, "external");
-        return None;
-    }
+            Err(e) => {
+                log::warn!("[notif] capsule window failed: {e}");
+                dismiss(&app_build, id, "external");
+            }
+        }
+    });
     // ready-to-show fallback (notificationWindow.cjs revealFallback).
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {

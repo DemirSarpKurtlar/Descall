@@ -94,14 +94,19 @@ fn default_position<R: Runtime>(app: &AppHandle<R>) -> (f64, f64) {
     }
 }
 
-/// Create the overlay window when there is none. Born visible: see the module comment.
+/// Create the overlay window when there is none (or one is being built). Born visible: see
+/// the module comment. Built off the UI thread: overlay_show is a synchronous command (UI
+/// thread, inside WebView2's IPC callback) and building a webview window there deadlocks on
+/// Windows (Tauri's documented WebView2 issue), so joining a call froze the app. The label is
+/// claimed here, in command order; a window whose label was dropped while it was being built
+/// (the call ended) is destroyed as soon as it exists.
 fn ensure<R: Runtime>(app: &AppHandle<R>) {
-    if current(app).is_some() {
-        return;
-    }
     let (label, kept) = {
         let o = app.state::<Overlay>();
         let mut live = o.live.lock().unwrap();
+        if live.window.is_some() {
+            return;
+        }
         live.next += 1;
         let label = format!("{LABEL_PREFIX}{}", live.next);
         live.window = Some((label.clone(), false));
@@ -109,45 +114,61 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) {
         (label, kept)
     };
     let (x, y) = kept.unwrap_or_else(|| default_position(app));
+    let locale = state::locale(app);
+    let app_build = app.clone();
     let app_load = app.clone();
     let mine = label.clone();
-    let built = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("overlay.html")))
-        .title("Descall")
-        .inner_size(WIDTH, HEIGHT)
-        .position(x, y)
-        .decorations(false)
-        .transparent(true)
-        .shadow(false)
-        .resizable(false)
-        .maximizable(false)
-        .minimizable(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .visible_on_all_workspaces(true)
-        // Shown without activation (SW_SHOWNOACTIVATE); the page is transparent until drawn.
-        .focused(false)
-        .visible(true)
-        .use_https_scheme(true)
-        .additional_browser_args(crate::BROWSER_ARGS)
-        .initialization_script(format!("window.__DESCALL_OVERLAY__ = {};", json!({ "locale": state::locale(app) })))
-        .on_page_load(move |_w, p| {
-            if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
-                {
-                    let o = app_load.state::<Overlay>();
-                    let mut live = o.live.lock().unwrap();
-                    match live.window.as_mut() {
-                        Some((l, loaded)) if l.as_str() == mine.as_str() => *loaded = true,
-                        _ => return,
+    tauri::async_runtime::spawn_blocking(move || {
+        let built = WebviewWindowBuilder::new(&app_build, &label, WebviewUrl::CustomProtocol(crate::shell_url("overlay.html")))
+            .title("Descall")
+            .inner_size(WIDTH, HEIGHT)
+            .position(x, y)
+            .decorations(false)
+            .transparent(true)
+            .shadow(false)
+            .resizable(false)
+            .maximizable(false)
+            .minimizable(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible_on_all_workspaces(true)
+            // Shown without activation (SW_SHOWNOACTIVATE); the page is transparent until drawn.
+            .focused(false)
+            .visible(true)
+            .use_https_scheme(true)
+            .additional_browser_args(crate::BROWSER_ARGS)
+            .initialization_script(format!("window.__DESCALL_OVERLAY__ = {};", json!({ "locale": locale })))
+            .on_page_load(move |_w, p| {
+                if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
+                    {
+                        let o = app_load.state::<Overlay>();
+                        let mut live = o.live.lock().unwrap();
+                        match live.window.as_mut() {
+                            Some((l, loaded)) if l.as_str() == mine.as_str() => *loaded = true,
+                            _ => return,
+                        }
                     }
+                    push(&app_load);
                 }
-                push(&app_load);
+            })
+            .build();
+        let o = app_build.state::<Overlay>();
+        let mut live = o.live.lock().unwrap();
+        let still = live.window.as_ref().is_some_and(|(l, _)| l.as_str() == label.as_str());
+        match built {
+            Ok(w) if !still => {
+                drop(live);
+                let _ = w.destroy();
             }
-        })
-        .build();
-    if let Err(e) = built {
-        log::warn!("[overlay] window failed: {e}");
-        app.state::<Overlay>().live.lock().unwrap().window = None;
-    }
+            Ok(_) => {}
+            Err(e) => {
+                log::warn!("[overlay] window failed: {e}");
+                if still {
+                    live.window = None;
+                }
+            }
+        }
+    });
 }
 
 /// electronAPI.overlayShow(payload) -> descall:overlay:show.

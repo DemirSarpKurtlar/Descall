@@ -8,6 +8,7 @@
 //    { title, body, context, count }, the shape main.cjs computed with describeNotification.
 // 3. Window rules from the Rust sources: capsules and the voice overlay are shown without
 //    activation (Electron showInactive): born visible and unfocused, never show() later.
+// 3b. Both windows are built off the UI thread (WebView2 deadlock in sync commands).
 // 4. notification_show keeps main.cjs order: "Descall in front" before the reply toast.
 // 5. The tray icon is the embedded app icon at the small icon size, not the 32 px one.
 // 6. Taskbar thumbnail buttons and the unread badge come back after the tray.
@@ -117,7 +118,7 @@ function builderChain(src, marker) {
 const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
 {
   const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
-  const chain = builderChain(notify, 'WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html"))');
+  const chain = builderChain(notify, 'WebviewUrl::CustomProtocol(crate::shell_url("notif.html"))');
   assert.match(chain, /\.visible\(true\)/, "capsule is born visible (SW_SHOWNOACTIVATE)");
   assert.match(chain, /\.focused\(false\)/, "capsule is born unfocused, calls included");
   assert.doesNotMatch(chain, /\.visible\(false\)/);
@@ -136,6 +137,29 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   const globToRe = (g) => new RegExp(`^${g.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`);
   assert.ok(cap.windows.some((g) => globToRe(g).test(`${prefix}7`)), `capability covers ${prefix}<n>`);
   assert.ok(cap.windows.some((g) => globToRe(g).test("notif-12")), "capability covers notif-<n>");
+}
+
+// ---- 3b: the capsule and overlay windows are built off the UI thread --------------------------------
+{
+  // notification_show / overlay_show are synchronous commands: they run on the UI thread inside
+  // WebView2's IPC callback, where building a webview window deadlocks on Windows (Tauri's
+  // documented WebView2 issue). The build goes to a blocking task instead.
+  for (const file of ["notify.rs", "overlay.rs"]) {
+    const src = codeOnly(read(`desktop/app/src-tauri/src/commands/${file}`));
+    const builds = [...src.matchAll(/WebviewWindowBuilder::new\(/g)].map((m) => m.index);
+    assert.ok(builds.length >= 1, `${file} builds a window`);
+    for (const at of builds) {
+      const before = src.slice(Math.max(0, at - 220), at);
+      assert.match(before, /spawn_blocking\(move \|\| \{\s*let built = $/, `${file}: window built inside spawn_blocking`);
+    }
+    assert.match(src, /let _ = w\.destroy\(\);/, `${file}: a window that is no longer wanted when its build ends is destroyed`);
+  }
+  const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
+  const built = notify.slice(notify.indexOf("spawn_blocking(move ||"));
+  assert.match(built, /iter\(\)\.any\(\|c\| c\.id == id\)/, "capsule dismissed during its build is destroyed");
+  const overlay = codeOnly(read("desktop/app/src-tauri/src/commands/overlay.rs"));
+  const ensure = overlay.slice(overlay.indexOf("fn ensure"), overlay.indexOf("spawn_blocking"));
+  assert.match(ensure, /if live\.window\.is_some\(\) \{\s*return;/, "one overlay at a time, also while it is being built");
 }
 
 // ---- 4: notification_show order --------------------------------------------------------------------
