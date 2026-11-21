@@ -285,6 +285,10 @@ async function bootApp() {
       // 3.7.15: Electron minimized / tray → pause animations; idle / hidden page
       // (iOS background, locked phone in a call) → pause them too.
       import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause(); }).catch(() => {}),
+      // Cosmetic loops (name effects, frames, shop previews) pause while scrolled out of view.
+      import("./lib/cosmeticMotion.js").then((m) => m.installCosmeticMotion()).catch(() => {}),
+      // Android: premium theme scenes play for a few seconds, then hold still.
+      isNativeAndroid ? import("./lib/sceneIntro.js").then((m) => m.installSceneIntro()).catch(() => {}) : null,
     ]);
 
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;

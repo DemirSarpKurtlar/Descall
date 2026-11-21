@@ -159,22 +159,26 @@ html.glass-ui.g-fx-lean .app-root.g-shell .group-swipe-viewport.is-fluid-reveal:
   transform: none !important;
 }
 
-/* Ambient scenes: keep the first frame, drop the per-frame work. The drift and
-   sheen layers sit under every blurred bar, so each frame of motion forced a
-   re-blur of all of them; the rim animates background-position (a repaint of
-   every glass edge per frame). */
-html.glass-ui.g-fx-lean .g-theme-drift,
-html.glass-ui.g-fx-lean .g-theme-specks,
-html.glass-ui.g-fx-lean .g-theme-sheen,
-html.glass-ui.g-fx-lean .g-glass::before,
-html.glass-ui.g-fx-lean .g-chip::before {
-  animation: none !important;
+/* Ambient scenes: play, then settle. The drift and sheen layers sit under
+   every blurred bar, so each frame of motion forces a re-blur of all of them;
+   the rim animates background-position (a repaint of every glass edge per
+   frame). They run only while html.g-scene-live is set (lib/sceneIntro.js: a
+   few seconds after launch, a theme change or a resume) and otherwise hold
+   still where they are. */
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-drift,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-specks,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-sheen,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-glass::before,
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-chip::before {
+  animation-play-state: paused !important;
 }
 
 html.glass-ui.g-fx-lean .g-theme-sheen {
-  left: 28%;
-  opacity: 0.4;
-  transform: none;
+  transition: opacity 0.9s ease;
+}
+
+html.glass-ui.g-fx-lean:not(.g-scene-live) .g-theme-sheen {
+  opacity: 0;
 }
 
 /* Press feedback: a filter on a glass surface makes Chromium build a new

@@ -43,8 +43,16 @@ const pulse = css.match(/animation:\s*android-sk-pulse[^;]*;/)[0];
 assert.doesNotMatch(pulse, /infinite/, "skeleton pulse is bounded");
 assert.match(css, /prefers-reduced-motion: reduce[\s\S]*animation:\s*none !important/, "skeletons stop with reduced motion");
 
-// Theme scenes and the glass rim do not loop on Android.
-assert.match(css, /\.g-theme-drift,[\s\S]*?\.g-theme-sheen,[\s\S]*?\.g-glass::before,[\s\S]*?\{\s*animation:\s*none !important;/, "theme scene loops are off");
+// Theme scenes and the glass rim play, then settle: paused unless html.g-scene-live
+// (lib/sceneIntro.js, Android only), never reset to frame 0.
+assert.match(css, /:not\(\.g-scene-live\) \.g-theme-drift,[\s\S]*?\.g-theme-sheen,[\s\S]*?\.g-glass::before,[\s\S]*?\{\s*animation-play-state:\s*paused !important;/, "theme scene loops hold still outside the intro");
+assert.doesNotMatch(css, /\.g-theme-drift[^{]*\{[^}]*animation:\s*none/, "scene layers are paused, not removed");
+const fx = strip(read("styles/glass/android-fx.css"));
+assert.match(fx, /g-fx-lean:not\(\.g-scene-live\) \.g-theme-drift,[\s\S]*?\{\s*animation-play-state:\s*paused !important;/, "lean tier pauses the scene outside the intro");
+assert.match(main, /isNativeAndroid \? import\("\.\/lib\/sceneIntro\.js"\)/, "scene intro runs in the Android shell only");
+const intro = read("lib/sceneIntro.js");
+assert.match(intro, /INTRO_MS = (\d+)/, "intro length is set");
+assert.ok(Number(intro.match(/INTRO_MS = (\d+)/)[1]) <= 8000, "intro is short");
 
 // The jump-to-bottom glass button never animates filter on Android.
 const list = read("components/chat/MessageList.jsx");

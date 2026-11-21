@@ -1,0 +1,11 @@
+/* lib/cosmeticMotion.js: an animated cosmetic (name effect, frame, flare, aura,
+   bubble, badge, shop preview) scrolled out of view carries data-cx-off. Its
+   loops pause where they are and resume when it scrolls back in. */
+[data-cx-off],
+[data-cx-off]::before,
+[data-cx-off]::after,
+[data-cx-off] *,
+[data-cx-off] *::before,
+[data-cx-off] *::after {
+  animation-play-state: paused !important;
+}
