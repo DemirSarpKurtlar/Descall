@@ -42,6 +42,12 @@
   const invoke = (cmd, args) => T.core.invoke(cmd, args);
   const fire = (cmd, args) => { invoke(cmd, args).catch(() => {}); };
   const noop = () => {};
+  const winCmd = (cmd, core) => {
+    invoke(cmd).catch((err) => {
+      console.warn(`[shell] ${cmd} failed, using plugin:window|${core}`, err);
+      invoke(`plugin:window|${core}`).catch(noop);
+    });
+  };
 
   /** ipcRenderer.on(channel) -> unsubscribe function, like the preload's on* helpers. */
   const on = (event, cb, map = (p) => p) => {
@@ -122,9 +128,11 @@
     setActivityBusy: (busy) => fire("activity_set_busy", { busy: Boolean(busy) }),
     onConfirmRestart: (cb) => on("update:confirm-restart", cb),
 
-    minimizeWindow: () => fire("window_minimize"),
-    maximizeWindow: () => fire("window_toggle_maximize"),
-    closeWindow: () => fire("window_close"),
+    // Shell command first, Tauri's own window command (capabilities/default.json) if it fails,
+    // so the title bar buttons never stay dead (owner report, desktop-v4.0.1).
+    minimizeWindow: () => winCmd("window_minimize", "minimize"),
+    maximizeWindow: () => winCmd("window_toggle_maximize", "toggle_maximize"),
+    closeWindow: () => winCmd("window_close", "close"),
     onMaximizedChange: (cb) => on("window:maximized", cb, Boolean),
     onAppVisibility: (cb) => on("app:visibility", cb, (p) => p || {}),
     // Main-process errors (preload onMainError); admin windows get a no-op like adminPreload.
@@ -208,6 +216,44 @@
   Object.defineProperty(window, "electronAPI", { value: Object.freeze(api), writable: false, configurable: false });
   // window.descallPremium comes from premium-shim.js (the premium plugin's init script, which
   // runs before this one and skips admin windows).
+
+  // Electron never showed a browser menu and had no browser shortcuts. WebView2 has both
+  // (Back, Reload, Save as, Print, More tools). The shell also turns them off natively
+  // (src-tauri/src/webview.rs); this is the page-side net. Bubble phase on window: the app's own
+  // menus (they preventDefault in their handlers) run first; editable fields keep cut/copy/paste.
+  const isEditable = (el) => {
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const tag = n.tagName;
+      if (tag === "TEXTAREA") return !n.disabled;
+      if (tag === "INPUT") return !n.disabled && !/^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(n.type || "");
+      if (n.isContentEditable) return true;
+    }
+    return false;
+  };
+  window.addEventListener("contextmenu", (e) => {
+    if (!isEditable(e.target)) e.preventDefault();
+  });
+  const blockedKey = (e) => {
+    const k = String(e.key || "");
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (k === "F5" || k === "BrowserBack" || k === "BrowserForward" || k === "BrowserRefresh" || k === "BrowserHome") return true;
+    if (e.altKey && !ctrl && (k === "ArrowLeft" || k === "ArrowRight" || k === "Home")) return true;
+    if (ctrl && /^[rpsuoj]$/i.test(k) && !e.altKey) return true; // reload, print, save, source, open, downloads
+    if (ctrl && e.shiftKey && /^[ijc]$/i.test(k)) return true; // devtools
+    if (k === "F12" || k === "F3" || k === "F7") return true;
+    return false;
+  };
+  window.addEventListener("keydown", (e) => {
+    if (blockedKey(e)) e.preventDefault();
+  }, true);
+  // Mouse back / forward buttons navigate history in WebView2.
+  const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
+  window.addEventListener("mouseup", blockNavButtons, true);
+  window.addEventListener("mousedown", blockNavButtons, true);
+  window.addEventListener("auxclick", blockNavButtons, true);
+  const markTauri = () => { if (document.documentElement) document.documentElement.classList.add("tauri-app"); };
+  markTauri();
+  document.addEventListener("DOMContentLoaded", markTauri);
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).

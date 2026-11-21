@@ -16,8 +16,16 @@
 (() => {
   "use strict";
   if (window.top !== window || window.__descallPremiumShim) return;
-  const T = window.__TAURI__;
-  if (!T || !T.core || !T.event) return;
+  // Plugin init scripts run BEFORE the withGlobalTauri bundle (tauri manager/webview.rs: core
+  // init, plugin init scripts, then plugin_global_api_scripts), so window.__TAURI__ does not
+  // exist yet here. Reading it at load time made this shim return early on every start: no
+  // descallPremium, and Settings > Descall+ showed every desktop feature as "Masaustu / Kilitli"
+  // (owner report, desktop-v4.0.1). __TAURI_INTERNALS__ (invoke, transformCallback) is already
+  // there; __TAURI__ is read per call, once all init scripts have run.
+  const internals = () => window.__TAURI_INTERNALS__ || null;
+  const tauri = () => window.__TAURI__ || null;
+  const I0 = internals();
+  if (!I0 && !tauri()) return; // not a Tauri page
   if (location.hostname === "descallhud.localhost") return; // HUD pages have descallHud instead
   // Admin windows never had descallPremium (adminPreload.cjs), nor do the shell's own pages
   // (capsules, overlay). The label is known before any page script runs.
@@ -27,7 +35,26 @@
   if (label === "admin" || label === "signup-stats" || label === "tray-menu" || location.hostname === "descall-shell.localhost") return;
   Object.defineProperty(window, "__descallPremiumShim", { value: true });
 
-  const invoke = (cmd, args) => T.core.invoke(cmd, args);
+  function invoke(cmd, args) {
+    const T = tauri();
+    if (T && T.core && typeof T.core.invoke === "function") return T.core.invoke(cmd, args);
+    const I = internals();
+    if (I && typeof I.invoke === "function") return I.invoke(cmd, args);
+    return Promise.reject(new Error("tauri ipc unavailable"));
+  }
+
+  /** event.listen as @tauri-apps/api does it, for a call before the global bundle exists. */
+  function listen(event, handler) {
+    const T = tauri();
+    if (T && T.event && typeof T.event.listen === "function") return T.event.listen(event, handler);
+    const I = internals();
+    if (!I || typeof I.transformCallback !== "function") return Promise.reject(new Error("tauri events unavailable"));
+    return I.invoke("plugin:event|listen", { event, target: { kind: "Any" }, handler: I.transformCallback(handler) }).then((eventId) => () => {
+      const reg = window.__TAURI_EVENT_PLUGIN_INTERNALS__;
+      if (reg && typeof reg.unregisterListener === "function") reg.unregisterListener(event, eventId);
+      return I.invoke("plugin:event|unlisten", { event, eventId }).catch(() => {});
+    });
+  }
   const isPremiumChannel = (c) => typeof c === "string" && /^premium:[a-z0-9:_-]{1,64}$/i.test(c);
 
   const isBytes = (v) => v instanceof ArrayBuffer || ArrayBuffer.isView(v);
@@ -82,11 +109,11 @@
     if (!isPremiumChannel(channel) || typeof fn !== "function") return () => {};
     let un = null;
     let dead = false;
-    T.event.listen(channel, (e) => {
+    listen(channel, (e) => {
       unpack(e.payload).then((p) => {
         try { fn(...(Array.isArray(p) ? p : [p])); } catch (err) { console.error(err); }
       }).catch((err) => console.error("[premium]", err));
-    }).then((u) => { if (dead) u(); else un = u; });
+    }).then((u) => { if (dead) u(); else un = u; }).catch((err) => console.error("[premium]", err));
     return () => { dead = true; if (un) un(); };
   }
 

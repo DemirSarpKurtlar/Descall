@@ -79,7 +79,9 @@ export default function TitleBar() {
   if (!isElectron) return null;
 
   return (
-    <div className="titlebar" role="banner">
+    // data-tauri-drag-region="deep": the Tauri shell drags (and double-click maximizes) from
+    // anywhere on the bar except its buttons; Electron uses -webkit-app-region instead.
+    <div className="titlebar" role="banner" data-tauri-drag-region="deep">
       <div className="titlebar-brand">
         <DescallBrand />
       </div>

@@ -117,7 +117,11 @@ export const ADMIN_PANEL_PATH = "/admin/panel";
 export function openAdminPanelWindow() {
   if (typeof window === "undefined" || !window.electronAPI?.isElectron) return false;
   try {
-    return Boolean(window.open(ADMIN_PANEL_PATH, "descall-admin"));
+    const win = window.open(ADMIN_PANEL_PATH, "descall-admin");
+    // Tauri: the shell opens the admin window natively (src-tauri/src/admin.rs) and denies the
+    // page's window.open, which then returns null although the window did open.
+    if (!win && window.electronAPI?.isTauri) return true;
+    return Boolean(win);
   } catch {
     return false;
   }
