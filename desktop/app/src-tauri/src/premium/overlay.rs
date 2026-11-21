@@ -89,6 +89,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
         Some(w) => w,
         None => {
             let Ok(url) = format!("http://{SCHEME}.localhost/{}", o.kind).parse() else { return };
+            let sc = wins::scale(h).max(0.1);
             let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::CustomProtocol(url))
                 .title("Descall")
                 .transparent(true)
@@ -101,7 +102,14 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 .minimizable(false)
                 .focused(false)
                 .focusable(o.focusable)
-                .visible(false)
+                // Shown at creation, never through show(): tao shows a hidden window with
+                // SW_SHOW, which activates it and can take the focus from the game (a hotkey
+                // gives Descall the foreground right). Created visible and unfocused it uses
+                // SW_SHOWNOACTIVATE, like Electron's showInactive(). The page is transparent
+                // until its first state, so nothing shows before set_bounds below.
+                .visible(true)
+                .position(bounds.x as f64 / sc, bounds.y as f64 / sc)
+                .inner_size(bounds.width.max(1) as f64 / sc, bounds.height.max(1) as f64 / sc)
                 .visible_on_all_workspaces(true)
                 // Same WebView2 browser arguments as the main window: windows that share its
                 // user data folder with other arguments fail to start (ERROR_INVALID_STATE),
@@ -125,8 +133,7 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
     };
     wins::set_bounds(&w, bounds);
     let _ = w.set_ignore_cursor_events(o.click_through);
-    let _ = w.show();
-    // After show and click-through: both make tao rewrite the window style (wins::set_opacity).
+    // After click-through: it makes tao rewrite the window style (wins::set_opacity).
     wins::set_opacity(&w, o.opacity.clamp(0.2, 1.0));
 }
 

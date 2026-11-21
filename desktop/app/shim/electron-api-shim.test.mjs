@@ -521,7 +521,12 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(winsRs, /crate::webview::install_browser_guards\(&w\);\s*track\(h, label, kind, portal_feature\(kind\)/, "portal windows: no browser menu / reload keys");
   assert.match(winsRs, /run_on_main_thread\(move \|\| platform::set_opacity\(hw, alpha\)\)/, "opacity is queued behind tao's style changes");
   const ovRs = readFileSync(join(srcDir, "premium", "overlay.rs"), "utf8");
-  assert.ok(ovRs.indexOf("let _ = w.show();") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after show");
+  assert.ok(ovRs.indexOf("w.set_ignore_cursor_events(o.click_through)") < ovRs.indexOf("wins::set_opacity(&w, o.opacity"), "overlay opacity after click-through");
+  // HUDs never take the focus from the game: created visible + unfocused (SW_SHOWNOACTIVATE),
+  // never shown later through show() (SW_SHOW activates).
+  const ovChain = chains.find((x) => x.file === "premium/overlay.rs").chain;
+  assert.match(ovChain, /\.focused\(false\)[\s\S]*\.visible\(true\)/, "overlays are created visible and unfocused");
+  assert.doesNotMatch(ovRs, /w\.show\(\)/, "no show() (SW_SHOW) on overlay windows");
   // Tauri reports window moves during a drag (Electron's 'moved' came after the drop): widget
   // positions and edge snapping wait until no mouse button is held.
   for (const f of ["widgets.rs", "advanced_window_mgmt.rs"]) {
