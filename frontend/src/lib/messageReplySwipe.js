@@ -135,6 +135,11 @@ export function attachReplySwipe(el, {
   onHaptic = () => {},
   onReply = () => {},
   onCancel = () => {},
+  // Android (Chromium): the bubble is touch-action: pan-y, so the engine itself
+  // drops a horizontal-first pan and never scrolls under a reply swipe. The
+  // touchmove listener can then be passive, and a list scroll that starts on a
+  // bubble no longer waits for the main thread before it moves.
+  passiveMove = false,
 } = {}) {
   if (!el || typeof el.addEventListener !== "function") return () => {};
   let gesture = null;
@@ -192,7 +197,7 @@ export function attachReplySwipe(el, {
       claimed = true;
       onClaim();
     }
-    if (event.cancelable) event.preventDefault();
+    if (!passiveMove && event.cancelable) event.preventDefault();
     onMove(result.x);
     if (result.crossed) onHaptic();
   }
@@ -205,7 +210,7 @@ export function attachReplySwipe(el, {
   }
 
   const startOpts = { passive: true };
-  const moveOpts = { passive: false };
+  const moveOpts = { passive: Boolean(passiveMove) };
   el.addEventListener("touchstart", onStart, startOpts);
   el.addEventListener("touchmove", handleMove, moveOpts);
   el.addEventListener("touchend", onEnd, startOpts);

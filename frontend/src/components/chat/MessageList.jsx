@@ -77,6 +77,10 @@ import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
 import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, hapticSelection, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
+
+// Android Chromium honours the bubble's touch-action: pan-y, so the reply swipe
+// listens passively there (lib/messageReplySwipe.js passiveMove).
+const REPLY_SWIPE_PASSIVE = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || "");
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
 import { attachStickToBottom, JUMP_BUTTON_PX } from "../../lib/stickToBottom";
 import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
@@ -1673,6 +1677,7 @@ function MessageBubbleView({
     return attachReplySwipe(el, {
       getDirection: () => "right",
       getEdgeWidth: () => swipeBackEdgeBand(),
+      passiveMove: REPLY_SWIPE_PASSIVE,
       shouldIgnore: (target) => {
         if (replyLive.current.editing) return true;
         const node = target?.nodeType === 1 ? target : target?.parentElement;
@@ -1838,7 +1843,14 @@ function MessageBubbleView({
   };
   // The menu key also fires a contextmenu event: no native menu on top of ours.
   const onBubbleContextMenu = (e) => {
-    if (Date.now() - kbdMenuAt.current < 800) e.preventDefault();
+    if (Date.now() - kbdMenuAt.current < 800) {
+      e.preventDefault();
+      return;
+    }
+    // Android raises contextmenu at its own long-press (400 ms) while our 450 ms
+    // menu press is still armed. Left alone, Chromium may show its own menu or
+    // cancel the touch, which aborted the press and the menu never opened.
+    if (glass && pressDetach.current && e.nativeEvent?.pointerType !== "mouse") e.preventDefault();
   };
   useEffect(() => {
     const el = bubbleRef.current;
