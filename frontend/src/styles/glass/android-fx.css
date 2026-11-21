@@ -192,6 +192,67 @@ html.glass-ui.g-fx-lean .g-lens[data-pressed]::after {
   background: rgba(255, 255, 255, 0.07);
 }
 
+/* Conversation ambient (chat.css) without background-attachment: fixed.
+   main-panel, chat-panel-shell and the message scroller each painted the
+   ambient with a fixed attachment; on the scroller itself Blink repaints that
+   background on every scroll frame (and the scroll stays on the main thread).
+   On the phone layout the shell is the full viewport at 0,0 and never
+   scrolls, so painting the ambient once on the shell with a normal
+   attachment gives the same pixels; the panel and the scroller inside it go
+   transparent and scroll as plain composited layers. iOS WebKit ignores
+   fixed attachment anyway, so only the Android tier needs this. */
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell {
+  background-attachment: scroll !important;
+}
+
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell .main-panel,
+html.glass-ui.g-fx-lean .app-root.g-shell.is-mobile .chat-panel-shell .messages-container {
+  background-color: transparent !important;
+  background-image: none !important;
+  background-attachment: scroll !important;
+}
+
+/* Remaining hardcoded 22-40px blurs (round 2). Same rules as above: surfaces
+   over moving content (video, scrolling lists) keep a smaller live blur with
+   one filter stage; surfaces whose fill is already 86-94% opaque or that sit
+   over the static ambient need no blur pass. */
+
+/* Shop sticky bar (90% opaque) and the profile editor save bar, over
+   scrolling cards. */
+html.glass-ui.g-fx-lean .s2-sticky,
+html.glass-ui.g-fx-lean .us-pe-savebar {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Jump-to-latest button over the message list (86% opaque). */
+html.glass-ui.g-fx-lean .msg-jump-dock .msg-jump-btn.msg-jump-btn {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Screen share: pills, the tile row and the filmstrip sit over live video, so
+   their blur re-runs for every decoded frame. */
+html.glass-ui.g-fx-lean .ss-v1 .ss-pill,
+html.glass-ui.g-fx-lean .ss-v1 .ss-tile-row,
+html.glass-ui.g-fx-lean .share-filmstrip {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Screen share quality sheet and the phone settings sheet: menu-weight
+   frost like frost.css. */
+html.glass-ui.g-fx-lean .ssq-sheet,
+html.glass-ui.g-fx-lean .user-settings.is-mobile.g-settings.s3-phone-sheet {
+  -webkit-backdrop-filter: blur(var(--frost-blur, 20px)) saturate(var(--frost-saturate, 140%));
+  backdrop-filter: blur(var(--frost-blur, 20px)) saturate(var(--frost-saturate, 140%));
+}
+
+html.glass-ui.g-fx-lean[data-theme="light"] .g-invite {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
 /* ── Low-end Android (glass-lite): no live blur anywhere ── */
 html.glass-ui.g-fx-lean.glass-lite {
   --frost-blur: 8px;
