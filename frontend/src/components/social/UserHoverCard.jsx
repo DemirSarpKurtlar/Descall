@@ -11,7 +11,7 @@ import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import { artUrl } from "../../lib/stillArt.js";
 import { useLocale, useT } from "../../context/LocaleContext";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { getToken } from "../../lib/storage";
 import { acceptProfilePayload } from "../../lib/profileModalState";
 import { trDative } from "../../lib/trSuffix";
@@ -70,7 +70,7 @@ function fallbackBanner(seed) {
 const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
 
 async function requestPublicProfile(id) {
-  const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, { headers: authHeaders() });
+  const res = await fetch(`${apiBase()}/auth/users/${encodeURIComponent(id)}`, { headers: authHeaders() });
   if (!res.ok) return null;
   const data = await res.json().catch(() => null);
   return acceptProfilePayload(id, data?.user);
@@ -81,7 +81,7 @@ async function requestPublicProfile(id) {
 const fetchPublicProfile = (id) => fetchProfileShared(id, requestPublicProfile);
 
 async function fetchMutual(username) {
-  const res = await fetch(`${API_BASE_URL}/friends/mutual/${encodeURIComponent(username)}`, { headers: authHeaders() });
+  const res = await fetch(`${apiBase()}/friends/mutual/${encodeURIComponent(username)}`, { headers: authHeaders() });
   if (!res.ok) return null;
   return res.json().catch(() => null);
 }

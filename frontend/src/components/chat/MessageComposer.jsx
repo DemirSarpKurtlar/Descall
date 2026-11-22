@@ -15,7 +15,7 @@ import { getServerMembers } from "../../api/servers";
 import { getPresenceStatus } from "../../lib/presence";
 import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format";
@@ -1149,7 +1149,7 @@ function MessageComposer({
     setUploadError("");
     try {
       const data = await uploadChatFile(file, {
-        base: API_BASE_URL,
+        base: apiBase(),
         token: getToken(),
         signal: ctrl.signal,
         onProgress: (progress) => {
@@ -1383,7 +1383,7 @@ function MessageComposer({
         try {
           const ext = extensionForMime(actualMime);
           const data = await uploadChatFile(blob, {
-            base: API_BASE_URL,
+            base: apiBase(),
             token: getToken(),
             signal: ctrl.signal,
             filename: `voice-${Date.now()}.${ext}`,

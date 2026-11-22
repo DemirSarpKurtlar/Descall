@@ -18,7 +18,7 @@ import {
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { getToken } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedbackV3 from "./feedback3/AdminFeedbackV3.jsx";
 import SignupStatsWindow from "./signupStats/SignupStatsWindow.jsx";
@@ -397,9 +397,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     try {
       const token = getToken();
       console.log("[ADMIN] Loading users, token:", !!token);
-      console.log("[ADMIN] API_BASE_URL:", API_BASE_URL);
+      console.log("[ADMIN] API base:", apiBase());
       
-      const res = await adminRawFetch(`${API_BASE_URL}/api/admin/users`, {
+      const res = await adminRawFetch(`${apiBase()}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();

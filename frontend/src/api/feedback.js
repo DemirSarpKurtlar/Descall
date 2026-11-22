@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { t } from "../i18n/runtime.js";
 import { serverErrorText } from "./httpError";
 import { getToken } from "../lib/storage";
@@ -18,7 +18,7 @@ export async function uploadFeedbackShot(file) {
   form.append("file", file);
   form.append("purpose", "feedback");
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
+  const res = await fetch(`${apiBase()}/api/media/upload`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,

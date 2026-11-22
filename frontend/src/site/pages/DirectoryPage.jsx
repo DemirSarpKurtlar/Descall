@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { DIRECTORY_SORTS } from "../../lib/serverDirectory.js";
 import {
   DIRECTORY_CATEGORIES,
@@ -21,7 +21,7 @@ const PAGE = 48;
 const POPULAR = 12;
 
 async function getJson(path, { method = "GET", signal } = {}) {
-  const res = await fetch(`${API_BASE_URL}/api/directory${path}`, {
+  const res = await fetch(`${apiBase()}/api/directory${path}`, {
     method,
     signal,
     headers: method === "POST" ? { "Content-Type": "application/json" } : undefined,

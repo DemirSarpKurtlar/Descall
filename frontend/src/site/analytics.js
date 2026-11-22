@@ -388,11 +388,11 @@ export function captureWebVitals() {
 
 /**
  * First-party consent beacon, works for Accept and Reject (no PostHog required).
- * Uses API_BASE_URL from config; failures are silent.
+ * Uses the routed API base (lib/nodeRouting.js); failures are silent.
  */
 export async function beaconConsent(choice) {
   try {
-    const { API_BASE_URL } = await import("../config/api");
+    const { apiBase } = await import("../lib/nodeRouting.js");
     const payload = JSON.stringify({
       choice,
       path: typeof window !== "undefined" ? window.location.pathname : "/",
@@ -402,7 +402,7 @@ export async function beaconConsent(choice) {
     // On descall.com, post same-origin and let Vercel proxy to Render.
     const host = typeof window !== "undefined" ? window.location.hostname : "";
     const sameOrigin = host === "descall.com" || host === "www.descall.com";
-    const url = sameOrigin ? "/api/marketing/consent-event" : `${API_BASE_URL}/api/marketing/consent-event`;
+    const url = sameOrigin ? "/api/marketing/consent-event" : `${apiBase()}/api/marketing/consent-event`;
     if (navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
       navigator.sendBeacon(url, blob);

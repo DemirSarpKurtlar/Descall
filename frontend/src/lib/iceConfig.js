@@ -10,6 +10,7 @@
  * next ICE restart uses valid credentials.
  */
 import { getToken } from "./storage.js";
+import { apiBase } from "./nodeRouting.js";
 
 const DEFAULT_ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -180,8 +181,10 @@ export async function preloadIceServers() {
       return cachedServers;
     }
 
+    // Builds with VITE_API_BASE_URL ask the node this tab is routed to (lib/nodeRouting.js;
+    // every node hands out the same TURN credentials); others keep the page origin.
     const base =
-      (import.meta.env?.VITE_API_BASE_URL || "").replace(/\/$/, "") ||
+      (import.meta.env?.VITE_API_BASE_URL ? apiBase() : "").replace(/\/$/, "") ||
       (typeof window !== "undefined" ? window.location.origin : "");
     const token = currentToken();
 

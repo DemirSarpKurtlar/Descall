@@ -8,7 +8,7 @@ import GlassActionMenu from "../ui/GlassActionMenu";
 import { confirmToggleBlock, useIsBlocked } from "../../lib/blockedUsers";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
@@ -86,7 +86,7 @@ async function loadPublicProfile(id) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROFILE_LOAD_TIMEOUT_MS);
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${apiBase()}/auth/users/${encodeURIComponent(id)}`, {
       headers: { Authorization: `Bearer ${getToken()}` },
       signal: ctrl.signal,
     });
@@ -279,7 +279,7 @@ function UserProfileModal({
     let active = true;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/friends/mutual/${encodeURIComponent(username)}`, {
+        const res = await fetch(`${apiBase()}/friends/mutual/${encodeURIComponent(username)}`, {
           headers: { Authorization: `Bearer ${getToken()}` },
           signal: ctrl.signal,
         });
@@ -343,7 +343,7 @@ function UserProfileModal({
     setFriendLoading(true);
     noteFriendError(forId, "");
     try {
-      const res = await fetch(`${API_BASE_URL}/friends/request`, {
+      const res = await fetch(`${apiBase()}/friends/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -377,7 +377,7 @@ function UserProfileModal({
     setFriendLoading(true);
     noteFriendError(forId, "");
     try {
-      const res = await fetch(`${API_BASE_URL}/friends/remove`, {
+      const res = await fetch(`${apiBase()}/friends/remove`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

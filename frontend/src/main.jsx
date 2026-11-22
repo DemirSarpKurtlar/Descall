@@ -374,6 +374,13 @@ async function boot() {
   // Signed-in app: /auth/me, the friends list and the DM previews go out now,
   // in parallel with the App chunk; App's own calls take these promises
   // (lib/bootPrefetch.js, one request each, a plain request on any miss).
+  // Hybrid server: ask the primary which node (Render or the PC) this tab uses, max 1.5 s,
+  // in parallel with everything below; the first socket connect waits for the answer.
+  if (!preferMarketingShell) {
+    import("./lib/nodeRouting.js")
+      .then((m) => m.initNodeRouting())
+      .catch(() => {});
+  }
   if (!preferMarketingShell && hasSession && !isAdminWindow) {
     const token = getToken();
     import("./api/bootPrefetch.js")

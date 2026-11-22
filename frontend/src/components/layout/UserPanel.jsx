@@ -19,7 +19,7 @@ import ProfileMediaPicker from "../profile/LazyProfileMediaPicker.jsx";
 import { readPickerQuery } from "../../lib/profileMediaPicker";
 import UsernameChangeModal from "../settings/UsernameChangeModal";
 import { getToken, setUser } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { normalizeUser } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import "../../styles/promo-mycodes.css"; // Promosyon Kodu nav row badge
@@ -1329,7 +1329,7 @@ const UserPanel = forwardRef(function UserPanel({
       bannerUrl: me?.bannerUrl || me?.banner_url || "",
       ...patch,
     };
-    const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+    const res = await fetch(`${apiBase()}/api/user/profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
@@ -1490,7 +1490,7 @@ const UserPanel = forwardRef(function UserPanel({
     setProfileError("");
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+      const res = await fetch(`${apiBase()}/api/user/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({

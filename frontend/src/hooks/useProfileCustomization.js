@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getToken } from "../lib/storage";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 
 const STORAGE_KEY = "descall_profile_customization";
 
@@ -105,7 +105,7 @@ export function useProfileCustomization() {
         const token = getToken();
         if (!token) return;
 
-        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        const response = await fetch(`${apiBase()}/api/user/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

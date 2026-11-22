@@ -6,7 +6,7 @@ import { Settings, Check, Shield, Smile } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { STATUS_META } from "../../lib/presence";
 import { getToken, getUser, setUser } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { normalizeUser, resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
 import DescallBrand from "../brand/DescallBrand";
@@ -312,7 +312,7 @@ function NavigationRail({
     setStatusSaving(true);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+      const res = await fetch(`${apiBase()}/api/user/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ customStatus }),
