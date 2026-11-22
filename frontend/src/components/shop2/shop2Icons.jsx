@@ -9,6 +9,8 @@ import {
   SquareSplitHorizontal as PSplit,
   TShirt as PTShirt,
   Tag as PTag,
+  Shuffle as PShuffle,
+  ArrowsDownUp as PArrowsDownUp,
 } from "@phosphor-icons/react/dist/ssr";
 
 function make(Glyph, name) {
@@ -37,9 +39,12 @@ export const Hourglass = make(PHourglass, "Hourglass");
 export const Hand = make(PHandPalm, "Hand");
 export const Split = make(PSplit, "Split");
 export const PriceTag = make(PTag, "PriceTag");
+export const Shuffle = make(PShuffle, "Shuffle");
+export const SortArrows = make(PArrowsDownUp, "SortArrows");
 
 export {
   Archive,
+  ArrowRight,
   Bell,
   Bookmark,
   Calendar,
@@ -67,9 +72,13 @@ export {
   Mic,
   Monitor,
   Moon,
+  MoreHorizontal,
   Package,
+  Palette,
+  Pencil,
   Pause,
   Pin,
+  PinOff,
   Play,
   Plus,
   RefreshCw,
@@ -82,10 +91,12 @@ export {
   Star,
   Store,
   Sun,
+  Trash2,
   Undo2,
   User,
   Users,
   Volume2,
+  Wand2,
   Waveform,
   X,
   AlertTriangle,

@@ -13,6 +13,7 @@ import {
   normalizeSetSummary,
   normalizeStorefront,
 } from "../lib/shop2Logic.js";
+import { normalizeEquipHistory } from "../lib/shop2Inventory.js";
 
 export const SHOP2_EVENTS = Object.freeze({
   storefront: "descall:shop2-storefront",
@@ -90,6 +91,7 @@ export function useShop2({ onBalanceChange } = {}) {
   const [history, setHistory] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [outfits, setOutfits] = useState([]);
+  const [equipHistory, setEquipHistory] = useState(null);
   const [prefs, setPrefs] = useState(readShop2Prefs);
   const alive = useRef(true);
   useEffect(() => () => {
@@ -201,6 +203,15 @@ export function useShop2({ onBalanceChange } = {}) {
     }
   }, []);
 
+  const loadEquipHistory = useCallback(async () => {
+    try {
+      const res = await shop2Api.equipHistory();
+      if (alive.current) setEquipHistory(normalizeEquipHistory(res));
+    } catch (err) {
+      if (alive.current) setEquipHistory((h) => h || { ...normalizeEquipHistory({}), missing: isMissingRoute(err) });
+    }
+  }, []);
+
   const loadAll = useCallback(() => {
     loadStorefront();
     loadSets();
@@ -286,6 +297,7 @@ export function useShop2({ onBalanceChange } = {}) {
       if (e?.detail?.source === "shop2") return;
       onStore();
       loadHistory();
+      loadEquipHistory();
     };
     window.addEventListener(SHOP2_EVENTS.storefront, onStore);
     window.addEventListener(SHOP2_EVENTS.gift, onGift);
@@ -297,7 +309,7 @@ export function useShop2({ onBalanceChange } = {}) {
       window.removeEventListener(SHOP2_EVENTS.gift, onGift);
       window.removeEventListener(SHOP2_EVENTS.inventory, onInv);
     };
-  }, [loadStorefront, loadNight, loadSets, loadGifts, loadHistory, reloadSetDetails]);
+  }, [loadStorefront, loadNight, loadSets, loadGifts, loadHistory, loadEquipHistory, reloadSetDetails]);
 
   // Any buy, refund or undo can change a set (a single piece opens the 7-day partial price,
   // the last piece completes it), so the set list and the opened set pages are re-read too.
@@ -475,15 +487,55 @@ export function useShop2({ onBalanceChange } = {}) {
         return null;
       }
     },
+    loadEquipHistory,
+    /**
+     * Inventory "Uygula" / "Geri dön" / one slot: { category: itemId|null } in one request.
+     * null when the server has no /look route yet (the caller falls back to single equips).
+     */
+    async applyLook(look, source = "inventory") {
+      try {
+        const res = await shop2Api.look(look, source);
+        inventoryChanged({ look: Object.keys(look || {}) });
+        loadHistory();
+        loadOutfits();
+        loadEquipHistory();
+        return res || {};
+      } catch (err) {
+        if (isMissingRoute(err)) return null;
+        throw err;
+      }
+    },
+    /** Rename / pin a saved look (optimistic, rolled back on failure). */
+    async updateOutfit(outfit, patch) {
+      setOutfits((list) => list.map((o) => (o.id === outfit.id ? { ...o, ...patch, ...(patch.name ? { auto: false, kind: "saved" } : {}) } : o)));
+      try {
+        const res = await shop2Api.updateOutfit(outfit.id, patch);
+        const o = res?.outfit;
+        if (o) setOutfits((list) => list.map((x) => (x.id === o.id ? { ...o, items: o.look || {}, auto: o.kind === "previous" } : x)));
+        return o || null;
+      } catch (err) {
+        loadOutfits();
+        throw err;
+      }
+    },
+    async deleteOutfit(outfit) {
+      setOutfits((list) => list.filter((o) => o.id !== outfit.id));
+      try {
+        if (!String(outfit.id).startsWith("local-")) await shop2Api.deleteOutfit(outfit.id);
+      } catch (err) {
+        loadOutfits();
+        throw err;
+      }
+    },
     async shareLook(payload) {
       return shop2Api.shareLook(payload);
     },
     setPref(patch) {
       setPrefs(writeShop2Prefs(patch));
     },
-  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, loadOutfits, applyBalance, afterPurchase]);
+  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, loadOutfits, loadEquipHistory, applyBalance, afterPurchase]);
 
-  return { state, storefront, sets, setDetails, night, gifts, history, wishlist, outfits, prefs, actions };
+  return { state, storefront, sets, setDetails, night, gifts, history, wishlist, outfits, equipHistory, prefs, actions };
 }
 
 export default useShop2;

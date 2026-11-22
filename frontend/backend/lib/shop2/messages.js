@@ -29,6 +29,7 @@ const MESSAGES = {
   refund_not_purchase: "Only items you bought can be refunded.",
   outfit_limit: "You can save up to {max} outfits.",
   outfit_name_required: "Give the outfit a name.",
+  look_not_owned: "You do not own this item.",
   item_required: "Choose an item or a set.",
   wishlist_full: "Your wishlist is full ({max} items).",
   night_closed: "The night market is closed.",

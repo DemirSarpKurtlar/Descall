@@ -17,6 +17,7 @@ import {
   setTryOn,
   SHOP2_PARTIAL_DAYS,
 } from "../../lib/shop2Logic.js";
+import { arrangeLooks } from "../../lib/shop2Inventory.js";
 import { useS2 } from "./Shop2Context.js";
 import { useShop2Swipe } from "../../hooks/useShop2Swipe.js";
 import { keyStep } from "../../lib/shop2Swipe.js";
@@ -350,7 +351,8 @@ function Kasa({ set, pricing, hidden, onSaveLook }) {
   const others = (s2.data.sets.length ? s2.data.sets : s2.data.storefront?.featuredSets || []).filter((x) => x.key !== set.key).slice(0, 3);
   const after = s2.balance - pricing.yourPrice;
   const title = set.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name: s2.setName(set) });
-  const outfits = s2.data.outfits.slice(0, 4);
+  // One automatic look only (the server keeps 5 "previous" looks; it read "Önceki görünüm" twice).
+  const outfits = arrangeLooks(s2.data.outfits).slice(0, 4).map((o) => ({ ...o, items: o.items || o.look }));
   const partialDays = set.partialPriceUntil ? Math.max(0, Math.ceil((set.partialPriceUntil - Date.now()) / 86400000)) : 0;
   return (
     <section className="s2-col s2-kasa">

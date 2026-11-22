@@ -64,6 +64,10 @@ export const shop2Api = {
     }),
   /** Wear owned items in one request (previous look kept, one undoable action). */
   equip: (itemIds) => post("/equip", { itemIds }),
+  /** Inventory "Uygula": { category: itemId|null } in one request (null takes a slot off). */
+  look: (look, source = "inventory") => post("/look", { look, source, themeEngine: "scenes-1" }),
+  /** "Kuşanma geçmişi": equip changes of the last 7 days with per-slot from / to. */
+  equipHistory: () => get("/equip-history?limit=20"),
   purchases: () => get("/purchases"),
   refund: (purchaseId) => post(`/purchases/${enc(purchaseId)}/refund`),
 
@@ -100,6 +104,9 @@ export const shop2Api = {
   /** kind "previous": the look kept automatically before "Hepsini kuşan" (not a named save). */
   saveOutfit: ({ name, look, kind }) => post("/outfits", { name, ...(look ? { look } : {}), ...(kind ? { kind } : {}) }),
   applyOutfit: (id) => post(`/outfits/${enc(id)}/apply`),
+  /** Rename ({ name }) and / or pin ({ pinned }) a saved look. */
+  updateOutfit: (id, patch) => call(`/outfits/${enc(id)}`, { method: "PATCH", body: patch }),
+  deleteOutfit: (id) => call(`/outfits/${enc(id)}`, { method: "DELETE" }),
   /** "Arkadaşlarına göster": DM the look link to 1-10 friends; per-recipient results. */
   shareLook: ({ setKey, itemId, toUserIds, message }) =>
     post("/share", { ...(setKey ? { setKey } : { itemId }), toUserIds, ...(message ? { message } : {}) }),
