@@ -361,13 +361,17 @@ mod capability_tests {
             None => pattern == label,
         }
     }
+    /// `"x:allow-y"` or `{ "identifier": "x:allow-y", "allow": [...] }` (a scoped grant).
+    fn permission_id(p: &Value) -> Option<String> {
+        p.as_str().or_else(|| p["identifier"].as_str()).map(str::to_string)
+    }
     /// Every permission any capability grants to window `label`.
     fn granted(label: &str) -> Vec<String> {
         let mut out = Vec::new();
         for c in caps() {
             let windows = c["windows"].as_array().cloned().unwrap_or_default();
             if windows.iter().filter_map(Value::as_str).any(|p| matches(p, label)) {
-                out.extend(c["permissions"].as_array().cloned().unwrap_or_default().iter().filter_map(|p| p.as_str().map(str::to_string)));
+                out.extend(c["permissions"].as_array().cloned().unwrap_or_default().iter().filter_map(permission_id));
             }
         }
         out
@@ -386,7 +390,8 @@ mod capability_tests {
     fn no_remote_origin_and_no_broad_sets() {
         for c in caps() {
             assert!(c.get("remote").is_none(), "{}: remote origins never get IPC", c["identifier"]);
-            for p in c["permissions"].as_array().unwrap().iter().filter_map(Value::as_str) {
+            for p in c["permissions"].as_array().unwrap().iter().filter_map(permission_id) {
+                let p = p.as_str();
                 let banned = p == "core:default"
                     || p.ends_with(":allow-emit")
                     || p.ends_with(":allow-emit-to")
@@ -401,10 +406,35 @@ mod capability_tests {
                     || p.starts_with("clipboard-manager:")
                     || p.starts_with("deep-link:")
                     || p == "opener:default"
+                    || p == "opener:allow-default-urls"
                     || p == "opener:allow-open-path"
                     || p == "opener:allow-reveal-item-in-dir";
                 assert!(!banned, "{}: {p} is broader than any page needs", c["identifier"]);
             }
+        }
+    }
+
+    /// opener:allow-open-url is scoped to exactly what trust::is_safe_external_url sends to the
+    /// OS (http, https, mailto). opener:allow-default-urls also allowed tel:, and an unscoped
+    /// grant would allow nothing (or, with a broad global scope, file: and custom schemes).
+    #[test]
+    fn opener_scope_is_web_and_mail_only() {
+        let mut scopes = Vec::new();
+        for c in caps() {
+            for p in c["permissions"].as_array().unwrap() {
+                if permission_id(p).as_deref() == Some("opener:allow-open-url") {
+                    let allow = p["allow"].as_array().expect("opener:allow-open-url carries its own scope");
+                    scopes.extend(allow.iter().map(|e| e["url"].as_str().expect("url entries only").to_string()));
+                    assert!(p.get("deny").is_none() || p["deny"].as_array().is_some());
+                }
+            }
+        }
+        scopes.sort();
+        assert_eq!(scopes, ["http://*", "https://*", "mailto:*"]);
+        for (url, os) in [("https://descall.com/x", true), ("http://example.com", true), ("mailto:a@b.c", true), ("tel:+90", false), ("file:///C:/x.exe", false), ("ms-settings:privacy", false), ("javascript:alert(1)", false)] {
+            let scoped = scopes.iter().any(|g| url.starts_with(g.trim_end_matches('*')));
+            assert_eq!(scoped, os, "{url}");
+            assert_eq!(crate::trust::is_safe_external_url(url), os, "{url}: shell rule and opener scope agree");
         }
     }
 

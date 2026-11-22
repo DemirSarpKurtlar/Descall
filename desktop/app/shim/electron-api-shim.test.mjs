@@ -889,9 +889,19 @@ for (const label of ["popout-1", "acct-42"]) {
   const glob = (pattern, label) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`).test(label);
   const capsFor = (label) => caps.filter((c) => c.windows.some((w) => glob(w, label)));
   // core:default bundles core:event:default (listen / unlisten), core:window:default, ...
-  const allowed = (label, perm) => capsFor(label).some((c) => c.permissions.includes(perm)
-    || (perm.startsWith("core:event:") && c.permissions.includes("core:default"))
-    || (perm === "opener:allow-open-url" && c.permissions.includes("opener:allow-open-url")));
+  // A permission is a string or a scoped grant { identifier, allow: [...] }.
+  const ids = (c) => c.permissions.map((p) => (typeof p === "string" ? p : p.identifier));
+  const allowed = (label, perm) => capsFor(label).some((c) => ids(c).includes(perm)
+    || (perm.startsWith("core:event:") && ids(c).includes("core:default")));
+  // The opener scope is the shell's own external-link rule (trust::is_safe_external_url):
+  // http, https and mailto. opener:allow-default-urls also allowed tel:.
+  {
+    const def = caps[0];
+    const opener = def.permissions.find((p) => typeof p === "object" && p.identifier === "opener:allow-open-url");
+    assert.ok(opener, "opener:allow-open-url is a scoped grant");
+    deq(opener.allow.map((e) => e.url).sort(), ["http://*", "https://*", "mailto:*"], "opener scope: web and mail only");
+    assert.ok(!ids(def).includes("opener:allow-default-urls"), "no opener:allow-default-urls (tel:)");
+  }
   // [shim, windows it is injected into (one sample label per glob)]
   const WINDOWS = {
     "electron-api-shim.js": ["main", "admin", "signup-stats", "popout-1", "acct-7"],
