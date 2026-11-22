@@ -397,6 +397,12 @@
       e.preventDefault();
       fire("window_system_menu", { keyboard: true });
     }
+    // Alt+F4 closes this window (the main window hides to the tray), as Windows did for
+    // Electron's window; with WebView2 holding the focus the key may stay in the page.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.key === "F4" || e.code === "F4")) {
+      e.preventDefault();
+      winCmd("window_close", "close");
+    }
     // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
     // browser accelerator keys; the shell opens them only in a dev run or with the support
     // opt-in file (webview::devtools_allowed), otherwise the command does nothing.

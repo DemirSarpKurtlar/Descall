@@ -283,4 +283,16 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.equal(menus().length, 1, "AltGr, plain Space and auto-repeat leave it alone");
 }
 
+// 7. Alt+F4 closes the window (main: to the tray, in the shell); Ctrl+Alt+F4 and F4 do not.
+{
+  const s = loadShim();
+  const closes = () => s.invokes.filter(([c]) => c === "window_close").length;
+  assert.equal(s.key("F4", { code: "F4", altKey: true }).defaultPrevented, true);
+  assert.equal(closes(), 1);
+  s.key("F4", { code: "F4" });
+  s.key("F4", { code: "F4", altKey: true, ctrlKey: true });
+  s.key("F4", { code: "F4", altKey: true, repeat: true });
+  assert.equal(closes(), 1);
+}
+
 console.log("window-shim.test: ok");
