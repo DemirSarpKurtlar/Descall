@@ -329,9 +329,9 @@ fn main() {
 
 #[cfg(test)]
 mod config_tests {
-    /// Tauri updates run the old uninstaller with /UPDATE before installing: the uninstall
-    /// hook must not delete the login auto-start (Run value) or the toast activator then,
-    /// or every update turns "Start with Windows" off.
+    /// An uninstall run with /UPDATE (WiX migration path in tauri-bundler 2.10, every update in
+    /// older templates) must not delete the login auto-start (Run value) or the toast activator,
+    /// or the update turns "Start with Windows" off. $UpdateMode is the template's variable.
     #[test]
     fn update_keeps_autostart_and_toast_activator() {
         let hooks = include_str!("../nsis/hooks.nsh");
@@ -343,6 +343,31 @@ mod config_tests {
             assert!(pos > guard && pos < body.find("${EndIf}").unwrap(), "unguarded: {line}");
         }
         assert!(body.contains(r#"CurrentVersion\Run" "${DESCALL_AUMID}""#), "a real uninstall still removes auto-start");
+        assert_eq!(launch_value_name(), descall_shell::launch::RUN_VALUE, "hook removes the Run value the app writes");
+    }
+
+    /// An app installed by DescallSetup.exe and updated by the Tauri updater must be updated
+    /// in its own folder, not installed a second time at the template default.
+    #[test]
+    fn update_adopts_the_descall_setup_folder() {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let pre = &hooks[hooks.find("!macro NSIS_HOOK_PREINSTALL").unwrap()..];
+        assert!(pre[..pre.find("!macroend").unwrap()].contains("!insertmacro DESCALL_ADOPT_SETUP_FOLDER"));
+        let m = &hooks[hooks.find("!macro DESCALL_ADOPT_SETUP_FOLDER").unwrap()..];
+        let m = &m[..m.find("!macroend").unwrap()];
+        assert!(m.trim_start_matches("!macro DESCALL_ADOPT_SETUP_FOLDER").trim_start().starts_with("${If} $UpdateMode = 1"), "update mode only");
+        // The exact entry descall-setup writes (win/shell.rs register_uninstall).
+        let setup_shell = include_str!("../../../crates/descall-setup/src/win/shell.rs");
+        assert!(setup_shell.contains(r#"k.set_string("UninstallString", format!("\"{}\" --uninstall", un.display()))?;"#));
+        assert!(setup_shell.contains(r#"k.set_string("InstallLocation", e.dir.display().to_string())?;"#));
+        assert!(m.contains(r#"${AndIf} $1 == '"$0\uninstall.exe" --uninstall'"#));
+        assert!(m.contains("StrCpy $INSTDIR $0") && m.contains("SetOutPath $INSTDIR"));
+    }
+
+    fn launch_value_name() -> &'static str {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let at = hooks.find("!define DESCALL_AUMID \"").unwrap() + "!define DESCALL_AUMID \"".len();
+        &hooks[at..at + hooks[at..].find('"').unwrap()]
     }
 
     /// Single instance before every other plugin (Tauri requires it first so a second launch

@@ -6609,6 +6609,8 @@ export const nested = {
     "subInstalling": "Descall se rouvre dans quelques secondes",
     "titleError": "Impossible de télécharger la mise à jour",
     "subError": "Vérifie ta connexion et réessaie",
+    "titleInstallError": "Impossible d'installer la mise à jour",
+    "subInstallError": "Réessaie ou télécharge le programme d'installation",
     "retry": "Réessayer",
     "downloadPage": "Page de téléchargement",
     "titleDownloading": "Téléchargement de Descall {version}",

@@ -65,16 +65,23 @@ pub fn is_fresh_relaunch_marker(mtime_ms: Option<i64>, now_ms: i64) -> bool {
 }
 
 pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<BackgroundMode>, updater_relaunch: bool) -> ColdStart {
+    // --updated alone is not enough: a manual launch that installs from the splash is
+    // relaunched with that flag, and a stale tray file must not hide it. A fresh marker comes
+    // first: tauri-plugin-updater (and app.restart) relaunch with the SAME argv (NSIS /ARGS),
+    // so an app that was started at login keeps `--autostart --hidden` and would come back
+    // hidden after "Restart now" although its window was open (electron-updater relaunched
+    // with `--updated` only).
+    if updater_relaunch {
+        return match background {
+            Some(mode) => {
+                let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
+                ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch }
+            }
+            None => ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::UpdaterRelaunch },
+        };
+    }
     if is_autostart_launch(argv) {
         return ColdStart { action: StartAction::Hide, show_splash: false, reason: StartReason::Autostart };
-    }
-    // --updated alone is not enough: a manual launch that installs from the splash is
-    // relaunched with that flag, and a stale tray file must not hide it.
-    if updater_relaunch {
-        if let Some(mode) = background {
-            let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
-            return ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch };
-        }
     }
     ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
 }
@@ -193,6 +200,20 @@ mod tests {
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
         assert_eq!(decide_cold_start(&[EXE, "--updated"], None, true).action, StartAction::Show);
+    }
+
+    /// Started at login, opened from the tray, then "Restart now": the updater relaunches with
+    /// the same `--autostart --hidden` argv. The marker ("shown") must win, or the window is gone.
+    #[test]
+    fn updater_relaunch_of_a_login_start_comes_back_as_left() {
+        let argv = [EXE, "--autostart", "--hidden"];
+        let d = decide_cold_start(&argv, None, true);
+        assert_eq!((d.action, d.reason), (StartAction::Show, StartReason::UpdaterRelaunch));
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Hidden), true).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
+        // No (or a stale) marker: a real login start stays in the tray.
+        assert_eq!(decide_cold_start(&argv, None, false).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Minimized), false).action, StartAction::Hide);
     }
 
     #[test]

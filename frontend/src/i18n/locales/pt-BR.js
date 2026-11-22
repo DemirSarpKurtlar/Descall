@@ -6609,6 +6609,8 @@ export const nested = {
     "subInstalling": "O Descall reabre em alguns segundos",
     "titleError": "Não foi possível baixar a atualização",
     "subError": "Verifique sua conexão e tente de novo",
+    "titleInstallError": "Não foi possível instalar a atualização",
+    "subInstallError": "Tente de novo ou baixe o instalador",
     "retry": "Tentar de novo",
     "downloadPage": "Página de download",
     "titleDownloading": "Baixando o Descall {version}",

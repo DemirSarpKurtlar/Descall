@@ -160,8 +160,10 @@ pub fn fetch_payload(ctx: &Ctx, rel: &Release) -> Result<PathBuf, JobError> {
         }
         Source::Web => {
             let s = Session::new().map_err(from_dl)?;
-            let mirror = pick_mirror(&s, m);
-            let url = m.payload_url(&mirror.0);
+            let ranked = rank_mirrors(&s, m);
+            let mut at = 0usize;
+            let mirror = &ranked[at];
+            let mut url = m.payload_url(&mirror.0);
             let label = mirror.0.label_for(&ctx.lang);
             let st = dl.load();
             ctx.patch(json!({ "dl": {
@@ -220,6 +222,20 @@ pub fn fetch_payload(ctx: &Ctx, rel: &Release) -> Result<PathBuf, JobError> {
                         } else {
                             log::event("l_error", json!({ "code": e.code() }), "err");
                         }
+                        // The mirror broke off (or served a bad part twice): carry on from the
+                        // next one. Every part is checked against the signed manifest, so the
+                        // verified parts stay and only the missing ones come from there. It used
+                        // to fail the whole job, and Retry probed and picked the same mirror again.
+                        if switch_mirror(&e) && at + 1 < ranked.len() {
+                            at += 1;
+                            let next = &ranked[at];
+                            url = m.payload_url(&next.0);
+                            log::event("l_mirror", json!({ "host": next.0.host(), "ms": next.1 }), "");
+                            log::event("l_connected", json!({ "host": next.0.host(), "tls": next.2 }), "");
+                            ctx.patch(json!({ "dl": { "phase": "download", "server": { "label": next.0.label_for(&ctx.lang), "ms": next.1 } } }));
+                            rate = Rate::new(dl.bytes_done(&st));
+                            continue;
+                        }
                         if matches!(e, DlError::Integrity(_)) {
                             let _ = dl.reset();
                         }
@@ -250,17 +266,29 @@ fn log_rep(key: &str, args: Value) {
     log::event_rep(key, args);
 }
 
-/// Nearest mirror by round trip (at most four probed), with its TLS version.
-fn pick_mirror(s: &Session, m: &Manifest) -> (Mirror, u32, String) {
-    let mut best: Option<(Mirror, u32, String)> = None;
-    for mi in m.mirrors.iter().take(4) {
-        if let Some((ms, tls)) = s.probe(&m.payload_url(mi)) {
-            if best.as_ref().is_none_or(|b| ms < b.1) {
-                best = Some((mi.clone(), ms, tls));
-            }
-        }
+/// Mirrors in download order (Manifest::mirror_order): the nearest by round trip first (at
+/// most four probed), with its TLS version; never empty.
+fn rank_mirrors(s: &Session, m: &Manifest) -> Vec<(Mirror, u32, String)> {
+    let probes: Vec<Option<(u32, String)>> = m.mirrors.iter().take(4).map(|mi| s.probe(&m.payload_url(mi))).collect();
+    let ms: Vec<Option<u32>> = probes.iter().map(|p| p.as_ref().map(|p| p.0)).collect();
+    let ranked: Vec<(Mirror, u32, String)> = m
+        .mirror_order(&ms)
+        .into_iter()
+        .map(|i| {
+            let (ms, tls) = probes.get(i).cloned().flatten().unwrap_or((0, "TLS".into()));
+            (m.mirrors[i].clone(), ms, tls)
+        })
+        .collect();
+    if ranked.is_empty() {
+        return vec![(Mirror { base: "https://cdn.descall.com/".into(), label: Default::default() }, 0, "TLS".into())];
     }
-    best.unwrap_or_else(|| (m.mirrors.first().cloned().unwrap_or(Mirror { base: "https://cdn.descall.com/".into(), label: Default::default() }), 0, "TLS".into()))
+    ranked
+}
+
+/// A failure the next mirror can get past: the connection or the server, or a part that came
+/// back wrong twice (already thrown away; the verified parts stay).
+fn switch_mirror(e: &DlError) -> bool {
+    matches!(e, DlError::Net(_) | DlError::Http(_) | DlError::Integrity(Some(_)))
 }
 
 fn copy_range_verified(exe: &Path, ov: &Overlay, dest: &Path, sha: &str, mut progress: impl FnMut(f64)) -> Result<(), JobError> {
