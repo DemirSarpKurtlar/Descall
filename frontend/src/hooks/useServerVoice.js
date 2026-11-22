@@ -1,5 +1,13 @@
 import { afterFirstScreen } from "../lib/afterFirstScreen.js";
 import { publishActiveSpeakers } from "../lib/activeSpeakers";
+import {
+  abandonPendingRooms,
+  adoptConnectedRoom,
+  dropPendingRoom,
+  isLiveRoom,
+  supersededRoomError,
+  trackPendingRoom,
+} from "../lib/liveKitRoomSlot.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
 import { isNativeAndroid } from "../lib/platform";
@@ -217,6 +225,8 @@ export function useServerVoice(socket) {
   const [mediaMode, setMediaMode] = useState("mesh");
   const sfuModeRef = useRef(false);
   const liveKitRoomRef = useRef(null);
+  /** Rooms still connecting; a leave abandons them (lib/liveKitRoomSlot.js). */
+  const liveKitPendingRef = useRef(new Set());
   /** Mirrors liveKitLink for socket handlers (they are bound once per socket). */
   const liveKitLinkRef = useRef("idle");
   /** Mesh link recovery and LiveKit re-connect, filled in further down (voice-drops-03 / -06). */
@@ -613,6 +623,9 @@ export function useServerVoice(socket) {
 
   const disconnectLiveKit = useCallback(() => {
     publishActiveSpeakers(null, []);
+    // A room still connecting (join left or replaced meanwhile) must never come up later
+    // as a second voice session.
+    abandonPendingRooms(liveKitPendingRef.current);
     const room = liveKitRoomRef.current;
     liveKitRoomRef.current = null;
     setLiveKitLink("idle");
@@ -658,8 +671,11 @@ export function useServerVoice(socket) {
     async (channelId, tokenData, stream) => {
       if (!tokenData?.enabled || !tokenData?.livekitUrl || !tokenData?.token) return false;
       const { Room, RoomEvent, Track } = await loadLiveKit();
-      const room = new Room(liveKitRoomOptions());
+      const room = trackPendingRoom(liveKitPendingRef.current, new Room(liveKitRoomOptions()));
+      // Events of an abandoned room (left while connecting) must not touch the session.
+      const live = () => isLiveRoom(liveKitRoomRef, liveKitPendingRef.current, room);
       room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+        if (!live()) return;
         const userId = participant?.identity;
         if (!userId || isScreenCompanionIdentity(userId)) return;
         const next = String(quality || "").toLowerCase();
@@ -672,6 +688,7 @@ export function useServerVoice(socket) {
         publishActiveSpeakers(channelId, speakerIdsWithoutCompanions((speakers || []).map((p) => p?.identity)));
       });
       room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+        if (!live()) return;
         const parsed = parseLiveKitIdentity(participant?.identity);
         if (parsed.companion === "screen") {
           // An iOS screen broadcast ended: the owner stays, only their share goes.
@@ -687,6 +704,14 @@ export function useServerVoice(socket) {
         setParticipants((prev) => prev.filter((p) => p.id !== participant.identity));
       });
       room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (!live()) {
+          try {
+            publication?.setSubscribed?.(false);
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
         // `<userId>:screen` (iOS broadcast companion) is the owner's screen share.
         const routed = routeLiveKitTrack({ identity: participant?.identity, myUserId: myIdRef.current });
         if (routed.ignore) {
@@ -729,6 +754,7 @@ export function useServerVoice(socket) {
         });
       });
       room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        if (!live()) return;
         const routed = routeLiveKitTrack({ identity: participant?.identity, myUserId: myIdRef.current });
         if (routed.ignore) return;
         const userId = routed.userId;
@@ -782,15 +808,25 @@ export function useServerVoice(socket) {
       });
       const livekitUrls = tokenData.livekitUrls?.length ? tokenData.livekitUrls : [tokenData.livekitUrl];
       let probed = false;
-      const livekitUrl =
-        (await pickFastestLiveKitUrl(livekitUrls, { onProbe: () => { probed = true; } })) || tokenData.livekitUrl;
-      if (!probed) voiceTelemetryRef.current?.set("urlProbeSkipped", true);
-      voiceTelemetryRef.current?.mark("urlProbeMs");
-      await room.connect(livekitUrl, tokenData.token);
+      let livekitUrl = tokenData.livekitUrl;
+      try {
+        livekitUrl =
+          (await pickFastestLiveKitUrl(livekitUrls, { onProbe: () => { probed = true; } })) || tokenData.livekitUrl;
+        if (!probed) voiceTelemetryRef.current?.set("urlProbeSkipped", true);
+        voiceTelemetryRef.current?.mark("urlProbeMs");
+        if (!live()) throw supersededRoomError();
+        await room.connect(livekitUrl, tokenData.token);
+      } catch (err) {
+        dropPendingRoom(liveKitPendingRef.current, room);
+        throw err;
+      }
+      // Left or switched channel while connecting: this room is closed, never adopted.
+      if (!adoptConnectedRoom({ slot: liveKitRoomRef, pending: liveKitPendingRef.current, room, wanted: activeChannelIdRef.current === channelId })) {
+        throw supersededRoomError();
+      }
       liveKitUrlRef.current = livekitUrl;
       voiceTelemetryRef.current?.mark("lkConnectMs");
       voiceTelemetryRef.current?.set("media", "sfu");
-      liveKitRoomRef.current = room;
       setLiveKitLink("connected");
       sfuModeRef.current = true;
       setMediaMode("sfu");
@@ -849,6 +885,7 @@ export function useServerVoice(socket) {
         await connectLiveKitRoom(channelId, tokenData, stream);
         voiceTelemetryRef.current?.countReconnect();
       } catch (err) {
+        if (err?.code === "LIVEKIT_SUPERSEDED") return;
         console.warn("[ServerVoice] LiveKit reconnect failed:", err?.message || err);
         setLiveKitLink("disconnected");
       } finally {
@@ -1532,6 +1569,9 @@ export function useServerVoice(socket) {
               if (!stillJoining()) return;
               sfuConnected = true;
             } catch (sfuErr) {
+              // Left or switched channel while this room connected: the newer session owns
+              // the LiveKit slot now; disconnecting here would end that one.
+              if (!stillJoining() || sfuErr?.code === "LIVEKIT_SUPERSEDED") return;
               if (sfuErr?.code) telemetry?.set("tokenError", sfuErr.code);
               lastSfuErr = sfuErr;
               disconnectLiveKit();

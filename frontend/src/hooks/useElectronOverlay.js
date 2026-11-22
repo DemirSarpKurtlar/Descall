@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { hasDesktopBridge } from "../lib/desktopShell.js";
 import { resolveAvatarUrl, resolveDisplayName } from "../lib/userProfile.js";
 import { t } from "../i18n/runtime.js";
@@ -29,6 +29,67 @@ function overlayLang() {
   } catch {
     return "tr";
   }
+}
+
+/**
+ * Descall itself is in front: its window is visible and has the focus. The call card is a
+ * stand-in for when Descall is NOT in front (another app, a game, minimized, in the tray).
+ */
+export function readAppInFront(doc = typeof document !== "undefined" ? document : null) {
+  try {
+    if (!doc) return false;
+    if (doc.visibilityState === "hidden") return false;
+    return typeof doc.hasFocus === "function" ? Boolean(doc.hasFocus()) : false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the always-on-top call card may be on screen. Feedback 2026-11-22 (DemirBey,
+ * Windows 4.1.0, "neden ekranımda kocaman arama işareti çıkıyor?", every DM call): the card
+ * was shown for every call even while Descall was in front, on top of the app itself. It
+ * sits in the top-right corner, so on a maximized window it covered Descall's own window
+ * buttons and the call screen's top-right controls, and it could only go away by ending
+ * the call. It now shows only while Descall is not in front.
+ */
+export function overlayShouldShow({ active = false, auxCovers = false, appInFront = false } = {}) {
+  return Boolean(active) && !auxCovers && !appInFront;
+}
+
+/** Blur -> show waits this long, so a focus bounce (native dialog, picker) does not flash it. */
+export const OVERLAY_SHOW_DELAY_MS = 300;
+
+/** Tracks readAppInFront(): true at once on focus, false after a short delay on blur / hide. */
+function useAppInFront(enabled) {
+  const [inFront, setInFront] = useState(() => (enabled ? readAppInFront() : false));
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return undefined;
+    let timer = null;
+    const sync = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = null;
+      if (readAppInFront()) {
+        setInFront(true);
+        return;
+      }
+      timer = window.setTimeout(() => {
+        timer = null;
+        setInFront(readAppInFront());
+      }, OVERLAY_SHOW_DELAY_MS);
+    };
+    sync();
+    window.addEventListener("focus", sync);
+    window.addEventListener("blur", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener("focus", sync);
+      window.removeEventListener("blur", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [enabled]);
+  return inFront;
 }
 
 /** Mute/unmute every `<audio>` element currently in the document. */
@@ -182,6 +243,7 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
   }, [handleOverlayAction]);
   // While a Descall+ window shows the call, the classic overlay card stays hidden.
   const auxState = useSyncExternalStore(auxSlot.subscribe, auxSlot.get, auxSlot.get);
+  const appInFront = useAppInFront(isElectron && active);
 
   useEffect(() => {
     if (!isElectron) return undefined;
@@ -202,7 +264,7 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
       return;
     }
     publishCallState({ active: true, title, muted, deafened: deafened || deafenedRef.current, pending, kind, since, avatarUrl });
-    if (auxCoversOverlay()) {
+    if (!overlayShouldShow({ active, auxCovers: auxCoversOverlay(), appInFront })) {
       window.electronAPI?.overlayHide?.();
       return;
     }
@@ -218,7 +280,7 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
       brandRgb: readOverlayBrandRgb(),
       lang: overlayLang(),
     });
-  }, [active, title, muted, deafened, applyDeafen, pending, kind, since, avatarUrl, auxState]);
+  }, [active, title, muted, deafened, applyDeafen, pending, kind, since, avatarUrl, auxState, appInFront]);
 
   // Equipping another theme mid-call re-tints the overlay.
   useEffect(() => {

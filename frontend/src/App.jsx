@@ -95,6 +95,7 @@ import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.j
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
+import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
 import {
@@ -839,6 +840,8 @@ export default function App() {
   // call / group hangout / server voice) is currently active.
   useElectronOverlay({ call, groupCall, serverVoice });
   useElectronVoiceBusy({ call, groupCall, serverVoice });
+  // One voice session per device: a voice channel and a DM / group call never run together.
+  useVoiceSessionGuard({ call, groupCall, serverVoice });
   const callRef = useRef(call);
   const groupCallRef = useRef(groupCall);
   const serverVoiceRef = useRef(serverVoice);
