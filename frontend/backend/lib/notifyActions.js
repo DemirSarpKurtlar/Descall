@@ -215,7 +215,8 @@ function createNotifyActions(deps = {}) {
     if (!io || !userId) return;
     const room = `user:${userId}`;
     const roomSet = io.sockets?.adapter?.rooms?.get(room);
-    if (roomSet && roomSet.size > 0) {
+    // Clustered: the adapter carries the room emit to the node the user is on.
+    if ((roomSet && roomSet.size > 0) || require("./cluster").hasRemoteUser(userId)) {
       io.to(room).emit(event, payload);
       return;
     }

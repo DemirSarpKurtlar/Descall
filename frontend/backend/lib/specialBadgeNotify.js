@@ -9,7 +9,7 @@
 const specialBadges = require("./specialBadges");
 
 function isOnline(io, userId) {
-  return Boolean(io?.sockets?.adapter?.rooms?.get(`user:${userId}`)?.size);
+  return Boolean(io?.sockets?.adapter?.rooms?.get(`user:${userId}`)?.size) || require("./cluster").hasRemoteUser(userId);
 }
 
 /** `target` is an io (checks the room first) or a single socket (already connected). */

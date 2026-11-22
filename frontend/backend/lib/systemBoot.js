@@ -98,7 +98,8 @@ function upSinceOf(rows) {
 async function register(client) {
   if (registered) return current;
   registered = true;
-  db = client || null;
+  // Hybrid server: the boot history is Render's; a secondary node keeps its own in memory.
+  db = require("./cluster").role === "secondary" ? null : client || null;
   current = {
     id: BOOT_ID,
     started_at: STARTED_AT,

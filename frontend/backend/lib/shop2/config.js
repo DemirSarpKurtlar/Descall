@@ -41,10 +41,12 @@ async function listVersions({ fresh = false } = {}) {
   return list;
 }
 
-function invalidate() {
+function invalidateLocal() {
   versionsCache = null;
   limitsCache = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("shop2Config", invalidateLocal);
 
 /** The version in force at `t`: the latest active/scheduled version whose time has come. */
 function activeAt(list, t = Date.now()) {

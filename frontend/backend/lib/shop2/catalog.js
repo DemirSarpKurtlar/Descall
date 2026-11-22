@@ -132,9 +132,11 @@ async function getCatalog({ fresh = false } = {}) {
   return loading;
 }
 
-function invalidate() {
+function invalidateLocal() {
   cache = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("shop2Catalog", invalidateLocal);
 
 /** Sellable now: active, not retired, (s2 unless the legacy fallback is on). */
 function sellable(item) {

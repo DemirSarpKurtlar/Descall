@@ -71,6 +71,11 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 const httpServer = http.createServer(app);
+// Hybrid server (Render + the owner's PC): node registry, leader lock, shared state.
+// Without REDIS_URL this is a single node and nothing here touches the network.
+const cluster = require("./lib/cluster");
+// p95 latency / error rate for the node metrics (one hrtime per request).
+app.use(cluster.metricsMiddleware);
 
 const isVercel = Boolean(process.env.VERCEL);
 const { isAllowedOrigin, corsOrigin } = require("./lib/corsOrigins");
@@ -104,6 +109,12 @@ const io = new Server(httpServer, {
   },
 });
 
+// Clustered: io.to(room).emit / fetchSockets / disconnectSockets reach every node's
+// sockets through the Key Value (pub/sub on dc:sio#). Must be set before any socket joins.
+{
+  const adapter = cluster.socketAdapter();
+  if (adapter) io.adapter(adapter);
+}
 app.set("io", io);
 // Güvenlik Merkezi: live feed pushes to admins with the section, emergency lock expiry timer.
 require("./lib/securityCenter").attach(io);
@@ -846,6 +857,20 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+// Heartbeat, leader election, metrics ring and replicated shared state (no-op extras on a single node).
+cluster.start({ io, state });
+if (cluster.configured()) {
+  // Deploy / restart: hand over the leader lock and drop this node's users at once
+  // instead of after the 15 s TTL, then exit as before.
+  const shutdown = (signal) => {
+    const done = () => process.exit(signal === "SIGINT" ? 130 : 0);
+    const t = setTimeout(done, 3000);
+    t.unref?.();
+    cluster.stop({ graceful: true }).catch(() => {}).finally(done);
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
+}
 // Temporary server memberships also expire after a restart or for REST-only joins (IM-8).
 require("./lib/serverMemberJoin").startTemporaryMemberSweeper(io);
 // 3D world (phase 1): separate /world namespace, desktop + admins only (socket/worldHandlers.js).
@@ -914,6 +939,9 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] system settings load failed:", e.message);
   }
+  // Hybrid server: catalog upkeep below writes shared rows; Render (primary) does it,
+  // a secondary node (the owner's PC) only serves.
+  if (cluster.role === "secondary") return;
   try {
     const { retireSoundPacks } = require("./lib/shop");
     await retireSoundPacks();

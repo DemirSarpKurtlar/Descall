@@ -328,9 +328,11 @@ async function listServers(query = {}) {
   };
 }
 
-function invalidateList() {
+function invalidateListLocal() {
   listCache = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidateList = require("./cluster").linkInvalidate("serverReviewList", invalidateListLocal);
 
 /* ---------- Server detail (metadata) ---------- */
 

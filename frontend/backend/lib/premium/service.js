@@ -759,8 +759,9 @@ async function runScheduledOnce({ io = null, notify = null } = {}) {
 function startPremiumScheduler({ io = null, intervalMs = SCHEDULE_MS } = {}) {
   if (timer || process.env.PREMIUM_SCHEDULER === "off" || process.env.NODE_ENV === "test") return null;
   let warned = false;
+  // Hybrid server: once per cluster, on the leader (the advisory lock stays as a second guard).
   const tick = () =>
-    runScheduledOnce({ io }).catch((err) => {
+    !require("../cluster").isLeader() ? Promise.resolve() : runScheduledOnce({ io }).catch((err) => {
       if (err?.code === "premium_unavailable") {
         if (!warned) console.warn("[premium] scheduler: functions missing; apply supabase/migrations/20261106_premium_memberships.sql");
         warned = true;

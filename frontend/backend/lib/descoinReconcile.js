@@ -175,8 +175,10 @@ let timers = null;
 /** Hourly check; runs when the last stored run is ~24h old. Restarts and extra instances share the DB guard. */
 function startReconcileScheduler() {
   if (timers || process.env.DESCOIN_RECONCILE_DISABLED === "1") return;
-  const first = setTimeout(() => tick(), FIRST_CHECK_DELAY_MS);
-  const every = setInterval(() => tick(), CHECK_EVERY_MS);
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md).
+  const run = require("./cluster").leaderOnly("descoinReconcile", () => tick());
+  const first = setTimeout(run, FIRST_CHECK_DELAY_MS);
+  const every = setInterval(run, CHECK_EVERY_MS);
   first.unref?.();
   every.unref?.();
   timers = { first, every };
