@@ -600,6 +600,7 @@ export const SHOP2_EN = {
     "body": "Your new look goes to the friends you pick as a card in chat.",
     "note": "Note",
     "notePh": "Add a note (optional)",
+    "loading": "Loading your friends…",
     "send": "Send",
     "chosen": "{n} / {max} picked",
     "sent": "Sent to {n} of {total}",

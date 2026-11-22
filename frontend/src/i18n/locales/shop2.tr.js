@@ -600,6 +600,7 @@ export const SHOP2_TR = {
     "body": "Yeni görünümün seçtiğin arkadaşlara sohbette kart olarak gider.",
     "note": "Not",
     "notePh": "Bir not ekle (isteğe bağlı)",
+    "loading": "Arkadaşların yükleniyor…",
     "send": "Gönder",
     "chosen": "{n} / {max} seçili",
     "sent": "{n} / {total} kişiye gönderildi",

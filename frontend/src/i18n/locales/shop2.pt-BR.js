@@ -600,6 +600,7 @@ export const SHOP2_PT_BR = {
     "body": "Seu visual novo vai como cartão no chat para os amigos escolhidos.",
     "note": "Nota",
     "notePh": "Adicione uma nota (opcional)",
+    "loading": "Carregando seus amigos…",
     "send": "Enviar",
     "chosen": "{n} / {max} escolhidos",
     "sent": "Enviado para {n} de {total}",

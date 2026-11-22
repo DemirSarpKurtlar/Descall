@@ -196,6 +196,7 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal(m.render("look", c, { text: "https://descall.com/settings" }), "", "no card without a look link");
   const sh = m.render("share", { ...c, openShare: noop }, { target: { setKey: "gece-limani" }, onClose: noop });
   has(sh, "s2-share", "share sheet");
+  assert.ok(sh.includes("shop2.share.loading") && !sh.includes("shop2.gifts.noFriends"), "share sheet: loading, not \"no friends\", before the list arrives");
 }
 {
   // Item sheet: an owned item shows no "balance after" (equipping is free), the equip button
