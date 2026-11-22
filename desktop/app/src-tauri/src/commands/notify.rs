@@ -8,10 +8,10 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use descall_shell::notif::{self, Entry, Rect};
+use descall_shell::notif::{self, Anchor, Entry, Rect};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tauri::{AppHandle, LogicalPosition, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, PhysicalPosition, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 use crate::state::{self, main_in_front, show_main, to_main};
 
@@ -53,9 +53,9 @@ fn str_of<'a>(v: &'a Value, k: &str) -> &'a str {
     v.get(k).and_then(Value::as_str).unwrap_or("")
 }
 
-/// Monitor work area for the stack (logical px): Descall's own visible window, else the
-/// monitor under the cursor, else the primary one.
-fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Rect {
+/// Monitor work area for the stack (that monitor's logical px, plus its physical origin and
+/// scale): Descall's own visible window, else the monitor under the cursor, else the primary.
+fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Anchor {
     let monitor = state::main_window(app)
         .filter(|w| w.is_visible().unwrap_or(false) && !w.is_minimized().unwrap_or(false))
         .and_then(|w| w.current_monitor().ok().flatten())
@@ -65,9 +65,13 @@ fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Rect {
         Some(m) => {
             let s = m.scale_factor();
             let wa = m.work_area();
-            Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s }
+            Anchor {
+                rect: Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s },
+                origin_px: (wa.position.x, wa.position.y),
+                scale: s,
+            }
         }
-        None => Rect { x: 0.0, y: 0.0, width: 1280.0, height: 720.0 },
+        None => Anchor { rect: Rect { x: 0.0, y: 0.0, width: 1280.0, height: 720.0 }, origin_px: (0, 0), scale: 1.0 },
     }
 }
 
@@ -75,27 +79,29 @@ fn reposition_all<R: Runtime>(app: &AppHandle<R>) {
     let n = app.state::<Notifications>();
     let list = n.list.lock().unwrap();
     let entries: Vec<Entry> = list.iter().filter(|c| c.shown).map(|c| Entry { id: c.id, call: c.call, height: c.height }).collect();
-    let placed = notif::stack_positions(anchor_area(app), &entries);
+    let anchor = anchor_area(app);
+    let placed = notif::stack_positions(anchor.rect, &entries);
     for p in placed {
         if let Some(c) = list.iter().find(|c| c.id == p.entry.id) {
             if let Some(w) = app.get_webview_window(&c.label) {
-                ease_to(w, p.x, p.y);
+                ease_to(w, anchor.to_physical(p.x, p.y), anchor.scale);
             }
         }
     }
 }
 
 /// Windows ignores animated SetWindowPos: step the window over ~120 ms (moveWindow in
-/// notificationWindow.cjs). A jump across monitors is immediate.
-fn ease_to<R: Runtime>(w: WebviewWindow<R>, x: f64, y: f64) {
-    let scale = w.scale_factor().unwrap_or(1.0);
+/// notificationWindow.cjs). A jump across monitors is immediate. Physical px of the target
+/// monitor (Anchor::to_physical): a logical position would use the scale of the monitor the
+/// capsule is on now, which puts it on the wrong screen when the two DPIs differ.
+fn ease_to<R: Runtime>(w: WebviewWindow<R>, (x, y): (i32, i32), scale: f64) {
     let Ok(from) = w.outer_position() else { return };
-    let (fx, fy) = (from.x as f64 / scale, from.y as f64 / scale);
+    let (fx, fy, x, y) = (from.x as f64, from.y as f64, x as f64, y as f64);
     if (fx - x).abs() < 0.5 && (fy - y).abs() < 0.5 {
         return;
     }
-    if (fx - x).abs() > 400.0 || (fy - y).abs() > 600.0 {
-        let _ = w.set_position(LogicalPosition::new(x, y));
+    if (fx - x).abs() > 400.0 * scale || (fy - y).abs() > 600.0 * scale {
+        let _ = w.set_position(PhysicalPosition::new(x as i32, y as i32));
         return;
     }
     tauri::async_runtime::spawn(async move {
@@ -103,7 +109,7 @@ fn ease_to<R: Runtime>(w: WebviewWindow<R>, x: f64, y: f64) {
         for i in 1..=STEPS {
             let t = i as f64 / STEPS as f64;
             let e = 1.0 - (1.0 - t).powi(3);
-            let _ = w.set_position(LogicalPosition::new((fx + (x - fx) * e).round(), (fy + (y - fy) * e).round()));
+            let _ = w.set_position(PhysicalPosition::new((fx + (x - fx) * e).round() as i32, (fy + (y - fy) * e).round() as i32));
             tokio::time::sleep(Duration::from_millis(15)).await;
         }
     });
@@ -261,7 +267,8 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
 
     let kind = notif::kind_of(&data_type);
     let height = notif::card_height(call, kind);
-    let area = anchor_area(app);
+    let anchor = anchor_area(app);
+    let area = anchor.rect;
     let width = notif::capsule_width(area.width);
     let id = {
         let mut next = n.next_id.lock().unwrap();
@@ -290,6 +297,7 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
     entries.push(Entry { id, call, height });
     let slot = notif::stack_positions(area, &entries).into_iter().find(|p| p.entry.id == id);
     let (x, y) = slot.map(|p| (p.x, p.y)).unwrap_or((area.x, area.y));
+    let target_px = anchor.to_physical(x, y);
 
     n.list.lock().unwrap().push(Capsule {
         id,
@@ -352,6 +360,13 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
                 let live = app_build.state::<Notifications>().list.lock().unwrap().iter().any(|c| c.id == id);
                 if !live {
                     let _ = w.destroy();
+                    return;
+                }
+                // The builder's position is logical, read with the scale Windows picks at
+                // creation; on a second monitor with another DPI that is the wrong screen.
+                // The page is still transparent, so the move is not seen (no activation).
+                if w.outer_position().ok().map(|p| (p.x, p.y)) != Some(target_px) {
+                    let _ = w.set_position(PhysicalPosition::new(target_px.0, target_px.1));
                 }
             }
             Err(e) => {

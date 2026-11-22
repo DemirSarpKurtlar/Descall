@@ -281,4 +281,28 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   for (const k of Object.keys(e.options)) assert.match(rules.slice(rules.indexOf("pub fn redact_locked")), new RegExp(`"${k}":`), `Rust sets options.${k}`);
 }
 
+// ---- capsules on a second monitor with another DPI ----------------------------------------------
+// Electron places in DIPs of the chosen display. Tauri's LogicalPosition uses the scale of the
+// monitor the window is on now, so the stack is laid out in the target monitor's logical px and
+// every move goes out in that monitor's physical px (Anchor::to_physical).
+{
+  const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
+  assert.doesNotMatch(notify, /LogicalPosition/, "no capsule move in logical px");
+  assert.match(notify, /fn anchor_area<R: Runtime>\(app: &AppHandle<R>\) -> Anchor/);
+  assert.match(notify, /origin_px: \(wa\.position\.x, wa\.position\.y\)/, "the work area's physical origin");
+  assert.match(notify, /ease_to\(w, anchor\.to_physical\(p\.x, p\.y\), anchor\.scale\)/, "restack in physical px");
+  assert.match(notify, /let target_px = anchor\.to_physical\(x, y\);/);
+  const built = notify.slice(notify.indexOf("match built {"));
+  assert.match(built.slice(0, built.indexOf("Err(e)")), /set_position\(PhysicalPosition::new\(target_px\.0, target_px\.1\)\)/, "a new capsule is put on its monitor once built");
+  const shell = codeOnly(read("desktop/crates/descall-shell/src/notif.rs"));
+  assert.match(shell, /self\.origin_px\.0 \+ \(\(x - self\.rect\.x\) \* s\)\.round\(\) as i32/);
+  // The same arithmetic: a 150 % monitor right of a 100 % one; its centre is 1920 + 1280 px.
+  const toPhysical = (a, x, y) => [a.origin[0] + Math.round((x - a.rect.x) * a.scale), a.origin[1] + Math.round((y - a.rect.y) * a.scale)];
+  const second = { rect: { x: 1920 / 1.5, y: 0, width: 2560 / 1.5 }, origin: [1920, 0], scale: 1.5 };
+  assert.deepEqual(toPhysical(second, second.rect.x + second.rect.width / 2, 10), [3200, 15]);
+  // What the logical position did: 1280 + 853 = 2133 logical read at 100 % is x 2133 px,
+  // left of the second monitor's centre by more than a capsule width.
+  assert.ok(3200 - (second.rect.x + second.rect.width / 2) > 400);
+}
+
 console.log("shell-notif.test: ok");
