@@ -1019,6 +1019,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   border-radius: var(--r-md);
   padding: 10px 12px;
   margin: 8px 0 4px;
+  overflow-wrap: anywhere;
 }
 
 .shop-gift-actions {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
@@ -37,6 +37,19 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
   const { locale } = useLocale();
   const [equipping, setEquipping] = useState(false);
   const [equipped, setEquipped] = useState(false);
+  const titleId = useId();
+  // A real dialog, like the DesCoin gift popup: Escape closes it.
+  useEffect(() => {
+    if (!gift) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onDismiss?.();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [gift, onDismiss]);
 
   if (!gift) return null;
   const { item, message, from } = gift;
@@ -68,6 +81,9 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
         exit={{ opacity: 0 }}
       >
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className="shop-gift-card"
           initial={{ opacity: 0, scale: 0.85, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -82,7 +98,7 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
             <Gift size={28} />
           </div>
 
-          <h3>{t("You received a gift!")}</h3>
+          <h3 id={titleId}>{t("You received a gift!")}</h3>
           <p className="shop-gift-from">
             {t("{name} sent you", { name: from?.username || t("Descall staff") })}
           </p>
