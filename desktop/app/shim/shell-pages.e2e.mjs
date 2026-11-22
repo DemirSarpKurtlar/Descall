@@ -67,7 +67,11 @@ function pageHtml(script) {
   const tpl = m[1].replace(/\\\r?\n\s*/g, "").replace(/\\"/g, '"');
   return rustFormat(tpl, { script });
 }
-const CSP = pagesRs.match(/pub const CSP: &str = "([^"]+)"/)[1];
+// pub const CSP: &str = concat!("...", shell_img_src!(), "..."): rebuilt from the macro.
+const IMG_SRC = pagesRs.match(/macro_rules! shell_img_src \{\s*\(\) => \{\s*"([^"]+)"/)[1];
+const CSP = [...pagesRs.match(/pub const CSP: &str = concat!\(([\s\S]+?)\);\n/)[1].matchAll(/"((?:[^"\\]|\\.)*)"|shell_img_src!\(\)/g)]
+  .map((m) => (m[1] === undefined ? IMG_SRC : JSON.parse(`"${m[1]}"`))).join("");
+assert.ok(CSP.startsWith("default-src 'none';") && CSP.includes(`img-src ${IMG_SRC};`), `shell CSP parsed: ${CSP}`);
 const SHELL_ORIGIN = "https://descall-shell.localhost";
 const APP_ORIGIN = "https://tauri.localhost";
 const SHELL_FILES = {
@@ -173,6 +177,31 @@ await step("capsule: DM renders name, preview and the notifAPI bridge", async ()
   if (SHOTS) await page.screenshot({ path: join(SHOTS, "capsule-dm.png") });
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await step("capsule: avatars load from the app's image hosts only (CSP img-src)", async () => {
+  const attempt = async (avatarUrl) => {
+    const { page, context } = await capsule({ title: "Ayşe", body: "selam", avatarUrl, data: { type: "dm", from: "Ayşe" }, duration: 5000 });
+    // Requests that reach the network layer (CSP-blocked ones never do).
+    const requested = [];
+    await page.route("**/*", (r) => { requested.push(r.request().url()); return r.fallback(); });
+    const blocked = await page.evaluate((u) => new Promise((resolve) => {
+      document.addEventListener("securitypolicyviolation", (e) => resolve(e.blockedURI), { once: true });
+      const img = new Image();
+      img.onerror = () => setTimeout(() => resolve(null), 300);
+      img.src = u;
+    }), avatarUrl);
+    await context.close();
+    return { blocked, requested };
+  };
+  // Any https host used to load (img-src https:): the always-on-top capsule told that host the
+  // viewer's address for an avatar the main window refuses.
+  const foreign = await attempt("https://tracker.example/a.png");
+  assert.equal(foreign.blocked, "https://tracker.example/a.png", "foreign avatar host blocked by CSP");
+  assert.ok(!foreign.requested.some((u) => u.startsWith("https://tracker.example")), `never requested: ${JSON.stringify(foreign.requested)}`);
+  const own = await attempt("https://abc.supabase.co/storage/v1/object/public/avatars/a.png");
+  assert.equal(own.blocked, null, "the app's own image host is allowed");
+  assert.ok(own.requested.some((u) => u.startsWith("https://abc.supabase.co/")), "own host requested");
 });
 
 function deepKeys(api) {

@@ -543,7 +543,10 @@ for (const [path, args, cmd, expected] of CASES) {
   const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
   const overlayRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "overlay.rs"), "utf8");
   const trayHtml = readFileSync(join(here, "..", "..", "..", "frontend", "public", "tray-menu", "tray-menu.html"), "utf8");
-  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay", overlayRs], ["tray menu page", trayHtml]]) {
+  // The HUD's CSP lives next to the shell pages' one (pages.rs HUD_CSP, same image hosts).
+  assert.match(overlayRs, /"Content-Security-Policy", descall_shell::pages::HUD_CSP\)/, "the Descall+ overlay sends pages::HUD_CSP");
+  const hudCsp = (pagesRs.match(/pub const HUD_CSP: &str = concat!\(([^\n]+)\);/) || [])[1] || "";
+  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay (pages.rs HUD_CSP)", hudCsp], ["tray menu page", trayHtml]]) {
     assert.match(src, /connect-src ipc: http:\/\/ipc\.localhost https:\/\/ipc\.localhost/, `${name}: https IPC origin in connect-src`);
   }
   // Descall+ portal windows (call, sidebar): links go to the browser, never a bare popup.
@@ -889,9 +892,19 @@ for (const label of ["popout-1", "acct-42"]) {
   const glob = (pattern, label) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`).test(label);
   const capsFor = (label) => caps.filter((c) => c.windows.some((w) => glob(w, label)));
   // core:default bundles core:event:default (listen / unlisten), core:window:default, ...
-  const allowed = (label, perm) => capsFor(label).some((c) => c.permissions.includes(perm)
-    || (perm.startsWith("core:event:") && c.permissions.includes("core:default"))
-    || (perm === "opener:allow-open-url" && c.permissions.includes("opener:allow-open-url")));
+  // A permission is a string or a scoped grant { identifier, allow: [...] }.
+  const ids = (c) => c.permissions.map((p) => (typeof p === "string" ? p : p.identifier));
+  const allowed = (label, perm) => capsFor(label).some((c) => ids(c).includes(perm)
+    || (perm.startsWith("core:event:") && ids(c).includes("core:default")));
+  // The opener scope is the shell's own external-link rule (trust::is_safe_external_url):
+  // http, https and mailto. opener:allow-default-urls also allowed tel:.
+  {
+    const def = caps[0];
+    const opener = def.permissions.find((p) => typeof p === "object" && p.identifier === "opener:allow-open-url");
+    assert.ok(opener, "opener:allow-open-url is a scoped grant");
+    deq(opener.allow.map((e) => e.url).sort(), ["http://*", "https://*", "mailto:*"], "opener scope: web and mail only");
+    assert.ok(!ids(def).includes("opener:allow-default-urls"), "no opener:allow-default-urls (tel:)");
+  }
   // [shim, windows it is injected into (one sample label per glob)]
   const WINDOWS = {
     "electron-api-shim.js": ["main", "admin", "signup-stats", "popout-1", "acct-7"],
@@ -1362,6 +1375,25 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   const platRs = readFileSync(join(srcDir, "premium", "platform.rs"), "utf8");
   assert.equal((platRs.match(/pub fn mouse_button_down\(\) -> bool/g) || []).length, 2, "mouse_button_down on Windows and the stub");
   assert.match(platRs, /if ex & WS_EX_TRANSPARENT\.0 as isize == 0 \{\s*SetWindowLongPtrW\(h, GWL_EXSTYLE, ex & !\(WS_EX_LAYERED/, "a click-through HUD at 100 % keeps WS_EX_LAYERED");
+}
+
+// 8. HUD avatars: the URL goes into style="background-image:url('...')". esc() turns ' into
+// &#39;, which the attribute decodes back, so a quote in an avatar URL closed the CSS string
+// and injected CSS into the HUD. URLs that could leave url('...') are dropped (initial shown).
+{
+  const hud = readFileSync(join(here, "..", "src-tauri", "src", "premium", "hud", "hud.html"), "utf8");
+  const pick = (name) => hud.split("\n").find((l) => l.startsWith(`function ${name}(`));
+  const ctx = vm.createContext({});
+  vm.runInContext([pick("esc"), pick("initial"), pick("av")].join("\n"), ctx);
+  const av = (m) => vm.runInContext(`av(${JSON.stringify(m)})`, ctx);
+  assert.match(av({ id: "1", name: "Ayse", avatar: "https://x.supabase.co/a.png" }), /style="background-image:url\('https:\/\/x\.supabase\.co\/a\.png'\)"/, "a normal avatar is drawn");
+  for (const evil of ["https://x/a.png');background:url('https://evil/b", "https://x/a.png)\\", "https://x/a b.png", "https://x/\"a.png", "javascript:alert(1)"]) {
+    const html = av({ id: "1", name: "Ayse", avatar: evil });
+    assert.doesNotMatch(html, /style=/, `no style for ${evil}`);
+    assert.match(html, />A<\/span>$/, "the initial instead");
+  }
+  // Every value the HUD writes into its markup is escaped or a number.
+  assert.doesNotMatch(hud, /data-since="'\+(?!\(Number\()/, "data-since takes numbers only");
 }
 
 console.log("electron-api-shim.test: ok");

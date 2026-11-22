@@ -28,6 +28,10 @@ pub enum WindowClass {
     Launcher,
     /// The tray panel (tray-menu-shim.js).
     TrayMenu,
+    /// A label the shell never creates: no app command at all. Before, every unknown label
+    /// fell through to `App` and got the whole electronAPI, so a window added later (or one
+    /// a plugin creates) silently had screen capture, clipboard and update install.
+    Unknown,
 }
 
 pub fn class_of(label: &str) -> WindowClass {
@@ -40,7 +44,12 @@ pub fn class_of(label: &str) -> WindowClass {
         l if l.starts_with("overlay-") => WindowClass::VoiceOverlay,
         l if l.starts_with("notif-") => WindowClass::Notification,
         l if l.starts_with("hud-") || l.starts_with("widget-") => WindowClass::Hud,
-        _ => WindowClass::App,
+        // The app windows: main, Descall+ pop-outs (popout-<n>), extra account windows
+        // (acct-<id>) and the call / sidebar portals (pip, sidebar: about:blank documents the
+        // main page draws into).
+        "main" | "pip" | "sidebar" => WindowClass::App,
+        l if l.strip_prefix("popout-").is_some_and(|n| !n.is_empty()) || l.strip_prefix("acct-").is_some_and(|n| !n.is_empty()) => WindowClass::App,
+        _ => WindowClass::Unknown,
     }
 }
 
@@ -91,6 +100,7 @@ pub fn commands_for(class: WindowClass) -> Option<&'static [&'static str]> {
         WindowClass::Hud => Some(HUD),
         WindowClass::Launcher => Some(LAUNCHER),
         WindowClass::TrayMenu => Some(TRAY_MENU),
+        WindowClass::Unknown => Some(&[]),
     }
 }
 
@@ -109,6 +119,44 @@ pub fn is_shell_page(url: &str) -> bool {
         _ => false,
     }
 }
+
+/// Navigation guard of the Descall+ HUD / widget / quick drop windows: their page is
+/// `http://descallhud.localhost/<kind>` (premium/overlay.rs) and nothing else.
+///
+/// Scheme, host and port are all checked. Tauri decides "local origin, may use IPC" from the
+/// scheme and the `<protocol>.localhost` host only, not the port, and Chromium resolves every
+/// `*.localhost` name to 127.0.0.1: `http://descallhud.localhost:8080/` is a page of whatever
+/// listens on that port, yet it would get the HUD's IPC. The old guard compared the host only.
+pub fn is_hud_page(url: &str) -> bool {
+    let Ok(u) = url::Url::parse(url) else { return false };
+    matches!(u.scheme(), "http" | "https") && u.host_str() == Some(HUD_HOST) && u.port().is_none() && u.username().is_empty() && u.password().is_none()
+}
+
+/// Second check in front of every app command (main.rs guarded), on the calling webview's
+/// current URL: an http(s) page must be exactly one of the shell's own origins (the dev server
+/// in a dev run too). Tauri's own local-origin test compares scheme and host only, so a
+/// webview that ever reached `https://tauri.localhost:<port>` or `http://tauri.localhost` (the
+/// app is served on https only: that is whatever listens on 127.0.0.1:80) would still get every
+/// app command through a navigation a guard missed. about:blank (the portals) and non-http
+/// custom schemes are left to Tauri's own check, as is a URL that does not parse.
+pub fn origin_allows_ipc(url: &str, is_dev: bool) -> bool {
+    let Ok(u) = url::Url::parse(url) else { return true };
+    if !matches!(u.scheme(), "http" | "https") {
+        return true;
+    }
+    match crate::trust::origin_of(url) {
+        Some(o) => IPC_ORIGINS.contains(&o.as_str()) || (is_dev && o == crate::trust::DEV_ORIGIN),
+        None => false,
+    }
+}
+
+/// The http(s) origins of every page the shell loads: the app (use_https_scheme), the shell
+/// pages and the HUD (served on http, the https form for safety).
+pub const IPC_ORIGINS: &[&str] = &[crate::trust::APP_ORIGIN, crate::trust::SHELL_ORIGIN, "http://descallhud.localhost", "https://descallhud.localhost"];
+
+/// Host of the `descallhud` URI scheme on Windows (WebView2 serves custom schemes as
+/// `http(s)://<scheme>.localhost`).
+pub const HUD_HOST: &str = "descallhud.localhost";
 
 #[cfg(test)]
 mod tests {
@@ -155,6 +203,104 @@ mod tests {
         assert_eq!(class_of("widget-cpu"), WindowClass::Hud);
         assert_eq!(class_of("launcher"), WindowClass::Launcher);
         assert_eq!(class_of("tray-menu"), WindowClass::TrayMenu);
+    }
+
+    /// Every label the shell creates (src/**/*.rs) has a class; anything else gets nothing.
+    #[test]
+    fn unknown_labels_get_no_command() {
+        for label in ["", "x", "devtools", "popout-", "acct-", "mainx", "main-2", "pip2", "Main", "settings", "tauri-window", "webview-1"] {
+            assert_eq!(class_of(label), WindowClass::Unknown, "{label}");
+            for cmd in registered() {
+                assert!(!allowed(label, &cmd), "{label} must not call {cmd}");
+            }
+        }
+        for label in ["main", "pip", "sidebar", "popout-1", "acct-0123456789ab"] {
+            assert_eq!(class_of(label), WindowClass::App, "{label}");
+        }
+    }
+
+    /// The labels the window builders use, read from the sources: none falls into Unknown.
+    #[test]
+    fn every_built_window_has_a_class() {
+        let srcs = [
+            include_str!("../../../app/src-tauri/src/main.rs"),
+            include_str!("../../../app/src-tauri/src/admin.rs"),
+            include_str!("../../../app/src-tauri/src/tray_menu.rs"),
+            include_str!("../../../app/src-tauri/src/commands/notify.rs"),
+            include_str!("../../../app/src-tauri/src/commands/overlay.rs"),
+            include_str!("../../../app/src-tauri/src/premium/overlay.rs"),
+            include_str!("../../../app/src-tauri/src/premium/wins.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/quick_launcher.rs"),
+        ];
+        let builders: usize = srcs.iter().map(|s| s.matches("WebviewWindowBuilder::new(").count()).sum();
+        assert_eq!(builders, 10, "a window builder was added or removed: give its label a class here and in class_of");
+        // Label sources of those builders (state::MAIN, admin spec, LABEL consts, format! prefixes).
+        let labels = ["main", "admin", "signup-stats", "tray-menu", "notif-7", "overlay-3", "hud-voice_hud", "widget-cpu", "pip", "sidebar", "popout-2", "acct-0123456789ab", "launcher"];
+        for l in labels {
+            assert_ne!(class_of(l), WindowClass::Unknown, "{l}");
+        }
+        for prefix in ["\"notif-{", "\"popout-{", "\"acct-{", "\"widget-{", "\"hud-{"] {
+            assert!(srcs.iter().any(|s| s.contains(prefix)), "label prefix {prefix} no longer used: update the list above");
+        }
+    }
+
+    #[test]
+    fn ipc_needs_a_portless_origin() {
+        for u in [
+            "https://tauri.localhost/index.html",
+            "https://tauri.localhost:443/settings",
+            "https://descall-shell.localhost/notif.html",
+            "http://descallhud.localhost/voice",
+            "about:blank",
+            "about:blank#descall-premium-call",
+        ] {
+            assert!(origin_allows_ipc(u, false), "{u}");
+        }
+        for u in ["https://tauri.localhost:8443/", "http://tauri.localhost:80/", "http://tauri.localhost/", "http://descall-shell.localhost/notif.html", "https://evil.example/", "http://descallhud.localhost:8080/voice", "https://descall-shell.localhost:1/notif.html", "https://x@tauri.localhost/", "http://localhost:5173/"] {
+            assert!(!origin_allows_ipc(u, false), "{u}");
+        }
+        assert!(origin_allows_ipc("http://localhost:5173/settings", true), "the dev server in a dev run");
+        assert!(!origin_allows_ipc("http://localhost:5174/", true));
+        let main = include_str!("../../../app/src-tauri/src/main.rs");
+        let g = &main[main.find("fn guarded(").unwrap()..];
+        let g = &g[..g.find("\n}\n").unwrap()];
+        assert!(g.contains("origin_allows_ipc(url.as_str(), state::is_dev())"), "guarded() checks the caller's URL");
+        assert!(g.find("origin_allows_ipc").unwrap() < g.find("inner(invoke)").unwrap());
+    }
+
+    #[test]
+    fn hud_pages_are_exact() {
+        assert!(is_hud_page("http://descallhud.localhost/voice"));
+        assert!(is_hud_page("https://descallhud.localhost/widget"));
+        for u in [
+            "http://descallhud.localhost:8080/voice",
+            "https://descallhud.localhost:443x/voice",
+            "http://descallhud.localhost:1/",
+            "http://u:p@descallhud.localhost/voice",
+            "ws://descallhud.localhost/voice",
+            "file://descallhud.localhost/C:/x",
+            "http://descallhud.localhost.evil.example/",
+            "http://evil.example/descallhud.localhost",
+            "descallhud://localhost/voice",
+            "about:blank",
+            "",
+        ] {
+            assert!(!is_hud_page(u), "{u} is not a HUD page");
+        }
+        let overlay = include_str!("../../../app/src-tauri/src/premium/overlay.rs");
+        assert!(overlay.contains(".on_navigation(|u| descall_shell::ipc_policy::is_hud_page(u.as_str()))"), "the HUD windows use the exact guard");
+        assert!(overlay.contains(&format!("\"http://{{SCHEME}}.localhost/{{}}\"")) && HUD_HOST == "descallhud.localhost");
+    }
+
+    /// Every navigation guard compares the whole origin (scheme, host and port), because Tauri's
+    /// own local-origin check ignores the port.
+    #[test]
+    fn navigation_guards_compare_the_port() {
+        assert!(!is_shell_page("https://descall-shell.localhost:8443/notif.html"));
+        assert!(!crate::trust::is_app_url("https://tauri.localhost:8443/", false));
+        assert!(!crate::trust::is_app_url("http://tauri.localhost:80/", false));
     }
 
     #[test]
@@ -263,13 +409,17 @@ mod capability_tests {
             None => pattern == label,
         }
     }
+    /// `"x:allow-y"` or `{ "identifier": "x:allow-y", "allow": [...] }` (a scoped grant).
+    fn permission_id(p: &Value) -> Option<String> {
+        p.as_str().or_else(|| p["identifier"].as_str()).map(str::to_string)
+    }
     /// Every permission any capability grants to window `label`.
     fn granted(label: &str) -> Vec<String> {
         let mut out = Vec::new();
         for c in caps() {
             let windows = c["windows"].as_array().cloned().unwrap_or_default();
             if windows.iter().filter_map(Value::as_str).any(|p| matches(p, label)) {
-                out.extend(c["permissions"].as_array().cloned().unwrap_or_default().iter().filter_map(|p| p.as_str().map(str::to_string)));
+                out.extend(c["permissions"].as_array().cloned().unwrap_or_default().iter().filter_map(permission_id));
             }
         }
         out
@@ -288,7 +438,8 @@ mod capability_tests {
     fn no_remote_origin_and_no_broad_sets() {
         for c in caps() {
             assert!(c.get("remote").is_none(), "{}: remote origins never get IPC", c["identifier"]);
-            for p in c["permissions"].as_array().unwrap().iter().filter_map(Value::as_str) {
+            for p in c["permissions"].as_array().unwrap().iter().filter_map(permission_id) {
+                let p = p.as_str();
                 let banned = p == "core:default"
                     || p.ends_with(":allow-emit")
                     || p.ends_with(":allow-emit-to")
@@ -303,10 +454,35 @@ mod capability_tests {
                     || p.starts_with("clipboard-manager:")
                     || p.starts_with("deep-link:")
                     || p == "opener:default"
+                    || p == "opener:allow-default-urls"
                     || p == "opener:allow-open-path"
                     || p == "opener:allow-reveal-item-in-dir";
                 assert!(!banned, "{}: {p} is broader than any page needs", c["identifier"]);
             }
+        }
+    }
+
+    /// opener:allow-open-url is scoped to exactly what trust::is_safe_external_url sends to the
+    /// OS (http, https, mailto). opener:allow-default-urls also allowed tel:, and an unscoped
+    /// grant would allow nothing (or, with a broad global scope, file: and custom schemes).
+    #[test]
+    fn opener_scope_is_web_and_mail_only() {
+        let mut scopes = Vec::new();
+        for c in caps() {
+            for p in c["permissions"].as_array().unwrap() {
+                if permission_id(p).as_deref() == Some("opener:allow-open-url") {
+                    let allow = p["allow"].as_array().expect("opener:allow-open-url carries its own scope");
+                    scopes.extend(allow.iter().map(|e| e["url"].as_str().expect("url entries only").to_string()));
+                    assert!(p.get("deny").is_none() || p["deny"].as_array().is_some());
+                }
+            }
+        }
+        scopes.sort();
+        assert_eq!(scopes, ["http://*", "https://*", "mailto:*"]);
+        for (url, os) in [("https://descall.com/x", true), ("http://example.com", true), ("mailto:a@b.c", true), ("tel:+90", false), ("file:///C:/x.exe", false), ("ms-settings:privacy", false), ("javascript:alert(1)", false)] {
+            let scoped = scopes.iter().any(|g| url.starts_with(g.trim_end_matches('*')));
+            assert_eq!(scoped, os, "{url}");
+            assert_eq!(crate::trust::is_safe_external_url(url), os, "{url}: shell rule and opener scope agree");
         }
     }
 
@@ -374,6 +550,80 @@ mod capability_tests {
             ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
         ] {
             assert!(src.contains("install_browser_guards(&"), "{file} creates an app window without the browser guards");
+        }
+    }
+
+    /// window.open from any app window follows one rule (boot::open_external_window, i.e.
+    /// trust::main_window_open): pop-outs and portals opened every https URL and no mail link,
+    /// account windows nothing.
+    #[test]
+    fn app_windows_open_links_by_one_rule() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("premium/wins.rs", include_str!("../../../app/src-tauri/src/premium/wins.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+        ] {
+            assert!(src.contains("boot::open_external_window(&"), "{file}: window.open without the shared external-link rule");
+            assert!(!src.contains("u.scheme() == \"https\""), "{file}: own scheme check instead of trust::main_window_open");
+        }
+        let boot = include_str!("../../../app/src-tauri/src/boot.rs");
+        let f = &boot[boot.find("pub fn open_external_window").expect("boot::open_external_window")..];
+        assert!(f[..f.find("\n}").unwrap()].contains("trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External"));
+    }
+
+    /// Page downloads in every app window go through webview::on_download (a sanitized free
+    /// name in Downloads); pop-outs and account windows had WebView2's own download bubble.
+    #[test]
+    fn app_windows_route_downloads() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+        ] {
+            assert!(src.contains("on_download(webview::on_download)") || src.contains("on_download(crate::webview::on_download)"), "{file}: downloads without the shell's handler");
+        }
+    }
+
+    /// WebView2 browser arguments: one string for every window (a shared user data folder
+    /// refuses a second environment with other arguments), Tauri's own defaults kept, and no
+    /// switch that weakens the browser (debug port, web security, sandbox, certificates, file
+    /// access). Portal windows reuse the opener's environment (window_features) instead.
+    #[test]
+    fn browser_args_are_shared_and_safe() {
+        let main = include_str!("../../../app/src-tauri/src/main.rs");
+        let start = main.find("pub const BROWSER_ARGS: &str = \"").expect("BROWSER_ARGS") + "pub const BROWSER_ARGS: &str = \"".len();
+        let args = main[start..start + main[start..].find("\";").unwrap()].replace("\\\n", " ");
+        for flag in ["remote-debugging", "disable-web-security", "no-sandbox", "ignore-certificate-errors", "allow-file-access", "allow-running-insecure-content", "disable-site-isolation", "user-data-dir", "load-extension", "enable-automation", "js-flags", "unsafely-treat-insecure-origin"] {
+            assert!(!args.contains(flag), "BROWSER_ARGS must not carry --{flag}");
+        }
+        for keep in ["msWebOOUI", "msPdfOOUI", "msSmartScreenProtection"] {
+            assert!(args.contains(keep), "Tauri's default --disable-features={keep} is repeated");
+        }
+        for (file, src) in [
+            ("main.rs", main),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("tray_menu.rs", include_str!("../../../app/src-tauri/src/tray_menu.rs")),
+            ("commands/notify.rs", include_str!("../../../app/src-tauri/src/commands/notify.rs")),
+            ("commands/overlay.rs", include_str!("../../../app/src-tauri/src/commands/overlay.rs")),
+            ("premium/overlay.rs", include_str!("../../../app/src-tauri/src/premium/overlay.rs")),
+            ("premium/wins.rs", include_str!("../../../app/src-tauri/src/premium/wins.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+            ("quick_launcher.rs", include_str!("../../../app/src-tauri/src/premium/features/quick_launcher.rs")),
+        ] {
+            let mut rest = src;
+            while let Some(i) = rest.find("WebviewWindowBuilder::new(") {
+                let chain = &rest[i..];
+                let chain = &chain[..chain.find(".build()").unwrap_or(chain.len())];
+                assert!(chain.contains("BROWSER_ARGS)") || chain.contains(".window_features("), "{file}: a window builder with WebView2's default arguments");
+                assert!(chain.contains(".on_navigation("), "{file}: a window builder without a navigation guard");
+                // IPC_ORIGINS (origin_allows_ipc) expects https pages, the HUD's http page aside.
+                assert!(chain.contains(".use_https_scheme(true)") || (file == "premium/overlay.rs" && src.contains("http://{SCHEME}.localhost")), "{file}: a page origin outside IPC_ORIGINS");
+                assert!(chain.contains(".on_new_window("), "{file}: a window builder that lets window.open create raw WebView2 popups");
+                rest = &rest[i + 1..];
+            }
         }
     }
 

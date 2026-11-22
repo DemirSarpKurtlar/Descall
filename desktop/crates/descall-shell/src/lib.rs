@@ -27,6 +27,7 @@
 //! | `bridge`            | main.cjs per-sender IPC rules           | shim commands vs generate_handler!    |
 //! | `main_errors`       | mainErrors.cjs (+ crash file)           | mainErrors.selftest.mjs               |
 //! | `deep_link`         | (new: descall:// from argv)             | (new)                                 |
+//! | `secrets`           | (new) tokens out of main.log / reports  | (new)                                 |
 
 pub mod bridge;
 pub mod clipboard;
@@ -45,6 +46,7 @@ pub mod notif;
 pub mod occlusion;
 pub mod pages;
 pub mod processes;
+pub mod secrets;
 pub mod snap;
 pub mod tray_panel;
 pub mod trust;

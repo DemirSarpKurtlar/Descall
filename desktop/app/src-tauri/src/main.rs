@@ -58,6 +58,15 @@ fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -
             invoke.resolver.reject("forbidden");
             return true;
         }
+        // Tauri's local-origin test ignores the port: a page on <app host>:<port> (a local
+        // server) must not reach app commands even if some navigation got there.
+        if let Ok(url) = invoke.message.webview_ref().url() {
+            if !descall_shell::ipc_policy::origin_allows_ipc(url.as_str(), state::is_dev()) {
+                log::warn!("[ipc] {label}: refused {} from a page with a port", invoke.message.command());
+                invoke.resolver.reject("forbidden");
+                return true;
+            }
+        }
         inner(invoke)
     }
 }
@@ -181,10 +190,7 @@ fn main() {
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
-                        use tauri_plugin_opener::OpenerExt;
-                        let _ = nav_app.opener().open_url(url.as_str(), None::<&str>);
-                    }
+                    boot::open_external_window(&nav_app, &url);
                     NewWindowResponse::Deny
                 })
                 .on_page_load(move |w, p| match p.event() {

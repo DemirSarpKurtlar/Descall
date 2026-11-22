@@ -258,7 +258,8 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   // checked in Chromium at the Tauri origin), so the IPC never falls back to postMessage.
   assert.ok(csp["connect-src"].split(/\s+/).includes("http://ipc.localhost"), "app pages: IPC allowed");
   const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
-  const shellCsp = /pub const CSP: &str = "([^"]+)"/.exec(pagesRs)[1];
+  // pub const CSP: &str = concat!("...", shell_img_src!(), "..."): the string parts.
+  const shellCsp = [.../pub const CSP: &str = concat!\(([\s\S]+?)\);\n/.exec(pagesRs)[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join(" ");
   assert.ok(/connect-src[^;]*https?:\/\/ipc\.localhost/.test(shellCsp), "shell pages (mini call card, capsules): IPC allowed");
 }
 

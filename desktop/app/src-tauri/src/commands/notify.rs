@@ -488,8 +488,10 @@ pub async fn notif_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R
                 let mut list = n.list.lock().unwrap();
                 if let Some(c) = list.iter_mut().find(|c| c.id == id) {
                     c.paused = false;
+                    // Never longer than a capsule lives (a capsule page cannot pin itself on
+                    // screen with a huge "time left").
                     if let Some(ms) = remaining.filter(|m| m.is_finite()) {
-                        c.remaining_ms = ms.max(0.0) as u64;
+                        c.remaining_ms = ms.clamp(0.0, notif::DEFAULT_DURATION_MS as f64) as u64;
                     }
                 }
             }

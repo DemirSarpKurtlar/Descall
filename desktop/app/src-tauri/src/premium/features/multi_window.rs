@@ -72,14 +72,14 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .additional_browser_args(crate::BROWSER_ARGS)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        // <a download> / blob: exports: Downloads + Explorer under a safe free name, as in the
+        // main window (no Edge download bubble over the app).
+        .on_download(crate::webview::on_download)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {
-            if u.scheme() == "https" {
-                if let Some(h) = crate::premium::host() {
-                    use tauri_plugin_opener::OpenerExt;
-                    let _ = h.app.opener().open_url(u.as_str(), None::<&str>);
-                }
+            if let Some(h) = crate::premium::host() {
+                crate::boot::open_external_window(&h.app, &u);
             }
             tauri::webview::NewWindowResponse::Deny
         })
