@@ -88,13 +88,13 @@ pub fn panic_summary(payload: &str, file: Option<&str>, line: Option<u32>, threa
     }
     // The message also goes through crate::crash::redact_paths (T10): any path-like token
     // that scrub_paths keeps (relative, file:, ~/...) is replaced as well.
-    let message = crate::crash::redact_paths(&scrub_paths(payload));
+    let message = crate::secrets::redact(&crate::crash::redact_paths(&scrub_paths(payload)));
     Summary { kind: "panic".into(), name: "RustPanic".into(), message: cut(&message, MAX_MESSAGE), stack: cut(&stack, MAX_STACK) }
 }
 
 /// Any other shell-side failure (renderer process gone, ...).
 pub fn summary(kind: &str, name: &str, message: &str) -> Summary {
-    Summary { kind: cut(kind, 40), name: cut(name, 60), message: cut(&scrub_paths(message), MAX_MESSAGE), stack: String::new() }
+    Summary { kind: cut(kind, 40), name: cut(name, 60), message: cut(&crate::secrets::redact(&scrub_paths(message)), MAX_MESSAGE), stack: String::new() }
 }
 
 /// The page's text for the payload of `std::panic::PanicHookInfo`.
@@ -203,6 +203,19 @@ mod tests {
         assert_eq!(s.stack, r"at ~\lib.rs:10");
         assert_eq!(scrub_paths("at /home/demir/app/x.js and /Users/ali/y"), "at ~/app/x.js and ~/y");
         assert_eq!(scrub_paths("src\\premium\\mod.rs:12:5"), "src\\premium\\mod.rs:12:5", "relative paths stay");
+    }
+
+    /// A panic or shell error that quotes a URL or a session object goes to Sentry (through
+    /// the page) and to the crash file without its sign-in secrets.
+    #[test]
+    fn summaries_carry_no_tokens() {
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJlLXNpZ25hdHVyZQ";
+        let s = panic_summary(&format!("called `Result::unwrap()` on an `Err` value: reqwest::Error {{ url: \"https://x.supabase.co/a?token=SeCrEt\", auth: Bearer {jwt} }}"), None, None, None);
+        assert!(!s.message.contains("SeCrEt") && !s.message.contains(jwt), "{}", s.message);
+        let t = summary("render-process-gone", "crashed", r#"state {"refresh_token":"r3fr3sh"}"#);
+        assert!(!t.message.contains("r3fr3sh"), "{}", t.message);
+        let back = decode_crash(&encode_crash(&s, 1_000), 2_000).expect("fresh crash file");
+        assert!(!back.message.contains("SeCrEt"));
     }
 
     #[test]

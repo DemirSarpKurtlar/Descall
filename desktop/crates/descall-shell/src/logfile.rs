@@ -65,7 +65,9 @@ pub fn format_line(unix_ms: u64, level: Level, message: &str) -> String {
         Level::Debug => "debug",
         Level::Trace => "trace",
     };
-    let one: String = message.replace(['\r', '\n'], " ").chars().take(MAX_LINE_CHARS).collect();
+    // Every record, the shell's own included (a reqwest error names the signed URL it failed
+    // on), loses its sign-in secrets before it reaches the file.
+    let one: String = crate::secrets::redact(&message.replace(['\r', '\n'], " ")).chars().take(MAX_LINE_CHARS).collect();
     format!("[{y:04}-{mo:02}-{d:02} {h:02}:{mi:02}:{s:02}.{ms:03}] [{name}] {one}\n")
 }
 
@@ -85,24 +87,12 @@ pub fn renderer_rate(state: (u64, u32), now_ms: u64) -> ((u64, u32), bool) {
 }
 
 /// A page console line for main.log (Electron: console-message, 400 characters, 2400 for CSP
-/// reports): one line, sign-in tokens (JWTs, Bearer values) replaced.
+/// reports): one line, sign-in secrets replaced (crate::secrets: JWTs, Bearer values, token /
+/// refresh_token / signature parameters).
 pub fn renderer_message(message: &str) -> String {
     let max = if message.contains("Content Security Policy") || message.starts_with("CSP ") { 2400 } else { 400 };
-    let mut out = String::with_capacity(message.len().min(max));
-    let mut bearer = false;
-    for (i, word) in message.split_whitespace().enumerate() {
-        if i > 0 {
-            out.push(' ');
-        }
-        let jwt = word.split(['"', '\'', '=', ':', ',', '(', ')']).any(|w| w.starts_with("eyJ") && w.matches('.').count() >= 2 && w.len() > 20);
-        if bearer || jwt {
-            out.push_str("<token>");
-        } else {
-            out.push_str(word);
-        }
-        bearer = word.eq_ignore_ascii_case("bearer");
-    }
-    out.chars().take(max).collect()
+    let one = message.split_whitespace().collect::<Vec<_>>().join(" ");
+    crate::secrets::redact(&one).chars().take(max).collect()
 }
 
 #[cfg(test)]
@@ -143,6 +133,18 @@ mod tests {
         assert_eq!(format_line(951_782_400_000, Level::Error, "leap"), "[2000-02-29 00:00:00.000] [error] leap\n");
         assert_eq!(format_line(0, Level::Info, "a\nb\r\nc"), "[1970-01-01 00:00:00.000] [info] a b  c\n", "one record, one line");
         assert!(format_line(0, Level::Info, &"x".repeat(10_000)).len() < MAX_LINE_CHARS + 64);
+    }
+
+    /// The shell's own lines are redacted too, not only the page's (download_file logged
+    /// reqwest errors with the whole signed URL).
+    #[test]
+    fn shell_lines_drop_secrets() {
+        let line = format_line(0, Level::Error, "[download] error sending request for url (https://x.supabase.co/storage/v1/object/sign/a.pdf?token=SeCrEt&download=a.pdf)");
+        assert!(!line.contains("SeCrEt"), "{line}");
+        assert!(line.contains("token=<redacted>&download=a.pdf"), "{line}");
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJlLXNpZ25hdHVyZQ";
+        assert!(!format_line(0, Level::Warn, &format!("[nav] not opening will-navigate: https://e.example/#access_token={jwt}")).contains(jwt));
+        assert!(!renderer_message("[auth] https://tauri.localhost/#refresh_token=abc123def&type=recovery").contains("abc123def"));
     }
 
     #[test]
