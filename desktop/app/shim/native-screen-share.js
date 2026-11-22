@@ -150,7 +150,46 @@
     return { id, kind: parts[2], arg: parts.slice(3).join(":") };
   }
 
-  const internals = { RingReader, buildRequest, pickLane, parseWake, OFF, RING_MAGIC, RING_VERSION, FLAG_AUDIO, FLAG_HDR };
+  /* Notices in the app's 7 languages (were Turkish or English only). */
+  const NOTICES = {
+    black: {
+      tr: "Paylaşılan görüntü siyah. Oyunu pencereli tam ekran (borderless) yapın ya da ekranın tamamını paylaşın.",
+      en: "The shared picture is black. Switch the game to borderless windowed, or share the whole screen.",
+      de: "Das geteilte Bild ist schwarz. Stelle das Spiel auf randloses Fenster (Borderless) oder teile den ganzen Bildschirm.",
+      es: "La imagen compartida está en negro. Pon el juego en ventana sin bordes (borderless) o comparte la pantalla completa.",
+      fr: "L'image partagée est noire. Passez le jeu en fenêtré sans bordure (borderless) ou partagez l'écran entier.",
+      "pt-BR": "A imagem compartilhada está preta. Coloque o jogo em janela sem bordas (borderless) ou compartilhe a tela inteira.",
+      ru: "Транслируемое изображение чёрное. Переключите игру в оконный режим без рамки (borderless) или покажите весь экран.",
+    },
+    noAudio: {
+      tr: "Sistem sesi bu bilgisayarda paylaşılamıyor; yalnızca görüntü paylaşılıyor.",
+      en: "System audio cannot be shared on this PC; sharing video only.",
+      de: "Der Systemton kann auf diesem PC nicht geteilt werden; nur das Bild wird geteilt.",
+      es: "El audio del sistema no se puede compartir en este PC; solo se comparte la imagen.",
+      fr: "Le son du système ne peut pas être partagé sur ce PC ; seule l'image est partagée.",
+      "pt-BR": "O áudio do sistema não pode ser compartilhado neste PC; só a imagem está sendo compartilhada.",
+      ru: "Системный звук нельзя транслировать на этом компьютере; транслируется только изображение.",
+    },
+    echoOff: {
+      tr: "Sistem sesi yankı yapmaması için kapatıldı; yalnızca görüntü paylaşılıyor.",
+      en: "System audio was turned off to prevent echo; sharing video only.",
+      de: "Der Systemton wurde abgeschaltet, um Echo zu vermeiden; nur das Bild wird geteilt.",
+      es: "Se desactivó el audio del sistema para evitar eco; solo se comparte la imagen.",
+      fr: "Le son du système a été coupé pour éviter l'écho ; seule l'image est partagée.",
+      "pt-BR": "O áudio do sistema foi desligado para evitar eco; só a imagem está sendo compartilhada.",
+      ru: "Системный звук отключён, чтобы не было эха; транслируется только изображение.",
+    },
+  };
+  /** Notice text for a page language ("pt", "pt-BR", "de-AT" ...), English otherwise. */
+  function noticeText(key, lang) {
+    const set = NOTICES[key];
+    if (!set) return "";
+    const l = String(lang || "").toLowerCase();
+    const id = l.startsWith("pt") ? "pt-BR" : l.slice(0, 2);
+    return set[id] || set.en;
+  }
+
+  const internals = { RingReader, buildRequest, pickLane, parseWake, noticeText, NOTICES, OFF, RING_MAGIC, RING_VERSION, FLAG_AUDIO, FLAG_HDR };
   try { globalThis.__descallNativeShareInternals = internals; } catch (_) { /* ignore */ }
   if (typeof module === "object" && module && module.exports) module.exports = internals;
 
@@ -178,18 +217,18 @@
       return !label || label === "main";
     } catch (_) { return true; }
   }
-  const tr = () => /^tr\b/i.test(document.documentElement.lang || navigator.language || "");
+  const pageLang = () => document.documentElement.lang || navigator.language || "";
   function announce(lane, extra) {
     api.lane = lane;
     try { window.dispatchEvent(new CustomEvent("descall-screenshare-lane", { detail: { lane, ...extra } })); } catch (_) { /* ignore */ }
   }
 
   /* Small notice (opaque dark glass, #587af5 accent), e.g. "video only". */
-  function notice(textTr, textEn) {
+  function notice(key) {
     try {
       const el = document.createElement("div");
       el.setAttribute("role", "status");
-      el.textContent = tr() ? textTr : textEn;
+      el.textContent = noticeText(key, pageLang());
       Object.assign(el.style, {
         position: "fixed", left: "50%", bottom: "28px", transform: "translateX(-50%)", zIndex: "2147483646",
         maxWidth: "min(560px, 90vw)", padding: "10px 16px 10px 30px", borderRadius: "12px",
@@ -469,15 +508,14 @@
             // Nothing more to learn: no stats call every 2 s for the rest of the share.
             clearInterval(s.hintTimer);
             s.hintTimer = null;
-            notice("Paylaşılan görüntü siyah. Oyunu pencereli tam ekran (borderless) yapın ya da ekranın tamamını paylaşın.",
-              "The shared picture is black. Switch the game to borderless windowed, or share the whole screen.");
+            notice("black");
           }
         }).catch(() => {});
       }, 2000);
       const audioLane = s.audio ? lane : lane === "L1" ? "L2" : lane;
       announce(audioLane, { audio: Boolean(s.audio), hdr: Boolean(info.hdr), audioError: info.audioError || null, echoRisk: Boolean(info.echoRisk) });
       if (req.audio && !s.audio) {
-        notice("Sistem sesi bu bilgisayarda paylaşılamıyor; yalnızca görüntü paylaşılıyor.", "System audio cannot be shared on this PC; sharing video only.");
+        notice("noAudio");
         if (info.audioError) console.warn("[ScreenShare] system audio unavailable:", info.audioError);
       }
       if (info.echoRisk) console.warn("[ScreenShare] echo guard: WebView2 audio outside the Descall process tree");
@@ -502,7 +540,7 @@
     }
     announce("L4", { audio: stream.getAudioTracks().length > 0 });
     if ((constraints && constraints.audio) && (dropped || !c.audio)) {
-      notice("Sistem sesi yankı yapmaması için kapatıldı; yalnızca görüntü paylaşılıyor.", "System audio was turned off to prevent echo; sharing video only.");
+      notice("echoOff");
     }
     return stream;
   }

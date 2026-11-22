@@ -254,4 +254,22 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.match(body, /hinted = true;\s*(?:\/\/[^\n]*\n\s*)*clearInterval\(s\.hintTimer\);\s*s\.hintTimer = null;/, "polling stops once the hint was shown");
 }
 
+// ---- screen share notices speak the app's 7 languages (were Turkish or English only) ----------
+{
+  const { createRequire } = await import("node:module");
+  const require = createRequire(import.meta.url);
+  const { noticeText, NOTICES } = require("./native-screen-share.js");
+  for (const key of ["black", "noAudio", "echoOff"]) {
+    for (const id of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+      assert.ok(NOTICES[key][id] && NOTICES[key][id].length > 20, `${key}: ${id}`);
+    }
+  }
+  assert.equal(noticeText("noAudio", "de"), NOTICES.noAudio.de, "German page, German notice");
+  assert.equal(noticeText("black", "pt"), NOTICES.black["pt-BR"]);
+  assert.equal(noticeText("echoOff", "fr-CA"), NOTICES.echoOff.fr);
+  assert.equal(noticeText("echoOff", "ja"), NOTICES.echoOff.en, "unknown language: English");
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  assert.doesNotMatch(ns, /notice\("[^"]{20,}"/, "no hard-coded notice text at the call sites");
+}
+
 console.log("media-calls.test: ok");
