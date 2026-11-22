@@ -310,4 +310,6 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.ok(3200 - (second.rect.x + second.rect.width / 2) > 400);
 }
 
+// The capsule's "time left" on resume is clamped to a capsule's lifetime in the shell.
+assert.match(readFileSync(new URL("../src-tauri/src/commands/notify.rs", import.meta.url), "utf8"), /c\.remaining_ms = ms\.clamp\(0\.0, notif::DEFAULT_DURATION_MS as f64\) as u64;/, "resume time left is clamped");
 console.log("shell-notif.test: ok");
