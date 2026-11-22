@@ -149,6 +149,17 @@ pub fn set_quitting<R: Runtime>(app: &AppHandle<R>) {
     shell(app).quitting.store(true, Ordering::Release);
 }
 
+/// Restart (Settings > Desktop app "Restart", Retry after the WebView2 browser process died).
+/// app.restart() starts the new process with this run's arguments, and a session that began at
+/// Windows login carries --autostart --hidden: the window the user was looking at came back
+/// hidden in the tray. The one-shot relaunch marker (boot::write_relaunch_marker) records how
+/// the window was left, and the cold-start rule follows it first (launch::decide_cold_start).
+pub fn restart<R: Runtime>(app: &AppHandle<R>) -> ! {
+    set_quitting(app);
+    crate::boot::write_relaunch_marker(app);
+    app.restart()
+}
+
 /// Time the page gets for its pagehide / beforeunload work (a socket emit to leave voice,
 /// the app-time flush) before the process goes.
 pub const QUIT_UNLOAD_GRACE_MS: u64 = 400;

@@ -329,6 +329,19 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.doesNotMatch(trayRs.slice(trayRs.indexOf("pub fn quit")), /^\s*app\.exit\(0\);/m);
 }
 
+// Every restart records how the window was left first: app.restart() reuses this run's
+// arguments, and a login session's --autostart --hidden brought the window back hidden.
+{
+  const src = (f) => readFileSync(join(here, "..", "src-tauri", "src", ...f.split("/")), "utf8");
+  for (const f of ["commands/updates.rs", "webview.rs", "main.rs", "tray.rs", "boot.rs", "commands/app.rs", "commands/window.rs"]) {
+    assert.doesNotMatch(src(f), /app\.restart\(\)/, `${f}: restarts go through state::restart`);
+  }
+  assert.match(src("state.rs"), /pub fn restart<R: Runtime>\(app: &AppHandle<R>\) -> ! \{\s*set_quitting\(app\);\s*crate::boot::write_relaunch_marker\(app\);\s*app\.restart\(\)/);
+  const launchRs = readFileSync(join(repo, "desktop", "crates", "descall-shell", "src", "launch.rs"), "utf8");
+  const rule = launchRs.slice(launchRs.indexOf("pub fn decide_cold_start"));
+  assert.ok(rule.indexOf("if updater_relaunch") < rule.indexOf("if is_autostart_launch(argv)"), "the fresh marker decides before the login flags");
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).

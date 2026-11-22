@@ -297,8 +297,7 @@ fn ask<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
         match (kind, retry) {
             // Browser process gone: only a fresh start brings the WebView back.
             (0, true) => {
-                crate::state::set_quitting(&app);
-                app.restart();
+                crate::state::restart(&app);
             }
             (0, false) => {
                 crate::state::set_quitting(&app);
