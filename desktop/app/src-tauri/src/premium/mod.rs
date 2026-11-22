@@ -387,12 +387,11 @@ impl Host {
         lock(&self.hooks).boot_script.as_ref().and_then(|f| f(&self.app, label))
     }
 
+    /// The shell's single "bring Descall back" path (state::show_main): on the event loop
+    /// thread, so the focus really lands (this bus runs on its own thread), back on the
+    /// taskbar, and the page told it is in front again.
     pub fn show_main(&self) {
-        if let Some(w) = self.app.get_webview_window("main") {
-            let _ = w.unminimize();
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
+        crate::state::show_main(&self.app);
     }
 
     // -- blobs (ArrayBuffers across IPC) --

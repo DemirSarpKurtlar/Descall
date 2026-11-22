@@ -210,6 +210,8 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   // called from a toast click, the ready fallback or a Descall+ action).
   assert.match(showMain, /if MAIN_THREAD\.get\(\)\.is_some\(\) && !on_main_thread\(\) \{\s*let a = app\.clone\(\);\s*let _ = app\.run_on_main_thread\(move \|\| show_main\(&a\)\);\s*return;/);
   assert.match(main, /fn main\(\) \{\s*state::mark_main_thread\(\);/);
+  const premium = readFileSync(join(src, "premium", "mod.rs"), "utf8");
+  assert.match(premium, /pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/, "Descall+ actions use the same show path");
   // A second launch while the main window is still being built is kept (round 2).
   assert.match(main, /\.plugin\(tauri_plugin_single_instance::init\([\s\S]{0,300}state::request_show\(app\);/);
 }
