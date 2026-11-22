@@ -222,7 +222,7 @@ mod tests {
         let placed = stack_positions(second.rect, &[Entry { id: 1, call: true, height: card_height(true, Kind::Call) }]);
         let (px, py) = second.to_physical(placed[0].x, placed[0].y);
         // On the second monitor, top centre of its work area (not on the first screen).
-        assert!(px >= 1920 && px < 1920 + 2560, "x {px}");
+        assert!((1920..1920 + 2560).contains(&px), "x {px}");
         let mid = px as f64 + (placed[0].width + 2.0 * SHADOW_PAD) * s / 2.0;
         assert!((mid - (1920.0 + 1280.0)).abs() <= 2.0, "centre {mid}");
         // The window's top shadow margin sits above the work area by design (y = margin -

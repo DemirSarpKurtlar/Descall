@@ -733,8 +733,10 @@ pub async fn premium_invoke(webview: Webview, channel: String, args: Vec<Value>)
 }
 
 /// Raw bytes in (an ArrayBuffer argument); returns a `{ __blob }` placeholder for the next call.
+/// Async, so the copy of up to 100 MB (a file dropped on the drop zone) happens off the UI
+/// thread, which runs every Descall window: a sync command froze them all while it copied.
 #[tauri::command]
-pub fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
+pub async fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
     let h = host().ok_or("premium host not ready")?;
     let label = webview.label();
     if h.caller_for(label).is_none() && !overlay::is_overlay(label) {
@@ -757,12 +759,25 @@ pub fn premium_blob_take(webview: Webview, id: u64) -> Result<tauri::ipc::Respon
     h.take_blob(&json!({ "__blob": id })).map(tauri::ipc::Response::new).ok_or_else(|| "gone".into())
 }
 
-/// `window.descallHud.action(type, payload)` from a HUD / widget / drop window.
+/// `window.descallHud.action(type, payload)` from a HUD / widget / drop window. Handled off
+/// the UI thread, on one worker in arrival order: a thread per action let two quick `size`
+/// reports finish out of order, and the HUD kept the older (wrong) height. One worker also
+/// keeps a page that floods actions from starting a thread per call.
 #[tauri::command]
 pub fn premium_hud_action(webview: Webview, kind: String, payload: Value) -> Result<(), String> {
+    type Action = (String, String, Value);
+    static WORKER: OnceLock<Mutex<Sender<Action>>> = OnceLock::new();
     let h = host().cloned().ok_or("premium host not ready")?;
-    let label = webview.label().to_string();
-    std::thread::spawn(move || overlay::on_action(&h, &label, &kind, payload));
+    let tx = WORKER.get_or_init(|| {
+        let (tx, rx) = channel::<Action>();
+        let _ = std::thread::Builder::new().name("premium-hud-actions".into()).spawn(move || {
+            while let Ok((label, kind, payload)) = rx.recv() {
+                overlay::on_action(&h, &label, &kind, payload);
+            }
+        });
+        Mutex::new(tx)
+    });
+    let _ = lock(tx).send((webview.label().to_string(), kind, payload));
     Ok(())
 }
 

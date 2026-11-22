@@ -125,6 +125,16 @@ jobs:
           DESCALL_E2E_DIST: dist-e2e
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/tauri-updates
         run: node e2e/tauriUpdates.e2e.cjs
+      - name: Tauri emulation e2e (Settings > Descall+ over the premium bridge, late verify, bridge missing, web unchanged)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node e2e/tauriPremium/tauriPremium.e2e.cjs --dist=dist-e2e --out="$RUNNER_TEMP/e2e-msg-shots/tauri-premium"
+      - name: Tauri shell pages e2e (notification capsule from pages.rs, tray panel)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node ../desktop/app/shim/shell-pages.e2e.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -314,6 +324,14 @@ jobs:
           node src/lib/singleActiveHover.selftest.mjs
           node src/styles/admin-liquid.selftest.mjs
           node electron/adminStatsWindow.selftest.mjs
+          # Tauri shell shims vs the Electron preloads (frontend/electron/*): also here, because
+          # Desktop (Tauri) build only runs for desktop/** changes.
+          node ../desktop/app/shim/electron-api-shim.test.mjs
+          node ../desktop/app/shim/window-shim.test.mjs
+          node ../desktop/app/shim/shell-notif.test.mjs
+          node ../desktop/app/shim/media-calls.test.mjs
+          node ../desktop/app/shim/idle-perf.test.mjs
+          node ../desktop/app/shim/startup.test.mjs
       - name: Install frontend dependencies (render selftests)
         run: |
           # GitHub release downloads (ffmpeg-static, Electron) sometimes answer 504; retry the install.

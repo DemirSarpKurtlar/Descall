@@ -7,7 +7,7 @@ name: Desktop (Tauri) build
 on:
   workflow_dispatch:
   pull_request:
-    paths: ["desktop/**"]
+    paths: ["desktop/**", ".github/workflows/tauri-build.yml"]
 
 permissions:
   contents: read
@@ -52,11 +52,14 @@ jobs:
         run: |
           python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install --quiet cryptography
           "$RUNNER_TEMP/py/bin/python" -m unittest discover -s tools/publish
-      - name: cargo check --workspace (x86_64-pc-windows-gnu)
+      - name: cargo clippy --workspace --tests (x86_64-pc-windows-gnu, warnings are errors)
         run: |
           # tauri::generate_context! embeds frontend/dist; a placeholder is enough to type-check.
           if [ ! -f ../frontend/dist/index.html ]; then mkdir -p ../frontend/dist && echo '<!doctype html><title>Descall</title>' > ../frontend/dist/index.html; fi
-          cargo check --workspace --target x86_64-pc-windows-gnu
+          # Same cost as cargo check. The Windows code and its #[test]s (which only run on the
+          # windows job) must build without a rustc warning or a clippy correctness / suspicious
+          # finding; clippy's style, complexity and perf groups stay advisory.
+          cargo clippy --workspace --tests --target x86_64-pc-windows-gnu -- -D warnings -A clippy::style -A clippy::complexity -A clippy::perf
 
   windows:
     name: Build app, setup and migrator (windows-latest, unsigned)

@@ -9,6 +9,7 @@
 //    autoplay without a gesture for ringtones, no background throttling during calls).
 // 3. The CSP lets the noise suppression worklets / WASM and the screen share sinks run.
 // 4. The page-side media helpers in electron-api-shim.js (see the cases below).
+// 1b. No sync command does slow blocking work (clipboard image, sleep, waits, network, hashing).
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -88,8 +89,8 @@ const files = rustFiles(srcRoot).map((p) => {
   return { path: p, stem, code, fns: functions(code) };
 });
 
-/** Code that runs in the fn itself, not in a task it spawns. */
-const ownCode = (body) => body.split(/\b(?:async_runtime|thread)::spawn(?:_blocking)?\s*\(/)[0];
+/** Code that runs in the fn itself, not in a task it spawns (also a named thread::Builder one). */
+const ownCode = (body) => body.split(/\b(?:async_runtime|thread)::spawn(?:_blocking)?\s*\(|\bthread::Builder::new\(\)/)[0];
 
 /**
  * Fns that match `direct` in their own code, or call one that does (same file or module::fn).
@@ -153,6 +154,29 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
     for (const fn of f.fns) if (fn.isCommand && !fn.isAsync && destroyers.has(`${f.stem}::${fn.name}`)) badDestroy.push(`${f.stem}::${fn.name}`);
   }
   assert.deepEqual(badDestroy, [], `sync commands that destroy a window (make them async): ${badDestroy.join(", ")}`);
+}
+
+// ---- 1b. no sync command does slow, blocking work ---------------------------------------------
+// Sync commands run on the UI thread (the one event loop of every Descall window): a clipboard
+// screenshot read + PNG encode (tens of MB of RGBA), a copy of a raw request body, a sleep, a channel
+// wait, a network call or a PIN hash there freezes every window until it returns. Such commands
+// are async and move the work to the blocking pool. (Small state / settings file writes are fine.)
+{
+  const slow = {
+    "clipboard image read / PNG encode": /\.read_image\(|\bencode_png\(/,
+    "sleep": /\bthread::sleep\(/,
+    "channel wait": /\.recv\(\)|\.recv_timeout\(/,
+    "network": /\breqwest::/,
+    "PIN hash (scrypt)": /\bscrypt::|\bhash_pin\(|\bverify_pin\(/,
+    "block_on": /\bblock_on\(/,
+    "raw IPC body copy (up to 100 MB)": /\bInvokeBody::Raw\b/,
+  };
+  const bad = [];
+  for (const [what, re] of Object.entries(slow)) {
+    const doers = windowBuilders(re);
+    for (const f of files) for (const fn of f.fns) if (fn.isCommand && !fn.isAsync && doers.has(`${f.stem}::${fn.name}`)) bad.push(`${f.stem}::${fn.name} (${what})`);
+  }
+  assert.deepEqual(bad, [], `sync commands that block the UI thread (make them async, work in spawn_blocking): ${bad.join(", ")}`);
 }
 
 // ---- 2. one WebView2 environment: every builder passes BROWSER_ARGS or shares the opener ------

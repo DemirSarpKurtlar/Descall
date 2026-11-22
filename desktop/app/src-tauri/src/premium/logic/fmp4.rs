@@ -87,11 +87,10 @@ fn children(b: &[u8], start: usize, end: usize) -> Vec<([u8; 4], usize, usize)> 
             0 => (end - p, 8),
             s => (s as usize, 8),
         };
-        if size < hdr || p + size > end {
-            break;
-        }
-        out.push((kind, p + hdr, p + size));
-        p += size;
+        // Corrupt sizes (a 64-bit one near usize::MAX) must not overflow the offsets.
+        let Some(box_end) = p.checked_add(size).filter(|&e| size >= hdr && e <= end) else { break };
+        out.push((kind, p + hdr, box_end));
+        p = box_end;
     }
     out
 }
@@ -147,7 +146,10 @@ fn parse_fragment(data: Vec<u8>, stream_pos: u64, tracks: &[Track]) -> Option<Fr
     let mut infos = Vec::new();
     for (kind, s, e) in children(&data, ms, me) {
         if &kind == b"mfhd" {
-            patches.push(Patch::Sequence { at: s + 4 });
+            // version/flags + sequence_number; a short box is left as it is on export.
+            if s + 8 <= e {
+                patches.push(Patch::Sequence { at: s + 4 });
+            }
             continue;
         }
         if &kind != b"traf" {
@@ -261,8 +263,11 @@ impl ClipRing {
                 0 => return, // "to the end of the file": not used by the fragmented sink
                 s => s,
             };
-            if size < 8 {
-                // Corrupt stream: drop what we have and wait for the next box.
+            if size < 8 || (self.max_bytes > 0 && size > self.max_bytes) {
+                // Corrupt stream (a box larger than the whole ring could never be kept, and
+                // waiting for it would grow `pending` without end): drop what we have and
+                // wait for the next box.
+                self.pending_pos += self.pending.len() as u64;
                 self.pending.clear();
                 return;
             }
@@ -501,6 +506,50 @@ pub(crate) mod tests {
         for part in bytes.chunks(37) {
             ring.push(part);
         }
+    }
+
+    /// A corrupt 64-bit box size (bit flip, truncated sink write) must not overflow the
+    /// offset maths (a panic aborts the whole app in release) nor stall the ring forever.
+    #[test]
+    fn corrupt_large_sizes_are_dropped_not_fatal() {
+        let mut huge = 1u32.to_be_bytes().to_vec();
+        huge.extend_from_slice(b"moof");
+        huge.extend_from_slice(&u64::MAX.to_be_bytes());
+        huge.extend_from_slice(&[0u8; 16]);
+        assert!(children(&huge, 0, huge.len()).is_empty());
+        // After another box (offset > 0) the end offset overflowed usize.
+        let nested = [bx(b"free", &[]), huge.clone()].concat();
+        assert_eq!(children(&nested, 0, nested.len()).len(), 1);
+        let mut wrapped = nested.clone();
+        wrapped[16..24].copy_from_slice(&(u64::MAX - 3).to_be_bytes());
+        assert_eq!(children(&wrapped, 0, wrapped.len()).len(), 1);
+        assert!(parse_moov(&nested, 0, nested.len()).is_empty());
+
+        // The ring: a box that claims more than the ring may ever hold is corrupt. It is
+        // dropped and the next init segment and fragments parse again.
+        let mut r = ClipRing::new(30_000.0, 1 << 20);
+        r.push(&huge);
+        feed(&mut r, &init_segment());
+        feed(&mut r, &fragment(1, 1, 0, 30, true, None));
+        assert_eq!(r.tracks.len(), 2, "init segment after the corrupt box");
+        assert_eq!(r.frags.len(), 1);
+    }
+
+    /// A short mfhd (no sequence number) is not patched on export (no out-of-range write).
+    #[test]
+    fn short_mfhd_is_not_patched() {
+        let mut r = ClipRing::new(30_000.0, 1 << 30);
+        feed(&mut r, &init_segment());
+        let mut f = fragment(1, 1, 0, 30, true, None);
+        // Cut the mfhd payload to its version/flags (8 + 4 bytes) and fix the sizes.
+        let moof_len = u32::from_be_bytes(f[0..4].try_into().unwrap()) as usize;
+        f.drain(20..24);
+        f[0..4].copy_from_slice(&((moof_len - 4) as u32).to_be_bytes());
+        f[8..12].copy_from_slice(&12u32.to_be_bytes());
+        feed(&mut r, &f);
+        assert_eq!(r.frags.len(), 1);
+        assert!(!r.frags[0].patches.iter().any(|p| matches!(p, Patch::Sequence { .. })));
+        assert!(r.snapshot().export(0.0, 1000.0).is_some());
     }
 
     #[test]
