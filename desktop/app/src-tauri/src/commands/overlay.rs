@@ -121,6 +121,13 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) {
     let (label, kept) = {
         let o = app.state::<Overlay>();
         let mut live = o.live.lock().unwrap();
+        // A loaded card whose window is gone was closed from outside (the window menu on its
+        // drag row: right-click > Close): build a new one, as Electron's overlayShow did
+        // after 'closed'. Before, the dead label blocked every new card until the call ended.
+        let gone = matches!(live.window.as_ref(), Some((l, true)) if app.get_webview_window(l).is_none());
+        if gone {
+            live.window = None;
+        }
         if live.window.is_some() {
             return;
         }

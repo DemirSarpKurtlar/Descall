@@ -227,6 +227,10 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.match(built, /set_position\(PhysicalPosition::new\(target_px\.0, target_px\.1\)\)/, "placed in physical px once built");
   assert.match(ov, /notif::corner_px\(/, "default corner computed in physical px (descall_shell::notif::corner_px, Rust test)");
   assert.match(ov, /on_a_monitor\(/, "a spot on a monitor that went away falls back to the default corner");
+  // A card closed from outside (window menu > Close on its drag row) comes back on the next
+  // overlayShow, as in Electron; the dead label used to block it until the call ended.
+  const ens = ov.slice(ov.indexOf("fn ensure"), ov.indexOf("live.next += 1"));
+  assert.match(ens, /Some\(\(l, true\)\) if app\.get_webview_window\(l\)\.is_none\(\)[\s\S]*live\.window = None/, "closed card is forgotten");
 }
 
 // ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)
