@@ -585,7 +585,8 @@ export const SHOP2_FR = {
     "undo": "Impossible d'annuler.",
     "share": "Partage impossible pour le moment.",
     "open": "Impossible d'ouvrir le paquet.",
-    "thank": "Impossible d'envoyer le remerciement."
+    "thank": "Impossible d'envoyer le remerciement.",
+    "equip": "Impossible de changer ce que tu portes. Réessaie."
   },
   "look": {
     "newSet": "Nouveau look · set",
@@ -599,6 +600,7 @@ export const SHOP2_FR = {
     "body": "Ton nouveau look part en carte dans le chat aux amis choisis.",
     "note": "Note",
     "notePh": "Ajouter une note (facultatif)",
+    "loading": "Chargement de tes amis…",
     "send": "Envoyer",
     "chosen": "{n} / {max} choisis",
     "sent": "Envoyé à {n} sur {total}",

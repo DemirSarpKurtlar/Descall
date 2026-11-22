@@ -585,7 +585,8 @@ export const SHOP2_ES = {
     "undo": "No se pudo deshacer.",
     "share": "Ahora no se puede compartir.",
     "open": "No se pudo abrir el paquete.",
-    "thank": "No se pudo enviar el agradecimiento."
+    "thank": "No se pudo enviar el agradecimiento.",
+    "equip": "No se pudo cambiar lo que llevas puesto. Inténtalo de nuevo."
   },
   "look": {
     "newSet": "Look nuevo · set",
@@ -599,6 +600,7 @@ export const SHOP2_ES = {
     "body": "Tu look nuevo llega a los amigos que elijas como tarjeta en el chat.",
     "note": "Nota",
     "notePh": "Añade una nota (opcional)",
+    "loading": "Cargando a tus amigos…",
     "send": "Enviar",
     "chosen": "{n} / {max} elegidos",
     "sent": "Enviado a {n} de {total}",

@@ -18,7 +18,7 @@ import {
   S2ProfileCard,
   S2VoiceTile,
 } from "./Shop2Preview.jsx";
-import { Check, CheckCircle2, Gift, Heart, Monitor, Shirt, Smartphone, Undo2, Users } from "./shop2Icons.jsx";
+import { Check, CheckCircle2, Clock, Gift, Heart, Monitor, Shirt, Smartphone, Undo2, Users } from "./shop2Icons.jsx";
 
 const CHAT_CATS = new Set(["chat_bubble", "typing_flare", "reaction_burst"]);
 const VOICE_CATS = new Set(["voice_tile", "join_sound", "call_overlay"]);
@@ -67,12 +67,16 @@ export function ItemDetail({ slot, onClose }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const [mode, setMode] = useState("desktop");
+  const [buying, setBuying] = useState(false);
   const item = slot?.item;
   const user = useMemo(() => composeTryOnUser(s2.me, item ? { [item.category]: item } : {}), [s2.me, item]);
   if (!item) return null;
   const name = s2.itemName(item);
   const lab = s2.itemLabels(item);
-  const price = slot.price ?? item.price_descoin;
+  // The sheet holds a snapshot of the card: read today's price from the live storefront, so a
+  // reload after "price changed" shows (and sends) the new price instead of failing again.
+  const live = (s2.data.storefront?.slots || []).find((x) => String(x.item.id) === String(item.id));
+  const price = live?.price ?? slot.price ?? item.price_descoin;
   const owned = Boolean(slot.owned) || s2.owned.has(item.id);
   const equippedId = s2.equippedIdFor(item.category);
   const equippedItem = equippedId != null ? s2.inventory.find((r) => String(r.itemId) === String(equippedId))?.item : null;
@@ -83,18 +87,36 @@ export function ItemDetail({ slot, onClose }) {
   const wornColors = worn.map((w) => w?.color || w?.palette?.[2] || (w?.set_key && s2.data.sets.find((x) => x.key === w.set_key)?.palette?.[2])).filter(Boolean);
   const match = set?.palette?.length ? paletteMatch(set.palette, wornColors) : null;
   const affordable = s2.balance >= price;
+  const isOn = equippedId != null && String(equippedId) === String(item.id);
+  const equipBusy = s2.busyItemId != null && String(s2.busyItemId) === String(item.id);
+  // ShopPanel reports an equip error in its own notice line, which sits on the "Tümü" tab and is
+  // never visible from this sheet: say it here too (onEquip resolves false on failure).
+  const equip = async () => {
+    if (equipBusy) return;
+    const ok = await s2.onEquip?.(item, isOn);
+    if (ok === false) s2.toast(t("shop2.errors.equip"), { tone: "error" });
+  };
+  // busy while the purchase runs: the hold button could be held again during a slow request
+  // and sent a second purchase.
   const buy = async (holdToken) => {
+    if (buying) return;
+    setBuying(true);
     try {
       const res = await s2.actions.buyItem(item, { holdToken, price });
       s2.openCheckout({ kind: "item", item, price, result: res, phase: "done" });
     } catch (err) {
       s2.toast(err?.message || t("shop2.errors.buy"), { tone: "error" });
+      // price_changed / sold_out (409) or a stale balance (402): re-read the storefront and the
+      // balance, or every retry failed the same way until the shop was reopened.
+      if (err?.status === 409 || err?.status === 402) s2.actions.reload?.();
+    } finally {
+      setBuying(false);
     }
   };
   return (
     <div className="s2-detail-inner">
       <div className="s2-detail-head">
-        <Chip tone={lab.rarityId === "legendary" || lab.rarityId === "mythic" ? "gold" : lab.rarityId === "epic" ? "violet" : "blue"}>{lab.rarity}</Chip>
+        <Chip tone={lab.rarityId === "legendary" || lab.rarityId === "mythic" ? "gold" : lab.rarityId === "epic" ? "violet" : lab.rarityId === "rare" ? "blue" : "muted"}>{lab.rarity}</Chip>
         <h3>{name}</h3>
         {onClose ? <CloseX onClick={onClose} label={t("shop2.common.close")} /> : null}
       </div>
@@ -151,8 +173,13 @@ export function ItemDetail({ slot, onClose }) {
             <button type="button" className="s2-link" onClick={() => s2.openSet(set.key)}>{t("shop2.detail.setPieces", { name: s2.setName(set), n: set.pieceCount || 8 })}</button>
           ) : t("shop2.detail.noSet")}
         </dd>
-        <dt>{t("shop2.detail.balanceAfter")}</dt>
-        <dd className="s2-num">{formatNumber(s2.balance, locale)} {"→"} {formatNumber(s2.balance - price, locale)} {t("shop2.common.d")}</dd>
+        {/* An owned item costs nothing more: "42.000 -> 41.750" read as if equipping charged it. */}
+        {!owned ? (
+          <>
+            <dt>{t("shop2.detail.balanceAfter")}</dt>
+            <dd className="s2-num">{formatNumber(s2.balance, locale)} {"→"} {formatNumber(s2.balance - price, locale)} {t("shop2.common.d")}</dd>
+          </>
+        ) : null}
       </dl>
       {hist.points.length > 1 ? (
         <div className="s2-hist">
@@ -169,12 +196,12 @@ export function ItemDetail({ slot, onClose }) {
       ) : null}
       <div className="s2-detail-actions">
         {owned ? (
-          <button type="button" className="s2-btn is-primary is-wide" onClick={() => s2.onEquip?.(item, String(equippedId) === String(item.id))}>
+          <button type="button" className="s2-btn is-primary is-wide" disabled={equipBusy} aria-busy={equipBusy || undefined} onClick={equip}>
             <Shirt size={16} />
-            {String(equippedId) === String(item.id) ? t("shop2.common.unequip") : t("shop2.common.equip")}
+            {isOn ? t("shop2.common.unequip") : t("shop2.common.equip")}
           </button>
         ) : affordable ? (
-          <HoldButton onConfirm={buy} className="is-wide">
+          <HoldButton onConfirm={buy} busy={buying} className="is-wide">
             {t("shop2.detail.buyHold", { n: formatNumber(price, locale) })}
           </HoldButton>
         ) : (
@@ -195,14 +222,18 @@ export function SetQuickPanel({ setKey, onClose }) {
   const s2 = useS2();
   const set = s2.data.setDetails[setKey];
   const [mode, setMode] = useState("all");
-  const [chosen, setChosen] = useState(() => new Set());
+  // null = nothing picked yet (the first 4 missing pieces are suggested); an empty Set is a
+  // real "none chosen" (it used to snap back to the 4 suggestions when the last one was removed).
+  const [chosen, setChosen] = useState(null);
   if (!set) return <div className="s2-detail-inner"><div className="s2-skeleton is-panel"><i /><i /></div></div>;
   const missing = set.pieces.filter((p) => !p.owned);
-  const sel = chosen.size ? chosen : new Set(missing.slice(0, Math.min(4, missing.length)).map((p) => String(p.item.id)));
+  const sel = chosen || new Set(missing.slice(0, Math.min(4, missing.length)).map((p) => String(p.item.id)));
   const all = setPricing(set);
   const part = setPricing(set, { selectedIds: sel });
   const hist = priceHistoryStats(set.priceHistory, all.yourPrice);
   const total = mode === "all" ? all.yourPrice : part.selectedTotal;
+  const wholeMore = all.yourPrice - part.selectedTotal;
+  const nothing = all.complete || (mode === "part" && part.selectedCount === 0);
   const toggle = (id) => {
     const next = new Set(sel);
     if (next.has(id)) next.delete(id);
@@ -224,7 +255,10 @@ export function SetQuickPanel({ setKey, onClose }) {
       </label>
       <label className={`s2-radio${mode === "part" ? " is-on" : ""}`}>
         <input type="radio" name="s2-setmode" checked={mode === "part"} onChange={() => setMode("part")} />
-        <span><b>{t("shop2.buy.chosen", { n: part.selectedCount })}</b><small>{t("shop2.buy.chosenSub", { n: formatNumber(part.selectedExtraVsSet, locale) })}</small></span>
+        {/* "Set yalnızca {n} D fazla" = how much more the WHOLE set costs than the chosen pieces.
+            It showed selectedExtraVsSet (the singles premium), e.g. "525 D fazla" for a set that
+            cost 770 D more; when the whole set is not dearer there is nothing to say. */}
+        <span><b>{t("shop2.buy.chosen", { n: part.selectedCount })}</b>{wholeMore > 0 ? <small>{t("shop2.buy.chosenSub", { n: formatNumber(wholeMore, locale) })}</small> : null}</span>
         <Price value={part.selectedTotal} />
       </label>
       <div className="s2-chips-wrap">
@@ -242,10 +276,20 @@ export function SetQuickPanel({ setKey, onClose }) {
         <span>{t("shop2.buy.balanceAfter")}</span><b className="s2-num"><Num value={s2.balance - total} /> {t("shop2.common.d")}</b>
       </div>
       <div className="s2-detail-actions">
-        <button type="button" className="s2-btn is-primary is-wide" disabled={s2.balance < total} onClick={() => s2.openCheckout({ kind: "set", setKey, pieceIds: mode === "all" ? null : [...sel] })}>
-          {t("shop2.buy.buyN", { n: formatNumber(total, locale) })}
-        </button>
-        <button type="button" className="s2-ibtn" onClick={() => s2.openGift({ setKey })} aria-label={t("shop2.gifts.giftIt")}><Gift size={17} /></button>
+        {all.complete ? (
+          <span className="s2-btn is-wide is-done" role="status"><CheckCircle2 size={16} />{t("shop2.kasa.complete")}</span>
+        ) : all.setRateClosed ? (
+          // Scheduled, sold out or ended (the server sent yourPrice: null): the set page shows the
+          // same note; a buy button here was refused by the server.
+          <p className="s2-note"><Clock size={14} />{t("shop2.sets.notOnSale")}</p>
+        ) : !nothing && s2.balance < total ? (
+          <ShortBy n={total - s2.balance} compact />
+        ) : (
+          <button type="button" className="s2-btn is-primary is-wide" disabled={nothing} onClick={() => s2.openCheckout({ kind: "set", setKey, pieceIds: mode === "all" ? null : [...sel] })}>
+            {t("shop2.buy.buyN", { n: formatNumber(total, locale) })}
+          </button>
+        )}
+        <button type="button" className="s2-ibtn" disabled={all.setRateClosed} title={all.setRateClosed ? t("shop2.sets.giftOff") : undefined} onClick={() => s2.openGift({ setKey })} aria-label={all.setRateClosed ? t("shop2.sets.giftOff") : t("shop2.gifts.giftIt")}><Gift size={17} /></button>
       </div>
       {hist.points.length > 1 ? (
         <div className="s2-hist">

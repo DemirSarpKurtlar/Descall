@@ -298,6 +298,20 @@ for (const m of css.matchAll(/font(?:-size)?\s*:\s*([^;]+);/g)) {
 }
 assert.equal(/font-size:\s*\d/.test(css), false, "no literal font-size");
 assert.equal(EMOJI.test(css), false, "no emoji in the styles");
+// iPhone landscape: sheets and full-screen windows keep their content out of the notch side,
+// the item drawer out of the status bar and above the home indicator.
+{
+  const rule = (sel) => {
+    const i = css.indexOf(`${sel} {`);
+    return i < 0 ? "" : css.slice(i, css.indexOf("}", i));
+  };
+  const sheetSafe = rule(".s2-layer.is-sheet .s2-layer-panel,\n.s2-layer.is-full .s2-layer-panel");
+  assert.match(sheetSafe, /padding-left:\s*max\(16px, env\(safe-area-inset-left/, "sheet / full: left safe area");
+  assert.match(sheetSafe, /padding-right:\s*max\(16px, env\(safe-area-inset-right/, "sheet / full: right safe area");
+  const side = rule(".s2-layer.is-drawer .s2-layer-panel.s2-side");
+  assert.match(side, /safe-area-inset-top/, "item drawer: status bar");
+  assert.match(side, /safe-area-inset-bottom/, "item drawer: home indicator");
+}
 
 console.log(`shop2Logic.selftest ok (${enKeys.length} strings x ${LOCALES.length} languages, ${uiFiles.length} UI files)`);
 

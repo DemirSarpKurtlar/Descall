@@ -380,6 +380,19 @@ async function run(browser, base, boot0, r, problems) {
       }
       check(out === 0, `Tab stays inside the drawer (${out} escapes)`);
     }
+    if (phone) {
+      // Item sheet on the iPhone: head row and buy row inside the screen, nothing clipped.
+      const sheet = await page.evaluate(() => {
+        const p = document.querySelector('.s2-layer-panel');
+        const x = p.querySelector('.s2-x').getBoundingClientRect();
+        p.scrollTop = p.scrollHeight;
+        const buy = p.querySelector('.s2-detail-actions').getBoundingClientRect();
+        const pr = p.getBoundingClientRect();
+        return { top: pr.top, x: x.right <= innerWidth && x.top >= pr.top, buy: buy.bottom <= innerHeight && buy.top >= pr.top && buy.right <= innerWidth, w: pr.width };
+      });
+      check(sheet.top >= 0 && sheet.x, `item sheet head row inside the screen (top ${Math.round(sheet.top)})`);
+      check(sheet.buy, 'item sheet buy row reachable inside the screen');
+    }
     await page.evaluate(() => document.activeElement?.blur?.());
     await page.keyboard.press('Escape');
     await sleep(900);
