@@ -6,7 +6,9 @@ const fs = require('fs');
 const path = require('path');
 
 const args = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith('--')).map((a) => { const [k, v] = a.replace(/^--/, '').split('='); return [k, v ?? true]; }));
-const pw = require(process.env.PLAYWRIGHT || 'playwright');
+// PLAYWRIGHT_CORE + CHROME_PATH: the CI driver (playwright-core) with the runner's Chrome.
+const pw = require(process.env.PLAYWRIGHT || process.env.PLAYWRIGHT_CORE || 'playwright');
+const CHROME = process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : '';
 const DIST = path.resolve(args.dist || path.join(__dirname, '../../dist'));
 const WT = path.resolve(__dirname, '../../..');
 const SHOTS = Boolean(args.shots);
@@ -40,7 +42,9 @@ async function open(browser, cfg) {
       if (!file.startsWith(DIST) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(DIST, 'index.html');
       return r.fulfill({ status: 200, contentType: MIME[path.extname(file)] || 'application/octet-stream', body: fs.readFileSync(file) });
     }
-    if (url.origin === API || url.origin === 'https://des-call.onrender.com') {
+    // dist-e2e (the CI build) bakes the loopback mock API (VITE_API_BASE_URL=http://127.0.0.1:5361)
+    // ahead of window.__DESCALL_API_URL__: answer it the same way.
+    if (url.origin === API || url.origin === 'https://des-call.onrender.com' || url.hostname === '127.0.0.1') {
       if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
       return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(apiBody(url.pathname)) });
     }
@@ -75,4 +79,4 @@ async function open(browser, cfg) {
 
 const premiumCalls = (page) => page.evaluate(() => window.__calls.filter((c) => c[0] === 'premium_invoke').map((c) => [c[1].channel, c[1].args, c[2]]));
 
-module.exports = { open, premiumCalls, OUT, SHOTS, pw };
+module.exports = { open, premiumCalls, OUT, SHOTS, pw, CHROME };

@@ -10,7 +10,7 @@
 // Run: node desktop/app/shim/shell-pages.e2e.mjs   (needs Playwright + Chromium)
 //      SHOTS=<dir> also writes screenshots.
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,16 +18,24 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..", "..");
 const require = createRequire(import.meta.url);
+// PLAYWRIGHT_CORE + CHROME_PATH: the CI driver (playwright-core) with the runner's Chrome.
+// There a missing driver is a failure, not a skip.
+const CORE = process.env.PLAYWRIGHT_CORE || "";
 let playwright;
 try {
-  playwright = require("playwright");
+  playwright = require(CORE || "playwright");
 } catch (_) {
-  try { playwright = require(join(repo, "frontend", "node_modules", "playwright")); } catch (_) { /* below */ }
+  if (!CORE) try { playwright = require(join(repo, "frontend", "node_modules", "playwright")); } catch (_) { /* below */ }
 }
 if (!playwright) {
+  if (CORE) {
+    console.error(`shell-pages.e2e: FAIL (PLAYWRIGHT_CORE=${CORE} does not load)`);
+    process.exit(1);
+  }
   console.log("shell-pages.e2e: skipped (no playwright)");
   process.exit(0);
 }
+const CHROME = process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : "";
 const SHOTS = process.env.SHOTS || "";
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
@@ -103,6 +111,7 @@ function fakeTauri({ label, responses = {} }) {
 }
 
 const browser = await playwright.chromium.launch({
+  ...(CHROME ? { executablePath: CHROME } : {}),
   args: ["--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE descall-shell.localhost, EXCLUDE tauri.localhost"],
 });
 const failures = [];
