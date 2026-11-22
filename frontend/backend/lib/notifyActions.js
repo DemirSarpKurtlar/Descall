@@ -399,6 +399,7 @@ function createNotifyActions(deps = {}) {
       timestamp,
     };
     cacheDmMessages(convKey(myId, peerId), [{ ...messagePayload, to: { id: peerId } }]);
+    require("./cluster").invalidate("dmConv", convKey(myId, peerId));
     void Promise.all([prefs().revealOnMessage(myId, peerId), prefs().revealOnMessage(peerId, myId)]).catch(() => {});
     emitToUser(io, peerId, "dm:message", { ...messagePayload, convWith: myId });
     // The sender's own open devices (no tempId: nothing optimistic to replace).

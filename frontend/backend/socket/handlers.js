@@ -175,6 +175,7 @@ async function publishDmCallSummary(io, record) {
   cacheDmMessages(convKey(record.callerId, record.calleeId), [
     { ...messagePayload, to: { id: record.calleeId } },
   ]);
+  cluster.invalidate("dmConv", convKey(record.callerId, record.calleeId));
 
   const calleeSocket = getSocketForUser(io, record.calleeId);
   const calleeViewing = calleeSocket?.data?.activeDmPeer === record.callerId;
@@ -1559,6 +1560,7 @@ function registerSocketHandlers(io) {
         ...(pollSnapshot ? { poll: pollSnapshot } : {}),
       };
       cacheDmMessages(convKey(myId, toUserId), [{ ...messagePayload, to: { id: toUserId } }]);
+      cluster.invalidate("dmConv", convKey(myId, toUserId));
       void Promise.all([
         dmPrefs.revealOnMessage(myId, toUserId),
         dmPrefs.revealOnMessage(toUserId, myId),
@@ -2469,6 +2471,7 @@ function registerSocketHandlers(io) {
       if (["poll_v2", "poll_end", "app_card"].includes(current.media_type)) return fail("This message can't be edited as text.");
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const arr = dmHistory.get(key) || [];
       const msg = arr.find((message) => message.id === messageId && message.from?.id === myId);
       const editedAt = new Date().toISOString();
@@ -2526,6 +2529,7 @@ function registerSocketHandlers(io) {
           .maybeSingle();
         if (error || !data) return fail(error?.message || "Failed to delete message.");
         const key = convKey(myId, toUserId);
+        cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
         const arr = dmHistory.get(key);
         if (arr) {
           const idx = arr.findIndex((m) => m.id === messageId);
@@ -2556,6 +2560,7 @@ function registerSocketHandlers(io) {
       }
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const msg = (dmHistory.get(key) || []).find((m) => m.id === messageId);
       if (msg) {
         msg.pinnedAt = pinnedAt;
@@ -2583,6 +2588,7 @@ function registerSocketHandlers(io) {
       }
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const msg = (dmHistory.get(key) || []).find((m) => m.id === messageId);
       if (msg) {
         msg.pinnedAt = null;

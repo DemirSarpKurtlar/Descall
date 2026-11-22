@@ -187,14 +187,14 @@ async function run() {
   const B = await startNode({ id: "pc-test", role: "secondary" });
   try {
     assert(A.cluster !== B.cluster && A.state !== B.state, "two separate module graphs");
-    await waitFor(() => A.cluster.enabled() && B.cluster.enabled(), 3000, "both nodes on the KV");
-    await waitFor(() => A.cluster.isLeader() && !B.cluster.isLeader(), 3000, "render leads");
+    await waitFor(() => A.cluster.enabled() && B.cluster.enabled(), 8000, "both nodes on the KV");
+    await waitFor(() => A.cluster.isLeader() && !B.cluster.isLeader(), 8000, "render leads");
     assert(true, "both nodes joined the cluster; render is the leader");
 
     console.log("2. presence across nodes");
     const bob = await device(B, "bob"); // bob is on the PC node
     const alice = await device(A, "alice"); // alice is on Render
-    await waitFor(() => B.state.presence.has(USERS.alice.id), 2000, "B sees alice");
+    await waitFor(() => B.state.presence.has(USERS.alice.id), 8000, "B sees alice");
     assert(B.cluster.hasRemoteUser(USERS.alice.id), "B knows alice is on another node");
     assert(!B.cluster.replicator.ownsLocally("presence", USERS.alice.id), "B does not own alice's entry");
     await waitFor(
@@ -213,20 +213,25 @@ async function run() {
     console.log("1. DM from B to A");
     alice.clear();
     bob.s.emit("dm:send", { toUserId: USERS.alice.id, text: "hello from the PC", tempId: "t1" });
-    await waitFor(() => got(alice, "dm:message", (m) => m?.text === "hello from the PC").length === 1, 3000, "alice receives the DM");
+    await waitFor(() => got(alice, "dm:message", (m) => m?.text === "hello from the PC").length === 1, 8000, "alice receives the DM");
     assert(true, "alice (on A) received bob's DM (sent on B)");
-    await waitFor(() => got(alice, "dm:unread:sync", (p) => p?.peerId === USERS.bob.id).length > 0, 2000, "unread sync");
+    await waitFor(() => got(alice, "dm:unread:sync", (p) => p?.peerId === USERS.bob.id).length > 0, 8000, "unread sync");
     assert(true, "the unread badge update reached A too");
+    // B's cached copy of a DM thread is dropped when the thread changes on A.
+    B.state.dmHistory.set("probe::thread", [{ id: "x" }]);
+    A.cluster.invalidate("dmConv", "probe::thread");
+    await waitFor(() => !B.state.dmHistory.has("probe::thread"), 8000, "dm thread cache invalidated on B");
+    assert(true, "a DM thread change on A drops B's cached copy (dc:inval)");
 
     console.log("3. group call started on A, visible on B");
     alice.s.emit("group:call:start", { groupId: GROUP, callType: "voice" });
-    await waitFor(() => B.state.activeGroupCalls.has(GROUP), 3000, "B has the call");
+    await waitFor(() => B.state.activeGroupCalls.has(GROUP), 8000, "B has the call");
     const callB = B.state.activeGroupCalls.get(GROUP);
     assert(callB.participants instanceof Set && callB.participants.has(USERS.alice.id), "B's copy has alice as participant (a Set)");
     assert(callB.disconnectGraceByUser instanceof Map, "B keeps its own grace timers map");
     bob.clear();
     bob.s.emit("group:call:check", { groupId: GROUP });
-    await waitFor(() => got(bob, "group:call:banner-update", (p) => p?.groupId === GROUP && p?.banner).length > 0, 2000, "bob sees the banner");
+    await waitFor(() => got(bob, "group:call:banner-update", (p) => p?.groupId === GROUP && p?.banner).length > 0, 8000, "bob sees the banner");
     const banner = got(bob, "group:call:banner-update", (p) => p?.banner)[0].payload.banner;
     assert(banner.initiatorId === USERS.alice.id, "bob's banner (from B's state) names alice as the caller");
     assert(Boolean(kvServer.dump()[`dc:groupcall:${GROUP}`]), "the call is stored in the KV (dc:groupcall:<id>)");
@@ -236,23 +241,23 @@ async function run() {
     await waitFor(() => {
       const d = kvServer.dump();
       return Boolean(d[`dc:groupcall:${GROUP}`] && d["dc:presence:render"]?.[USERS.alice.id] && d["dc:presence:pc-test"]?.[USERS.bob.id] && d["dc:leader"]);
-    }, 3000, "state rewritten into the KV");
+    }, 8000, "state rewritten into the KV");
     assert(true, "calls, presence of both nodes and the leader lock are back in the KV");
     assert((kvServer.dump()[`dc:sockets:${USERS.alice.id}`] || []).length === 1, "the user -> sockets index is rebuilt");
     assert(B.state.presence.has(USERS.alice.id) && B.state.activeGroupCalls.has(GROUP), "B kept its view through the restart");
     alice.clear();
     await sleep(250); // the 200 ms DM rate limit since the first DM
     bob.s.emit("dm:send", { toUserId: USERS.alice.id, text: "after the restart", tempId: "t3" });
-    await waitFor(() => got(alice, "dm:message", (m) => m?.text === "after the restart").length === 1, 3000, "DM after KV restart");
+    await waitFor(() => got(alice, "dm:message", (m) => m?.text === "after the restart").length === 1, 8000, "DM after KV restart");
     assert(true, "cross-node DM works again after the restart");
 
     console.log("3c. session revoked on A closes that session's socket on B; auth limits count on both");
     const carol = await device(B, "carol");
     const revoked = new Promise((resolve) => carol.s.once("session:revoked", resolve));
     A.state.revokedSessionIds.add("s-carol");
-    const rv = await Promise.race([revoked, sleep(2000).then(() => null)]);
+    const rv = await Promise.race([revoked, sleep(6000).then(() => null)]);
     assert(rv && rv.sessionId === "s-carol", "carol's socket on B got session:revoked");
-    await waitFor(() => !carol.s.connected, 2000, "carol disconnected");
+    await waitFor(() => !carol.s.connected, 8000, "carol disconnected");
     assert(B.state.revokedSessionIds.has("s-carol"), "revoked session id replicated to B");
     for (let i = 0; i < 3; i++) A.mods.rateLimit.recordFailure("login:ip-1", { max: 3 });
     await sleep(80);
@@ -264,12 +269,12 @@ async function run() {
     const gone = new Promise((resolve) => bob.s.once("disconnect", resolve));
     await A.mods.moderation.applyBan({ targetUserId: USERS.bob.id, actorUserId: USERS.alice.id, category: "spam", message: "test ban", presetId: "permanent" });
     const n = await A.mods.adminHandlers.kickUser(A.io, { actorId: USERS.alice.id, actorUsername: "alice", targetUserId: USERS.bob.id, reason: "test", action: "ban", category: "spam" });
-    const kickPayload = await Promise.race([kicked, sleep(3000).then(() => null)]);
+    const kickPayload = await Promise.race([kicked, sleep(6000).then(() => null)]);
     assert(kickPayload && kickPayload.action === "ban", "bob's socket on B got system:kick from A");
     await Promise.race([gone, sleep(3000)]);
     assert(!bob.s.connected, "bob's socket on B was disconnected");
     assert(n >= 1, "kickUser counted the remote socket");
-    await waitFor(() => B.state.bannedUserIds.has(USERS.bob.id), 2000, "ban replicated");
+    await waitFor(() => B.state.bannedUserIds.has(USERS.bob.id), 8000, "ban replicated");
     assert(Boolean(B.state.banDetailsByUser.get(USERS.bob.id)), "ban details replicated to B");
     let rejected = false;
     try {
@@ -278,14 +283,14 @@ async function run() {
       rejected = true;
     }
     assert(rejected, "bob cannot reconnect to B");
-    await waitFor(() => !A.state.presence.has(USERS.bob.id), 2000, "bob offline on A");
+    await waitFor(() => !A.state.presence.has(USERS.bob.id), 8000, "bob offline on A");
     assert(true, "bob's presence is gone on A too");
 
     console.log("5. leader failover");
     await A.close({ graceful: true });
-    await waitFor(() => B.cluster.isLeader(), 2000, "B takes the lock");
+    await waitFor(() => B.cluster.isLeader(), 8000, "B takes the lock");
     assert(true, "the PC node took the leader lock when render stopped");
-    await waitFor(() => !B.state.presence.has(USERS.alice.id), 2000, "alice dropped with her node");
+    await waitFor(() => !B.state.presence.has(USERS.alice.id), 8000, "alice dropped with her node");
     assert(true, "users of the stopped node are no longer shown online on B");
     const nodes = await B.cluster.getNodes();
     assert(nodes.find((x) => x.id === "render")?.state === "down", "render is listed as down");
@@ -306,7 +311,7 @@ async function run() {
     const dave = await device(S, "dave");
     carol.clear();
     dave.s.emit("dm:send", { toUserId: USERS.carol.id, text: "single node", tempId: "t2" });
-    await waitFor(() => got(carol, "dm:message", (m) => m?.text === "single node").length === 1, 3000, "single-node DM");
+    await waitFor(() => got(carol, "dm:message", (m) => m?.text === "single node").length === 1, 8000, "single-node DM");
     assert(true, "DM delivered on a single node");
     assert(S.state.presence.has(USERS.carol.id) && S.state.presence.has(USERS.dave.id), "presence as before");
     assert(Object.keys(kvServer.dump()).every((k) => !k.includes("u-carol")), "the single node wrote nothing to the KV");

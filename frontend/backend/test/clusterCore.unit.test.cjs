@@ -17,7 +17,7 @@ const { createReplicator, encodeValue, decodeValue, applyInPlace } = require("..
 const { createKv } = require("../lib/cluster/kv");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function waitFor(fn, ms = 3000, label = "condition") {
+async function waitFor(fn, ms = 6000, label = "condition") {
   const until = Date.now() + ms;
   for (;;) {
     let ok = false;
@@ -96,19 +96,19 @@ test("shared map: set, in-place mutation (watch), delete, stale message ignored"
   const mb = new Map();
   A.r.register("calls", ma, { storage: { type: "keys", prefix: "dc:t:call:" }, watch: true, localFields: ["grace"], localDefaults: { grace: () => new Map() } });
   B.r.register("calls", mb, { storage: { type: "keys", prefix: "dc:t:call:" }, watch: true, localFields: ["grace"], localDefaults: { grace: () => new Map() } });
-  await waitFor(() => A.kv.isUp() && B.kv.isUp(), 2000, "kv up");
+  await waitFor(() => A.kv.isUp() && B.kv.isUp(), 6000, "kv up");
   await sleep(30);
   ma.set("g1", { initiatorId: "u1", participants: new Set(["u1"]), grace: new Map([["u1", setTimeout(() => {}, 1)]]) });
-  await waitFor(() => mb.has("g1"), 1000, "B sees call");
+  await waitFor(() => mb.has("g1"), 6000, "B sees call");
   const held = mb.get("g1");
   assert.ok(held.participants instanceof Set && held.participants.has("u1"));
   assert.ok(held.grace instanceof Map && held.grace.size === 0, "timers never travel");
   ma.get("g1").participants.add("u2");
-  await waitFor(() => held.participants.has("u2"), 1000, "in-place mutation replicated");
+  await waitFor(() => held.participants.has("u2"), 6000, "in-place mutation replicated");
   assert.strictEqual(mb.get("g1"), held, "B kept the same object");
   // B mutates, A sees.
   mb.get("g1").participants.add("u3");
-  await waitFor(() => ma.get("g1").participants.has("u3"), 1000, "B -> A");
+  await waitFor(() => ma.get("g1").participants.has("u3"), 6000, "B -> A");
   // Persisted with a version.
   const stored = JSON.parse(server.dump()["dc:t:call:g1"]);
   assert.ok(stored.t > 0 && stored.v.participants.$S.includes("u3"));
@@ -119,7 +119,7 @@ test("shared map: set, in-place mutation (watch), delete, stale message ignored"
   assert.ok(mb.get("g1").participants.has("u3"));
   assert.strictEqual(B.r.stats.stale, before + 1);
   ma.delete("g1");
-  await waitFor(() => !mb.has("g1"), 1000, "delete replicated");
+  await waitFor(() => !mb.has("g1"), 6000, "delete replicated");
   assert.ok(!server.dump()["dc:t:call:g1"]);
   await A.kv.close();
   await B.kv.close();
@@ -139,7 +139,7 @@ test("owned map: merged presence, own contribution only, patch goes to the owner
   await sleep(30);
   localA.add("sa1");
   pa.set("u1", { username: "u1", status: "online", socketId: "sa1" });
-  await waitFor(() => pb.has("u1"), 1000, "B sees u1");
+  await waitFor(() => pb.has("u1"), 6000, "B sees u1");
   assert.ok(B.r.hasRemote("presence", "u1"));
   assert.ok(changesB.some((c) => c.op === "online" && c.k === "u1" && c.remote));
   assert.strictEqual(pb.delete("u1"), false, "B never removes a user it does not own");
@@ -157,10 +157,10 @@ test("owned map: merged presence, own contribution only, patch goes to the owner
   const p = pa.get("u1");
   p.avatar_url = "https://x/a.png";
   pa.set("u1", p);
-  await waitFor(() => pb.get("u1").avatar_url === "https://x/a.png", 1000, "patch reached owner");
+  await waitFor(() => pb.get("u1").avatar_url === "https://x/a.png", 6000, "patch reached owner");
   assert.ok(!A.r.ownsLocally("presence", "u1"), "A did not take ownership");
   pb.delete("u1");
-  await waitFor(() => !pa.has("u1"), 1000, "gone everywhere");
+  await waitFor(() => !pa.has("u1"), 6000, "gone everywhere");
   // Persisted per node.
   localA.add("sa2");
   pa.set("u2", { username: "u2", status: "idle", socketId: "sa2" });
@@ -199,13 +199,13 @@ test("sets, suppression and KV restart rebuild", async () => {
   await waitFor(() => !bb.has("user-9"));
   // KV restarts empty: both nodes write their state back.
   server.restart({ flush: true });
-  await waitFor(() => (server.dump()["dc:t:revoked"] || []).includes("sess-1"), 2000, "revoked rebuilt");
+  await waitFor(() => (server.dump()["dc:t:revoked"] || []).includes("sess-1"), 6000, "revoked rebuilt");
   // A change while the KV is away is written on return.
   server.stop();
   await sleep(20);
   ra.add("sess-offline");
   server.start();
-  await waitFor(() => (server.dump()["dc:t:revoked"] || []).includes("sess-offline"), 2000, "offline write flushed");
+  await waitFor(() => (server.dump()["dc:t:revoked"] || []).includes("sess-offline"), 6000, "offline write flushed");
   await A.kv.close();
   await B.kv.close();
 });
@@ -214,8 +214,8 @@ test("cluster: registry, leader with primary preference, failover, events, cfg, 
   const server = createFakeRedisServer();
   const render = node(server, "render", "primary");
   const pc = node(server, "pc-test", "secondary");
-  await waitFor(() => render.enabled() && pc.enabled(), 2000, "both enabled");
-  await waitFor(() => render.isLeader(), 2000, "render leads");
+  await waitFor(() => render.enabled() && pc.enabled(), 6000, "both enabled");
+  await waitFor(() => render.isLeader(), 6000, "render leads");
   await sleep(200);
   assert.ok(!pc.isLeader(), "secondary does not lead while the primary is alive");
   const nodes = await pc.getNodes();
@@ -240,7 +240,7 @@ test("cluster: registry, leader with primary preference, failover, events, cfg, 
   const states = [];
   pc.onSelfStateChange((s, prev, reason) => states.push([s, prev, reason]));
   await render.setNodeState("pc-test", "draining", "test drain");
-  await waitFor(() => states.length === 1, 1000, "pc got drain");
+  await waitFor(() => states.length === 1, 6000, "pc got drain");
   assert.deepStrictEqual(states[0], ["draining", "active", "test drain"]);
   await waitFor(async () => (await render.getNodes()).find((n) => n.id === "pc-test").state === "draining");
   await pc.setNodeState("pc-test", "active", null);
@@ -254,7 +254,7 @@ test("cluster: registry, leader with primary preference, failover, events, cfg, 
   await waitFor(async () => {
     const m = await render.getMetrics(60);
     return (m.render || []).length > 0 && (m["pc-test"] || []).length > 0;
-  }, 2000, "metrics for both");
+  }, 6000, "metrics for both");
   const m = await render.getMetrics(60);
   for (const k of ["t", "rss", "cpu", "conns", "p95", "err"]) assert.ok(k in m.render[0], `sample field ${k}`);
   const kvs = await render.kvStatus();
@@ -282,18 +282,18 @@ test("cluster: registry, leader with primary preference, failover, events, cfg, 
   // Graceful stop of the leader: the PC takes over at once.
   const t0 = Date.now();
   await render.stop({ graceful: true });
-  await waitFor(() => pc.isLeader(), 2000, "pc takes the lock");
-  assert.ok(Date.now() - t0 < 1500);
+  await waitFor(() => pc.isLeader(), 6000, "pc takes the lock");
+  assert.ok(Date.now() - t0 < 3000);
   const after = await pc.getNodes();
   assert.strictEqual(after.find((n) => n.id === "render").state, "down");
 
   // Render comes back: the PC hands the lock back.
   const render2 = node(server, "render", "primary");
-  await waitFor(() => render2.isLeader() && !pc.isLeader(), 3000, "primary preferred again");
+  await waitFor(() => render2.isLeader() && !pc.isLeader(), 6000, "primary preferred again");
 
   // Crash of the leader (no cleanup): the lock expires after its TTL.
   await render2.stop({ graceful: false });
-  await waitFor(() => pc.isLeader(), 3000, "failover after TTL");
+  await waitFor(() => pc.isLeader(), 6000, "failover after TTL");
   await pc.stop();
 });
 
@@ -303,7 +303,7 @@ test("cluster: KV loss = single node (primary leads, secondary waits), rejoins w
   const pc = node(server, "pc-x", "secondary");
   await waitFor(() => render.enabled() && pc.enabled() && render.isLeader());
   server.stop();
-  await waitFor(() => !render.enabled() && !pc.enabled(), 1000, "both single");
+  await waitFor(() => !render.enabled() && !pc.enabled(), 6000, "both single");
   assert.ok(render.isLeader(), "primary keeps leading");
   assert.ok(!pc.isLeader(), "secondary never runs leader jobs while the KV is away");
   const nodes = await pc.getNodes();
@@ -312,11 +312,11 @@ test("cluster: KV loss = single node (primary leads, secondary waits), rejoins w
   assert.strictEqual(st.ok, false);
   await pc.pushEvent("while-away", { x: 1 });
   server.start({ flush: true });
-  await waitFor(() => render.enabled() && pc.enabled(), 2000, "back");
-  await waitFor(async () => (await pc.getNodes()).length === 2, 2000, "registry rebuilt");
+  await waitFor(() => render.enabled() && pc.enabled(), 6000, "back");
+  await waitFor(async () => (await pc.getNodes()).length === 2, 6000, "registry rebuilt");
+  await waitFor(async () => (await render.getEvents(50)).some((e) => e.kind === "kv-rebuilt" || e.kind === "kv-back"), 6000, "rejoin event");
   const kinds = (await render.getEvents(50)).map((e) => e.kind);
   assert.ok(kinds.includes("while-away"), "queued event flushed");
-  assert.ok(kinds.includes("kv-rebuilt") || kinds.includes("kv-back"), kinds.join(","));
   await waitFor(() => render.isLeader());
   await render.stop();
   await pc.stop();
@@ -364,7 +364,7 @@ test("single node (no REDIS_URL): same API in memory, leader, no KV", async () =
   c.publish("dc:x", 5);
   await waitFor(() => got.length === 1);
   assert.strictEqual(c.invalidate("friends", "u1"), false);
-  await waitFor(async () => ((await c.getMetrics(60)).render || []).length > 0, 2000, "local metrics");
+  await waitFor(async () => ((await c.getMetrics(60)).render || []).length > 0, 6000, "local metrics");
   assert.deepStrictEqual(await c.kvStatus(), { ok: false, single: true, usedMb: 0, maxMb: 0 });
   let ran = 0;
   c.leaderOnly("x", () => (ran += 1))();

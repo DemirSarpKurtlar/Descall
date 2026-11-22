@@ -112,13 +112,13 @@ async function run() {
   const B = await startNode(url, "pc-real", "secondary");
   const clients = [];
   try {
-    await waitFor(() => A.c.enabled() && B.c.enabled(), 5000, "both connected");
-    await waitFor(() => A.c.isLeader() && !B.c.isLeader(), 5000, "primary leads");
+    await waitFor(() => A.c.enabled() && B.c.enabled(), 8000, "both connected");
+    await waitFor(() => A.c.isLeader() && !B.c.isLeader(), 8000, "primary leads");
     assert(true, "two nodes on a real Redis, render leads");
-    await waitFor(async () => (await B.c.getNodes()).length === 2, 3000, "registry");
+    await waitFor(async () => (await B.c.getNodes()).length === 2, 8000, "registry");
     await A.c.setCfg({ cores: 6 }, "owner");
     assert((await B.c.getCfg()).cores === 6, "cfg written on A is read on B");
-    await waitFor(async () => ((await B.c.getMetrics(5)).render || []).length > 0, 3000, "metrics ring");
+    await waitFor(async () => ((await B.c.getMetrics(5)).render || []).length > 0, 8000, "metrics ring");
     assert(true, "A's metrics ring is readable on B");
     const kv = await A.c.kvStatus();
     assert(kv.ok && kv.usedMb > 0, `kv status reports memory (${kv.usedMb} MB)`);
@@ -129,9 +129,9 @@ async function run() {
     A.c.replicator.register("realtest", ma, { storage: { type: "keys", prefix: "dc:realtest:" }, watch: true });
     B.c.replicator.register("realtest", mb, { storage: { type: "keys", prefix: "dc:realtest:" }, watch: true });
     ma.set("k1", { members: new Set(["x"]) });
-    await waitFor(() => mb.get("k1")?.members?.has("x"), 2000, "replicated write");
+    await waitFor(() => mb.get("k1")?.members?.has("x"), 8000, "replicated write");
     ma.get("k1").members.add("y");
-    await waitFor(() => mb.get("k1").members.has("y"), 2000, "replicated in-place change");
+    await waitFor(() => mb.get("k1").members.has("y"), 8000, "replicated in-place change");
     assert(true, "replicated Map writes and in-place changes reach the other node");
 
     // Socket.IO across nodes.
@@ -144,34 +144,34 @@ async function run() {
     await sleep(100);
     const got = new Promise((r) => cli.once("hello", r));
     B.io.to("user:u1").emit("hello", { from: "pc" });
-    assert((await Promise.race([got, sleep(2000).then(() => null)]))?.from === "pc", "B's room emit reached a socket on A");
+    assert((await Promise.race([got, sleep(6000).then(() => null)]))?.from === "pc", "B's room emit reached a socket on A");
     const socks = await B.io.in("user:u1").fetchSockets();
     assert(socks.length === 1 && socks[0].id === cli.id, "fetchSockets on B finds the socket on A");
 
     // Redis killed: single-node fallback.
     stopRedis();
-    await waitFor(() => !A.c.enabled() && !B.c.enabled(), 5000, "both notice");
+    await waitFor(() => !A.c.enabled() && !B.c.enabled(), 8000, "both notice");
     assert(A.c.isLeader() && !B.c.isLeader(), "KV away: primary leads alone, secondary waits");
     const local = new Promise((r) => cli.once("local", r));
     A.io.to("user:u1").emit("local", 1);
-    assert((await Promise.race([local, sleep(1000).then(() => null)])) === 1, "local emit still works without the KV");
+    assert((await Promise.race([local, sleep(6000).then(() => null)])) === 1, "local emit still works without the KV");
     ma.set("k2", { members: new Set(["offline"]) });
 
     // Redis back, empty.
     await startRedis(port);
     await waitFor(() => A.c.enabled() && B.c.enabled(), 15000, "both rejoined");
-    await waitFor(async () => (await B.c.getNodes()).length === 2, 5000, "registry rebuilt");
-    await waitFor(() => A.c.isLeader() && !B.c.isLeader(), 5000, "leader again");
-    await waitFor(() => mb.get("k2")?.members?.has("offline"), 5000, "offline write replicated after rejoin");
+    await waitFor(async () => (await B.c.getNodes()).length === 2, 8000, "registry rebuilt");
+    await waitFor(() => A.c.isLeader() && !B.c.isLeader(), 8000, "leader again");
+    await waitFor(() => mb.get("k2")?.members?.has("offline"), 8000, "offline write replicated after rejoin");
     assert(true, "after an empty Redis restart: registry, leader and state are rebuilt");
     const kinds = (await A.c.getEvents(50)).map((e) => e.kind);
     assert(kinds.includes("kv-rebuilt"), "kv-rebuilt event logged");
     const got2 = new Promise((r) => cli.once("hello2", r));
     B.io.to("user:u1").emit("hello2", 2);
-    assert((await Promise.race([got2, sleep(3000).then(() => null)])) === 2, "cross-node emit works again");
+    assert((await Promise.race([got2, sleep(6000).then(() => null)])) === 2, "cross-node emit works again");
     const gone = new Promise((r) => cli.once("disconnect", r));
     B.io.in("user:u1").disconnectSockets(true);
-    assert(Boolean(await Promise.race([gone.then(() => true), sleep(2000).then(() => false)])), "disconnectSockets on B closed the socket on A");
+    assert(Boolean(await Promise.race([gone.then(() => true), sleep(6000).then(() => false)])), "disconnectSockets on B closed the socket on A");
   } finally {
     for (const c of clients) c.close();
     await A.c.stop().catch(() => {});

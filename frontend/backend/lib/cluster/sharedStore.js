@@ -17,9 +17,12 @@
  *   lib/rateLimit buckets stamps mirrored  dc:rl:<scope>:<id> INCR + PEXPIRE
  *   lib/dmCallLog         shared + watch   dc:dmcall:<pair>, dc:dmended:<pair>
  *
- * Node-local caches (friends, usernames, roles, profiles, profanity / system
- * config, DM unread, notifications) stay local and are refreshed through
- * `dc:inval` messages { kind, id }.
+ * Node-local caches (friends + pending requests, usernames, roles, profiles,
+ * profanity / system config, DM unread, DM thread cache, notifications, and
+ * every module cache wrapped with cluster.linkInvalidate: admin permissions,
+ * admin tokens, session guard, blocks, premium, shop / Market 2.0 catalogs,
+ * announcements, live popup schedules, maintenance windows) stay local and are
+ * refreshed through `dc:inval` messages { kind, id }.
  */
 
 function attachSharedState({ cluster, replicator, state, getIo, log = console }) {
@@ -284,6 +287,10 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
     if (!list) return;
     if (m.all) for (const n of list) n.read = true;
     else if (m.nid) for (const n of list) if (n.id === m.nid) n.read = true;
+  });
+  cluster.onInvalidate("dmConv", (m) => {
+    // A DM thread changed on another node: the next read here comes from the database.
+    if (m.id) Map.prototype.delete.call(state.dmHistory, m.id);
   });
   cluster.onInvalidate("sysconfig", () => {
     const { loadSystemSettings, applySystemConfigToState } = require("../systemSettings");
