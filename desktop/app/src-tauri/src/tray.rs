@@ -5,7 +5,8 @@
 //! the shell language and are rebuilt when it or the update state changes.
 
 use std::any::Any;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 use tauri::menu::{CheckMenuItem, ContextMenu, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -87,6 +88,25 @@ fn icon_rect(rect: &tauri::Rect) -> descall_shell::tray_panel::Rect {
     descall_shell::tray_panel::Rect::new(p.x, p.y, s.width, s.height)
 }
 
+/// The tray draws the small icon size (16 px at 100 %, 20 / 24 / 32 px when scaled). Tauri's
+/// default window icon is the 32 px large one, which the shell shrinks into the tray without
+/// filtering (a jagged, lopsided logo); Electron gave the tray icon.ico, from which Windows
+/// takes the entry of the right size. Same here: the embedded app icon at the small size.
+#[cfg(windows)]
+fn small_icon() -> Option<tauri::image::Image<'static>> {
+    use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSMICON};
+    let size = match unsafe { GetSystemMetrics(SM_CXSMICON) } {
+        n if n > 0 => n as u32,
+        _ => 16,
+    };
+    tauri::image::Image::from_app_icon_resource(size).ok()
+}
+
+#[cfg(not(windows))]
+fn small_icon() -> Option<tauri::image::Image<'static>> {
+    None
+}
+
 pub fn create<R: Runtime>(app: &AppHandle<R>) {
     let Ok(menu) = build_menu(app) else { return };
     let mut b = TrayIconBuilder::with_id(ID).tooltip("Descall").show_menu_on_left_click(false).on_menu_event(on_menu).on_tray_icon_event(|tray, e| {
@@ -119,12 +139,30 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
     if !PANEL {
         b = b.menu(&menu);
     }
-    if let Some(icon) = app.default_window_icon() {
-        b = b.icon(icon.clone());
+    if let Some(icon) = small_icon().or_else(|| app.default_window_icon().map(|i| i.clone().to_owned())) {
+        let _ = BASE_ICON.set((icon.rgba().to_vec(), icon.width(), icon.height()));
+        b = b.icon(icon);
     }
     match b.build(app) {
         Ok(_) => shell(app).has_tray.store(true, Ordering::Release),
         Err(e) => log::error!("[tray] could not create the tray icon: {e}"),
+    }
+}
+
+/// The tray icon as created (RGBA, width, height), for the unread dot.
+static BASE_ICON: OnceLock<(Vec<u8>, u32, u32)> = OnceLock::new();
+static UNREAD_DOT: AtomicBool = AtomicBool::new(false);
+
+/// Unread messages put a red dot on the tray icon (descall_shell::tray_panel::unread_dot_rgba);
+/// none takes it off. Called with every tray state from the page; acts only on a change.
+pub fn set_unread<R: Runtime>(app: &AppHandle<R>, unread: bool) {
+    if UNREAD_DOT.swap(unread, Ordering::AcqRel) == unread {
+        return;
+    }
+    let (Some(tray), Some((rgba, w, h))) = (app.tray_by_id(ID), BASE_ICON.get()) else { return };
+    let pixels = if unread && w == h { descall_shell::tray_panel::unread_dot_rgba(rgba, *w) } else { rgba.clone() };
+    if let Err(e) = tray.set_icon(Some(tauri::image::Image::new_owned(pixels, *w, *h))) {
+        log::warn!("[tray] unread dot: {e}");
     }
 }
 

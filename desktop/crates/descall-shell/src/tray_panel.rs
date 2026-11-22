@@ -413,9 +413,59 @@ pub fn place_panel(tray: Rect, work: Rect, scale: f64, g: &Geometry) -> Placemen
     }
 }
 
+/// Tray icon with an unread dot (owner checklist: "a badge on the tray icon for unread
+/// messages"; Electron had none): a red disc in the bottom-right corner, cut out of the logo
+/// with a transparent ring so it reads at 16 px. Straight RGBA in, same size out; anything
+/// that is not a square `size` x `size` RGBA buffer comes back unchanged.
+pub fn unread_dot_rgba(icon: &[u8], size: u32) -> Vec<u8> {
+    let mut out = icon.to_vec();
+    if size == 0 || icon.len() != (size as usize) * (size as usize) * 4 {
+        return out;
+    }
+    const DOT: [f64; 3] = [242.0, 63.0, 67.0];
+    let s = size as f64;
+    let r = (s * 0.25).max(3.0);
+    let ring = (s / 16.0).max(1.0);
+    let (cx, cy) = (s - r, s - r);
+    for y in 0..size as usize {
+        for x in 0..size as usize {
+            let d = ((x as f64 + 0.5 - cx).powi(2) + (y as f64 + 0.5 - cy).powi(2)).sqrt();
+            let cut = (r + ring + 0.5 - d).clamp(0.0, 1.0);
+            if cut <= 0.0 {
+                continue;
+            }
+            let dot = (r + 0.5 - d).clamp(0.0, 1.0);
+            let i = (y * size as usize + x) * 4;
+            let base_a = out[i + 3] as f64 / 255.0 * (1.0 - cut);
+            let a = dot + base_a * (1.0 - dot);
+            for c in 0..3 {
+                let v = if a > 0.0 { (DOT[c] * dot + out[i + c] as f64 * base_a * (1.0 - dot)) / a } else { 0.0 };
+                out[i + c] = v.round().clamp(0.0, 255.0) as u8;
+            }
+            out[i + 3] = (a * 255.0).round().clamp(0.0, 255.0) as u8;
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unread_dot_on_the_tray_icon() {
+        let size = 16u32;
+        let icon = [10u8, 20, 30, 255].repeat((size * size) as usize);
+        let out = unread_dot_rgba(&icon, size);
+        assert_eq!(out.len(), icon.len());
+        let px = |x: usize, y: usize| &out[(y * 16 + x) * 4..(y * 16 + x) * 4 + 4];
+        assert_eq!(px(0, 0), &[10, 20, 30, 255], "the logo stays where the dot is not");
+        assert_eq!(px(12, 12), &[242, 63, 67, 255], "dot centre (r = 4 px at 16 px)");
+        assert!(px(7, 12)[3] < 128, "transparent ring between logo and dot");
+        assert_eq!(unread_dot_rgba(&icon[..12], size), icon[..12].to_vec(), "wrong size: unchanged");
+        let big = unread_dot_rgba(&[0u8, 0, 0, 0].repeat(32 * 32), 32);
+        assert_eq!(&big[(26 * 32 + 26) * 4..(26 * 32 + 26) * 4 + 4], &[242, 63, 67, 255], "transparent logo: dot only");
+    }
 
     #[test]
     fn app_state_is_cleaned_and_capped() {

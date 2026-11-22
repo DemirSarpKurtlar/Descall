@@ -338,6 +338,56 @@ pub fn parse_toast_args(args: &str) -> Option<(String, String)> {
     (ok_id && ok_conv).then(|| (id.to_string(), conv.to_string()))
 }
 
+/// Tag every message notification shares while the app is locked (appLockRedact.cjs).
+pub const LOCKED_TAG: &str = "descall-locked";
+
+/// What a notification may show while app_lock has Descall locked (port of
+/// electron/premium/appLockRedact.cjs): messages become one generic "Descall" notice under one
+/// tag, with no sender, preview, avatar or reply box; calls still ring, as "Descall", without
+/// the caller's or the group's name. Every other decoration (quickReply, style) is dropped.
+pub fn redact_locked(payload: &Value, locked_text: &str) -> Value {
+    let empty = Value::Object(Map::new());
+    let options = payload.get("options").filter(|o| o.is_object()).unwrap_or(&empty);
+    let data = options.get("data").filter(|d| d.is_object()).unwrap_or(&empty);
+    let kind = data.get("type").and_then(Value::as_str).unwrap_or("");
+    let call = kind == "call" || kind == "group-call";
+    let flag = |k: &str| options.get(k).and_then(Value::as_bool).unwrap_or(false);
+    let data = if call {
+        let call_type = if data.get("callType").and_then(Value::as_str) == Some("video") { "video" } else { "voice" };
+        let mut d = json!({ "type": kind, "callType": call_type });
+        for k in ["callId", "groupId"] {
+            if let Some(v) = data.get(k).filter(|v| !v.is_null()) {
+                d[k] = v.clone();
+            }
+        }
+        d
+    } else {
+        json!({})
+    };
+    json!({
+        "title": "Descall",
+        "options": {
+            "tag": if call { options.get("tag").cloned().unwrap_or(Value::Null) } else { Value::String(LOCKED_TAG.into()) },
+            "body": if call { "" } else { locked_text },
+            "requireInteraction": flag("requireInteraction"),
+            "silent": flag("silent"),
+            "avatarUrl": Value::Null,
+            "data": data,
+        },
+    })
+}
+
+/// Arguments of a plain notification toast (no reply box): a click opens what it was about.
+pub fn toast_click_args(id: &str) -> String {
+    format!("descall-n|{id}")
+}
+
+pub fn parse_toast_click(args: &str) -> Option<String> {
+    let id = args.strip_prefix("descall-n|")?;
+    let ok = !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
+    ok.then(|| id.to_string())
+}
+
 pub fn drop_targets(next: &Value) -> Vec<Value> {
     next.get("targets")
         .and_then(Value::as_array)
@@ -513,6 +563,28 @@ mod tests {
         assert_eq!(parse_toast_args("descall-qr|x|group:1"), None, "only DMs are replyable");
         assert_eq!(parse_toast_args("other|x|dm:1"), None);
         assert_eq!(parse_toast_args("descall-qr|a b|dm:1"), None);
+        // appLockRedact.selftest.mjs: a locked app shows nothing personal.
+        let dm = json!({ "title": "Ayşe", "quickReply": { "conv": "dm:u1" }, "options": { "body": "gizli", "tag": "dm-u1", "avatarUrl": "https://x/a.png", "style": "toast", "silent": true, "data": { "type": "dm", "from": "Ayşe", "fromId": "u1" } } });
+        let r = redact_locked(&dm, "Yeni bildirim");
+        assert_eq!(r["title"], "Descall");
+        assert_eq!(r["options"]["body"], "Yeni bildirim");
+        assert_eq!(r["options"]["tag"], LOCKED_TAG);
+        assert_eq!(r["options"]["data"], json!({}));
+        assert_eq!(r["options"]["avatarUrl"], Value::Null);
+        assert_eq!(r["options"]["silent"], true);
+        assert!(r.get("quickReply").is_none() && r["options"].get("style").is_none());
+        let call = json!({ "title": "Ayşe arıyor", "options": { "tag": "dm-incoming-call", "requireInteraction": true, "data": { "type": "call", "from": "Ayşe", "callType": "video", "callId": "c1" } } });
+        let r = redact_locked(&call, "x");
+        assert_eq!(r["options"]["tag"], "dm-incoming-call", "calls keep their own tag (closed by tag)");
+        assert_eq!(r["options"]["body"], "");
+        assert_eq!(r["options"]["requireInteraction"], true);
+        assert_eq!(r["options"]["data"], json!({ "type": "call", "callType": "video", "callId": "c1" }));
+        assert_eq!(redact_locked(&json!(null), "x")["options"]["tag"], LOCKED_TAG);
+        assert_eq!(parse_toast_click(&toast_click_args("descall-n-1-2")).as_deref(), Some("descall-n-1-2"));
+        assert_eq!(parse_toast_click("descall-n|"), None);
+        assert_eq!(parse_toast_click("descall-n|a|b"), None);
+        assert_eq!(parse_toast_click(&a), None, "a reply toast is not a plain one");
+        assert_eq!(parse_toast_args(&toast_click_args("x")), None);
         assert_eq!(safe_file_name("my clip (1).webm"), "my_clip_1_.webm");
         assert_eq!(safe_file_name(""), "clip.webm");
         assert_eq!(drop_targets(&json!({"targets": [{"id": "dm:1", "label": "Ada"}, {"label": "x"}]})).len(), 1);

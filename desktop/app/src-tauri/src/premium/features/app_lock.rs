@@ -11,56 +11,11 @@ use serde_json::{json, Value};
 
 use super::Poll;
 use crate::premium::logic::pin::{hash_pin, lockout_ms, valid_pin, verify_pin};
-use crate::premium::logic::rules::{num, truthy};
+use crate::premium::logic::rules::{num, redact_locked, truthy};
 use crate::premium::{arg, lock, now_ms, ok, platform, wins, Bus, Caller, Feature, From, Host};
 
-/// Locked right now, for the notification filter (premium::notify_filter).
-static LOCKED_NOW: AtomicBool = AtomicBool::new(false);
 /// Windows hidden by the lock, shown again on unlock.
 static HIDDEN: Mutex<Vec<String>> = Mutex::new(Vec::new());
-const LOCKED_TAG: &str = "descall-locked";
-
-pub(crate) fn is_locked() -> bool {
-    LOCKED_NOW.load(Ordering::Relaxed)
-}
-
-/// appLockRedact.cjs: while locked a toast carries no sender, preview, avatar or quick reply.
-/// Messages become one generic notice under one tag; calls still ring, as "Descall", without
-/// the caller's or the group's name. Every other decoration is dropped on purpose.
-pub(crate) fn redact(payload: &Value, locked_text: &str) -> Value {
-    let empty = json!({});
-    let options = payload.get("options").filter(|v| v.is_object()).unwrap_or(&empty);
-    let data = options.get("data").filter(|v| v.is_object()).unwrap_or(&empty);
-    let kind = data.get("type").and_then(Value::as_str).unwrap_or("");
-    let is_call = kind == "call" || kind == "group-call";
-    let mut out_data = json!({});
-    if is_call {
-        let call_type = if data.get("callType").and_then(Value::as_str) == Some("video") { "video" } else { "voice" };
-        out_data = json!({ "type": kind, "callType": call_type });
-        for k in ["callId", "groupId"] {
-            if let Some(v) = data.get(k).filter(|v| !v.is_null()) {
-                out_data[k] = v.clone();
-            }
-        }
-    }
-    let body = if is_call { "" } else { locked_text };
-    let mut out = json!({
-        "title": "Descall",
-        "options": {
-            "body": body,
-            "requireInteraction": truthy(options.get("requireInteraction")),
-            "silent": truthy(options.get("silent")),
-            "avatarUrl": Value::Null,
-            "data": out_data,
-        },
-    });
-    if !is_call {
-        out["options"]["tag"] = json!(LOCKED_TAG);
-    } else if let Some(t) = options.get("tag").filter(|v| !v.is_null()) {
-        out["options"]["tag"] = t.clone();
-    }
-    out
-}
 
 /// Electron's hideOtherWindows: pop-outs and account windows hide until the PIN is entered;
 /// the main window draws the lock screen itself.
@@ -148,7 +103,6 @@ impl F {
     /// windows on a change. Returns the previous value.
     fn set_locked(&self, h: &Host, v: bool) -> bool {
         let was = self.locked.swap(v, Ordering::Relaxed);
-        LOCKED_NOW.store(v, Ordering::Relaxed);
         if v && !was {
             hide_others(h);
         } else if !v && was {
@@ -335,6 +289,14 @@ impl Feature for F {
             _ => {}
         }
     }
+    /// While locked, a capsule or toast shows nothing personal (Electron app_lock.cjs
+    /// notificationFilter with appLockRedact.cjs; the Tauri shell showed sender and text).
+    fn notify_filter(&self, h: &Host, payload: Value) -> Option<Value> {
+        if !self.locked.load(Ordering::Relaxed) {
+            return Some(payload);
+        }
+        Some(redact_locked(&payload, &crate::state::et(&h.app, "notif.locked", &[])))
+    }
 }
 
 #[cfg(test)]
@@ -344,14 +306,14 @@ mod tests {
     #[test]
     fn locked_message_toast_has_no_sender_or_preview() {
         let p = json!({ "title": "Ada", "quickReply": { "conv": "dm:1" }, "options": { "body": "secret", "tag": "dm-1", "avatarUrl": "https://x/a.png", "silent": true, "data": { "type": "dm", "from": "Ada", "preview": "secret" } } });
-        let r = redact(&p, "Unlock to see it");
+        let r = redact_locked(&p, "Unlock to see it");
         assert_eq!(r, json!({ "title": "Descall", "options": { "body": "Unlock to see it", "tag": "descall-locked", "requireInteraction": false, "silent": true, "avatarUrl": null, "data": {} } }));
     }
 
     #[test]
     fn locked_call_still_rings_without_names() {
         let p = json!({ "title": "Ada", "options": { "body": "Ada is calling", "tag": "call-7", "requireInteraction": true, "data": { "type": "group-call", "callType": "video", "callId": "7", "groupId": "g", "groupName": "Team" } } });
-        let r = redact(&p, "x");
+        let r = redact_locked(&p, "x");
         assert_eq!(r, json!({ "title": "Descall", "options": { "body": "", "tag": "call-7", "requireInteraction": true, "silent": false, "avatarUrl": null, "data": { "type": "group-call", "callType": "video", "callId": "7", "groupId": "g" } } }));
     }
 }

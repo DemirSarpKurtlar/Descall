@@ -711,7 +711,10 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   // app_lock (appLockRedact.cjs + hideOtherWindows): while locked, toasts show no sender or
   // preview, and pop-outs / account windows hide until the PIN is entered.
   const premiumRs = readFileSync(join(srcDir, "premium", "mod.rs"), "utf8");
-  assert.match(premiumRs, /features::app_lock::is_locked\(\) && h\.is_running\("app_lock"\)[\s\S]{0,160}features::app_lock::redact\(&out, &text\)/, "locked toasts are redacted after quick reply");
+  // One redaction: the final notify_filter hook (after quick reply) of app_lock, with
+  // rules::redact_locked (shell-notif.test.mjs compares it with appLockRedact.cjs).
+  assert.match(premiumRs, /quick_reply::filter\(h, payload\)\?;[\s\S]{0,400}if h\.is_running\(f\.key\(\)\) \{\s*p = f\.notify_filter\(h, p\)\?;/, "locked toasts are redacted after quick reply");
+  assert.match(readFileSync(join(srcDir, "premium", "features", "app_lock.rs"), "utf8"), /fn notify_filter\(&self, h: &Host, payload: Value\)[\s\S]{0,200}redact_locked\(&payload,/, "app_lock redacts while locked");
   const notifyRs = readFileSync(join(srcDir, "commands", "notify.rs"), "utf8");
   assert.match(notifyRs, /let title = filtered\.get\("title"\)/, "the capsule shows the filtered title");
   assert.doesNotMatch(notifyRs, /show_capsule\(&app, &payload\.title/, "not the sender's name while locked");

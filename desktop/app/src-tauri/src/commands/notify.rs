@@ -8,10 +8,10 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use descall_shell::notif::{self, Entry, Rect};
+use descall_shell::notif::{self, Anchor, Entry, Rect};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tauri::{AppHandle, LogicalPosition, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, PhysicalPosition, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 use crate::state::{self, main_in_front, show_main, to_main};
 
@@ -53,9 +53,9 @@ fn str_of<'a>(v: &'a Value, k: &str) -> &'a str {
     v.get(k).and_then(Value::as_str).unwrap_or("")
 }
 
-/// Monitor work area for the stack (logical px): Descall's own visible window, else the
-/// monitor under the cursor, else the primary one.
-fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Rect {
+/// Monitor work area for the stack (that monitor's logical px, plus its physical origin and
+/// scale): Descall's own visible window, else the monitor under the cursor, else the primary.
+fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Anchor {
     let monitor = state::main_window(app)
         .filter(|w| w.is_visible().unwrap_or(false) && !w.is_minimized().unwrap_or(false))
         .and_then(|w| w.current_monitor().ok().flatten())
@@ -65,9 +65,13 @@ fn anchor_area<R: Runtime>(app: &AppHandle<R>) -> Rect {
         Some(m) => {
             let s = m.scale_factor();
             let wa = m.work_area();
-            Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s }
+            Anchor {
+                rect: Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s },
+                origin_px: (wa.position.x, wa.position.y),
+                scale: s,
+            }
         }
-        None => Rect { x: 0.0, y: 0.0, width: 1280.0, height: 720.0 },
+        None => Anchor { rect: Rect { x: 0.0, y: 0.0, width: 1280.0, height: 720.0 }, origin_px: (0, 0), scale: 1.0 },
     }
 }
 
@@ -75,27 +79,29 @@ fn reposition_all<R: Runtime>(app: &AppHandle<R>) {
     let n = app.state::<Notifications>();
     let list = n.list.lock().unwrap();
     let entries: Vec<Entry> = list.iter().filter(|c| c.shown).map(|c| Entry { id: c.id, call: c.call, height: c.height }).collect();
-    let placed = notif::stack_positions(anchor_area(app), &entries);
+    let anchor = anchor_area(app);
+    let placed = notif::stack_positions(anchor.rect, &entries);
     for p in placed {
         if let Some(c) = list.iter().find(|c| c.id == p.entry.id) {
             if let Some(w) = app.get_webview_window(&c.label) {
-                ease_to(w, p.x, p.y);
+                ease_to(w, anchor.to_physical(p.x, p.y), anchor.scale);
             }
         }
     }
 }
 
 /// Windows ignores animated SetWindowPos: step the window over ~120 ms (moveWindow in
-/// notificationWindow.cjs). A jump across monitors is immediate.
-fn ease_to<R: Runtime>(w: WebviewWindow<R>, x: f64, y: f64) {
-    let scale = w.scale_factor().unwrap_or(1.0);
+/// notificationWindow.cjs). A jump across monitors is immediate. Physical px of the target
+/// monitor (Anchor::to_physical): a logical position would use the scale of the monitor the
+/// capsule is on now, which puts it on the wrong screen when the two DPIs differ.
+fn ease_to<R: Runtime>(w: WebviewWindow<R>, (x, y): (i32, i32), scale: f64) {
     let Ok(from) = w.outer_position() else { return };
-    let (fx, fy) = (from.x as f64 / scale, from.y as f64 / scale);
+    let (fx, fy, x, y) = (from.x as f64, from.y as f64, x as f64, y as f64);
     if (fx - x).abs() < 0.5 && (fy - y).abs() < 0.5 {
         return;
     }
-    if (fx - x).abs() > 400.0 || (fy - y).abs() > 600.0 {
-        let _ = w.set_position(LogicalPosition::new(x, y));
+    if (fx - x).abs() > 400.0 * scale || (fy - y).abs() > 600.0 * scale {
+        let _ = w.set_position(PhysicalPosition::new(x as i32, y as i32));
         return;
     }
     tauri::async_runtime::spawn(async move {
@@ -103,7 +109,7 @@ fn ease_to<R: Runtime>(w: WebviewWindow<R>, x: f64, y: f64) {
         for i in 1..=STEPS {
             let t = i as f64 / STEPS as f64;
             let e = 1.0 - (1.0 - t).powi(3);
-            let _ = w.set_position(LogicalPosition::new((fx + (x - fx) * e).round(), (fy + (y - fy) * e).round()));
+            let _ = w.set_position(PhysicalPosition::new((fx + (x - fx) * e).round() as i32, (fy + (y - fy) * e).round() as i32));
             tokio::time::sleep(Duration::from_millis(15)).await;
         }
     });
@@ -179,8 +185,9 @@ fn reveal<R: Runtime>(app: &AppHandle<R>, id: u64) {
         c.shown = true;
         c.label.clone()
     };
+    // Already on screen (born visible, see show_capsule): no show() here, which would be
+    // SW_SHOW and take the focus.
     if let Some(w) = app.get_webview_window(&label) {
-        let _ = w.show();
         let _ = w.set_always_on_top(true);
     }
     reposition_all(app);
@@ -206,6 +213,14 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
         use tauri_plugin_notification::NotificationExt;
         let from = str_of(&data, "from");
         let preview = str_of(&data, "preview");
+        let (toast_title, toast_body) = notif::reply_toast_text(title, &body, &data);
+        let silent = options.get("silent").and_then(Value::as_bool).unwrap_or(false);
+        // A click opens the chat, like Electron's Notification (the plugin's toast has no
+        // click on Windows); the plugin stays as the fallback.
+        let click = json!({ "title": title, "body": body, "tag": tag, "data": data });
+        if crate::premium::show_toast(&toast_title, &toast_body, silent, click) {
+            return None;
+        }
         let shown = app
             .notification()
             .builder()
@@ -252,7 +267,8 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
 
     let kind = notif::kind_of(&data_type);
     let height = notif::card_height(call, kind);
-    let area = anchor_area(app);
+    let anchor = anchor_area(app);
+    let area = anchor.rect;
     let width = notif::capsule_width(area.width);
     let id = {
         let mut next = n.next_id.lock().unwrap();
@@ -281,6 +297,7 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
     entries.push(Entry { id, call, height });
     let slot = notif::stack_positions(area, &entries).into_iter().find(|p| p.entry.id == id);
     let (x, y) = slot.map(|p| (p.x, p.y)).unwrap_or((area.x, area.y));
+    let target_px = anchor.to_physical(x, y);
 
     n.list.lock().unwrap().push(Capsule {
         id,
@@ -300,39 +317,67 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
     });
     n.by_tag.lock().unwrap().insert(tag, id);
 
+    // The window is built off the UI thread: notification_show is a synchronous command (it
+    // runs on the UI thread, inside WebView2's IPC callback), and building a webview window
+    // there deadlocks on Windows (Tauri's documented WebView2 issue): the first capsule froze
+    // the app. The bookkeeping above already ran in order; a capsule dismissed while its
+    // window was still being built is destroyed as soon as the window exists.
+    let app_build = app.clone();
     let app_load = app.clone();
-    let built = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html")))
-        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
-        .title("Descall")
-        .inner_size(width + notif::SHADOW_PAD * 2.0, height + notif::SHADOW_PAD * 2.0)
-        .position(x, y)
-        .decorations(false)
-        .transparent(true)
-        .shadow(false)
-        .resizable(false)
-        .maximizable(false)
-        .minimizable(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .visible_on_all_workspaces(true)
-        .focused(call)
-        .focusable(call)
-        .visible(false)
-        .use_https_scheme(true)
-        .additional_browser_args(crate::BROWSER_ARGS)
-        .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
-        .on_navigation(|u| descall_shell::ipc_policy::is_shell_page(u.as_str()))
-        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
-        .on_page_load(move |_w, p| {
-            if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
-                reveal(&app_load, id);
+    tauri::async_runtime::spawn_blocking(move || {
+        let built = WebviewWindowBuilder::new(&app_build, &label, WebviewUrl::CustomProtocol(crate::shell_url("notif.html")))
+            .devtools(crate::webview::devtools_allowed(&app_build)) // support opt-in only (webview.rs)
+            .title("Descall")
+            .inner_size(width + notif::SHADOW_PAD * 2.0, height + notif::SHADOW_PAD * 2.0)
+            .position(x, y)
+            .decorations(false)
+            .transparent(true)
+            .shadow(false)
+            .resizable(false)
+            .maximizable(false)
+            .minimizable(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible_on_all_workspaces(true)
+            // Electron showed capsules with showInactive(). Tauri's show() on a hidden window is
+            // ShowWindow(SW_SHOW): it activates the capsule and takes the focus from the app the
+            // user is in (a full-screen game minimizes). A window born visible and unfocused is
+            // shown with SW_SHOWNOACTIVATE instead; the transparent page is empty until the card
+            // is drawn. Calls stay focusable so a clicked card can take the keyboard.
+            .focused(false)
+            .focusable(call)
+            .visible(true)
+            .use_https_scheme(true)
+            .additional_browser_args(crate::BROWSER_ARGS)
+            .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
+            .on_navigation(|u| descall_shell::ipc_policy::is_shell_page(u.as_str()))
+            .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+            .on_page_load(move |_w, p| {
+                if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
+                    reveal(&app_load, id);
+                }
+            })
+            .build();
+        match built {
+            Ok(w) => {
+                let live = app_build.state::<Notifications>().list.lock().unwrap().iter().any(|c| c.id == id);
+                if !live {
+                    let _ = w.destroy();
+                    return;
+                }
+                // The builder's position is logical, read with the scale Windows picks at
+                // creation; on a second monitor with another DPI that is the wrong screen.
+                // The page is still transparent, so the move is not seen (no activation).
+                if w.outer_position().ok().map(|p| (p.x, p.y)) != Some(target_px) {
+                    let _ = w.set_position(PhysicalPosition::new(target_px.0, target_px.1));
+                }
             }
-        })
-        .build();
-    if built.is_err() {
-        dismiss(app, id, "external");
-        return None;
-    }
+            Err(e) => {
+                log::warn!("[notif] capsule window failed: {e}");
+                dismiss(&app_build, id, "external");
+            }
+        }
+    });
     // ready-to-show fallback (notificationWindow.cjs revealFallback).
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -357,16 +402,43 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     // turn a DM into a native reply toast.
     let Some(filtered) = crate::premium::notify_filter(serde_json::json!({ "title": payload.title, "options": payload.options })) else { return };
     let options = filtered.get("options").cloned().unwrap_or(Value::Null);
-    // The filtered title: app_lock turns it into "Descall" (no sender while locked).
-    let title = filtered.get("title").and_then(Value::as_str).unwrap_or(&payload.title).to_string();
-    if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
-        let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
-        let data = options.get("data").cloned().unwrap_or(Value::Null);
-        if crate::premium::show_quick_reply(&title, body, conv, data) {
-            return;
+    // The filtered title: app_lock replaces the sender with "Descall" while locked.
+    let title = filtered.get("title").and_then(Value::as_str).unwrap_or(payload.title.as_str()).to_string();
+    let data = options.get("data").cloned().unwrap_or(Value::Null);
+    let data_type = str_of(&data, "type");
+    let call = notif::is_call(data_type);
+    let require_interaction = options.get("requireInteraction").and_then(Value::as_bool).unwrap_or(false);
+    // Same order as main.cjs showAppNotification: with Descall in front the app shows it
+    // already, so no reply toast, no capsule and no taskbar flash.
+    if notif::skip_in_front(main_in_front(&app), call, require_interaction) {
+        return;
+    }
+    flash_taskbar(&app, data_type);
+    // Quick reply never takes a call. The toast reads like Electron's: data.from /
+    // data.preview first (a group toast names the sender, not the group).
+    if !call {
+        if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
+            let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
+            let (toast_title, toast_body) = notif::reply_toast_text(&title, body, &data);
+            if crate::premium::show_quick_reply(&toast_title, &toast_body, conv, data.clone()) {
+                return;
+            }
         }
     }
     let _ = show_capsule(&app, &title, &options);
+}
+
+/// The taskbar button flashes a few times for a mention, a DM or a call while Descall is
+/// open but not in front (Electron never flashed). Hidden to the tray there is no button.
+fn flash_taskbar<R: Runtime>(app: &AppHandle<R>, data_type: &str) {
+    if !notif::flashes_taskbar(data_type) {
+        return;
+    }
+    let Some(w) = state::main_window(app) else { return };
+    if !w.is_visible().unwrap_or(false) {
+        return;
+    }
+    let _ = w.request_user_attention(Some(tauri::UserAttentionType::Informational));
 }
 
 /// electronAPI.closeNotification({ tag } | { tags }): incoming-call capsules close when the

@@ -36,6 +36,8 @@ pub fn class_of(label: &str) -> WindowClass {
         "overlay" => WindowClass::VoiceOverlay,
         "launcher" => WindowClass::Launcher,
         "tray-menu" => WindowClass::TrayMenu,
+        // The in-call mini card is overlay-<n> (a fresh label per window, commands/overlay.rs).
+        l if l.starts_with("overlay-") => WindowClass::VoiceOverlay,
         l if l.starts_with("notif-") => WindowClass::Notification,
         l if l.starts_with("hud-") || l.starts_with("widget-") => WindowClass::Hud,
         _ => WindowClass::App,
@@ -142,6 +144,7 @@ mod tests {
         assert_eq!(class_of("signup-stats"), WindowClass::Admin);
         assert_eq!(class_of("notif-12"), WindowClass::Notification);
         assert_eq!(class_of("overlay"), WindowClass::VoiceOverlay);
+        assert_eq!(class_of("overlay-4"), WindowClass::VoiceOverlay);
         assert_eq!(class_of("hud-voice_hud"), WindowClass::Hud);
         assert_eq!(class_of("widget-cpu"), WindowClass::Hud);
         assert_eq!(class_of("launcher"), WindowClass::Launcher);
@@ -151,7 +154,7 @@ mod tests {
     #[test]
     fn shell_pages_get_only_their_bridge() {
         for cmd in ["screen_share_start", "screen_sources", "clipboard_read_image", "processes_scan", "download_file", "updates_restart", "token_set", "premium_invoke", "premium_blob_take", "overlay_show", "tray_set_state"] {
-            for label in ["notif-1", "overlay", "hud-voice_hud", "widget-x", "tray-menu"] {
+            for label in ["notif-1", "overlay", "overlay-2", "hud-voice_hud", "widget-x", "tray-menu"] {
                 assert!(!allowed(label, cmd), "{label} must not call {cmd}");
             }
         }
@@ -293,7 +296,7 @@ mod capability_tests {
 
     #[test]
     fn shell_windows_only_listen_and_drag() {
-        for label in ["notif-1", "overlay", "hud-voice_hud", "widget-cpu", "launcher", "tray-menu"] {
+        for label in ["notif-1", "overlay", "overlay-3", "hud-voice_hud", "widget-cpu", "launcher", "tray-menu"] {
             let g = granted(label);
             assert!(!g.is_empty(), "{label} is in a capability (it listens for its state)");
             for p in g {

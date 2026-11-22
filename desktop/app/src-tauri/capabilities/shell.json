@@ -5,6 +5,7 @@
   "windows": [
     "notif-*",
     "overlay",
+    "overlay-*",
     "hud-*",
     "widget-*",
     "launcher"

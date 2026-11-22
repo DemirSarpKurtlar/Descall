@@ -151,6 +151,11 @@ pub(crate) trait Feature: Send + Sync {
     fn on_tray(&self, _h: &Host, _rest: &str) -> bool {
         false
     }
+    /// Final notification filter (Electron notifyHooks.registerFinal): runs after quick reply
+    /// on every { title, options } payload while the feature runs; None drops it.
+    fn notify_filter(&self, _h: &Host, payload: Value) -> Option<Value> {
+        Some(payload)
+    }
 }
 
 // ---- host -------------------------------------------------------------------------------------
@@ -826,24 +831,28 @@ pub fn on_new_window(app: &AppHandle, url: &tauri::Url, features: tauri::webview
 /// Notification hooks (notifyHooks.cjs): `None` = drop it; the payload may gain `quickReply`.
 #[allow(dead_code)]
 pub fn notify_filter(payload: Value) -> Option<Value> {
-    match host() {
-        Some(h) => {
-            let out = features::quick_reply::filter(h, payload)?;
-            // Final filter (notifyHooks.registerFinal): app_lock redacts whatever came before.
-            if features::app_lock::is_locked() && h.is_running("app_lock") {
-                let text = crate::state::et(&h.app, "notif.locked", &[]);
-                return Some(features::app_lock::redact(&out, &text));
-            }
-            Some(out)
+    let Some(h) = host() else { return Some(payload) };
+    let mut p = features::quick_reply::filter(h, payload)?;
+    // Final filters after quick reply, as Electron's registerFinal: app_lock redacts whatever
+    // is left (sender, text, avatar, the reply box) while Descall is locked.
+    for f in &h.features {
+        if h.is_running(f.key()) {
+            p = f.notify_filter(h, p)?;
         }
-        None => Some(payload),
     }
+    Some(p)
 }
 
 /// Native reply toast for a DM marked by [`notify_filter`]; false = show the capsule instead.
 #[allow(dead_code)]
 pub fn show_quick_reply(title: &str, body: &str, conv: &str, click_data: Value) -> bool {
     host().is_some_and(|h| features::quick_reply::show(h, title, body, conv, click_data))
+}
+
+/// The "toast" notification style as a native toast whose click opens the chat; false = the
+/// caller falls back to the plugin notification.
+pub fn show_toast(title: &str, body: &str, silent: bool, click: Value) -> bool {
+    host().is_some_and(|h| features::quick_reply::show_plain(h, title, body, silent, click))
 }
 
 /// Read the session token from the shell's secure store (auth-token); the renderer's own
