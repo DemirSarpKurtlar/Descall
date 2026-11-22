@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "resources": {
+      "../target/node-runtime/runtime/": "runtime/",
+      "../target/node-runtime/backend/": "backend/",
+      "../target/node-runtime/runtime-manifest.json": "runtime-manifest.json"
+    }
+  }
+}
