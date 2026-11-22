@@ -89,12 +89,10 @@ export function ItemDetail({ slot, onClose }) {
   const affordable = s2.balance >= price;
   const isOn = equippedId != null && String(equippedId) === String(item.id);
   const equipBusy = s2.busyItemId != null && String(s2.busyItemId) === String(item.id);
-  // ShopPanel reports an equip error in its own notice line, which sits on the "Tümü" tab and is
-  // never visible from this sheet: say it here too (onEquip resolves false on failure).
+  // A failed equip is reported by the market (Shop2Market wraps onEquip with a toast).
   const equip = async () => {
     if (equipBusy) return;
-    const ok = await s2.onEquip?.(item, isOn);
-    if (ok === false) s2.toast(t("shop2.errors.equip"), { tone: "error" });
+    await s2.onEquip?.(item, isOn);
   };
   // busy while the purchase runs: the hold button could be held again during a slow request
   // and sent a second purchase.

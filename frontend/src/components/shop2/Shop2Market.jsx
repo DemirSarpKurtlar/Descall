@@ -349,6 +349,18 @@ export default function Shop2Market({
     return () => window.removeEventListener("keydown", on);
   }, []);
 
+  // An equip that failed used to be silent here (ShopPanel writes its notice on the classic
+  // tab only): say it once, whichever tab asked.
+  const equipErrAt = useRef(0);
+  const onEquipSafe = useCallback(async (item, isOn) => {
+    const ok = await onEquip?.(item, isOn);
+    if (ok === false && Date.now() - equipErrAt.current > 2500) {
+      equipErrAt.current = Date.now();
+      toast(t("shop2.errors.equip"), { tone: "error" });
+    }
+    return ok;
+  }, [onEquip, toast, t]);
+
   // A refused wishlist toggle (e.g. the list is full) says why instead of silently undoing.
   const wrappedActions = useMemo(() => ({
     ...data.actions,
@@ -367,7 +379,7 @@ export default function Shop2Market({
     inventory,
     // ShopPanel knows the classic slots; the set slots (frame, badge, voice tile, join sound) come from the user.
     equippedIdFor: (category) => equippedIdFor?.(category) ?? me?.[EQUIP_FIELD[category]]?.id ?? null,
-    onEquip,
+    onEquip: onEquipSafe,
     // Re-read the signed-in user after a server-side look change (batch equip, undo).
     onLookChanged,
     busyItemId,
@@ -389,7 +401,7 @@ export default function Shop2Market({
     toast,
     setPalette,
     onEarn: earn,
-  }), [me, balance, data, wrappedActions, layout, width, owned, inventory, equippedIdFor, onEquip, onLookChanged, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn, focusItemId]);
+  }), [me, balance, data, wrappedActions, layout, width, owned, inventory, equippedIdFor, onEquipSafe, onLookChanged, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn, focusItemId]);
 
   const counts = {
     sets: data.sets.length || data.storefront?.featuredSets?.length || null,
