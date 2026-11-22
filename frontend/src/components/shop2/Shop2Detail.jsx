@@ -219,6 +219,7 @@ export function SetQuickPanel({ setKey, onClose }) {
   const part = setPricing(set, { selectedIds: sel });
   const hist = priceHistoryStats(set.priceHistory, all.yourPrice);
   const total = mode === "all" ? all.yourPrice : part.selectedTotal;
+  const wholeMore = all.yourPrice - part.selectedTotal;
   const nothing = all.complete || (mode === "part" && part.selectedCount === 0);
   const toggle = (id) => {
     const next = new Set(sel);
@@ -241,7 +242,10 @@ export function SetQuickPanel({ setKey, onClose }) {
       </label>
       <label className={`s2-radio${mode === "part" ? " is-on" : ""}`}>
         <input type="radio" name="s2-setmode" checked={mode === "part"} onChange={() => setMode("part")} />
-        <span><b>{t("shop2.buy.chosen", { n: part.selectedCount })}</b><small>{t("shop2.buy.chosenSub", { n: formatNumber(part.selectedExtraVsSet, locale) })}</small></span>
+        {/* "Set yalnızca {n} D fazla" = how much more the WHOLE set costs than the chosen pieces.
+            It showed selectedExtraVsSet (the singles premium), e.g. "525 D fazla" for a set that
+            cost 770 D more; when the whole set is not dearer there is nothing to say. */}
+        <span><b>{t("shop2.buy.chosen", { n: part.selectedCount })}</b>{wholeMore > 0 ? <small>{t("shop2.buy.chosenSub", { n: formatNumber(wholeMore, locale) })}</small> : null}</span>
         <Price value={part.selectedTotal} />
       </label>
       <div className="s2-chips-wrap">

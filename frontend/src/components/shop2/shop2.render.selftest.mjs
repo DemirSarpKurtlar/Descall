@@ -217,6 +217,8 @@ for (const layout of ["desktop", "phone"]) {
   has(q2, "s2-short", "set panel: short-by when unaffordable");
   const q3 = m.render("setq", c, { setKey: "gece-limani" });
   has(q3, "shop2.buy.buyN", "set panel: buy button when affordable");
+  // 4 suggested pieces p0 p1 p4 p5 = 2100 D singles; the whole set (2870 D) is 770 D more.
+  assert.match(q3, /shop2\.buy\.chosenSub/, "set panel: whole-set hint");
   // Search with nothing to list renders the empty line.
   const sr = m.render("search", { ...c, data: { ...c.data, storefront: null, sets: [], wishlist: [] } }, { onClose: noop });
   has(sr, "s2-results-empty", "search: empty line");
