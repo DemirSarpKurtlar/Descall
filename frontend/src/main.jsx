@@ -284,7 +284,11 @@ async function bootApp() {
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
       // 3.7.15: Electron minimized / tray → pause animations; idle / hidden page
       // (iOS background, locked phone in a call) → pause them too.
-      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause(); }).catch(() => {}),
+      import("./lib/appVisibility.js").then((m) => {
+        m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause();
+        // Tauri only (lib/appVisibility.js installEntranceRelease): one-shot entrances finish under the pause classes.
+        if (window.electronAPI?.isTauri) m.installEntranceRelease();
+      }).catch(() => {}),
       // Cosmetic loops (name effects, frames, shop previews) pause while scrolled out of view.
       import("./lib/cosmeticMotion.js").then((m) => m.installCosmeticMotion()).catch(() => {}),
       // Android: premium theme scenes play for a few seconds, then hold still.

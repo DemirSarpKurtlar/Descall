@@ -186,3 +186,99 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
     root.classList.remove(BLURRED_CLASS);
   };
 }
+
+/** The pause classes that freeze CSS animations (styles/app-backgrounded.css). */
+const PAUSE_CLASSES = [BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS];
+
+/**
+ * True for a one-shot (finite) CSS animation that is not done yet. Only CSS animations (they
+ * carry animationName): Web Animations started by scripts (framer-motion) are not touched by
+ * the pause stylesheet, and one a script paused on purpose stays paused.
+ */
+export function isOneShotAnimation(anim) {
+  try {
+    if (typeof anim?.animationName !== "string") return false;
+    const timing = anim?.effect?.getComputedTiming?.();
+    if (!timing || timing.iterations === Infinity) return false;
+    return anim.playState !== "finished";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Tauri: one-shot entrances finish while a pause class is on. The pause stylesheet pauses
+ * EVERY animation; an element that mounts (or is mid-entrance) while html.app-idle /
+ * app-backgrounded / app-hidden is on froze at its first frame, and an entrance from
+ * opacity 0 (fade / rise with fill-mode both or backwards) stayed invisible but clickable:
+ * a toast, a popover, a hover card, the market's cards or a message row that arrived while
+ * the window was unfocused, minimized or restored without activation. In Tauri the shell
+ * can leave app-backgrounded on after a restore that does not activate the window (no focus
+ * event), and pointer moves do not clear it, so the invisible state lasted until a click,
+ * which then landed on the invisible thing's backdrop and closed it ("opens and vanishes").
+ * Infinite loops (the CPU reason for the pause) stay paused; only finite animations play,
+ * through the Web Animations API, which takes precedence over animation-play-state.
+ * Returns a cleanup.
+ */
+export function installEntranceRelease(win = typeof window !== "undefined" ? window : undefined) {
+  const doc = win?.document;
+  const root = doc?.documentElement;
+  if (!root?.classList || typeof doc.addEventListener !== "function") return () => {};
+  const pausedNow = () => PAUSE_CLASSES.some((c) => root.classList.contains(c));
+  const release = (anims) => {
+    for (const a of anims || []) {
+      if (a?.playState === "paused" && isOneShotAnimation(a)) {
+        try { a.play(); } catch { /* detached */ }
+      }
+    }
+  };
+  // A CSS animation that starts while paused still fires animationstart (Chromium / WebView2).
+  const onStart = (e) => {
+    if (!pausedNow()) return;
+    const t = e.target;
+    if (t && typeof t.getAnimations === "function") release(t.getAnimations());
+  };
+  doc.addEventListener("animationstart", onStart, true);
+  const releaseAll = () => {
+    if (pausedNow() && typeof doc.getAnimations === "function") release(doc.getAnimations());
+  };
+  // A staggered entrance (animation-delay) paused in its delay never fires animationstart:
+  // while paused, nodes added to the page release the document's one-shot animations (one
+  // pass per frame burst; mutations while paused are rare: a toast, a message, a tab).
+  let mo = null;
+  let domMo = null;
+  let pending = 0;
+  const setT = typeof win.setTimeout === "function" ? win.setTimeout.bind(win) : null;
+  const clearT = typeof win.clearTimeout === "function" ? win.clearTimeout.bind(win) : null;
+  const MO = win.MutationObserver;
+  const watchDom = (on) => {
+    if (on && !domMo && typeof MO === "function" && doc.body) {
+      domMo = new MO(() => {
+        if (pending || !setT) return;
+        pending = setT(() => { pending = 0; releaseAll(); }, 32);
+      });
+      domMo.observe(doc.body, { childList: true, subtree: true });
+    } else if (!on && domMo) {
+      domMo.disconnect();
+      domMo = null;
+    }
+  };
+  // An entrance already running when a pause class goes on finishes as well.
+  if (typeof MO === "function") {
+    let was = pausedNow();
+    if (was) watchDom(true);
+    mo = new MO(() => {
+      const now = pausedNow();
+      if (now && !was) releaseAll();
+      if (now !== was) watchDom(now);
+      was = now;
+    });
+    mo.observe(root, { attributes: true, attributeFilter: ["class"] });
+  }
+  return () => {
+    doc.removeEventListener("animationstart", onStart, true);
+    if (mo) mo.disconnect();
+    watchDom(false);
+    if (pending && clearT) clearT(pending);
+  };
+}
