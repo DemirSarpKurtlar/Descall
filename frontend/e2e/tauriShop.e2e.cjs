@@ -113,6 +113,10 @@ function cspHeader(html) {
     hashes.push(`'sha256-${crypto.createHash('sha256').update(m[2].replace(/\r\n?/g, '\n')).digest('base64')}'`);
   }
   csp['script-src'] = `${csp['script-src']} ${hashes.join(' ')}`;
+  // The CI build (dist-e2e) bakes a local mock API (VITE_API_BASE_URL=http://127.0.0.1:5361)
+  // in place of the production API origin, which the shipped CSP already allows. Allow only
+  // that loopback stand-in here so the sweep still catches every other connect-src gap.
+  csp['connect-src'] = `${csp['connect-src']} http://127.0.0.1:* ws://127.0.0.1:*`;
   return Object.entries(csp).map(([k, v]) => `${k} ${v}`).join('; ');
 }
 
