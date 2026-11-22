@@ -95,12 +95,109 @@
     }))).catch(() => []);
   }
 
+  // ---- ordering and late starts ----------------------------------------------------------------
+  // Electron handled IPC in order and started a feature inside premium:settings:set, so a call
+  // right after "switch on" found it running. Here every premium_invoke runs on its own thread
+  // and the host starts features on its bus thread, so (1) calls wait for a settings:set still in
+  // flight, (2) a "locked" answer just after a settings:set is retried briefly, and (3) the
+  // renderer's state pushes (hotkeys, tray mirrors) that arrive before the shell's own
+  // membership check has passed are kept and sent again once their feature runs. Without (3) the
+  // command center / workspace profile / clip hotkeys and the focus / audio profile tray entries
+  // stayed unregistered until the user changed a setting (the check takes a network round trip,
+  // the renderer pushes as soon as its own copy of the plan arrives).
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const isLocked = (r) => Boolean(r && typeof r === "object" && r.ok === false && r.error === "locked");
+  const FEATURE_OF = { hotkeys: "custom_hotkeys", launcher: "quick_launcher" };
+  const featureOf = (channel) => {
+    const m = /^premium:([a-z0-9_]+):/.exec(channel);
+    return m ? FEATURE_OF[m[1]] || m[1] : "";
+  };
+  // Idempotent "here is the current state" pushes: the latest call wins.
+  const REPLAY = new Set([
+    "premium:command_center:hotkey",
+    "premium:workspace_profiles:bind",
+    "premium:focus_mode:state",
+    "premium:audio_device_profiles:mirror",
+    "premium:instant_clip:hotkey",
+    "premium:multi_account:labels",
+    "premium:quick_file_drop:state",
+  ]);
+  const latest = new Map(); // channel -> packed args of the newest call
+  const pending = new Set(); // channels whose newest call was answered "locked"
+  let pendingSet = Promise.resolve();
+  let lastSetAt = 0;
+  let pollTimer = 0;
+  let pollUntil = 0;
+  let pollDelay = 0;
+
+  async function poll() {
+    pollTimer = 0;
+    if (!pending.size) return;
+    let running = [];
+    try {
+      const s = await invoke("premium_invoke", { channel: "premium:status", args: [] });
+      running = s && Array.isArray(s.running) ? s.running : [];
+    } catch (_) { /* host not ready yet */ }
+    for (const channel of [...pending]) {
+      if (!running.includes(featureOf(channel))) continue;
+      const args = latest.get(channel);
+      try {
+        const r = await invoke("premium_invoke", { channel, args });
+        if (!isLocked(r) && latest.get(channel) === args) pending.delete(channel);
+      } catch (_) { pending.delete(channel); }
+    }
+    schedulePoll(false);
+  }
+
+  /** Poll premium:status while something waits: 1 s, slowing to 10 s, for at most 3 minutes. */
+  function schedulePoll(restart) {
+    if (!pending.size) return;
+    const now = Date.now();
+    if (restart || !pollUntil) { pollUntil = now + 180000; pollDelay = 1000; }
+    if (now > pollUntil) { pollUntil = 0; return; }
+    if (pollTimer && !restart) return;
+    if (pollTimer) clearTimeout(pollTimer);
+    const wait = pollDelay;
+    pollDelay = Math.min(10000, Math.round(pollDelay * 1.5));
+    pollTimer = setTimeout(poll, wait);
+  }
+
+  async function send(channel, packed) {
+    let r = await invoke("premium_invoke", { channel, args: packed });
+    if (REPLAY.has(channel)) {
+      if (latest.get(channel) === packed) {
+        if (isLocked(r)) { const first = !pending.size; pending.add(channel); schedulePoll(first); } else pending.delete(channel);
+      }
+      return r;
+    }
+    // A feature switched on a moment ago may still be starting on the host's bus thread.
+    for (let i = 0; i < 6 && isLocked(r) && channel !== "premium:settings:set" && Date.now() - lastSetAt < 2000; i += 1) {
+      await sleep(150);
+      r = await invoke("premium_invoke", { channel, args: packed });
+    }
+    return r;
+  }
+
   async function premiumInvoke(channel, ...args) {
     if (!isPremiumChannel(channel)) throw new Error("premium channel expected");
     if (channel === "premium:app-state" && args[0] && typeof args[0] === "object") {
       args[0] = { ...args[0], __lang: document.documentElement.lang || navigator.language || "" };
     }
-    const r = await invoke("premium_invoke", { channel, args: await packArgs(args) });
+    const packed = await packArgs(args);
+    if (REPLAY.has(channel)) latest.set(channel, packed);
+    // Signed out / no plan: nothing of the previous session is sent again.
+    if (channel === "premium:entitlements" && !(packed[0] && packed[0].plan)) { pending.clear(); latest.clear(); }
+    let r;
+    if (channel === "premium:settings:set") {
+      // In order, like Electron; later calls wait for it.
+      const run = pendingSet.catch(() => {}).then(() => invoke("premium_invoke", { channel, args: packed }));
+      pendingSet = run.then(() => { lastSetAt = Date.now(); }, () => { lastSetAt = Date.now(); });
+      r = await run;
+      if (r && r.ok && packed[1] && packed[1].enabled === true) schedulePoll(true);
+    } else {
+      await pendingSet.catch(() => {});
+      r = await send(channel, packed);
+    }
     if (channel === "premium:instant_clip:sources" && r && r.ok && r.delegate) {
       const { delegate, ...rest } = r;
       return { ...rest, sources: await nativeSources() };

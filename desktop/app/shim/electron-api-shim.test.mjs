@@ -56,7 +56,9 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
   const answer = (cmd, args) => {
     invokes.push([cmd, args]);
-    return fail.includes(cmd) ? Promise.reject(new Error(`${cmd} failed`)) : Promise.resolve(responses[cmd] ?? null);
+    if (fail.includes(cmd)) return Promise.reject(new Error(`${cmd} failed`));
+    const r = typeof responses[cmd] === "function" ? responses[cmd](args) : responses[cmd];
+    return Promise.resolve(r ?? null);
   };
   const tauriGlobal = {
       core: { invoke: answer },
@@ -90,6 +92,8 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
     Promise,
     Uint8Array,
     ArrayBuffer,
+    setTimeout,
+    clearTimeout,
   };
   // Same order as Tauri: plugin init scripts (premium-shim.js) run before the window's own.
   vm.createContext(ctx);
@@ -174,6 +178,10 @@ for (const [path, args, cmd, expected] of CASES) {
   const out = get(s.api, path)(...args);
   if (out && typeof out.then === "function") await out;
   await tick();
+  // Signing out also stops the Descall+ desktop features (Electron: gate.reset()).
+  const signOut = cmd === "token_clear" ? [["premium_invoke", { channel: "premium:entitlements", args: [{ keys: [], plan: null, token: "" }] }]] : [];
+  deq(s.invokes.slice(1), signOut, `${path}: Descall+ sign-out push`);
+  s.invokes.splice(1);
   deq(s.invokes.map((c) => c[0]), [cmd], `${path} -> ${cmd}`);
   deq(s.invokes[0][1], expected, `${path} args`);
   called.add(cmd);
@@ -248,6 +256,73 @@ for (const [path, args, cmd, expected] of CASES) {
   s.premium.on("premium:settings-changed", () => {});
   await tick();
   assert.ok((s.listeners.get("premium:settings-changed") || []).length === 1, "premium on() listens with the real order");
+}
+{
+  // Descall+ state pushes made before the shell's own membership check passed ("locked")
+  // are sent again once the feature runs (command center / workspace hotkeys stayed dead).
+  let running = [];
+  const answers = [];
+  const s = loadShim({
+    realOrder: true,
+    responses: {
+      premium_invoke: ({ channel, args }) => {
+        if (channel === "premium:status") return { ok: true, keys: running, running };
+        const r = running.includes(channel.split(":")[1]) ? { ok: true, hotkey: args[0] } : { ok: false, error: "locked" };
+        answers.push([channel, args[0], r.ok]);
+        return r;
+      },
+    },
+  });
+  assert.equal((await s.premium.invoke("premium:command_center:hotkey", "CommandOrControl+Shift+K")).error, "locked", "the renderer still sees the first answer");
+  await s.premium.invoke("premium:command_center:hotkey", "CommandOrControl+Alt+K"); // newer state wins
+  await s.premium.invoke("premium:global_mute:status"); // not a state push: never replayed
+  running = ["command_center", "global_mute"];
+  await new Promise((r) => setTimeout(r, 1150));
+  await tick(); await tick();
+  deq(answers.filter((a) => a[2]), [["premium:command_center:hotkey", "CommandOrControl+Alt+K", true]], "the newest hotkey is registered once the feature runs");
+  const statusPolls = s.invokes.filter((c) => c[1] && c[1].channel === "premium:status").length;
+  await new Promise((r) => setTimeout(r, 1700));
+  assert.equal(s.invokes.filter((c) => c[1] && c[1].channel === "premium:status").length, statusPolls, "polling stops when nothing waits");
+  assert.ok(!answers.some((a) => a[0] === "premium:global_mute:status" && a[2]), "status reads are not replayed");
+  // Signing out drops what waits: nothing of that session is sent again later.
+  running = [];
+  await s.premium.invoke("premium:focus_mode:state", { until: 0 });
+  await s.premium.invoke("premium:entitlements", { keys: [], plan: null, token: "" });
+  running = ["focus_mode"];
+  await new Promise((r) => setTimeout(r, 1150));
+  assert.ok(!answers.some((a) => a[0] === "premium:focus_mode:state" && a[2]), "no resend after sign-out");
+}
+{
+  // Switching a feature on: later calls wait for the settings:set, and a "locked" answer right
+  // after it (host still starting the feature on its bus thread) is retried.
+  let started = false;
+  const order = [];
+  let releaseSet;
+  const s = loadShim({
+    responses: {
+      premium_invoke: ({ channel, args }) => {
+        order.push(channel);
+        if (channel === "premium:settings:set") {
+          return new Promise((r) => { releaseSet = () => { setTimeout(() => { started = true; }, 200); r({ ok: true, settings: args[1] }); }; });
+        }
+        if (channel === "premium:global_ptt:status") return started ? { ok: true, mode: "hold" } : { ok: false, error: "locked" };
+        return { ok: true };
+      },
+    },
+  });
+  const set = s.premium.invoke("premium:settings:set", "global_ptt", { enabled: true });
+  const status = s.premium.invoke("premium:global_ptt:status");
+  await tick(); await tick();
+  deq(order, ["premium:settings:set"], "the status read waits for the settings:set in flight");
+  releaseSet();
+  await set;
+  deq(await status, { ok: true, mode: "hold" }, "locked right after switching on is retried until the feature runs");
+  assert.ok(order.filter((c) => c === "premium:global_ptt:status").length >= 2, "retried");
+  started = false;
+  await new Promise((r) => setTimeout(r, 2100));
+  const before = order.length;
+  deq(await s.premium.invoke("premium:global_ptt:status"), { ok: false, error: "locked" }, "no retries long after a settings:set");
+  assert.equal(order.length, before + 1);
 }
 {
   // Title bar buttons: shell command, then Tauri's window command when it fails.
@@ -870,6 +945,56 @@ const fromNative = new Set([...nativeSrc.matchAll(/invoke\("(\w+)"/g)].map((m) =
 assert.ok(fromNative.has("screen_share_start") && fromNative.has("screen_thumbnails"), "native lane commands found");
 for (const cmd of fromNative) assert.ok(registered.has(cmd), `${cmd} (native screen share) is registered in main.rs`);
 assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\)/, "main.rs injects the native lane");
+{
+  // Free-form Descall+ hotkeys (command center, workspace profiles, media keys, clip) never take
+  // an accelerator away from another feature (Electron compat.cjs only replaced its own).
+  const hk = readFileSync(join(here, "..", "src-tauri", "src", "premium", "hotkeys.rs"), "utf8");
+  const at = hk.indexOf("pub fn register_extra");
+  const body = hk.slice(at, hk.indexOf("pub fn unregister_owner", at));
+  assert.ok(at > 0 && /let mine = [^;]*extras\.get\(owner\)/.test(body), "register_extra checks this owner's own list");
+  assert.match(body, /\} else if self\.gs\(\)\.is_registered\(p\.as_str\(\)\) \{\s*return false;\s*\}/, "an accelerator held elsewhere is refused, not unregistered");
+}
+{
+  // Quick launcher window: same members and channels as launcherPreload.cjs, also when the
+  // global API bundle (window.__TAURI__) does not exist yet.
+  const exposed = {};
+  const ipcCalls = [];
+  const electron = {
+    contextBridge: { exposeInMainWorld: (n, api) => { exposed[n] = api; } },
+    ipcRenderer: { invoke: (ch, ...a) => { ipcCalls.push([ch, a]); return Promise.resolve(null); }, on: (ch) => ipcCalls.push(["on", ch]) },
+  };
+  vm.runInNewContext(readFileSync(join(electronDir, "premium", "launcher", "launcherPreload.cjs"), "utf8"), { require: () => electron, String, Boolean });
+  const src = readFileSync(join(here, "premium-launcher-shim.js"), "utf8");
+  for (const withGlobal of [false, true]) {
+    const invokes = [];
+    const answer = (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(cmd === "plugin:event|listen" ? 1 : null); };
+    const handlers = [];
+    const window = { __TAURI_INTERNALS__: { invoke: answer, transformCallback: (fn) => { handlers.push(fn); return handlers.length; } } };
+    if (withGlobal) window.__TAURI__ = { core: { invoke: answer }, event: { listen: (event, h) => { handlers.push(h); invokes.push(["listen", { event }]); return Promise.resolve(() => {}); } } };
+    window.top = window;
+    vm.runInNewContext(src, { window, String, Boolean, Object, Promise });
+    const api = window.launcherAPI;
+    assert.ok(api, `launcherAPI exists (global bundle: ${withGlobal})`);
+    deq(Object.keys(api).sort(), Object.keys(exposed.launcherAPI).sort(), "launcherAPI members as Electron");
+    await api.strings();
+    await api.query("x".repeat(200));
+    await api.run({ id: "srv:1", focus: 1 });
+    await api.close();
+    ipcCalls.length = 0;
+    await exposed.launcherAPI.strings();
+    await exposed.launcherAPI.query("x".repeat(200));
+    await exposed.launcherAPI.run({ id: "srv:1", focus: 1 });
+    await exposed.launcherAPI.close();
+    const got = invokes.filter((c) => c[0] === "premium_invoke").map((c) => [c[1].channel, c[1].args]);
+    deq(got, ipcCalls.map(([ch, a]) => [ch, a]), "same channels and arguments as the Electron preload");
+    let reset = null;
+    api.onReset((s) => { reset = s; });
+    await tick();
+    assert.ok(invokes.some((c) => (c[0] === "plugin:event|listen" || c[0] === "listen") && c[1].event === "premium:launcher:reset"), "onReset listens to premium:launcher:reset");
+    handlers[handlers.length - 1]({ payload: { lang: "tr" } });
+    deq(reset, { lang: "tr" }, "reset strings reach the page");
+  }
+}
 // Descall+ page bridges (premium plugin, HUD and launcher windows).
 for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js", "tray-menu-shim.js"]) {
   const src = readFileSync(join(here, f), "utf8");

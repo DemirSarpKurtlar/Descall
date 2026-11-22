@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "La conexión de escritorio de Descall+ no se inició",
+        "body": "Esta ventana no pudo conectarse a las funciones de escritorio, así que los atajos y las demás funciones de escritorio están desactivados. Reinicia la app; si sigue pasando, actualízala.",
+        "pill": "Sin conexión",
+        "tile": "Falta la conexión de escritorio",
+        "reload": "Recargar"
+      },
       "gate": {
         "title": "Las funciones de escritorio están bloqueadas en este equipo",
         "checking": "Comprobando tu membresía en este equipo. Puede tardar unos segundos.",

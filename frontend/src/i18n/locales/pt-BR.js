@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "A conexão de desktop do Descall+ não iniciou",
+        "body": "Esta janela não conseguiu se conectar aos recursos de desktop, então os atalhos e os outros recursos de desktop estão desligados. Reinicie o app; se continuar, atualize o app.",
+        "pill": "Sem conexão",
+        "tile": "Conexão de desktop ausente",
+        "reload": "Recarregar"
+      },
       "gate": {
         "title": "Os recursos de desktop estão bloqueados neste computador",
         "checking": "Verificando sua assinatura neste computador. Pode levar alguns segundos.",

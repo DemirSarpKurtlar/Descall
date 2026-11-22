@@ -123,6 +123,15 @@
     for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
     try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
   }
+  // Signed out: the Descall+ desktop features (global hotkeys, push-to-talk input, tray
+  // entries) stop at once, as Electron main resets its gate on secure-token:clear. The page
+  // keeps its plan in memory and only pushes it again on the next sign-in.
+  const premiumSignedOut = () => {
+    try {
+      const p = window.descallPremium;
+      if (p && typeof p.invoke === "function") p.invoke("premium:entitlements", { keys: [], plan: null, token: "" }).catch(() => {});
+    } catch (_) { /* ignore */ }
+  };
 
   // Electron read the token file on every get(): a sign-in or sign-out in another owner window
   // (admin, pop-out) was seen at once. The shell sends the new value to every owner window
@@ -290,9 +299,10 @@
         if (v.length > 16 * 1024) return false;
         remember(v);
         fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined);
+        if (!v) premiumSignedOut();
         return true;
       },
-      clear: () => { remember(""); fire("token_clear"); return true; },
+      clear: () => { remember(""); fire("token_clear"); premiumSignedOut(); return true; },
     },
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
 
