@@ -19,6 +19,14 @@ Descall Node, Windows bilgisayarını Descall'un **ikinci tam backend düğümü
 
 Neden Windows servisi değil de oturum uygulaması: panel, DPAPI (kullanıcıya bağlı şifreleme), oyun algılama (ön plandaki pencere, GPU) ve oturum kapanışı mesajları kullanıcının oturumuna aittir; oturum 0'da çalışan bir servis bunların her biri için ikinci bir süreç ve aradaki iletişimi gerektirirdi. Uygulama Windows'a girişte kendiliğinden başlar (HKCU Run); "servisi durdur" karşılığı `DescallNode.exe --stop` komutudur (kurulum/kaldırma bunu kullanır, önce kullanıcıları aktarır).
 
+### Otomatik kurulum (`POST /api/node/bootstrap`)
+- İlk **Kaydet ve başlat**'ta (ve düğüm anahtarı ya da ana sunucu adresi değişince) uygulama ana sunucuya `POST /api/node/bootstrap` gönderir (başlıkta `Authorization: Bearer dsk_node_...`, gövdede `{ id, version }`). Cevap `{ ok, env: { AD: değer }, count, windowUntil }`: Render'ın kendi ortamından, `frontend/backend/lib/nodeKeys/bootstrapEnv.js` izin listesindeki (SHARED) ve Render'da tanımlı değişkenler. `REDIS_URL`, `PORT`, `NODE_ENV`, `DESCALL_NODE_*`, `RENDER*`, makine / derleme değişkenleri ve işletim sistemi değişkenleri asla gelmez; uygulama gelen listeyi bir kez daha süzer.
+- Gelen ortam `bootstrapEnv` adıyla diğer değerler gibi DPAPI ile saklanır; panelde yalnız "N ayar ana sunucudan alındı · zaman" görünür, değerler hiçbir yerde gösterilmez, günlüğe yalnız sayı ve durum kodu yazılır.
+- Öncelik: ana sunucudan gelen < ek `KEY=değer` satırları < Gelişmiş alanlar (Supabase, JWT, LiveKit ...) < uygulamanın kendi `DESCALL_NODE_*` değişkenleri. Elle yazılan her zaman kazanır.
+- Ana sunucu bu ucu yalnız düğüm anahtarının **kurulum penceresi** açıkken cevaplar: anahtar oluşturulduktan sonra 30 dakika, ya da Admin > Sunucu Ağı > Düğüm anahtarları > **Kurulum penceresini aç** ile 30 dakika daha (sahip + iki adımlı doğrulama, işlem kaydı). Ayrıca: yalnız ana sunucu cevaplar (PC 404 döner), PC'nin kendi tünelinden gelen istek reddedilir, hatalı denemeler kayıt ucuyla aynı IP sınırına sayılır (10 dakikada 20), cevap önbelleğe alınmaz (`no-store`) ve günlüğe yazılmaz. Her cevapta düğüm olayı, işlem kaydı (yalnız değişken adları) ve sahibin telefonuna "PC kurulumu: gizli ayarlar alındı" bildirimi oluşur.
+- **Ayarları sunucudan yenile** (Kurulum ekranı) aynı çağrıyı kayıtlı anahtarla tekrarlar ve düğümü yeni değerlerle yeniden başlatır; pencerenin açık olması gerekir.
+- Backend'e yeni bir `process.env.X` okuması eklenince `lib/nodeKeys/bootstrapEnv.selftest.cjs` düşer: adı SHARED (PC'ye gider) ya da LOCAL (gitmez) listesine ekle.
+
 ### Kalp atışı ve ayar eşitleme
 - Uygulama açılışta ve sonra 30 sn'de bir ana sunucuya `POST /api/node/register` gönderir (başlıkta `Authorization: Bearer dsk_node_...`). Cevaptaki `cfg` PC'nin ayarıdır; backend kapalıyken (duraklatma, plan, oyun) bile ayarlar böylece gelir. 401/403 = anahtar iptal edilmiş: düğüm kullanıcıları aktarıp durur ve yeni anahtar ister.
 - Panelden değişen ayar yerel backend üzerinden (`PUT /api/node/local/cfg`) kümeye yazılır; backend o an kapalıysa "yalnız bu PC'de, sunucu açılınca eşitlenecek" yazar ve açılınca gönderilir.
@@ -37,7 +45,7 @@ Uygulama kendi backend'iyle yalnız 127.0.0.1 üstünden ve her açılışta ras
 
 Bu uçlar yoksa (eski backend) uygulama yine çalışır: boşaltma yerine süreci durdurur (istemciler 2-5 sn içinde Render'a bağlanır) ve ayarları kayıt cevabından alır.
 
-Backend'e giden ortam: `NODE_ENV=production`, `PORT=3210`, `DESCALL_NODE_ID=pc-xxxxxx`, `DESCALL_NODE_ROLE=secondary`, `DESCALL_NODE_PUBLIC_URL`, `DESCALL_NODE_PRIMARY_URL` (backend eski adı `DESCALL_PRIMARY_URL`'i de kabul eder), `DESCALL_NODE_KEY`, `DESCALL_NODE_MEMORY_MB`, `DESCALL_NODE_CORES`, `DESCALL_NODE_CONTROL_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `REDIS_URL` (varsa) ve "Ek ortam değişkenleri" satırları. Bilgisayarın kendi ortamından yalnız Windows'un temel değişkenleri geçer.
+Backend'e giden ortam: ana sunucudan alınan ortam (Supabase, JWT, push anahtarları ...), "Ek ortam değişkenleri" satırları, Gelişmiş alanlar (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, varsa `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`), `REDIS_URL` (varsa, formdaki dış adres) ve uygulamanın kendi değerleri: `NODE_ENV=production`, `PORT=3210`, `DESCALL_NODE_ID=pc-xxxxxx`, `DESCALL_NODE_ROLE=secondary`, `DESCALL_NODE_PUBLIC_URL`, `DESCALL_NODE_PRIMARY_URL` (backend eski adı `DESCALL_PRIMARY_URL`'i de kabul eder), `DESCALL_NODE_KEY`, `DESCALL_NODE_MEMORY_MB`, `DESCALL_NODE_CORES`, `DESCALL_NODE_CONTROL_TOKEN`. LiveKit isteğe bağlıdır: Render'da yoksa PC'de de olmaz, backend onsuz çalışır. Bilgisayarın kendi ortamından yalnız Windows'un temel değişkenleri geçer.
 
 ## Kurulum
 
@@ -58,21 +66,20 @@ Backend'e giden ortam: `NODE_ENV=production`, `PORT=3210`, `DESCALL_NODE_ID=pc-x
 **B. Düğüm anahtarı**
 1. Descall'da **Admin paneli > Sunucu Ağı > Anahtar oluştur** (adım doğrulaması ister), ad örneğin `ev-pc`.
 2. Gösterilen `dsk_node_...` anahtarını kopyala; bir daha gösterilmez (sunucuda yalnız SHA-256'sı saklanır).
+3. Anahtarın kurulum penceresi 30 dakika açıktır; formu bu sürede kaydet. Geçtiyse anahtarın yanındaki **Kurulum penceresini aç**'a bas.
 
-Sonra formu doldur (her alanın altında nereden alınacağı yazar):
+Sonra formu doldur (her alanın altında nereden alınacağı yazar). Form kısadır:
 
 | Alan | Nereden |
 | --- | --- |
-| Render ana sunucu adresi | Render > servis > adres, örn. `https://des-call.onrender.com` |
-| Bu PC'nin genel adresi | boş bırak (`https://pc.descall.com`), başka bir alan adı kullandıysan onu yaz |
+| Render ana sunucu adresi | hazır gelir: `https://des-call.onrender.com` |
 | Düğüm anahtarı | B adımındaki `dsk_node_...` |
 | Cloudflare tünel jetonu | A adımındaki `eyJ...` jeton |
-| Supabase URL | Render > Environment > `SUPABASE_URL` |
-| Supabase service role anahtarı | Render > Environment > `SUPABASE_SERVICE_ROLE_KEY` (Supabase > Project Settings > API > service_role) |
-| JWT gizlisi | Render > Environment > `JWT_SECRET` (birebir aynı olmalı, yoksa oturumlar PC'de geçersiz olur) |
-| Key Value (Redis) dış adresi | Render > Key Value > **Connect > External** (`rediss://...`). Render'da "Access Control"a evinin IP'sini eklemen gerekir. Boş bırakırsan PC tek başına çalışır ve kümeye katılmaz; hibrit için gerekli. |
-| LiveKit URL / API anahtarı / API gizlisi | Render > Environment > `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` |
-| Ek ortam değişkenleri | Render > Environment > **Export** ile alınan `KEY=değer` satırları (ör. `TOTP_ENC_KEY`, `MEDIA_URL_SECRET`, web push anahtarları). `PORT`, `NODE_ENV`, `NODE_OPTIONS` ve `DESCALL_NODE_*` uygulamaya aittir, yazılsa da kullanılmaz. |
+| Key Value (Redis) dış adresi | Render > Key Value > **Connect > External** (`rediss://...`). Render'da "Access Control"a evinin IP'sini eklemen gerekir. Ana sunucu yalnız iç adresi bildiği için elle yazılır. Boş bırakırsan PC tek başına çalışır ve kümeye katılmaz; hibrit için gerekli. |
+
+Supabase URL, service role anahtarı, `JWT_SECRET` ve Render'daki diğer gizliler **Kaydet ve başlat**'ta ana sunucudan otomatik alınır (yukarıdaki "Otomatik kurulum"). **Gelişmiş (elle gir)** bölümü kapalı gelir; içinde bu PC'nin genel adresi (boşsa `https://pc.descall.com`), Supabase / JWT / LiveKit alanları ve ek `KEY=değer` satırları vardır. Buraya yazılan her değer ana sunucudan geleni geçersiz kılar; `PORT`, `NODE_ENV`, `NODE_OPTIONS` ve `DESCALL_NODE_*` uygulamaya aittir, yazılsa da kullanılmaz. "Sunucudan alma, yalnız elle girdiklerimi kullan" açıkken ana sunucuya hiç sorulmaz.
+
+Ana sunucu reddederse form nedenini yazar ve yazdıkların kalır: kurulum penceresi kapalı ("Admin > Sunucu Ağı'ndan kurulum penceresini aç"), anahtar tanınmadı (yanlış ya da iptal edilmiş), ana sunucuya ulaşılamadı, adres ana sunucu değil, çok fazla hatalı deneme (10 dakika bekle).
 
 **Kaydet ve başlat**'a bas. Değerler bu bilgisayarda Windows DPAPI ile (yalnız senin Windows hesabın açabilir) ve yalnız senin erişebildiğin `%LOCALAPPDATA%\DescallNode\secure\` klasöründe şifreli saklanır. Gizli alanlar bir daha gösterilmez; formda yalnız "ayarlı" görünür ve **Değiştir** ile yenisini yazabilirsin. Kaydettikten sonra simge maviye (başlatılıyor), birkaç saniye içinde mora (aktif) döner; Admin > Sunucu Ağı'nda PC düğümü belirir.
 
@@ -101,7 +108,8 @@ Sonra formu doldur (her alanın altında nereden alınacağı yazar):
 ## Güvenlik notları
 
 - **BitLocker'ı aç** (Ayarlar > Gizlilik ve güvenlik > Cihaz şifreleme / BitLocker). DPAPI kayıtları Windows hesabına bağlıdır; disk şifreli değilse ve bilgisayar çalınırsa hesap parolası kırılarak açılabilir. Windows hesabında güçlü parola veya Windows Hello kullan.
-- **PC kaybolur veya çalınırsa**: hemen Admin > Sunucu Ağı'nda düğüm anahtarını iptal et (PC artık kayıt olamaz ve trafik almaz), Cloudflare'de tüneli sil, sonra sırayla Supabase service role anahtarını, `JWT_SECRET`'i (bütün oturumlar düşer), LiveKit API gizlisini ve Key Value parolasını yenile ve Render'a da yaz.
+- **PC kaybolur veya çalınırsa**: hemen Admin > Sunucu Ağı'nda düğüm anahtarını iptal et (PC artık kayıt olamaz, trafik almaz ve ayar alamaz), Cloudflare'de tüneli sil, sonra sırayla Supabase service role anahtarını, `JWT_SECRET`'i (bütün oturumlar düşer), `TOTP_ENC_KEY`'i, web push / APNs anahtarlarını, varsa LiveKit API gizlisini ve Key Value parolasını yenile ve Render'a da yaz. PC otomatik kurulumda Render'ın paylaşılan bütün gizlilerini almıştı.
+- Otomatik kurulum yalnız kurulum penceresi açıkken çalışır ve her seferinde telefonuna bildirim gelir; beklemediğin bir "PC kurulumu: gizli ayarlar alındı" bildiriminde anahtarı hemen iptal et. İşin bitince pencereyi **Pencereyi kapat** ile kapatabilirsin.
 - Gizliler yalnız backend sürecinin ve cloudflared'in ortamına gider: dosyada düz metin, günlükte, panelde veya ağda başka bir yerde bulunmaz. Panel bir değeri yalnız "ayarlı" olarak görür.
 - Dışarıdan yalnız Cloudflare tüneli üzerinden (`pc.descall.com`, TLS) ulaşılır; modeminde port açman gerekmez. Backend `DESCALL_NODE_ROLE=secondary` iken yalnız 127.0.0.1:3210'u dinler; Windows Güvenlik Duvarı yine de node.exe için izin sorarsa **izin verme** (tünel yerel bağlantı kullanır, gerekmez).
 - Yerel kontrol uçları yalnız 127.0.0.1'den ve her açılışta değişen rastgele jetonla çalışır.
