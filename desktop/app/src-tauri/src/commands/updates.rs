@@ -360,11 +360,30 @@ pub fn schedule_background_checks<R: Runtime>(app: &AppHandle<R>) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(Duration::from_secs(45)).await;
+        // By now the installer that relaunched us has finished.
+        let name = app.package_info().name.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || prune_old_installers(&std::env::temp_dir(), &name)).await;
         loop {
             let _ = check(app.clone(), "interval").await;
             tokio::time::sleep(Duration::from_millis(deferral::UPDATE_CHECK_INTERVAL_MS)).await;
         }
     });
+}
+
+/// Deletes the installers earlier updates left in %TEMP% (deferral::is_stale_updater_dir).
+fn prune_old_installers(temp: &std::path::Path, app_name: &str) -> usize {
+    let Ok(entries) = std::fs::read_dir(temp) else { return 0 };
+    let mut removed = 0;
+    for e in entries.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if e.file_type().is_ok_and(|t| t.is_dir()) && deferral::is_stale_updater_dir(&name, app_name) && std::fs::remove_dir_all(e.path()).is_ok() {
+            removed += 1;
+        }
+    }
+    if removed > 0 {
+        log::info!("[updater] removed {removed} old installer folder(s) from %TEMP%");
+    }
+    removed
 }
 
 /// requestExplicitInstall: tray "Update and quit", the page's Restart button.
@@ -438,6 +457,19 @@ mod tests {
         }
         let src = include_str!("updates.rs");
         assert!(src.contains("install(app, \"quit\", true)"), "install_on_quit passes the quit reason");
+    }
+
+    #[test]
+    fn old_installers_are_pruned() {
+        let t = std::env::temp_dir().join(format!("descall-prune-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&t);
+        std::fs::create_dir_all(t.join("Descall-4.1.1-updater-Ab12")).unwrap();
+        std::fs::write(t.join("Descall-4.1.1-updater-Ab12").join("Descall-4.1.1-installer.exe"), b"MZ").unwrap();
+        std::fs::create_dir_all(t.join("Descall-Setup")).unwrap();
+        std::fs::write(t.join("Descall-4.1.1-updater-file"), b"x").unwrap();
+        assert_eq!(prune_old_installers(&t, "Descall"), 1);
+        assert!(t.join("Descall-Setup").is_dir() && t.join("Descall-4.1.1-updater-file").is_file());
+        let _ = std::fs::remove_dir_all(&t);
     }
 
     /// A stalled endpoint must fail the check (and free check_in_flight), not hang it.

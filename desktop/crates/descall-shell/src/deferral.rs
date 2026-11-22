@@ -166,6 +166,16 @@ pub fn decide_with(state: &State, now: u64, explicit_confirm: bool, idle_ms: u64
     wait("foreground-active")
 }
 
+/// Folders tauri-plugin-updater leaves in %TEMP% (`<app>-<version>-updater-<random>`, holding
+/// the downloaded installer): Update::install ends the process with std::process::exit, so its
+/// TempPath never drops and every update left one installer behind (electron main.cjs pruned
+/// old setups the same way). Names only; the caller deletes them at the next start.
+pub fn is_stale_updater_dir(name: &str, app_name: &str) -> bool {
+    let Some(rest) = name.strip_prefix(app_name).and_then(|r| r.strip_prefix('-')) else { return false };
+    let Some((version, random)) = rest.split_once("-updater-") else { return false };
+    !random.is_empty() && !version.is_empty() && version.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '+')
+}
+
 #[cfg(test)]
 mod tests {
     //! updateDeferral.selftest.mjs, case for case.
@@ -344,5 +354,16 @@ mod tests {
         assert_eq!(decide(&s, 1_000_000_000, true).action, Action::Install);
         s = apply(&s, Event::UserBusy(false), 1);
         assert!(!s.user_busy);
+    }
+
+    #[test]
+    fn stale_updater_dirs_are_only_ours() {
+        assert!(is_stale_updater_dir("Descall-4.2.0-updater-AbC123", "Descall"));
+        assert!(is_stale_updater_dir("Descall-4.2.0-beta.1-updater-x", "Descall"));
+        assert!(!is_stale_updater_dir("Descall-4.2.0-updater-", "Descall"));
+        assert!(!is_stale_updater_dir("Descall-Setup", "Descall"));
+        assert!(!is_stale_updater_dir("Other-4.2.0-updater-x", "Descall"));
+        assert!(!is_stale_updater_dir("Descall-../x-updater-y", "Descall"));
+        assert!(!is_stale_updater_dir("DescallX-4.2.0-updater-y", "Descall"));
     }
 }
