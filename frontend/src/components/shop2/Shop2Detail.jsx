@@ -72,7 +72,10 @@ export function ItemDetail({ slot, onClose }) {
   if (!item) return null;
   const name = s2.itemName(item);
   const lab = s2.itemLabels(item);
-  const price = slot.price ?? item.price_descoin;
+  // The sheet holds a snapshot of the card: read today's price from the live storefront, so a
+  // reload after "price changed" shows (and sends) the new price instead of failing again.
+  const live = (s2.data.storefront?.slots || []).find((x) => String(x.item.id) === String(item.id));
+  const price = live?.price ?? slot.price ?? item.price_descoin;
   const owned = Boolean(slot.owned) || s2.owned.has(item.id);
   const equippedId = s2.equippedIdFor(item.category);
   const equippedItem = equippedId != null ? s2.inventory.find((r) => String(r.itemId) === String(equippedId))?.item : null;
@@ -98,6 +101,9 @@ export function ItemDetail({ slot, onClose }) {
       s2.openCheckout({ kind: "item", item, price, result: res, phase: "done" });
     } catch (err) {
       s2.toast(err?.message || t("shop2.errors.buy"), { tone: "error" });
+      // price_changed / sold_out (409) or a stale balance (402): re-read the storefront and the
+      // balance, or every retry failed the same way until the shop was reopened.
+      if (err?.status === 409 || err?.status === 402) s2.actions.reload?.();
     }
   };
   return (

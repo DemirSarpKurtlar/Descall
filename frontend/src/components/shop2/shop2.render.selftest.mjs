@@ -208,6 +208,9 @@ for (const layout of ["desktop", "phone"]) {
   assert.match(d2, /<button[^>]*disabled=""[^>]*aria-busy="true"/, "equip button disabled while busy");
   const d3 = m.render("detail", c, { slot: storefront.slots[3] });
   has(d3, "shop2.detail.balanceAfter", "unowned item: balance-after row");
+  // A stale sheet snapshot (old price 999) reads today's storefront price (620): 5120 -> 4500.
+  const d4 = m.render("detail", c, { slot: { ...storefront.slots[3], price: 999 } });
+  assert.ok(d4.includes("4.500") && !d4.includes("4.121"), "item sheet uses the live storefront price");
   // Set panel: a complete set offers no 0 D purchase; a set you cannot afford says how much is missing.
   const full = { ...set, pieces: set.pieces.map((p) => ({ ...p, owned: true })), yourPrice: 0 };
   const q1 = m.render("setq", { ...c, data: { ...c.data, setDetails: { "gece-limani": full } } }, { setKey: "gece-limani" });
