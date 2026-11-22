@@ -146,6 +146,14 @@ async function overlays(browser) {
   await goCat(page, 'productivity');
   let calls = await press('quick_file_drop', 'on');
   check(calls.some(([ch]) => ch === 'premium:quick_file_drop:open'), 'quick_file_drop: show -> premium:quick_file_drop:open');
+  // Files the shell could not hand over (blob store full) are counted: the drop zone says it
+  // failed instead of "0 sent" (before: the whole drop vanished).
+  let n0 = (await premiumCalls(page)).length;
+  await page.evaluate(() => window.__emit('premium:quick_file_drop:files', { target: 'dm:u-x', files: [], skipped: 2 }));
+  await sleep(600);
+  calls = (await premiumCalls(page)).slice(n0);
+  const st = calls.filter(([ch, a]) => ch === 'premium:quick_file_drop:state' && a[0] && a[0].dropStatus).map(([, a]) => a[0].dropStatus);
+  check(st.length && /gönderilemedi|başarısız/i.test(st[st.length - 1]), `quick_file_drop: skipped files -> failed status (${st.join(' | ')})`);
   await goCat(page, 'desktop_tools');
   calls = await press('desktop_sidebar', 'open');
   check(calls.some(([ch]) => ch === 'premium:sidebar:toggle'), 'desktop_sidebar: open -> premium:sidebar:toggle');

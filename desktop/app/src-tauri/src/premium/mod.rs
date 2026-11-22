@@ -410,6 +410,11 @@ impl Host {
         json!({ "__blob": id, "size": size })
     }
 
+    /// Is the `{ __blob }` placeholder still held (not evicted by the 300 MB cap)?
+    pub fn has_blob(&self, v: &Value) -> bool {
+        v.get("__blob").and_then(Value::as_u64).is_some_and(|id| lock(&self.blobs).contains_key(&id))
+    }
+
     pub fn take_blob(&self, v: &Value) -> Option<Vec<u8>> {
         let id = v.get("__blob")?.as_u64()?;
         lock(&self.blobs).remove(&id).map(|b| b.bytes)

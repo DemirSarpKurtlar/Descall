@@ -322,7 +322,9 @@ export default function PremiumGamingHost({
           ok += 1;
         } catch { /* reported below */ }
       }
-      const status = ok === (m?.files || []).length ? t("premiumGaming.quickDrop.sent", { count: ok }) : t("premiumGaming.quickDrop.failed");
+      // skipped: files the desktop shell could not hand over (Tauri: blob store full).
+      const skipped = Math.max(0, Number(m?.skipped) || 0);
+      const status = ok === (m?.files || []).length && !skipped ? t("premiumGaming.quickDrop.sent", { count: ok }) : t("premiumGaming.quickDrop.failed");
       pinvoke("premium:quick_file_drop:state", { targets: dropTargets, labels: dropLabels, dropStatus: status, brandRgb: brandRgb() });
     });
   }, [dropAllowed, socket, dropTargets, dropLabels, t]);
