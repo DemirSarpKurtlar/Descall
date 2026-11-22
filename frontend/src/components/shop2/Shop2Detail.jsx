@@ -67,6 +67,7 @@ export function ItemDetail({ slot, onClose }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const [mode, setMode] = useState("desktop");
+  const [buying, setBuying] = useState(false);
   const item = slot?.item;
   const user = useMemo(() => composeTryOnUser(s2.me, item ? { [item.category]: item } : {}), [s2.me, item]);
   if (!item) return null;
@@ -95,7 +96,11 @@ export function ItemDetail({ slot, onClose }) {
     const ok = await s2.onEquip?.(item, isOn);
     if (ok === false) s2.toast(t("shop2.errors.equip"), { tone: "error" });
   };
+  // busy while the purchase runs: the hold button could be held again during a slow request
+  // and sent a second purchase.
   const buy = async (holdToken) => {
+    if (buying) return;
+    setBuying(true);
     try {
       const res = await s2.actions.buyItem(item, { holdToken, price });
       s2.openCheckout({ kind: "item", item, price, result: res, phase: "done" });
@@ -104,6 +109,8 @@ export function ItemDetail({ slot, onClose }) {
       // price_changed / sold_out (409) or a stale balance (402): re-read the storefront and the
       // balance, or every retry failed the same way until the shop was reopened.
       if (err?.status === 409 || err?.status === 402) s2.actions.reload?.();
+    } finally {
+      setBuying(false);
     }
   };
   return (
@@ -194,7 +201,7 @@ export function ItemDetail({ slot, onClose }) {
             {isOn ? t("shop2.common.unequip") : t("shop2.common.equip")}
           </button>
         ) : affordable ? (
-          <HoldButton onConfirm={buy} className="is-wide">
+          <HoldButton onConfirm={buy} busy={buying} className="is-wide">
             {t("shop2.detail.buyHold", { n: formatNumber(price, locale) })}
           </HoldButton>
         ) : (
