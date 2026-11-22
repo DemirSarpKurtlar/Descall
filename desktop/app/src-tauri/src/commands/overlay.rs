@@ -14,7 +14,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use serde_json::{json, Map, Value};
-use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, PhysicalPosition, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 use crate::state::{self, to_main};
 
@@ -34,8 +34,11 @@ struct Live {
     /// Label of the current overlay window and whether its page has loaded.
     window: Option<(String, bool)>,
     next: u64,
-    /// Logical position of the last overlay (it can be dragged) and when it closed.
-    last_pos: Option<(f64, f64, Instant)>,
+    /// Physical position of the last overlay (it can be dragged) and when it closed. Physical
+    /// px like the capsules (notif::Anchor): a logical spot was read back with the primary
+    /// monitor's scale, so a card dragged to a second monitor with another DPI came back
+    /// somewhere else, often on the other screen.
+    last_pos: Option<(i32, i32, Instant)>,
 }
 
 pub struct Overlay {
@@ -81,17 +84,31 @@ pub fn is_visible<R: Runtime>(app: &AppHandle<R>) -> bool {
     current(app).is_some()
 }
 
-fn default_position<R: Runtime>(app: &AppHandle<R>) -> (f64, f64) {
+/// Top-right corner of the primary work area, in physical px. The window carries a
+/// transparent shadow margin; the card itself sits 16 px in.
+fn default_position<R: Runtime>(app: &AppHandle<R>) -> (i32, i32) {
     match app.primary_monitor().ok().flatten() {
         Some(m) => {
-            let s = m.scale_factor();
             let wa = m.work_area();
-            let (wx, wy, ww) = (wa.position.x as f64 / s, wa.position.y as f64 / s, wa.size.width as f64 / s);
-            // The window carries a transparent shadow margin; keep the card itself 16 px in.
-            ((wx + ww - WIDTH - MARGIN + PAD).max(wx), (wy + MARGIN - PAD).max(wy))
+            descall_shell::notif::corner_px((wa.position.x, wa.position.y, wa.size.width, wa.size.height), m.scale_factor(), WIDTH, MARGIN - PAD, MARGIN - PAD)
         }
-        None => (100.0, 100.0),
+        None => (100, 100),
     }
+}
+
+/// A remembered spot is used only while a monitor still shows the card (one was unplugged or
+/// the layout changed within the 60 s): otherwise the card would open off screen.
+fn on_a_monitor<R: Runtime>(app: &AppHandle<R>, (x, y): (i32, i32)) -> bool {
+    let probe = (x as f64 + PAD + 8.0, y as f64 + PAD + 8.0);
+    app.monitor_from_point(probe.0, probe.1).ok().flatten().is_some()
+}
+
+/// The builder takes logical px, which Windows reads with the scale it picks at creation (on
+/// a mixed-DPI setup not the target monitor's). The window is placed in physical px right
+/// after it is built; this logical guess only keeps the first frame close.
+fn logical_guess<R: Runtime>(app: &AppHandle<R>, (x, y): (i32, i32)) -> (f64, f64) {
+    let s = app.primary_monitor().ok().flatten().map(|m| m.scale_factor()).filter(|s| *s > 0.0).unwrap_or(1.0);
+    (x as f64 / s, y as f64 / s)
 }
 
 /// Create the overlay window when there is none (or one is being built). Born visible: see
@@ -113,7 +130,8 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) {
         let kept = live.last_pos.filter(|p| p.2.elapsed() < KEEP_POSITION).map(|p| (p.0, p.1));
         (label, kept)
     };
-    let (x, y) = kept.unwrap_or_else(|| default_position(app));
+    let target_px = kept.filter(|p| on_a_monitor(app, *p)).unwrap_or_else(|| default_position(app));
+    let (x, y) = logical_guess(app, target_px);
     let locale = state::locale(app);
     let app_build = app.clone();
     let app_load = app.clone();
@@ -167,7 +185,14 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) {
                 drop(live);
                 let _ = w.destroy();
             }
-            Ok(_) => {}
+            Ok(w) => {
+                drop(live);
+                // Physical px of the target monitor (see logical_guess). The page is still
+                // transparent and the card never activates, so the move is not seen.
+                if w.outer_position().ok().map(|p| (p.x, p.y)) != Some(target_px) {
+                    let _ = w.set_position(PhysicalPosition::new(target_px.0, target_px.1));
+                }
+            }
             Err(e) => {
                 log::warn!("[overlay] window failed: {e}");
                 if still {
@@ -227,10 +252,7 @@ pub fn hide<R: Runtime>(app: &AppHandle<R>) {
         app.state::<Overlay>().live.lock().unwrap().window = None;
         return;
     };
-    let pos = w.outer_position().ok().map(|p| {
-        let s = w.scale_factor().unwrap_or(1.0);
-        (p.x as f64 / s, p.y as f64 / s, Instant::now())
-    });
+    let pos = w.outer_position().ok().map(|p| (p.x, p.y, Instant::now()));
     {
         let o = app.state::<Overlay>();
         let mut live = o.live.lock().unwrap();

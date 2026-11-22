@@ -204,6 +204,15 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   const ov = stripRust(readFileSync(join(srcRoot, "commands", "overlay.rs"), "utf8"));
   const chain = ov.slice(ov.indexOf("WebviewWindowBuilder::new("), ov.indexOf(".build()", ov.indexOf("WebviewWindowBuilder::new(")));
   assert.match(chain, /\.focusable\(false\)/, "show() would activate the card: keyboard / game focus lost when a call starts");
+  // Round 2: placed and remembered in physical px like the capsules (T6 flag). A logical spot
+  // was read back with the primary monitor's scale: on a mixed-DPI setup the dragged card
+  // came back on the wrong screen.
+  assert.match(ov, /last_pos:\s*Option<\(i32,\s*i32,\s*Instant\)>/, "remembered position is physical px");
+  assert.doesNotMatch(ov, /p\.x as f64 \/ s/, "no logical conversion of the dragged spot");
+  const built = ov.slice(ov.indexOf(".build();"), ov.indexOf("fn from_main"));
+  assert.match(built, /set_position\(PhysicalPosition::new\(target_px\.0, target_px\.1\)\)/, "placed in physical px once built");
+  assert.match(ov, /notif::corner_px\(/, "default corner computed in physical px (descall_shell::notif::corner_px, Rust test)");
+  assert.match(ov, /on_a_monitor\(/, "a spot on a monitor that went away falls back to the default corner");
 }
 
 // ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)
