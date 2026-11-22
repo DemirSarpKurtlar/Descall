@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 // The module imports a CSS file; test the pure helper by evaluating its source.
 const src = readFileSync(new URL("./appVisibility.js", import.meta.url), "utf8");
 const body = src.replace(/^import .*$/gm, "").replace(/export /g, "");
-const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { applyAppVisibility, installAppVisibility, installIdlePause, installPageHiddenPause, idleDelayFor, readPowerState, clearStalePause, BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS, IDLE_MS, IDLE_MS_SAVER };`)();
+const mod = new Function(`const getVoiceBusy = () => false; const subscribeVoiceBusy = () => () => {};\n${body}; return { pageHiddenFromUser, applyAppVisibility, installAppVisibility, installIdlePause, installPageHiddenPause, idleDelayFor, readPowerState, clearStalePause, BACKGROUNDED_CLASS, IDLE_CLASS, HIDDEN_CLASS, IDLE_MS, IDLE_MS_SAVER };`)();
 const cls = new Set();
 const root = { classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) } };
 assert.equal(mod.applyAppVisibility(root, { backgrounded: true }), true);
@@ -215,4 +215,22 @@ assert.match(act, /const SCAN_INTERVAL_MS\s+= 30_000;/);
 assert.match(act, /if \(Date\.now\(\) - lastScanAtRef\.current >= SCAN_INTERVAL_MS\) scanAndEmitRef\.current\(\);/);
 assert.match(act, /!settings\.show_game_activity && !settings\.show_app_activity && !settings\.show_browser/);
 assert.match(read("../styles/visual-polish-pack.css"), /animation: unread-badge-pulse 2s ease-in-out 2;/);
+// Desktop shells keep the page "visible" in the tray (backgroundThrottling: false, WebView2):
+// a DM in the open chat while Descall was in the tray was marked read at once and never
+// counted (no tray dot, no taskbar badge). The shell's app:visibility decides there.
+{
+  const doc = (state, classes = []) => ({ visibilityState: state, documentElement: { classList: { contains: (c) => classes.includes(c) } } });
+  assert.equal(mod.pageHiddenFromUser(doc("hidden")), true, "web tab / iOS background");
+  assert.equal(mod.pageHiddenFromUser(doc("visible")), false, "on screen");
+  assert.equal(mod.pageHiddenFromUser(doc("visible", ["app-backgrounded"])), true, "desktop: minimized / in the tray");
+  assert.equal(mod.pageHiddenFromUser(doc("visible", ["app-idle", "app-blurred"])), false, "idle or unfocused is still on screen");
+  assert.equal(mod.pageHiddenFromUser(undefined), false);
+  const app = read("../App.jsx");
+  const dmMsg = app.slice(app.indexOf('socket.on("dm:message", (message) =>'), app.indexOf('socket.on("dm:message", (message) =>') + 6000);
+  assert.match(dmMsg, /\} else if \(pageHiddenFromUser\(\)\) \{\s*\/\/ Open chat but the window is minimised \/ in the tray/, "open chat in the tray: unread, read receipt waits");
+  assert.doesNotMatch(dmMsg.slice(0, dmMsg.indexOf("Open chat, visible but unfocused")), /document\.visibilityState === "hidden"/);
+  const flush = app.slice(app.indexOf("const pendingDmReadRef = useRef(null);"), app.indexOf("const activeGroupRef = useRef(null);"));
+  assert.match(flush, /if \(pageHiddenFromUser\(\)\) return;/, "the read receipt waits until Descall is back on screen");
+  assert.match(flush, /\["focus", "pointerdown", "keydown"\]/, "and goes out on focus or the first input");
+}
 console.log("appVisibility.selftest ok");

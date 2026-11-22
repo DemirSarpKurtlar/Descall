@@ -14,6 +14,8 @@
  *     side reads (title, body, tag dm-<id>, data.type / conversationId / fromId) and the tray
  *     state counts it (unreadMessages, the tray dot and the taskbar badge read this);
  *   - the same DM with Descall focused and that chat open shows no notification;
+ *   - that chat open with Descall hidden to the tray: the DM counts as unread and is marked
+ *     read only once Descall is back on screen (WebView2 keeps the page "visible");
  *   - notification:click with only the routing ids (what a toast clicked after a cold start
  *     sends, premium/features/quick_reply.rs) opens that DM;
  *   - the Electron envelope { title, body, tag, data } for a group opens the group;
@@ -251,6 +253,28 @@ async function main() {
     const after2 = (await calls('notification_show')).length;
     check(after2 === before2, `no notification for the open chat while focused (${after2 - before2})`);
     await page.evaluate(() => { window.__focused = false; });
+
+    // 4b. The same chat open but Descall hidden to the tray (app:visibility backgrounded; the
+    //     page stays "visible" in WebView2): the DM counts as unread (tray dot, taskbar badge),
+    //     a capsule shows, and the read receipt waits until Descall is back on screen.
+    await shellEmit('app:visibility', { backgrounded: true });
+    await sleep(200);
+    const mr = b.received.length;
+    const n4 = (await calls('notification_show')).length;
+    b.emit('dm:message', dm(2, 'tepside misin'));
+    await waitFor('tray capsule', (n) => window.__tauriCalls.filter(([c]) => c === 'notification_show').length > n, n4, 5000).catch((e) => problems.push(e.message));
+    await sleep(800);
+    const tray4 = await lastTray();
+    check(tray4 && tray4.unreadMessages === 1, `open chat in the tray: counted as unread (${tray4 && tray4.unreadMessages})`);
+    check(!b.received.slice(mr).some(([ev]) => ev === 'dm:mark_read'), 'open chat in the tray: not marked read while away');
+    await shellEmit('app:visibility', { backgrounded: false });
+    await page.mouse.click(640, 400);
+    const t4 = Date.now();
+    while (!b.received.slice(mr).some(([ev, a]) => ev === 'dm:mark_read' && a && a.withUserId === U(2)) && Date.now() - t4 < 5000) await sleep(150);
+    check(b.received.slice(mr).some(([ev, a]) => ev === 'dm:mark_read' && a && a.withUserId === U(2)), 'back on screen: the DM is marked read');
+    await sleep(500);
+    const tray5 = await lastTray();
+    check(tray5 && tray5.unreadMessages === 0, `back on screen: unread cleared (${tray5 && tray5.unreadMessages})`);
 
     // 5. The Electron envelope for a group click opens the group.
     await shellEmit('notification:click', { title: 'Hafta Sonu', body: 'arkadas2: selam', tag: `group-${GROUP}`, data: { type: 'group', groupId: GROUP, groupName: 'Hafta Sonu', from: 'arkadas2' } });

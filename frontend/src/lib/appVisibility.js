@@ -97,6 +97,20 @@ export function clearStalePause(root) {
   }
 }
 
+/**
+ * The page is out of the user's sight: hidden (web tab, iOS background) or, in the desktop
+ * shells, minimized / hidden to the tray. Electron and Tauri keep the renderer awake there
+ * (backgroundThrottling: false, WebView2 stays "visible"), so document.visibilityState never
+ * says hidden; the shell's app:visibility (html.app-backgrounded) does. A DM in the open
+ * chat while Descall sat in the tray was marked read at once and never counted as unread
+ * (no tray dot, no taskbar badge, the sender saw it as seen).
+ */
+export function pageHiddenFromUser(doc = typeof document !== "undefined" ? document : undefined) {
+  if (!doc) return false;
+  if (doc.visibilityState === "hidden") return true;
+  return Boolean(doc.documentElement?.classList?.contains(BACKGROUNDED_CLASS));
+}
+
 export function applyAppVisibility(root, { backgrounded } = {}) {
   if (!root?.classList) return false;
   root.classList.toggle(BACKGROUNDED_CLASS, Boolean(backgrounded));
