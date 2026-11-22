@@ -585,7 +585,8 @@ export const SHOP2_TR = {
     "undo": "Geri alınamadı.",
     "share": "Şu an paylaşılamadı.",
     "open": "Paket açılamadı.",
-    "thank": "Teşekkür gönderilemedi."
+    "thank": "Teşekkür gönderilemedi.",
+    "equip": "Kuşanma değiştirilemedi. Tekrar dene."
   },
   "look": {
     "newSet": "Yeni görünüm · set",

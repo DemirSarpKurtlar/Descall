@@ -585,7 +585,8 @@ export const SHOP2_ES = {
     "undo": "No se pudo deshacer.",
     "share": "Ahora no se puede compartir.",
     "open": "No se pudo abrir el paquete.",
-    "thank": "No se pudo enviar el agradecimiento."
+    "thank": "No se pudo enviar el agradecimiento.",
+    "equip": "No se pudo cambiar lo que llevas puesto. Inténtalo de nuevo."
   },
   "look": {
     "newSet": "Look nuevo · set",

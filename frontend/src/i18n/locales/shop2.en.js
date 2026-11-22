@@ -585,7 +585,8 @@ export const SHOP2_EN = {
     "undo": "Couldn't undo that.",
     "share": "Couldn't share it right now.",
     "open": "Couldn't open the package.",
-    "thank": "Couldn't send the thank-you."
+    "thank": "Couldn't send the thank-you.",
+    "equip": "Couldn't change what you're wearing. Try again."
   },
   "look": {
     "newSet": "New look · set",

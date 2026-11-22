@@ -585,7 +585,8 @@ export const SHOP2_DE = {
     "undo": "Das ließ sich nicht rückgängig machen.",
     "share": "Teilen geht gerade nicht.",
     "open": "Das Paket ließ sich nicht öffnen.",
-    "thank": "Der Dank konnte nicht gesendet werden."
+    "thank": "Der Dank konnte nicht gesendet werden.",
+    "equip": "Ausrüsten hat nicht geklappt. Versuch es noch einmal."
   },
   "look": {
     "newSet": "Neuer Look · Set",
