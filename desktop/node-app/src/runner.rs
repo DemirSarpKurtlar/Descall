@@ -45,6 +45,8 @@ pub enum Msg {
     Act(String),
     Cfg(Value),
     SetupChanged,
+    /// The setup fetched the primary's environment (`at`) and / or the owner's skip choice.
+    BootstrapInfo { at: Option<u64>, skip: bool },
     Wipe,
     Register(Outcome),
     Publish,
@@ -241,7 +243,7 @@ pub struct Core {
 }
 
 pub fn configured() -> bool {
-    secrets::missing(&store::is_set).is_empty()
+    secrets::missing(&store::get).is_empty()
 }
 
 impl Core {
@@ -486,8 +488,21 @@ impl Core {
                     }
                 }
             }
+            Msg::BootstrapInfo { at, skip } => {
+                if at.is_some() {
+                    self.settings.bootstrap_at = at;
+                }
+                if skip {
+                    self.settings.bootstrap_at = None;
+                }
+                self.settings.bootstrap_skip = skip;
+                self.settings.save();
+            }
             Msg::Wipe => {
                 store::wipe();
+                self.settings.bootstrap_at = None;
+                self.settings.bootstrap_skip = false;
+                self.settings.save();
                 logger::set_secrets(Vec::new());
                 log::warn!("[setup] every stored value was deleted by the owner");
                 self.feed(Event::Unconfigured);
@@ -801,6 +816,7 @@ impl Core {
             "setup": secrets::status_json(&store::get),
             "autostart": sys::autostart_enabled(),
             "configuredOnce": self.configured_once,
+            "bootstrap": { "at": self.settings.bootstrap_at, "skip": self.settings.bootstrap_skip },
         });
         if state != self.last_state {
             self.last_state = state.clone();

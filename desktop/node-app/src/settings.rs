@@ -22,6 +22,10 @@ pub struct Settings {
     pub autostart_decided: bool,
     pub admin_url: Option<String>,
     pub lang: Option<String>,
+    /// When the environment last came from the primary (POST /api/node/bootstrap), ms.
+    pub bootstrap_at: Option<u64>,
+    /// The owner chose "Sunucudan alma, yalnız elle girdiklerimi kullan".
+    pub bootstrap_skip: bool,
 }
 
 fn random_hex(n: usize) -> String {

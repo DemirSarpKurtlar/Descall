@@ -114,6 +114,7 @@ class FakeQuery {
 
   select(_cols, opts = {}) {
     if (this.mode === null) this.mode = "select";
+    if (typeof _cols === "string") this.cols = _cols;
     if (opts && opts.count) {
       this.wantCount = true;
       this.headOnly = Boolean(opts.head);
@@ -197,6 +198,17 @@ class FakeQuery {
   _missing() {
     return { data: null, error: { code: "PGRST205", message: `Could not find the table 'public.${this.name}' in the schema cache` } };
   }
+  /** opts.missingColumns[table]: columns of a migration that is not applied yet. */
+  _missingColumn() {
+    const cols = this.opts.missingColumns?.[this.name];
+    if (!cols?.length) return null;
+    const payloadKeys = this.payload && !Array.isArray(this.payload) && typeof this.payload === "object" ? Object.keys(this.payload) : [];
+    const written = payloadKeys.find((k) => cols.includes(k));
+    if (written) return { data: null, error: { code: "PGRST204", message: `Could not find the '${written}' column of '${this.name}' in the schema cache` } };
+    const read = String(this.cols || "").split(",").map((c) => c.trim()).find((c) => cols.includes(c));
+    if (read) return { data: null, error: { code: "42703", message: `column ${this.name}.${read} does not exist` } };
+    return null;
+  }
   update(obj) {
     this.mode = "update";
     this.payload = obj;
@@ -233,6 +245,8 @@ class FakeQuery {
       return { data: out, error: null };
     }
     if (this.opts.missingTables?.includes(this.name)) return this._missing();
+    const colErr = this._missingColumn();
+    if (colErr) return colErr;
     if (this.mode === "insert") {
       const keys = this.opts.uniqueKeys?.[this.name];
       if (keys && rows.some((r) => keys.every((k) => r[k] === this.payload[k]))) {
@@ -330,6 +344,7 @@ class FakeQuery {
  *   strictSingle: .single()/.maybeSingle() over >1 row errors like PostgREST.
  *   uniqueKeys: per-table unique columns; a conflicting insert returns 23505.
  *   missingTables: table names that answer like an unapplied migration (PGRST205).
+ *   missingColumns: { table: [columns] } read (42703) or written (PGRST204) before a migration.
  */
 function createFakeSupabase(seed = {}, opts = {}) {
   const tables = {};

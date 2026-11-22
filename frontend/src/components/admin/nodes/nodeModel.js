@@ -379,6 +379,10 @@ const EVENT_TONE = {
   drill: "acc",
   key_create: "acc",
   key_revoke: "bad",
+  key_bootstrap_open: "acc",
+  key_bootstrap_close: "mut",
+  node_bootstrap: "warn",
+  node_bootstrap_refused: "bad",
   alert_pcDown: "bad",
   alert_kvFull: "bad",
   alert_render90: "warn",
@@ -424,6 +428,7 @@ export function eventLine(e) {
   else if (kind === "game_mode" && d.ramMb) effect = { key: "anodes.ev.gameMoved", vars };
   else if (kind === "alert_pcDown" || kind === "node_down") effect = { key: "anodes.ev.toRender" };
   else if (kind === "key_revoke") effect = { key: "anodes.ev.keyOff" };
+  else if (kind === "node_bootstrap" || kind === "node_bootstrap_refused") effect = { key: "anodes.ev.ifNotYou" };
   else if (kind === "alert_kvFull") effect = { key: d.reason === "down" ? "anodes.ev.single" : "anodes.ev.kvRisk" };
   const what = known ? { key: `anodes.ev.k.${kind === "alert_kvFull" && d.reason === "down" ? "alert_kvDown" : kind}`, vars } : { key: "anodes.ev.k.other", vars: { kind } };
   return { what, effect, tone: EVENT_TONE[kind] || "mut" };
@@ -439,6 +444,15 @@ export const keyNameOk = (v) => {
   const s = String(v || "").trim();
   return s.length >= 1 && s.length <= KEY_NAME_MAX;
 };
+/**
+ * The PC setup window of a key (POST /api/node/bootstrap may answer while it is open):
+ * { open, minutes } with whole minutes left (at least 1 while open).
+ */
+export function keyWindow(k, now = Date.now()) {
+  const until = Date.parse(k?.bootstrapUntil || "");
+  if (k?.status !== "active" || !Number.isFinite(until) || until <= now) return { open: false, minutes: 0 };
+  return { open: true, minutes: Math.max(1, Math.ceil((until - now) / 60000)) };
+}
 export const maskKey = (k) => k?.masked || `${KEY_PREFIX}${k?.prefix || "????"}…${k?.last4 || "????"}`;
 
 const ERR = {
@@ -458,6 +472,8 @@ const ERR = {
   KEY_NOT_FOUND: "anodes.err.keyGone",
   KEY_REVOKED: "anodes.err.keyGone",
   STEP_UP_REQUIRED: "anodes.err.stepUp",
+  BOOTSTRAP_UNAVAILABLE: "anodes.err.bootstrapOff",
+  BAD_OPEN: "anodes.err.generic",
 };
 export const ERROR_CODES = Object.freeze(Object.keys(ERR));
 

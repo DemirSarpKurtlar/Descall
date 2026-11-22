@@ -101,6 +101,7 @@ fn main() {
             popover::node_cfg,
             popover::node_setup_save,
             popover::node_setup_wipe,
+            popover::node_setup_refresh,
             popover::node_autostart,
             popover::node_logs,
             popover::node_resize,
@@ -141,7 +142,8 @@ mod tests {
         assert_eq!(pop.matches("#[tauri::command]").count(), pop.matches("mine(&window)?").count());
     }
 
-    /// No secret value is ever formatted into a log line by the setup command.
+    /// No secret value is ever formatted into a log line by the setup commands: names,
+    /// counts and status codes only, and the primary's answer is never formatted at all.
     #[test]
     fn setup_logs_names_only() {
         let pop = include_str!("popover.rs");
@@ -149,5 +151,12 @@ mod tests {
         for line in save.lines().filter(|l| l.contains("log::")) {
             assert!(line.contains("names.join"), "{line}");
         }
+        let fetch = &pop[pop.find("async fn fetch_bootstrap").unwrap()..pop.find("fn incomplete_after").unwrap()];
+        let lines: Vec<&str> = fetch.lines().filter(|l| l.contains("log::")).collect();
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].contains("env.len()") && lines[1].contains("HTTP {status} ({code})"), "{lines:?}");
+        assert!(!fetch.contains("{reply") && !fetch.contains("{env") && !fetch.contains(":?}"), "the answer is never formatted");
+        let refresh = &pop[pop.find("fn node_setup_refresh").unwrap()..pop.find("fn node_autostart").unwrap()];
+        assert!(!refresh.contains("log::"), "refresh logs through fetch_bootstrap only");
     }
 }

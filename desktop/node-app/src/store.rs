@@ -93,14 +93,13 @@ pub fn all_values() -> Vec<String> {
         if let Some(x) = get(f.id) {
             if f.id == "extraEnv" {
                 v.extend(descall_node::secrets::parse_env_lines(&x).vars.into_iter().map(|(_, val)| val));
+            } else if f.id == "bootstrapEnv" {
+                // The primary's environment: every value except plain switches, numbers and URLs.
+                v.extend(descall_node::secrets::parse_env_json(&x).into_values().filter(|val| descall_node::bootstrap::is_secret_value(val)));
             } else if f.secret {
                 v.push(x);
             }
         }
     }
     v
-}
-
-pub fn is_set(id: &str) -> bool {
-    get(id).is_some()
 }

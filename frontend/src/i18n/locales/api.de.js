@@ -260,6 +260,8 @@ export const API_DE = {
   "File is too large (max {max} MB).": "Die Datei ist zu groß (max. {max} MB).",
   "Invalid node key": "Ungültiger Serverknoten-Schlüssel",
   "Not the primary node": "Das ist nicht der Hauptserverknoten",
+  "Use the primary's own address": "Verwende die eigene Adresse des Hauptservers",
+  "The setup window of this node key is closed": "Das Einrichtungsfenster dieses Knotenschlüssels ist geschlossen",
   "Invalid node id": "Ungültige Serverknoten-ID",
   "Invalid node url": "Ungültige Serverknoten-Adresse",
   "Invalid node state": "Ungültiger Serverknoten-Status",

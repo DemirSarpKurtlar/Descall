@@ -126,6 +126,7 @@ module.exports = {
     nodesKvDown: "No se puede acceder a la memoria compartida (Key Value); modo de un solo servidor.",
     nodesRender90: "La memoria de Render está al {pct} %; aumenta la parte del PC o revisa la carga.",
     nodesTest: "Notificación de prueba: las alertas de la red de servidores llegan a este dispositivo.",
+    nodesBootstrap: "Configuración del PC: se obtuvieron los ajustes secretos. Si no fuiste tú, revoca ya la clave del nodo.",
     // Web push + FCM (browser and Android notifications)
     voicePlain: "Mensaje de voz",
     attachmentPlain: "Envió un archivo adjunto",

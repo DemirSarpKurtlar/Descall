@@ -11,7 +11,8 @@
     state: function () { return T.core.invoke("node_state"); },
     act: function (action) { return T.core.invoke("node_act", { action: action }); },
     cfg: function (patch) { return T.core.invoke("node_cfg", { patch: patch }); },
-    setupSave: function (values) { return T.core.invoke("node_setup_save", { values: values }); },
+    setupSave: function (values, skip) { return T.core.invoke("node_setup_save", { values: values, skipBootstrap: Boolean(skip) }); },
+    setupRefresh: function () { return T.core.invoke("node_setup_refresh"); },
     setupWipe: function () { return T.core.invoke("node_setup_wipe"); },
     autostart: function (on) { return T.core.invoke("node_autostart", { on: on }); },
     logs: function () { return T.core.invoke("node_logs"); },
@@ -21,7 +22,8 @@
     state: function () { return Promise.resolve(mock && mock.state); },
     act: function () { return Promise.resolve(); },
     cfg: function () { return Promise.resolve(); },
-    setupSave: function () { return Promise.resolve({ ok: true }); },
+    setupSave: function () { return Promise.resolve({ ok: true, fetched: 41 }); },
+    setupRefresh: function () { return Promise.resolve((mock && mock.refresh) || { ok: true, fetched: 41 }); },
     setupWipe: function () { return Promise.resolve(); },
     autostart: function () { return Promise.resolve(); },
     logs: function () { return Promise.resolve((mock && mock.logs) || []); },
@@ -37,6 +39,9 @@
   var cfgTimer = null;
   var wipeArmed = 0;
   var autoSetupShown = false;
+  var advOpen = null; // the "Gelişmiş (elle gir)" section, kept open across re-renders
+  var setupBusy = false;
+  var setupErrKey = null; // the last save / refresh error stays until the next try
 
   function s(key, args) {
     var v = Object.prototype.hasOwnProperty.call(S, key) ? S[key] : key;
@@ -60,6 +65,7 @@
 
   function show(name) {
     viewName = name;
+    if (name !== "setup") setupErrKey = null;
     ["main", "setup", "logs"].forEach(function (n) { $("view-" + n).hidden = n !== name; });
     if (name === "setup") renderSetup();
     if (name === "logs") loadLogs();
@@ -187,30 +193,64 @@
   function renderSetup(errors) {
     if (!current) return;
     var st = current.setup || { fields: [], complete: false };
+    var boot = current.bootstrap || {};
     var first = !st.complete && !current.configuredOnce;
     text("setupTitle", s(first ? "setup.title" : "setup.titleEdit"));
     var missing = st.fields.filter(function (f) { return f.required && !f.set; }).length;
     text("setupMissing", missing ? s("setup.missing", { n: missing }) : current.view.host);
     text("setupIntro", s("setup.intro"));
-    var groups = [];
-    st.fields.forEach(function (f) { if (groups.indexOf(f.group) < 0) groups.push(f.group); });
+    var byGroup = function (g) { return st.fields.filter(function (f) { return f.group === g; }); };
+    var advErr = errors && byGroup("advanced").some(function (f) { return errors[f.id]; });
+    if (advOpen === null) advOpen = Boolean(boot.skip);
+    if (advErr) advOpen = true;
     var form = $("setupForm");
-    form.innerHTML = groups.map(function (g) {
-      return '<div class="group"><div class="xs mut">' + esc(s("setup.group." + g)) + "</div>" +
-        st.fields.filter(function (f) { return f.group === g; }).map(function (f) { return fieldHtml(f, errors && errors[f.id]); }).join("") + "</div>";
-    }).join("");
+    form.innerHTML =
+      '<div class="group"><div class="xs mut">' + esc(s("setup.group.connection")) + "</div>" +
+        byGroup("connection").map(function (f) { return fieldHtml(f, errors && errors[f.id]); }).join("") + "</div>" +
+      autoHtml(byGroup("auto")[0], boot) +
+      '<details class="adv"' + (advOpen ? " open" : "") + '><summary class="small">' + esc(s("setup.group.advanced")) + "</summary>" +
+        '<p class="xs mut">' + esc(s("setup.advancedHint")) + "</p>" +
+        '<label class="row sp small skip"><span>' + esc(s("setup.skipBootstrap")) + '</span><button type="button" class="sw' + (boot.skip ? "" : " off") + '" id="skipSw" role="switch" aria-checked="' + (boot.skip ? "true" : "false") + '"></button></label>' +
+        byGroup("advanced").map(function (f) { return fieldHtml(f, errors && errors[f.id]); }).join("") +
+      "</details>";
     delete form.dataset.dirty;
+    form.dataset.skip = boot.skip ? "1" : "";
     text("autostartLabel", s("setup.autostart"));
     $("autostartSw").classList.toggle("off", !current.autostart);
     $("autostartSw").setAttribute("aria-checked", current.autostart ? "true" : "false");
     text("setupWipe", wipeArmed > Date.now() ? s("setup.wipeConfirm").split(".")[0] + "?" : s("setup.wipe"));
     text("setupCancel", s("setup.cancel"));
-    text("setupSave", s(first ? "setup.save" : "setup.saveEdit"));
+    text("setupSave", setupBusy ? s("setup.saving") : s(first ? "setup.save" : "setup.saveEdit"));
+    $("setupSave").disabled = setupBusy;
     $("setupCancel").disabled = first && !st.complete;
     // A revoked key (or another error) says why the setup is open.
     var se = $("setupError");
-    se.hidden = !current.view.error;
-    se.textContent = current.view.error || "";
+    var msg = setupErrKey ? s(setupErrKey) : current.view.error || "";
+    se.hidden = !msg;
+    se.textContent = msg;
+  }
+
+  /* The environment from the primary: how many settings, when, and the refresh action. */
+  function autoHtml(f, boot) {
+    if (!f) return "";
+    var line;
+    if (boot.skip) line = s("setup.auto.skipped");
+    else if (f.set && boot.at) line = s("setup.auto.got", { n: f.count, when: whenText(boot.at) });
+    else if (f.set) line = s("setup.auto.gotNoTime", { n: f.count });
+    else line = s("setup.auto.none");
+    var canRefresh = !boot.skip && current.configuredOnce;
+    return '<div class="group auto"><div class="xs mut">' + esc(s("setup.group.auto")) + "</div>" +
+      '<div class="field autof"><div class="row sp"><span class="small' + (f.set && !boot.skip ? " okline" : "") + '" id="autoLine">' + esc(line) + "</span>" +
+      (canRefresh ? '<button type="button" class="btn mini" id="setupRefresh"' + (setupBusy ? " disabled" : "") + ">" + esc(s("setup.refresh")) + "</button>" : "") +
+      '</div><div class="xs mut hint" id="autoNote" hidden></div></div></div>';
+  }
+
+  function whenText(ms) {
+    try {
+      return new Date(ms).toLocaleString(tr() ? "tr-TR" : "en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      return "";
+    }
   }
 
   function fieldHtml(f, err) {
@@ -222,8 +262,10 @@
     if (f.id === "extraEnv") {
       control = '<textarea data-id="' + f.id + '"' + (secretSet ? " hidden" : "") + ' placeholder="KEY=value"></textarea>';
     } else {
+      // A default (the Render primary URL) is filled in and saved with the form until changed.
+      var shown = f.secret ? "" : (f.value || f["default"] || "");
       control = '<input data-id="' + f.id + '" type="' + (f.secret ? "password" : "text") + '"' + (secretSet ? " hidden" : "") +
-        ' value="' + esc(f.secret ? "" : f.value) + '" data-orig="' + esc(f.secret ? "" : f.value) + '">';
+        ' value="' + esc(shown) + '" data-orig="' + esc(f.secret ? "" : f.value) + '">';
     }
     var actions = secretSet ? '<span class="row" style="gap:6px"><button type="button" class="btn mini" data-replace="' + f.id + '">' + esc(s("setup.replace")) + "</button>" +
       (f.required ? "" : '<button type="button" class="btn mini d" data-clear="' + f.id + '">' + esc(s("setup.clear")) + "</button>") + "</span>" : "";
@@ -233,7 +275,20 @@
   }
 
   $("setupForm").addEventListener("input", function () { $("setupForm").dataset.dirty = "1"; });
+  $("setupForm").addEventListener("toggle", function (e) {
+    if (e.target.classList && e.target.classList.contains("adv")) { advOpen = e.target.open; fit(); }
+  }, true);
   $("setupForm").addEventListener("click", function (e) {
+    var sw = e.target.closest("#skipSw");
+    if (sw) {
+      var on = sw.classList.contains("off");
+      sw.classList.toggle("off", !on);
+      sw.setAttribute("aria-checked", on ? "true" : "false");
+      $("setupForm").dataset.skip = on ? "1" : "";
+      $("setupForm").dataset.dirty = "1";
+      return;
+    }
+    if (e.target.closest("#setupRefresh")) { refreshFromServer(); return; }
     var rep = e.target.closest("[data-replace]");
     var clr = e.target.closest("[data-clear]");
     if (rep) {
@@ -254,7 +309,25 @@
     bridge.autostart(on);
   });
   $("setupCancel").addEventListener("click", function () { show("main"); });
+  function setBusy(on) {
+    setupBusy = on;
+    $("setupSave").disabled = on;
+    var first = current && !(current.setup || {}).complete && !current.configuredOnce;
+    text("setupSave", on ? s("setup.saving") : s(first ? "setup.save" : "setup.saveEdit"));
+    var r = $("setupRefresh");
+    if (r) { r.disabled = on; r.textContent = on ? s("setup.refreshing") : s("setup.refresh"); }
+  }
+
+  function showSetupError(key) {
+    setupErrKey = key || null;
+    var se = $("setupError");
+    se.hidden = !key;
+    se.textContent = key ? s(key) : "";
+    fit();
+  }
+
   $("setupSave").addEventListener("click", function () {
+    if (setupBusy) return;
     var values = {};
     Array.prototype.forEach.call($("setupForm").querySelectorAll("[data-id]"), function (el) {
       var id = el.dataset.id;
@@ -264,21 +337,63 @@
       if (el.type === "password" || el.tagName === "TEXTAREA") { if (v.trim()) values[id] = v; return; }
       if (v !== (el.dataset.orig || "")) values[id] = v;
     });
-    $("setupSave").disabled = true;
-    bridge.setupSave(values).then(function (r) {
+    var skip = $("setupForm").dataset.skip === "1";
+    showSetupError(null);
+    setBusy(true);
+    bridge.setupSave(values, skip).then(function (r) {
+      setBusy(false);
       if (r && r.ok) {
         // Typed secrets leave the page right away.
         Array.prototype.forEach.call($("setupForm").querySelectorAll("input,textarea"), function (el) { el.value = ""; });
         if (r.state) apply(r.state);
         show("main");
       } else {
+        // Keep what the owner typed (a closed setup window must not cost the key and token).
         renderSetup(r && r.errors);
-        var se = $("setupError");
-        if (r && r.error) { se.hidden = false; se.textContent = s(r.error); }
+        restoreTyped(values);
+        var sw = $("skipSw");
+        if (sw) { sw.classList.toggle("off", !skip); sw.setAttribute("aria-checked", skip ? "true" : "false"); $("setupForm").dataset.skip = skip ? "1" : ""; }
+        if (r && r.error) showSetupError(r.error);
         fit();
       }
-    }).finally(function () { $("setupSave").disabled = false; });
+    }, function () {
+      setBusy(false);
+      showSetupError("setup.err.bootstrapServer");
+    });
   });
+
+  function restoreTyped(values) {
+    Object.keys(values).forEach(function (id) {
+      var el = $("setupForm").querySelector('[data-id="' + id + '"]');
+      if (!el || values[id] === "") return;
+      el.value = values[id];
+      el.hidden = false;
+      el.dataset.touched = "1";
+      var rep = $("setupForm").querySelector('[data-replace="' + id + '"]');
+      if (rep) rep.hidden = true;
+    });
+    if (Object.keys(values).length) $("setupForm").dataset.dirty = "1";
+  }
+
+  /* "Ayarları sunucudan yenile": the key's setup window must be open on the primary. */
+  function refreshFromServer() {
+    if (setupBusy) return;
+    showSetupError(null);
+    setBusy(true);
+    bridge.setupRefresh().then(function (r) {
+      setBusy(false);
+      if (r && r.ok) {
+        var note = $("autoNote");
+        if (note) { note.hidden = false; note.textContent = s("setup.refreshed", { n: r.fetched }); }
+        fit();
+      } else {
+        showSetupError((r && r.error) || "setup.err.bootstrapServer");
+      }
+    }, function () {
+      setBusy(false);
+      showSetupError("setup.err.bootstrapServer");
+    });
+  }
   $("setupWipe").addEventListener("click", function () {
     if (wipeArmed > Date.now()) {
       wipeArmed = 0;

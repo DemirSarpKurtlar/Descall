@@ -1,13 +1,14 @@
 //! Environment of the two child processes. The backend gets a clean environment: a short list
-//! of Windows basics from this app's own environment, the stored values (DPAPI store ->
-//! process env, the only place secrets go), the `DESCALL_NODE_*` variables of the hybrid
-//! contract and the owner's extra `.env` lines. cloudflared gets only the basics and its
+//! of Windows basics from this app's own environment, the environment the primary handed out
+//! (`bootstrapEnv`, crate::bootstrap), the owner's extra `.env` lines, the stored named
+//! values (DPAPI store -> process env, the only place secrets go) and the `DESCALL_NODE_*`
+//! variables of the hybrid contract, each later one winning. cloudflared gets only the basics and its
 //! `TUNNEL_TOKEN` (an env var, so the token never shows in a process list command line).
 
 use std::collections::BTreeMap;
 
 use crate::limits::JobLimits;
-use crate::secrets::{parse_env_lines, FIELDS};
+use crate::secrets::{parse_env_json, parse_env_lines, FIELDS};
 
 /// Inherited from this app (Windows needs SystemRoot & co. to start anything at all).
 pub const INHERIT: &[&str] = &[
@@ -58,7 +59,13 @@ fn inherit(own: &dyn Fn(&str) -> Option<String>, out: &mut BTreeMap<String, Stri
 pub fn backend_env(own: &dyn Fn(&str) -> Option<String>, stored: &dyn Fn(&str) -> Option<String>, id: &NodeIdentity, limits: &JobLimits, runtime_dir: &str) -> BTreeMap<String, String> {
     let mut out = BTreeMap::new();
     inherit(own, &mut out, &[runtime_dir.to_string()]);
-    // The owner's extra lines first: the named fields and the contract variables win.
+    // The primary's environment first (filtered again: never a name the app owns); then the
+    // owner's extra lines; then the named fields; the contract variables win over all.
+    if let Some(boot) = stored("bootstrapEnv") {
+        for (k, v) in parse_env_json(&boot) {
+            out.insert(k, v);
+        }
+    }
     if let Some(extra) = stored("extraEnv") {
         for (k, v) in parse_env_lines(&extra).vars {
             out.insert(k, v);
@@ -128,6 +135,7 @@ mod tests {
         st.insert("supabaseUrl", "https://x.supabase.co".into());
         st.insert("supabaseServiceKey", "eyJservice".into());
         st.insert("extraEnv", "TOTP_ENC_KEY=t\nSUPABASE_URL=https://wrong\nPORT=1".into());
+        st.insert("bootstrapEnv", r#"{"TOTP_ENC_KEY":"from-primary","WEB_PUSH_PRIVATE_KEY":"wp","SUPABASE_URL":"https://primary","PORT":"10000","REDIS_URL":"redis://internal","DESCALL_NODE_ROLE":"primary","SystemRoot":"C:/evil"}"#.into());
         let stored = |id: &str| st.get(id).cloned();
         let l = compute(3072, 4, Machine { total_mb: 32768, logical_cpus: 16 });
         let id = NodeIdentity { node_id: "pc-a1b2c3", port: 3210, control_token: "ctl", version: "1.0.0" };
@@ -142,7 +150,10 @@ mod tests {
         assert_eq!(e["PORT"], "3210");
         assert_eq!(e["SUPABASE_URL"], "https://x.supabase.co", "named field beats an extra line");
         assert_eq!(e["SUPABASE_SERVICE_ROLE_KEY"], "eyJservice", "the parent's value never counts");
-        assert_eq!(e["TOTP_ENC_KEY"], "t");
+        assert_eq!(e["TOTP_ENC_KEY"], "t", "an extra line beats the primary");
+        assert_eq!(e["WEB_PUSH_PRIVATE_KEY"], "wp", "the primary's value fills the rest");
+        assert_eq!(e["SystemRoot"], r"C:\Windows", "never an inherited name from the primary");
+        assert!(!e.contains_key("REDIS_URL"), "the primary's internal Key Value URL never reaches the PC");
         assert!(!e.values().any(|v| v == "eyJtoken"), "the tunnel token stays with cloudflared");
         assert!(e["PATH"].starts_with(r"C:\Program Files\Descall Node\runtime;C:\Windows\System32"));
         assert!(!e["PATH"].contains("evil"));

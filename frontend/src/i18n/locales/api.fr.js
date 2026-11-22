@@ -260,6 +260,8 @@ export const API_FR = {
   "File is too large (max {max} MB).": "Le fichier est trop volumineux (max {max} Mo).",
   "Invalid node key": "Clé de nœud serveur invalide",
   "Not the primary node": "Ce n'est pas le nœud serveur principal",
+  "Use the primary's own address": "Utilise l'adresse propre du serveur principal",
+  "The setup window of this node key is closed": "La fenêtre d'installation de cette clé de nœud est fermée",
   "Invalid node id": "Identifiant de nœud serveur invalide",
   "Invalid node url": "Adresse de nœud serveur invalide",
   "Invalid node state": "État de nœud serveur invalide",

@@ -9,6 +9,16 @@
  * Node to node (Authorization: Bearer dsk_node_..., secondary -> primary):
  *   POST /register   { id, url, version, memoryMb, cores } -> { ok, cfg }
  *   POST /drain-done { id, moved?, dropped?, ms? }        -> { ok }
+ *   POST /bootstrap  { id?, version? } -> { ok, env: { NAME: value }, count, windowUntil }
+ *        The environment a secondary needs, from the primary's own process env filtered by
+ *        lib/nodeKeys/bootstrapEnv.js (SHARED names that are set; never REDIS_URL, PORT,
+ *        NODE_ENV, DESCALL_NODE_*, RENDER*, OS variables). It hands out the service role
+ *        key, so: primary only (404 elsewhere); only inside the key's enrollment window
+ *        (30 min after it was created or reopened in Admin > Sunucu Ağı, else 403
+ *        BOOTSTRAP_WINDOW_CLOSED); refused when the request came through the PC tunnel
+ *        (cf-warp-tag-id, the PC hostname, loopback with proxy headers); failures count on
+ *        the same per-IP limit as register; every answer writes a node event, an admin audit
+ *        entry and the owner's phone alert; no-store, never logged, never rewritten.
  * Local control (the Descall Node app on the PC talking to the backend it runs; never
  * through the tunnel). Request straight from 127.0.0.1 / ::1, Host 127.0.0.1 / localhost,
  * no Origin and no Cloudflare / proxy headers (tunnel traffic also arrives from loopback,
@@ -29,8 +39,11 @@ const { createRouter, createNodeRuntime, localConnCount } = require("../lib/clus
 const { ipOfRequest } = require("../lib/clientIp");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const { apiError } = require("../lib/apiError");
+const { pick: pickBootstrapEnv } = require("../lib/nodeKeys/bootstrapEnv");
 
 const NODE_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
+/** Hostname of the PC node's Cloudflare tunnel (desktop/crates/descall-node DEFAULT_PUBLIC_URL). */
+const DEFAULT_PC_HOST = "pc.descall.com";
 const BEARER_RE = /^Bearer\s+(\S+)$/i;
 const FAIL_LIMIT = { windowMs: 10 * 60 * 1000, max: 20 };
 const CONTROL_HEADER = "x-descall-node-control";
@@ -101,6 +114,86 @@ async function registerExtras(cluster, cfg) {
   }
 }
 
+function hostOf(u) {
+  try {
+    return new URL(String(u || "")).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Did this request come through the PC node's own tunnel? cloudflared adds cf-warp-tag-id to
+ * every request it forwards; tunnel traffic reaches its origin from loopback with Cloudflare
+ * headers; and the Host of a tunnelled request is the PC hostname (or a registered
+ * secondary's). Requests to Render come through Render's proxy, never from loopback.
+ */
+async function viaPcTunnel(req, cluster) {
+  const h = req.headers || {};
+  if (h["cf-warp-tag-id"] != null) return true;
+  if (isLoopback(req.socket && req.socket.remoteAddress) && PROXY_HEADERS.some((k) => h[k] != null)) return true;
+  const hosts = new Set([DEFAULT_PC_HOST]);
+  try {
+    for (const n of (await cluster.getNodes()) || []) if (n && n.role === "secondary" && n.url && hostOf(n.url)) hosts.add(hostOf(n.url));
+  } catch {
+    /* KV down: the fixed hostname still counts */
+  }
+  const seen = [h.host, h["x-forwarded-host"], h["x-original-host"]]
+    .flatMap((v) => String(v || "").split(","))
+    .map((v) => v.trim().toLowerCase().replace(/:\d+$/, ""))
+    .filter(Boolean);
+  return seen.some((x) => hosts.has(x));
+}
+
+/** no-store, and the body bypasses res.json (no media rewrite, no ETag, nothing cached). */
+function sendPrivateJson(res, status, body) {
+  res.status(status);
+  res.set("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(body));
+}
+
+function setNoStore(res) {
+  res.set("Cache-Control", "no-store, max-age=0");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  res.set("X-Content-Type-Options", "nosniff");
+}
+
+/**
+ * Side effects of an answered bootstrap: bootstrapped_at, a node event, an admin audit entry
+ * and the owner's phone alert. Names and counts only, never a value. Never throws.
+ */
+async function recordBootstrap({ keys, keyId, keyName, nodeId, ip, names, alert }) {
+  const detail = { nodeId: nodeId || null, keyId: keyId || null, name: keyName || null, count: names.length, ip: ip || null };
+  try {
+    if (typeof keys.markBootstrapped === "function") await keys.markBootstrapped(keyId);
+  } catch {
+    /* best effort */
+  }
+  try {
+    await require("../lib/nodeKeys/service").logEvent("node_bootstrap", detail, null);
+  } catch {
+    /* events optional */
+  }
+  try {
+    require("../runtime/sharedState").appendAudit(null, "system", "system_node_bootstrap", `node_key:${keyId || "?"}`, { ...detail, names });
+  } catch {
+    /* audit optional */
+  }
+  try {
+    await alert({ kind: "bootstrap", reason: "bootstrap", vars: {} });
+  } catch (err) {
+    console.warn("[node] bootstrap alert failed:", String((err && err.message) || err).slice(0, 120));
+  }
+}
+
+async function defaultBootstrapAlert(alert) {
+  const service = require("../lib/nodeKeys/service");
+  const push = require("../lib/webPush");
+  const ids = await service.ownerIds();
+  if (ids.length && typeof push.sendAdminNodesPush === "function") await push.sendAdminNodesPush(ids, alert);
+}
+
 function validNodeUrl(u, env) {
   try {
     const url = new URL(String(u || ""));
@@ -118,7 +211,7 @@ function validNodeUrl(u, env) {
  * @param {object} deps.runtime   lib/cluster/routing createNodeRuntime()
  * @param {object} [deps.nodeKeys] { verify(secret) -> {ok, keyId} | Promise }
  */
-function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.env } = {}) {
+function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.env, bootstrapAlert = defaultBootstrapAlert } = {}) {
   const keys = nodeKeys || require("../lib/nodeKeys");
   const r = express.Router();
 
@@ -203,6 +296,49 @@ function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.en
     if (runtime) runtime.notifyDrained(id, result);
     await cluster.pushEvent("node:drain-done-ack", result).catch(() => {});
     res.json({ ok: true });
+  });
+
+  r.post("/bootstrap", async (req, res) => {
+    setNoStore(res);
+    if (cluster.role !== "primary") return sendPrivateJson(res, 404, apiError("Not found", null, { code: "NOT_FOUND" }));
+    if (await viaPcTunnel(req, cluster)) return sendPrivateJson(res, 403, apiError("Use the primary's own address", null, { code: "NODE_BOOTSTRAP_TUNNEL" }));
+    const ip = ipOfRequest(req);
+    const ipKey = `node-key:${ip}`;
+    if (rejectIfLimited(res, [peek(ipKey, FAIL_LIMIT)])) return;
+    const b = req.body || {};
+    const nodeId = typeof b.id === "string" && NODE_ID_RE.test(b.id) ? b.id : null;
+    const secret = bearerOf(req);
+    let key = { ok: false, keyId: null };
+    try {
+      if (secret) key = keyResult(await keys.verify(secret, { nodeId, ip }));
+    } catch {
+      key = { ok: false, keyId: null };
+    }
+    let win = null;
+    if (key.ok) {
+      try {
+        win = typeof keys.bootstrapWindow === "function" ? await keys.bootstrapWindow(key.keyId) : null;
+      } catch {
+        win = null;
+      }
+    }
+    if (!key.ok || !win) {
+      recordFailure(ipKey, FAIL_LIMIT);
+      return sendPrivateJson(res, 401, apiError("Invalid node key", null, { code: "NODE_KEY_INVALID" }));
+    }
+    if (!win.open) {
+      recordFailure(ipKey, FAIL_LIMIT);
+      try {
+        await require("../lib/nodeKeys/service").logEvent("node_bootstrap_refused", { nodeId, keyId: key.keyId, name: win.name || null, reason: "window", ip }, null);
+      } catch {
+        /* events optional */
+      }
+      return sendPrivateJson(res, 403, apiError("The setup window of this node key is closed", null, { code: "BOOTSTRAP_WINDOW_CLOSED", windowUntil: new Date(win.until).toISOString() }));
+    }
+    const out = pickBootstrapEnv(env);
+    const names = Object.keys(out);
+    await recordBootstrap({ keys, keyId: key.keyId, keyName: win.name, nodeId, ip, names, alert: bootstrapAlert });
+    return sendPrivateJson(res, 200, { ok: true, nodeId: cluster.nodeId, env: out, count: names.length, windowUntil: new Date(win.until).toISOString() });
   });
 
   function requireLocalControl(req, res, next) {
@@ -345,4 +481,4 @@ function getNodeRouting() {
   return singleton;
 }
 
-module.exports = { createNodeRoutes, attachNodeRouting, getNodeRouting, refuseWhileDraining, isLocalControlRequest, keyResult, NODE_ID_RE, CONTROL_HEADER };
+module.exports = { createNodeRoutes, attachNodeRouting, getNodeRouting, refuseWhileDraining, isLocalControlRequest, viaPcTunnel, keyResult, NODE_ID_RE, CONTROL_HEADER };

@@ -260,6 +260,8 @@ export const API_RU = {
   "File is too large (max {max} MB).": "Файл слишком большой (макс. {max} МБ).",
   "Invalid node key": "Неверный ключ серверного узла",
   "Not the primary node": "Это не основной серверный узел",
+  "Use the primary's own address": "Используйте собственный адрес основного сервера",
+  "The setup window of this node key is closed": "Окно установки для этого ключа узла закрыто",
   "Invalid node id": "Неверный идентификатор серверного узла",
   "Invalid node url": "Неверный адрес серверного узла",
   "Invalid node state": "Неверное состояние серверного узла",

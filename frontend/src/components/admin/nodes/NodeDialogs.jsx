@@ -4,7 +4,8 @@
  *   EmergencyDialog  everyone to Render now: reason + "I understand" confirmation
  *   DrillDialog      failover drill: what happens, live timer, result (moved / dropped / s)
  *   ScheduleDialog   weekly hour grid (drag to paint, presets, Istanbul time), plan switch
- *   KeysDrawer       node keys: list, create (secret shown once with copy), revoke
+ *   KeysDrawer       node keys: list, create (secret shown once with copy), revoke, open /
+ *                    close the PC setup window (POST /api/node/bootstrap, 30 min)
  *   RevokeKeyDialog  reason + type the key name
  * Every change needs the 2FA step-up (the shared prompt opens from adminFetch).
  */
@@ -25,6 +26,7 @@ import {
   gridHours,
   gridToSlots,
   keyNameOk,
+  keyWindow,
   maskKey,
   pickNodes,
   presetGrid,
@@ -544,6 +546,29 @@ export function KeysDrawer({ open, startCreate = false, refresh = 0, onClose, on
   }, [refresh]);
   const active = state.keys.filter((k) => k.status === "active").length;
   const full = active >= state.max;
+  // The window line counts down while the drawer is open.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!open) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, [open]);
+  const [winBusy, setWinBusy] = useState(null);
+  const [winErr, setWinErr] = useState(null);
+  const toggleWindow = async (k, want) => {
+    setWinBusy(k.id);
+    setWinErr(null);
+    try {
+      await nodeApi.bootstrapWindow(k.id, want);
+      setNow(Date.now());
+      await load();
+      onChanged?.();
+    } catch (x) {
+      setWinErr(x);
+    } finally {
+      setWinBusy(null);
+    }
+  };
   const create = async (e) => {
     e?.preventDefault?.();
     if (!keyNameOk(name) || full) return;
@@ -618,12 +643,31 @@ export function KeysDrawer({ open, startCreate = false, refresh = 0, onClose, on
                           ? t("anodes.keys.used", { when: f.L(agoLabel(k.lastUsedAt)), node: k.lastUsedNode || t("anodes.dash") })
                           : t("anodes.keys.unused", { when: f.dt(k.createdAt) })}
                     </span>
+                    {k.status === "active" ? (
+                      <span className={`anx-win${keyWindow(k, now).open ? " is-open" : ""}`} data-testid="anx-key-win">
+                        {keyWindow(k, now).open ? t("anodes.keys.windowOpen", { n: f.n(keyWindow(k, now).minutes) }) : t("anodes.keys.windowClosed")}
+                        {k.bootstrappedAt ? ` · ${t("anodes.keys.bootstrapped", { when: f.L(agoLabel(k.bootstrappedAt)) })}` : ""}
+                      </span>
+                    ) : null}
                   </span>
                   {k.status === "active" ? (
-                    <button type="button" className="atk-btn is-sm is-dan" onClick={() => onRevoke(k)} data-testid="anx-key-revoke">
-                      <Trash2 size={13} />
-                      {t("anodes.keys.revoke")}
-                    </button>
+                    <span className="anx-keyacts">
+                      <button
+                        type="button"
+                        className={`atk-btn is-sm${keyWindow(k, now).open ? "" : " is-pri"}`}
+                        onClick={() => toggleWindow(k, !keyWindow(k, now).open)}
+                        disabled={winBusy === k.id}
+                        title={t("anodes.keys.windowHint")}
+                        data-testid="anx-key-window"
+                      >
+                        {winBusy === k.id ? <RefreshCw size={13} className="anx-spin" /> : keyWindow(k, now).open ? <Power size={13} /> : <KeyRound size={13} />}
+                        {t(keyWindow(k, now).open ? "anodes.keys.closeWindow" : "anodes.keys.openWindow")}
+                      </button>
+                      <button type="button" className="atk-btn is-sm is-dan" onClick={() => onRevoke(k)} data-testid="anx-key-revoke">
+                        <Trash2 size={13} />
+                        {t("anodes.keys.revoke")}
+                      </button>
+                    </span>
                   ) : (
                     <span className="atk-pill st-revoked is-sm">{t("anodes.keys.revoked")}</span>
                   )}
@@ -631,6 +675,8 @@ export function KeysDrawer({ open, startCreate = false, refresh = 0, onClose, on
               ))
             )}
           </div>
+          <ErrLine err={winErr} />
+          <p className="anx-note">{t("anodes.keys.windowHint")}</p>
           <p className="anx-note">{t("anodes.keys.foot")}</p>
         </>
       )}

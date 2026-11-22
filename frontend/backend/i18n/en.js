@@ -128,6 +128,7 @@ module.exports = {
     nodesKvDown: "Shared memory (Key Value) is unreachable; running in single-server mode.",
     nodesRender90: "Render memory is at {pct}%; raise the PC share or check the load.",
     nodesTest: "Test notification: server network alerts reach this device.",
+    nodesBootstrap: "PC setup: the secret settings were fetched. If this was not you, revoke the node key now.",
     // Web push + FCM (browser and Android notifications)
     voicePlain: "Voice message",
     attachmentPlain: "Sent an attachment",
