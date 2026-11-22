@@ -340,6 +340,13 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
     const t = setTimeout(sweepGhosts, GHOST_CHECK_MS);
     t.unref?.();
   });
+  // A (re)start or a KV return loads the calls kept in the KV (dc:servercall:*, 12 h TTL).
+  // Seats of people who never came back (closed the app during a deploy) used to stay
+  // until someone else's join or leave touched them: the same sweep runs then too.
+  cluster.on("kvUp", () => {
+    const t = setTimeout(sweepGhosts, GHOST_CHECK_MS);
+    t.unref?.();
+  });
 
   // ---- after (re)connecting to the KV -----------------------------------------------------------
   async function resyncSockets() {
@@ -369,7 +376,7 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
   cluster.on("kvUp", () => void resyncSockets());
   if (cluster._internals.kv?.isUp()) void resyncSockets();
 
-  return { localSocketsOf };
+  return { localSocketsOf, sweepGhosts };
 }
 
 module.exports = { attachSharedState };
