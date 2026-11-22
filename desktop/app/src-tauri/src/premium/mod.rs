@@ -387,12 +387,13 @@ impl Host {
         lock(&self.hooks).boot_script.as_ref().and_then(|f| f(&self.app, label))
     }
 
+    /// The shell's one "bring Descall back" path (Electron premium ctx.showMainWindow is
+    /// main.cjs showMainWindow): it also tells the page it is on screen again
+    /// (app:visibility). A toast click, a Descall+ hotkey or tray entry after a hide to the
+    /// tray used to leave html.app-backgrounded on when Windows refused the focus, so the
+    /// page kept its animations paused and held DM read receipts back.
     pub fn show_main(&self) {
-        if let Some(w) = self.app.get_webview_window("main") {
-            let _ = w.unminimize();
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
+        crate::state::show_main(&self.app);
     }
 
     // -- blobs (ArrayBuffers across IPC) --

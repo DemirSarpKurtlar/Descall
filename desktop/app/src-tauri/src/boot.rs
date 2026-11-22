@@ -409,6 +409,26 @@ fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
 }
 
+/// The page loaded while the window is in the tray or minimized (sign-in autostart with
+/// --hidden, a reload while hidden): no hide / minimize event follows for it, so the page took
+/// itself for on screen (Electron the same): its animations ran in the tray and a DM in an open
+/// chat was marked read while nobody looked. Told twice, once the page had time to listen; a
+/// window shown meanwhile is left alone (show_main sends backgrounded:false).
+pub fn tell_page_if_away<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        for wait_ms in [2_000u64, 6_000] {
+            tokio::time::sleep(std::time::Duration::from_millis(wait_ms)).await;
+            let Some(w) = crate::state::main_window(&app) else { return };
+            let away = !w.is_visible().unwrap_or(true) || w.is_minimized().unwrap_or(false);
+            if !away {
+                return;
+            }
+            visibility(&w, true);
+        }
+    });
+}
+
 /// Same file name as main.cjs (userData/background-notice-shown).
 const BACKGROUND_NOTICE: &str = "background-notice-shown";
 

@@ -200,6 +200,8 @@ fn main() {
                         if !state::shell(&load_app).boot.lock().unwrap().mounted && launch.action == descall_shell::launch::StartAction::Show && !w.is_visible().unwrap_or(false) {
                             state::show_main(&load_app);
                         }
+                        // Loaded in the tray / minimized: the page learns it is out of sight.
+                        boot::tell_page_if_away(&load_app);
                     }
                 })
                 .build()?;

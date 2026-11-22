@@ -21,6 +21,8 @@
 // 13. The native tray menu (panel fallback) has Electron's order.
 // 14. Taskbar badge and tray dot count the same unread messages.
 // 15. The process has Descall's AppUserModelID: one taskbar button however it was started.
+// 16. Every way back to the window tells the page it is on screen; a page that loads in the
+//     tray learns it is not (DM read receipts, html.app-backgrounded).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -424,6 +426,27 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   const main = codeOnly(read("desktop/app/src-tauri/src/main.rs"));
   const body = main.slice(main.indexOf("fn main()"));
   assert.ok(body.indexOf("platform::set_app_user_model_id()") > 0 && body.indexOf("platform::set_app_user_model_id()") < body.indexOf("tauri::Builder::default()"), "set before the app and its first window");
+}
+
+// ---- 16: the page knows whether it is on screen ------------------------------------------------------
+{
+  // Descall+ (toast click, hotkeys, tray entries) brought the window back with its own
+  // unminimize / show / focus: no app:visibility, no skip-taskbar reset. Electron's premium
+  // ctx.showMainWindow is main.cjs showMainWindow, the one path.
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const sm = mod.slice(mod.indexOf("pub fn show_main(&self)"), mod.indexOf("// -- blobs"));
+  assert.match(sm, /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/, "Descall+ uses the shell's show_main");
+  const state = codeOnly(read("desktop/app/src-tauri/src/state.rs"));
+  const shell = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn to_main"));
+  assert.match(shell, /"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/, "which tells the page");
+  assert.match(read("frontend/electron/main.cjs"), /showMain: \(\) => showMainWindow\(\),/, "Electron: one path");
+  // Loaded while in the tray (autostart --hidden, reload while hidden): no hide event follows.
+  const boot = codeOnly(read("desktop/app/src-tauri/src/boot.rs"));
+  const away = boot.slice(boot.indexOf("pub fn tell_page_if_away"), boot.indexOf("const BACKGROUND_NOTICE"));
+  assert.match(away, /let away = !w\.is_visible\(\)\.unwrap_or\(true\) \|\| w\.is_minimized\(\)\.unwrap_or\(false\);\s*if !away \{\s*return;\s*\}\s*visibility\(&w, true\);/, "only while still away");
+  const main = codeOnly(read("desktop/app/src-tauri/src/main.rs"));
+  const finished = main.slice(main.indexOf("PageLoadEvent::Finished =>"), main.indexOf(".build()?", main.indexOf("PageLoadEvent::Finished =>")));
+  assert.match(finished, /boot::tell_page_if_away\(&load_app\);/, "on every page load of the main window");
 }
 
 console.log("shell-notif.test: ok");
