@@ -199,6 +199,20 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   }
 }
 
+// ---- 1c. stored media grants (Electron's setPermissionCheckHandler answered yes for media on every
+// check): a fresh WebView2 profile listed one unnamed camera in Settings until the first video call.
+{
+  const wv = stripRust(readFileSync(join(srcRoot, "webview.rs"), "utf8"));
+  const fn = wv.slice(wv.indexOf("pub fn install_permission_handler"), wv.indexOf("pub fn install_browser_guards"));
+  assert.match(fn, /clipboard::pregranted\(cfg!\(debug_assertions\)\)/, "grants come from descall_shell::clipboard::pregranted (Rust test)");
+  assert.match(fn, /ICoreWebView2Profile4/, "ICoreWebView2Profile4::SetPermissionState");
+  assert.match(fn, /SetPermissionState\(kind,[^;]*COREWEBVIEW2_PERMISSION_STATE_ALLOW/, "stored as allowed");
+  const clip = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  const body = clip.slice(clip.indexOf("pub fn pregranted"), clip.indexOf("pub fn permission_decision"));
+  assert.match(body, /\[PermissionKind::Microphone, PermissionKind::Camera\]/, "media only");
+  assert.doesNotMatch(body, /Notifications|ClipboardRead|Geolocation|Other/, "nothing outside the media grant");
+}
+
 // ---- 2a. the mini call card never takes focus (Electron: showInactive)
 {
   const ov = stripRust(readFileSync(join(srcRoot, "commands", "overlay.rs"), "utf8"));

@@ -102,6 +102,24 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
             }));
             let mut token = 0i64;
             let _ = core.add_PermissionRequested(&handler, &mut token);
+            // Stored grants for the app origin (descall_shell::clipboard::pregranted): Electron's
+            // setPermissionCheckHandler said yes to media on every check, so device names were
+            // there before any call. A fresh WebView2 profile had no camera grant: Settings
+            // listed one unnamed camera until the first video call.
+            use windows_core::Interface;
+            if let Ok(profile) = core.cast::<ICoreWebView2_13>().and_then(|c| c.Profile()) {
+                if let Ok(p4) = profile.cast::<ICoreWebView2Profile4>() {
+                    for (k, origin) in descall_shell::clipboard::pregranted(cfg!(debug_assertions)) {
+                        let kind = match k {
+                            PermissionKind::Microphone => COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+                            PermissionKind::Camera => COREWEBVIEW2_PERMISSION_KIND_CAMERA,
+                            _ => continue,
+                        };
+                        let done = webview2_com::SetPermissionStateCompletedHandler::create(Box::new(|_| Ok(())));
+                        let _ = p4.SetPermissionState(kind, &windows_core::HSTRING::from(origin), COREWEBVIEW2_PERMISSION_STATE_ALLOW, &done);
+                    }
+                }
+            }
         });
     }
     #[cfg(not(windows))]
