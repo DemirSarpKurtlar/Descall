@@ -348,7 +348,11 @@
         if (r.state) apply(r.state);
         show("main");
       } else {
+        // Keep what the owner typed (a closed setup window must not cost the key and token).
         renderSetup(r && r.errors);
+        restoreTyped(values);
+        var sw = $("skipSw");
+        if (sw) { sw.classList.toggle("off", !skip); sw.setAttribute("aria-checked", skip ? "true" : "false"); $("setupForm").dataset.skip = skip ? "1" : ""; }
         if (r && r.error) showSetupError(r.error);
         fit();
       }
@@ -357,6 +361,19 @@
       showSetupError("setup.err.bootstrapServer");
     });
   });
+
+  function restoreTyped(values) {
+    Object.keys(values).forEach(function (id) {
+      var el = $("setupForm").querySelector('[data-id="' + id + '"]');
+      if (!el || values[id] === "") return;
+      el.value = values[id];
+      el.hidden = false;
+      el.dataset.touched = "1";
+      var rep = $("setupForm").querySelector('[data-replace="' + id + '"]');
+      if (rep) rep.hidden = true;
+    });
+    if (Object.keys(values).length) $("setupForm").dataset.dirty = "1";
+  }
 
   /* "Ayarları sunucudan yenile": the key's setup window must be open on the primary. */
   function refreshFromServer() {
