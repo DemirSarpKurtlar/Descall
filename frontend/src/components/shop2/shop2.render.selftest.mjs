@@ -209,6 +209,9 @@ for (const layout of ["desktop", "phone"]) {
   assert.match(d2, /<button[^>]*disabled=""[^>]*aria-busy="true"/, "equip button disabled while busy");
   const d3 = m.render("detail", c, { slot: storefront.slots[3] });
   has(d3, "shop2.detail.balanceAfter", "unowned item: balance-after row");
+  // Rarity chip matches the card colours: common is grey (it was blue like "Nadir").
+  const dc = m.render("detail", { ...c, itemLabels: () => ({ category: "banner", rarity: "Yaygın", rarityId: "common" }) }, { slot: storefront.slots[0] });
+  assert.match(dc, /s2-chip is-muted[^"]*">Yaygın/, "common rarity chip is muted");
   // A stale sheet snapshot (old price 999) reads today's storefront price (620): 5120 -> 4500.
   const d4 = m.render("detail", c, { slot: { ...storefront.slots[3], price: 999 } });
   assert.ok(d4.includes("4.500") && !d4.includes("4.121"), "item sheet uses the live storefront price");

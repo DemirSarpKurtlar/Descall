@@ -109,7 +109,7 @@ export function ItemDetail({ slot, onClose }) {
   return (
     <div className="s2-detail-inner">
       <div className="s2-detail-head">
-        <Chip tone={lab.rarityId === "legendary" || lab.rarityId === "mythic" ? "gold" : lab.rarityId === "epic" ? "violet" : "blue"}>{lab.rarity}</Chip>
+        <Chip tone={lab.rarityId === "legendary" || lab.rarityId === "mythic" ? "gold" : lab.rarityId === "epic" ? "violet" : lab.rarityId === "rare" ? "blue" : "muted"}>{lab.rarity}</Chip>
         <h3>{name}</h3>
         {onClose ? <CloseX onClick={onClose} label={t("shop2.common.close")} /> : null}
       </div>
