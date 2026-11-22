@@ -193,6 +193,17 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(admin, /crate::webview::install_browser_guards\(&win\);/, "admin windows have no browser menu / reload keys");
   assert.match(admin, /is_safe_external_url\(next\.as_str\(\)\)[\s\S]{0,120}open_url\(next\.as_str\(\)/, "admin links open in the default browser");
   assert.match(admin, /let place = placement\(app, w, h\);/);
+  // Descall+ pop-out and account windows run the full app with its title bar: they get
+  // window:maximized on change too (Electron multi_window.cjs), not only the start-up answer.
+  const win = readFileSync(join(src, "commands", "window.rs"), "utf8");
+  const fwd = win.slice(win.indexOf("pub fn forward_maximized"), win.indexOf("pub fn forward_maximized") + 900);
+  assert.match(fwd, /last\.swap\(now, Ordering::AcqRel\) != now[\s\S]{0,80}emit_to\(w\.label\(\), "window:maximized", now == 1\)/);
+  for (const f of ["multi_window.rs", "multi_account.rs"]) {
+    const rs = readFileSync(join(src, "premium", "features", f), "utf8");
+    assert.match(rs, /crate::commands::window::forward_maximized\(&w\);/, `${f}: maximized state reaches the window's title bar`);
+  }
+  // A second launch while the main window is still being built is kept (round 2).
+  assert.match(main, /\.plugin\(tauri_plugin_single_instance::init\([\s\S]{0,300}state::request_show\(app\);/);
 }
 
 // 5. Windows 11 Snap layouts: the page reports its visible maximize button to the shell (the

@@ -121,6 +121,7 @@ fn open(h: &Host, id: &str) -> Value {
         Ok(w) => {
             crate::webview::install_permission_handler(&w);
             crate::webview::install_browser_guards(&w);
+            crate::commands::window::forward_maximized(&w); // title bar Restore / Maximize
             wins::track(h, &label, "account", "multi_account", json!({ "id": id }));
             ok(json!({ "id": id }))
         }

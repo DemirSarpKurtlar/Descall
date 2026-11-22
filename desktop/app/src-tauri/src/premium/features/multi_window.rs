@@ -97,6 +97,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     // No browser menu / shortcuts, media without prompts: as in the main window.
     crate::webview::install_permission_handler(&w);
     crate::webview::install_browser_guards(&w);
+    crate::commands::window::forward_maximized(&w); // title bar Restore / Maximize
     wins::track(h, &label, "popout", "multi_window", json!({ "route": r }));
     wins::apply_behaviour(h, &label, "popout");
     wins::show(h, &w, "popout");

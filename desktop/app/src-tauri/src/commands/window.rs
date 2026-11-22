@@ -39,6 +39,25 @@ pub async fn window_close<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.close();
 }
 
+/// window:maximized for a window other than main (main has boot::bind_window_events): the
+/// page's title bar shows Restore while maximized. Electron's multi_window.cjs sent it on
+/// maximize / unmaximize; the Descall+ pop-out and account windows here never got it, so their
+/// button kept the state it read at start-up. Sent only when the state changes.
+pub fn forward_maximized<R: Runtime>(window: &WebviewWindow<R>) {
+    use std::sync::atomic::{AtomicU8, Ordering};
+    use tauri::Emitter;
+    let w = window.clone();
+    let last = std::sync::Arc::new(AtomicU8::new(u8::from(window.is_maximized().unwrap_or(false))));
+    window.on_window_event(move |e| {
+        if let tauri::WindowEvent::Resized(_) = e {
+            let now = u8::from(w.is_maximized().unwrap_or(false));
+            if last.swap(now, Ordering::AcqRel) != now {
+                let _ = w.emit_to(w.label(), "window:maximized", now == 1);
+            }
+        }
+    });
+}
+
 /// window:content-box (windowOcclusion.cjs): how far a maximized client hangs past the
 /// monitor work area, in CSS px. A restored window always gets zeros.
 pub fn content_box<R: Runtime>(window: &WebviewWindow<R>) -> Insets {
