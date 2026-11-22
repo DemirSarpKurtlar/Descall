@@ -1,41 +1,32 @@
 "use strict";
 
 /**
- * placeholder: agent 3 owns this file.
+ * Node keys (hybrid server): the `dsk_node_` keys a secondary node (the owner's PC) uses on
+ * POST /api/node/register and /api/node/drain-done. Created, listed and revoked in the admin
+ * panel (routes/adminNodes.js); only the SHA-256 is stored; at most 5 active.
  *
- * Node key store interface used by routes/node.js:
- *   verify(secret) -> { ok, keyId }   (may also return a Promise of that)
- * Keys look like `dsk_node_` + 43 base64url chars; only their SHA-256 is kept, like admin
- * tokens. This placeholder keeps the hashes in memory (empty at start, so every bearer is
- * refused); agent 3's version reads them from the node_keys table.
+ *   const nodeKeys = require("./lib/nodeKeys");
+ *   const key = await nodeKeys.verify(bearer, { nodeId, ip }); // { id, name } | null
  */
 
-const crypto = require("crypto");
+const store = require("./store");
+const model = require("./model");
 
-const KEY_RE = /^dsk_node_[A-Za-z0-9_-]{43}$/;
-const byHash = new Map(); // sha256 hex -> { id, revoked }
-
-function sha256(secret) {
-  return crypto.createHash("sha256").update(String(secret), "utf8").digest("hex");
+/** "Authorization: Bearer dsk_node_…" -> the secret, else null. */
+function bearerOf(req) {
+  const h = String(req?.get?.("authorization") || req?.headers?.authorization || "");
+  const m = /^Bearer\s+(dsk_node_[A-Za-z0-9_-]{43})$/.exec(h.trim());
+  return m ? m[1] : null;
 }
 
-function verify(secret) {
-  const s = String(secret || "");
-  if (!KEY_RE.test(s)) return { ok: false, keyId: null };
-  const row = byHash.get(sha256(s));
-  if (!row || row.revoked) return { ok: false, keyId: null };
-  return { ok: true, keyId: row.id };
-}
-
-/** Tests only: register a key, returns its id. */
-function __addForTests(secret, id = `nk_${byHash.size + 1}`) {
-  byHash.set(sha256(secret), { id, revoked: false });
-  return id;
-}
-
-/** Tests only: revoke by id. */
-function __revokeForTests(id) {
-  for (const row of byHash.values()) if (row.id === id) row.revoked = true;
-}
-
-module.exports = { verify, KEY_RE, __addForTests, __revokeForTests };
+module.exports = {
+  verify: store.verify,
+  bearerOf,
+  create: store.createKey,
+  list: store.listKeys,
+  revoke: store.revokeKey,
+  available: store.available,
+  isWellFormed: model.isWellFormedKey,
+  ACTIVE_MAX: model.KEY_ACTIVE_MAX,
+  PREFIX: model.KEY_PREFIX,
+};

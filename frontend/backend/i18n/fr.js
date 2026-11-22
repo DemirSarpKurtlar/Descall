@@ -117,6 +117,13 @@ module.exports = {
     antibotTitle: "Alerte anti-bot",
     antibotBody: "{count, plural, one {# compte a dépassé} other {# comptes ont dépassé}} le seuil de risque (score max {topScore})",
     antibotWatchBody: "{count, plural, one {# nouvelle alerte de la liste de surveillance} other {# nouvelles alertes de la liste de surveillance}}",
+    // Sunucu Ağı (hybrid server) owner alerts
+    nodesTitle: "Alerte du réseau de serveurs",
+    nodesPcDown: "Le nœud PC est tombé soudainement ; les utilisateurs passent sur Render.",
+    nodesKvFull: "La mémoire partagée (Key Value) est pleine à {pct} %.",
+    nodesKvDown: "La mémoire partagée (Key Value) est injoignable ; mode serveur unique.",
+    nodesRender90: "La mémoire de Render est à {pct} % ; augmentez la part du PC ou vérifiez la charge.",
+    nodesTest: "Notification de test : les alertes du réseau de serveurs arrivent sur cet appareil.",
     voicePlain: "Message vocal",
     attachmentPlain: "A envoyé une pièce jointe",
     incomingCall: "Appel entrant",
