@@ -262,4 +262,6 @@ export const API_RU = {
   "Not the primary node": "Это не основной серверный узел",
   "Invalid node id": "Неверный идентификатор серверного узла",
   "Invalid node url": "Неверный адрес серверного узла",
+  "Invalid node state": "Неверное состояние серверного узла",
+  "Invalid setting: {field}": "Недопустимая настройка: {field}",
 };

@@ -262,4 +262,6 @@ export const API_ES = {
   "Not the primary node": "Este no es el nodo de servidor principal",
   "Invalid node id": "ID de nodo de servidor no válido",
   "Invalid node url": "Dirección de nodo de servidor no válida",
+  "Invalid node state": "Estado de nodo de servidor no válido",
+  "Invalid setting: {field}": "Ajuste no válido: {field}",
 };

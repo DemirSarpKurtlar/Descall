@@ -262,4 +262,6 @@ export const API_FR = {
   "Not the primary node": "Ce n'est pas le nœud serveur principal",
   "Invalid node id": "Identifiant de nœud serveur invalide",
   "Invalid node url": "Adresse de nœud serveur invalide",
+  "Invalid node state": "État de nœud serveur invalide",
+  "Invalid setting: {field}": "Paramètre invalide : {field}",
 };

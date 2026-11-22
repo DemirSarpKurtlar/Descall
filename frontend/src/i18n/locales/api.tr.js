@@ -992,4 +992,6 @@ export const API_TR = {
   "Not the primary node": "Bu ana sunucu düğümü değil",
   "Invalid node id": "Geçersiz sunucu düğümü kimliği",
   "Invalid node url": "Geçersiz sunucu düğümü adresi",
+  "Invalid node state": "Geçersiz sunucu düğümü durumu",
+  "Invalid setting: {field}": "Geçersiz ayar: {field}",
 };
