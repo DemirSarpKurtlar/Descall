@@ -364,16 +364,9 @@
     return false;
   };
   window.addEventListener("keydown", (e) => {
-    // F11 maximizes / restores this window (windowKeys.cjs, main and admin windows): no
-    // modifier, no auto-repeat, never with Alt (AltGr layouts).
-    if (e.key === "F11" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
-      e.preventDefault();
-      winCmd("window_toggle_maximize", "toggle_maximize");
-      return;
-    }
     if (blockedKey(e)) e.preventDefault();
-    // F11 maximizes / restores the window (Electron windowKeys.cjs): key down only, no
-    // auto-repeat, no Ctrl / Shift / Alt.
+    // F11 maximizes / restores this window (Electron windowKeys.cjs, main and admin windows):
+    // key down only, no auto-repeat, no Ctrl / Shift / Alt (AltGr layouts).
     if ((e.key === "F11" || e.code === "F11") && !e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
