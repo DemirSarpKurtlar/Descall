@@ -196,6 +196,18 @@ mod tests {
         assert!(boot.contains("secrets::redact(url.as_str()).chars().take(120)"), "main_navigation redacts, then cuts");
     }
 
+    /// The DPAPI store (app/src-tauri/src/secure_store.rs): sealed with per-purpose entropy,
+    /// written through a temp file and a rename (a torn write left an unreadable token and a
+    /// signed-out user), and clearing an absent entry counts as cleared.
+    #[test]
+    fn secure_store_writes_atomically() {
+        let src = include_str!("../../../app/src-tauri/src/secure_store.rs");
+        assert!(src.contains("dpapi::protect(value.as_bytes(), Some(entropy.as_bytes()))"));
+        assert!(src.contains("with_extension(\"bin.tmp\")") && src.contains("std::fs::rename(&tmp, &p)"));
+        assert!(!src.contains("std::fs::write(p, sealed)"), "no in-place write of the sealed token");
+        assert!(src.contains("ErrorKind::NotFound"));
+    }
+
     #[test]
     fn multi_byte_text_does_not_panic() {
         assert_eq!(redact("çağrı token=ş€crét bitti"), "çağrı token=<redacted> bitti");
