@@ -279,6 +279,33 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(bootRs, /Imported \{ local_storage, id: import_id \}/, "extra-account windows too");
 }
 
+// The secure store refused the token (DPAPI / disk error; token_set answered false): like
+// Electron's false answer, the page's localStorage copy keeps the session for the next start.
+{
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const refused = loadShim({ responses: { token_set: false } });
+  assert.equal(refused.api.secureToken.set("a.b.c"), true);
+  await tick(); await tick();
+  assert.equal(refused.ctx.localStorage.getItem("descall_token"), "a.b.c", "refused: kept in localStorage like storage.js did on Electron");
+  const broken = loadShim({ fail: ["token_set"] });
+  broken.api.secureToken.set("d.e.f");
+  await tick(); await tick();
+  assert.equal(broken.ctx.localStorage.getItem("descall_token"), "d.e.f", "a failed command too");
+  const stored = loadShim({ responses: { token_set: true } });
+  stored.api.secureToken.set("g.h.i");
+  await tick(); await tick();
+  assert.equal(stored.ctx.localStorage.getItem("descall_token"), null, "stored: never in localStorage");
+  const late = loadShim({ responses: { token_set: false } });
+  late.api.secureToken.set("j.k.l");
+  late.api.secureToken.clear(); // signed out before the answer came
+  await tick(); await tick();
+  assert.equal(late.ctx.localStorage.getItem("descall_token"), null, "a token signed out meanwhile is not kept");
+  const popout = loadShim({ responses: { token_set: false }, label: "popout-1" });
+  popout.api.secureToken.set("m.n.o");
+  await tick(); await tick();
+  assert.equal(popout.ctx.localStorage.getItem("descall_token"), null, "only the main window keeps a copy");
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).

@@ -117,6 +117,8 @@
   // clear during this run wins and is mirrored to sessionStorage, so a reload (boot retry)
   // sees it before the next app start writes a new snapshot.
   const TOKEN_OVERRIDE = "__descall_token_override";
+  /** storage.js / secureToken.js SECURE_TOKEN_KEY: the page's own fallback copy. */
+  const LOCAL_TOKEN_KEY = "descall_token";
   let tokenCache = (() => {
     try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) { /* ignore */ }
     return BOOT.token || null;
@@ -309,8 +311,20 @@
         const v = String(token || "");
         if (v.length > 16 * 1024) return false;
         remember(v);
-        fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined);
-        if (!v) premiumSignedOut();
+        if (!v) {
+          fire("token_clear");
+          premiumSignedOut();
+          return true;
+        }
+        // Electron answered false when safeStorage could not write the file, and storage.js
+        // then kept the token in localStorage. The answer is async here: when the store
+        // refuses it (DPAPI / disk error), keep the same localStorage copy, or the session
+        // would be gone at the next start. storage.js moves it back into the store then.
+        const keepLocal = () => {
+          if (LABEL !== "main" || tokenCache !== v) return;
+          try { localStorage.setItem(LOCAL_TOKEN_KEY, v); } catch (_) { /* storage disabled */ }
+        };
+        invoke("token_set", { token: v }).then((ok) => { if (ok === false) keepLocal(); }, keepLocal);
         return true;
       },
       clear: () => { remember(""); fire("token_clear"); premiumSignedOut(); return true; },
