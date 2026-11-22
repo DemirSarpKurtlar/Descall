@@ -3,6 +3,7 @@ import { useFeatureSettings } from "../featureSettings.js";
 import { DEFAULTS } from "../gaming/ui.jsx";
 import { isDesktop } from "../gaming/bridge.js";
 import { Actions, Btn, Group, Hint, HotkeyField, Note, SetRow } from "../story/kit.jsx";
+import LauncherClashHint from "../ui/LauncherClashHint.jsx";
 
 export const key = "command_center";
 const ds = (s) => `${key}.${s}`;
@@ -26,6 +27,7 @@ export function Panel() {
             <HotkeyField value={s.hotkey} onChange={(hotkey) => update({ hotkey })} label={t("premiumGaming.common.hotkey")} ds={ds("hotkey")} none={t("premiumGaming.common.none")} pressKey={t("premiumAudio.hotkeys.pressKey")} />
           </SetRow>
         ) : null}
+        <LauncherClashHint ds={ds("clash")} showFailed />
       </Group>
       <Hint ds={ds("help")}>{t("premiumGaming.commandCenter.help")}</Hint>
     </>

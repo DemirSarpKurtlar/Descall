@@ -41,6 +41,7 @@ export const PREMIUM_AUDIO_EN = {
       quick_launcher: "Quick launcher",
       volume_up: "Pinned user louder",
       volume_down: "Pinned user quieter",
+      command_center: "Command center",
     },
     reason: {
       invalid: "{action}: {accel} is not a valid shortcut.",

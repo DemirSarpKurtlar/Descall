@@ -24,13 +24,14 @@
 
   async function dropFiles(payload) {
     const files = [];
+    let skipped = 0;
     for (const f of (payload && Array.isArray(payload.files) ? payload.files : []).slice(0, 10)) {
       try {
         const handle = await T.core.invoke("premium_blob_put", f.data);
         files.push({ name: String(f.name || "file"), type: String(f.type || ""), size: f.size, data: handle });
-      } catch (_) { /* too large or refused: skipped */ }
+      } catch (_) { skipped += 1; /* too large or refused: counted, the drop zone says it failed */ }
     }
-    if (files.length) send("drop", { target: payload.target, files });
+    if (files.length || skipped) send("drop", { target: payload.target, files, skipped });
   }
 
   let listening = Promise.resolve();

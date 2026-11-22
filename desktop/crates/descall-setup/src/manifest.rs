@@ -165,6 +165,19 @@ impl Manifest {
         format!("{}{}", mirror.base, self.payload.file)
     }
 
+    /// Order in which the download tries the mirrors. `probe_ms[i]` is mirror i's probe round
+    /// trip (None = no answer or not probed): answering mirrors fastest first, then the rest in
+    /// manifest order, since a failed probe can be a blip and they are still worth a try when
+    /// the chosen mirror breaks off mid-download.
+    pub fn mirror_order(&self, probe_ms: &[Option<u32>]) -> Vec<usize> {
+        let n = self.mirrors.len();
+        let ms = |i: usize| probe_ms.get(i).copied().flatten();
+        let mut answered: Vec<usize> = (0..n).filter(|i| ms(*i).is_some()).collect();
+        answered.sort_by_key(|i| (ms(*i).unwrap_or(u32::MAX), *i));
+        answered.extend((0..n).filter(|i| ms(*i).is_none()));
+        answered
+    }
+
     pub fn note_texts(&self, lang: &str) -> Vec<String> {
         self.notes
             .iter()
@@ -220,6 +233,17 @@ pub(crate) mod tests {
         let mut m: Manifest = serde_json::from_slice(TEST_MANIFEST).unwrap();
         m.payload.file = "..\\evil.zip".into();
         assert_eq!(m.validate(), Err(ManifestError::Invalid("file")));
+    }
+
+    #[test]
+    fn mirror_order_tries_every_mirror_fastest_first() {
+        let mut m: Manifest = serde_json::from_slice(TEST_MANIFEST).unwrap();
+        let base = m.mirrors[0].clone();
+        m.mirrors = (0..5).map(|i| Mirror { base: format!("https://m{i}.example/"), ..base.clone() }).collect();
+        assert_eq!(m.mirror_order(&[Some(80), None, Some(20), Some(80)]), vec![2, 0, 3, 1, 4]);
+        assert_eq!(m.mirror_order(&[]), vec![0, 1, 2, 3, 4], "no probe answered: manifest order, none dropped");
+        m.mirrors.truncate(1);
+        assert_eq!(m.mirror_order(&[None]), vec![0]);
     }
 
     #[test]

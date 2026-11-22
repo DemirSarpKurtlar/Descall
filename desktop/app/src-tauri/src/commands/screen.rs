@@ -145,9 +145,29 @@ pub async fn screen_share_update<R: Runtime>(app: AppHandle<R>, req: UpdateReque
     }
 }
 
+/// `id`: the session the page ended (native-screen-share.js Session.end); only that share
+/// stops, never a newer one. Without it (window.__descallNativeShare.stop) the running one.
 #[tauri::command]
-pub async fn screen_share_stop<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    stop(&app, "stopped").await
+pub async fn screen_share_stop<R: Runtime>(app: AppHandle<R>, id: Option<u32>) -> Result<(), String> {
+    match id {
+        Some(id) => stop_id(&app, id).await,
+        None => stop(&app, "stopped").await,
+    }
+}
+
+async fn stop_id<R: Runtime>(app: &AppHandle<R>, id: u32) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        with_host(app, move |h| {
+            h.stop_id(id, "stopped");
+        })
+        .await
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, id);
+        Ok(())
+    }
 }
 
 /// Live counters for the share bar and telemetry (`null` when no share runs).

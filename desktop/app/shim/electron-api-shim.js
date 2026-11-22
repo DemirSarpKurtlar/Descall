@@ -98,11 +98,18 @@
   };
 
   // One-time Electron import of localStorage (descall://app -> https://tauri.localhost).
+  // The boot script carries it on the import start only, for the whole life of the window: the
+  // marker keeps a reload from writing it over settings changed since. The marker names the
+  // import (BOOT.importId): a later migration (after a rollback the user went on in Electron)
+  // imports again and must not be skipped because an earlier one already ran in this profile.
   try {
     const imp = BOOT.importLocalStorage;
-    if (imp && !localStorage.getItem("__descall_import_v1")) {
+    const IMPORT_KEY = "__descall_import_v1";
+    const id = typeof BOOT.importId === "string" && BOOT.importId ? BOOT.importId : "";
+    const prev = imp ? localStorage.getItem(IMPORT_KEY) : null;
+    if (imp && (id ? prev !== id : prev === null)) {
       for (const [k, v] of Object.entries(imp)) localStorage.setItem(k, v);
-      localStorage.setItem("__descall_import_v1", String(Date.now()));
+      localStorage.setItem(IMPORT_KEY, id || String(Date.now()));
     }
   } catch (_) { /* storage disabled */ }
 
@@ -110,6 +117,8 @@
   // clear during this run wins and is mirrored to sessionStorage, so a reload (boot retry)
   // sees it before the next app start writes a new snapshot.
   const TOKEN_OVERRIDE = "__descall_token_override";
+  /** storage.js / secureToken.js SECURE_TOKEN_KEY: the page's own fallback copy. */
+  const LOCAL_TOKEN_KEY = "descall_token";
   let tokenCache = (() => {
     try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) { /* ignore */ }
     return BOOT.token || null;
@@ -120,7 +129,7 @@
   // script, after a sign-out, until the next start). Electron's preload never put it on window.
   if ("token" in BOOT || "importLocalStorage" in BOOT) {
     const rest = {};
-    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
+    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage" && k !== "importId") rest[k] = v;
     try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
   }
   // Signed out: the Descall+ desktop features (global hotkeys, push-to-talk input, tray
@@ -162,6 +171,22 @@
   };
   on("native-theme:reduced-transparency-changed", setReducedTransparency);
   invoke("app_reduced_transparency").then((v) => { if (typeof v === "boolean") setReducedTransparency(v); }, noop);
+
+  // Quit (tray Quit): Electron's app.quit() closed the window, so the page ran its pagehide /
+  // beforeunload handlers (unsent draft saved, voice channel left at once, app time flushed).
+  // app.exit() tears WebView2 down without them; the shell sends app:will-quit to the main
+  // window and waits a moment before it exits (state::exit_after_unload).
+  let willQuit = false;
+  if (LABEL === "main") {
+    on("app:will-quit", () => {
+      if (willQuit) return;
+      willQuit = true;
+      let hide;
+      try { hide = new PageTransitionEvent("pagehide", { persisted: false }); } catch (_) { hide = new Event("pagehide"); }
+      try { window.dispatchEvent(hide); } catch (err) { console.error(err); }
+      try { window.dispatchEvent(new Event("beforeunload")); } catch (err) { console.error(err); }
+    });
+  }
 
   const nativeShare = () => window.__descallNativeShare || null;
   const toElectronSource = (s) => ({
@@ -302,8 +327,20 @@
         const v = String(token || "");
         if (v.length > 16 * 1024) return false;
         remember(v);
-        fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined);
-        if (!v) premiumSignedOut();
+        if (!v) {
+          fire("token_clear");
+          premiumSignedOut();
+          return true;
+        }
+        // Electron answered false when safeStorage could not write the file, and storage.js
+        // then kept the token in localStorage. The answer is async here: when the store
+        // refuses it (DPAPI / disk error), keep the same localStorage copy, or the session
+        // would be gone at the next start. storage.js moves it back into the store then.
+        const keepLocal = () => {
+          if (LABEL !== "main" || tokenCache !== v) return;
+          try { localStorage.setItem(LOCAL_TOKEN_KEY, v); } catch (_) { /* storage disabled */ }
+        };
+        invoke("token_set", { token: v }).then((ok) => { if (ok === false) keepLocal(); }, keepLocal);
         return true;
       },
       clear: () => { remember(""); fire("token_clear"); premiumSignedOut(); return true; },
@@ -389,6 +426,20 @@
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
     }
+    // Alt+Space: the window menu, as on a captioned window (Electron's frameless window got it
+    // from Windows). WebView2 has the keyboard focus, so the key never reached the window's
+    // default handling. Not AltGr (Ctrl+Alt); the shell skips it when Windows already opened
+    // the menu itself.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.code === "Space" || e.key === " ")) {
+      e.preventDefault();
+      fire("window_system_menu", { keyboard: true });
+    }
+    // Alt+F4 closes this window (the main window hides to the tray), as Windows did for
+    // Electron's window; with WebView2 holding the focus the key may stay in the page.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.key === "F4" || e.code === "F4")) {
+      e.preventDefault();
+      winCmd("window_close", "close");
+    }
     // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
     // browser accelerator keys; the shell opens them only in a dev run or with the support
     // opt-in file (webview::devtools_allowed), otherwise the command does nothing.
@@ -396,6 +447,76 @@
       : (e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === "KeyI" || String(e.key || "").toLowerCase() === "i");
     if (devKey && !e.repeat && !e.altKey) fire("window_toggle_devtools");
   }, true);
+  // Windows 11 Snap layouts (src-tauri/src/snap.rs): the shell lays an invisible native input
+  // sink over the page's maximize button ([data-snap-layout]) that answers HTMAXBUTTON, so
+  // Windows offers the snap layouts on hover; the sink also takes the clicks (maximize /
+  // restore) and right-click. The page reports where its button is (the visible one on top,
+  // e.g. the app lock bar over the main title bar) and mirrors the sink's hover / press into
+  // data-snap-state, since the page itself no longer sees the pointer there.
+  let snapSent;
+  let snapEl = null;
+  let snapQueued = false;
+  const snapTarget = () => {
+    const doc = document;
+    if (!doc || typeof doc.querySelectorAll !== "function" || typeof doc.elementFromPoint !== "function") return null;
+    const list = doc.querySelectorAll("[data-snap-layout]");
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const el = list[i];
+      const r = el.getBoundingClientRect();
+      if (!(r.width > 0 && r.height > 0)) continue;
+      const hit = doc.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (hit && (hit === el || el.contains(hit))) return { el, r };
+    }
+    return null;
+  };
+  const snapReport = () => {
+    snapQueued = false;
+    let t = null;
+    try { t = snapTarget(); } catch (_) { t = null; }
+    if (snapEl && (!t || t.el !== snapEl)) { try { snapEl.removeAttribute("data-snap-state"); } catch (_) { /* gone */ } }
+    snapEl = t ? t.el : null;
+    const rect = t ? { x: t.r.left, y: t.r.top, width: t.r.width, height: t.r.height, dpr: Number(window.devicePixelRatio) || 1 } : null;
+    const key = JSON.stringify(rect);
+    if (key === snapSent) return;
+    snapSent = key;
+    fire("window_snap_button", { rect });
+  };
+  const snapSoon = () => {
+    if (snapQueued) return;
+    snapQueued = true;
+    (typeof requestAnimationFrame === "function" ? requestAnimationFrame : (f) => setTimeout(f, 16))(snapReport);
+  };
+  on("window:snap-state", (state) => {
+    if (!snapEl) return;
+    if (state === "hover" || state === "press") snapEl.setAttribute("data-snap-state", state);
+    else snapEl.removeAttribute("data-snap-state");
+  });
+  // Bars come and go (sign-in, app lock, admin loading screens) and move with zoom: a light
+  // check every second, sent only when the button moved. Not in the tray or minimized
+  // (html.app-backgrounded / app-hidden, idle-perf.test.mjs): no repeating timer there; it
+  // starts again when the window is back (app:visibility, focus, resize).
+  let snapTimer = 0;
+  const snapAway = () => {
+    if (!document || typeof document.elementFromPoint !== "function") return true; // no layout: nothing to check
+    const c = document.documentElement && document.documentElement.classList;
+    if (c && typeof c.contains === "function" && (c.contains("app-backgrounded") || c.contains("app-hidden"))) return true;
+    return document.visibilityState === "hidden";
+  };
+  const snapTick = () => {
+    snapTimer = 0;
+    if (snapAway()) return;
+    snapSoon();
+    snapTimer = setTimeout(snapTick, 1000);
+  };
+  const snapWatch = () => {
+    snapSoon();
+    if (!snapTimer && typeof setTimeout === "function") snapTimer = setTimeout(snapTick, 1000);
+  };
+  on("app:visibility", (p) => { if (!(p && p.backgrounded)) snapWatch(); });
+  window.addEventListener("resize", snapWatch);
+  window.addEventListener("focus", snapWatch);
+  document.addEventListener("DOMContentLoaded", snapWatch);
+
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
   window.addEventListener("mouseup", blockNavButtons, true);
@@ -404,6 +525,35 @@
   const markTauri = () => { if (document.documentElement) document.documentElement.classList.add("tauri-app"); };
   markTauri();
   document.addEventListener("DOMContentLoaded", markTauri);
+
+  // Start-up: the shell showed the main window on PageLoadEvent::Finished, i.e. after the
+  // main bundle had been parsed and run, so a cold start showed nothing for that long.
+  // Electron put its splash window up at once. Tell the shell as soon as index.html has
+  // mounted the boot splash (a frame later, or 120 ms if no frame comes while hidden):
+  // app_boot_state "splash" shows the window then (commands/app.rs; only for a normal
+  // start that has not mounted the app yet, never for a tray / minimized start).
+  if (!ADMIN && LABEL === "main") {
+    let seen = false;
+    let told = false;
+    const tell = () => {
+      if (told) return;
+      told = true;
+      fire("app_boot_state", { phase: "splash", ms: Math.round((window.performance && performance.now()) || 0) });
+    };
+    let watch = null;
+    const onSplash = () => {
+      if (seen || !document.getElementById("boot-splash")) return;
+      seen = true;
+      if (watch) watch.disconnect();
+      try { requestAnimationFrame(() => setTimeout(tell, 0)); } catch (_) { /* no frames */ }
+      setTimeout(tell, 120);
+    };
+    try {
+      watch = new MutationObserver(onSplash);
+      watch.observe(document, { childList: true, subtree: true });
+    } catch (_) { /* no observer: PageLoadEvent::Finished shows the window */ }
+    document.addEventListener("DOMContentLoaded", () => { onSplash(); if (watch) watch.disconnect(); }, { once: true });
+  }
 
   // Page warnings and errors to main.log (Electron logged console-message during the boot
   // window): console.warn / console.error of the first minute, uncaught errors, unhandled

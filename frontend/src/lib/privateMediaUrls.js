@@ -5,6 +5,7 @@
 // for members of the conversation. Results are cached in memory, keyed by storage path.
 import { useCallback, useEffect, useState } from "react";
 import { apiBase } from "./nodeRouting.js";
+import { isDesktopShell } from "./desktopShell.js";
 import { getToken } from "./storage.js";
 
 const SIGNED_RE = /\/api\/media\/f\/((?:images|files)\/[A-Za-z0-9._-]+)(?:\?|$)/;
@@ -104,7 +105,7 @@ export function refreshMediaUrl(url, { fetchImpl = globalThis.fetch } = {}) {
  */
 export function openFreshMediaUrl(rawUrl, { win = typeof window !== "undefined" ? window : undefined, refresh = refreshMediaUrl } = {}) {
   if (!win || typeof win.open !== "function") return Promise.resolve(null);
-  const desktop = Boolean(win.electronAPI?.isElectron);
+  const desktop = isDesktopShell(win);
   let popup = null;
   if (!desktop) {
     try {

@@ -319,7 +319,7 @@ assert.ok(/onBack: backToMenu/.test(panel) && /onBack: (onClose|requestClose)\b/
 assert.ok(!/history\.back\(\)/.test(hook), "swipe-back never calls history.back() itself");
 assert.ok(/allowsBackForwardNavigationGestures = false/.test(bridge), "WKWebView history swipe stays off on iOS");
 assert.ok(/getPlatform\(\) === "android"/.test(hook), "Android app keeps the system back gesture only");
-assert.ok(/electronAPI\?\.isElectron/.test(hook), "Electron never installs touch listeners");
+assert.ok(/isDesktopShell\(\)\) return false/.test(hook), "Electron never installs touch listeners");
 assert.ok(/\[data-call-overlay\]/.test(hook) && /aria-modal='true'/.test(hook), "call view and modals block the swipe");
 
 assert.ok(/primeHaptics\(\)/.test(hook) && /function commitFeedback/.test(hook), "haptic primed on lock, fired at commit");

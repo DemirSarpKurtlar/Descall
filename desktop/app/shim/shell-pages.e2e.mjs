@@ -10,7 +10,7 @@
 // Run: node desktop/app/shim/shell-pages.e2e.mjs   (needs Playwright + Chromium)
 //      SHOTS=<dir> also writes screenshots.
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,16 +18,24 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..", "..");
 const require = createRequire(import.meta.url);
+// PLAYWRIGHT_CORE + CHROME_PATH: the CI driver (playwright-core) with the runner's Chrome.
+// There a missing driver is a failure, not a skip.
+const CORE = process.env.PLAYWRIGHT_CORE || "";
 let playwright;
 try {
-  playwright = require("playwright");
+  playwright = require(CORE || "playwright");
 } catch (_) {
-  try { playwright = require(join(repo, "frontend", "node_modules", "playwright")); } catch (_) { /* below */ }
+  if (!CORE) try { playwright = require(join(repo, "frontend", "node_modules", "playwright")); } catch (_) { /* below */ }
 }
 if (!playwright) {
+  if (CORE) {
+    console.error(`shell-pages.e2e: FAIL (PLAYWRIGHT_CORE=${CORE} does not load)`);
+    process.exit(1);
+  }
   console.log("shell-pages.e2e: skipped (no playwright)");
   process.exit(0);
 }
+const CHROME = process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : "";
 const SHOTS = process.env.SHOTS || "";
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
@@ -67,13 +75,19 @@ function pageHtml(script) {
   const tpl = m[1].replace(/\\\r?\n\s*/g, "").replace(/\\"/g, '"');
   return rustFormat(tpl, { script });
 }
-const CSP = pagesRs.match(/pub const CSP: &str = "([^"]+)"/)[1];
+// pub const CSP: &str = concat!("...", shell_img_src!(), "..."): rebuilt from the macro.
+const IMG_SRC = pagesRs.match(/macro_rules! shell_img_src \{\s*\(\) => \{\s*"([^"]+)"/)[1];
+const CSP = [...pagesRs.match(/pub const CSP: &str = concat!\(([\s\S]+?)\);\n/)[1].matchAll(/"((?:[^"\\]|\\.)*)"|shell_img_src!\(\)/g)]
+  .map((m) => (m[1] === undefined ? IMG_SRC : JSON.parse(`"${m[1]}"`))).join("");
+assert.ok(CSP.startsWith("default-src 'none';") && CSP.includes(`img-src ${IMG_SRC};`), `shell CSP parsed: ${CSP}`);
 const SHELL_ORIGIN = "https://descall-shell.localhost";
 const APP_ORIGIN = "https://tauri.localhost";
 const SHELL_FILES = {
   "/notif.html": ["text/html; charset=utf-8", () => pageHtml("notif.js")],
   "/runtime.js": ["text/javascript; charset=utf-8", runtimeJs],
   "/notif.js": ["text/javascript; charset=utf-8", () => read("desktop/app/shim/shell-notif.js")],
+  "/overlay.html": ["text/html; charset=utf-8", () => pageHtml("overlay.js")],
+  "/overlay.js": ["text/javascript; charset=utf-8", () => read("desktop/app/shim/shell-overlay.js")],
 };
 
 // ---- fake Tauri bridge (init script, runs before any page script) --------------------------------
@@ -103,6 +117,7 @@ function fakeTauri({ label, responses = {} }) {
 }
 
 const browser = await playwright.chromium.launch({
+  ...(CHROME ? { executablePath: CHROME } : {}),
   args: ["--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE descall-shell.localhost, EXCLUDE tauri.localhost"],
 });
 const failures = [];
@@ -171,6 +186,31 @@ await step("capsule: DM renders name, preview and the notifAPI bridge", async ()
   if (SHOTS) await page.screenshot({ path: join(SHOTS, "capsule-dm.png") });
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await step("capsule: avatars load from the app's image hosts only (CSP img-src)", async () => {
+  const attempt = async (avatarUrl) => {
+    const { page, context } = await capsule({ title: "Ayşe", body: "selam", avatarUrl, data: { type: "dm", from: "Ayşe" }, duration: 5000 });
+    // Requests that reach the network layer (CSP-blocked ones never do).
+    const requested = [];
+    await page.route("**/*", (r) => { requested.push(r.request().url()); return r.fallback(); });
+    const blocked = await page.evaluate((u) => new Promise((resolve) => {
+      document.addEventListener("securitypolicyviolation", (e) => resolve(e.blockedURI), { once: true });
+      const img = new Image();
+      img.onerror = () => setTimeout(() => resolve(null), 300);
+      img.src = u;
+    }), avatarUrl);
+    await context.close();
+    return { blocked, requested };
+  };
+  // Any https host used to load (img-src https:): the always-on-top capsule told that host the
+  // viewer's address for an avatar the main window refuses.
+  const foreign = await attempt("https://tracker.example/a.png");
+  assert.equal(foreign.blocked, "https://tracker.example/a.png", "foreign avatar host blocked by CSP");
+  assert.ok(!foreign.requested.some((u) => u.startsWith("https://tracker.example")), `never requested: ${JSON.stringify(foreign.requested)}`);
+  const own = await attempt("https://abc.supabase.co/storage/v1/object/public/avatars/a.png");
+  assert.equal(own.blocked, null, "the app's own image host is allowed");
+  assert.ok(own.requested.some((u) => u.startsWith("https://abc.supabase.co/")), "own host requested");
 });
 
 function deepKeys(api) {
@@ -248,6 +288,68 @@ await step("capsule: every locale renders (shell language)", async () => {
     const { page, context, errors } = await capsule({ locale, title: "x", body: "y", data: { type: "call", from: "Ada" }, type: "call", duration: 0 });
     const label = await page.getAttribute("[data-act=accept]", "aria-label");
     assert.ok(label && label.length > 1, `${locale}: accept label`);
+    assert.deepEqual(errors, [], locale);
+    await context.close();
+  }
+});
+
+// ---- in-call mini card (overlay-<n>, commands/overlay.rs) ---------------------------------------------
+// Round 2: the card the shell shows during a call, outside the app. Size as overlay.rs builds it
+// (WIDTH 308, HEIGHT 136).
+async function miniCard(locale = "tr") {
+  const init = [`window.__DESCALL_OVERLAY__ = ${JSON.stringify({ locale })};`];
+  const p = await newPage({ width: 308, height: 136, init, label: "overlay-3" });
+  await p.page.goto(`${SHELL_ORIGIN}/overlay.html`);
+  await p.page.waitForSelector("#card");
+  return p;
+}
+// Payload as overlay.rs pushes it (merge() of useElectronOverlay's overlayShow payload).
+const ovState = (over = {}) => ({ title: "Ayşe", muted: false, deafened: false, connected: true, pending: false, kind: "dm", since: Date.now() - 65000, lang: "tr", avatarUrl: "", brandRgb: "", ...over });
+
+await step("mini card: overlayAPI bridge, state push renders title and call time", async () => {
+  const { page, context, errors } = await miniCard();
+  // Same members as frontend/electron/overlayPreload.cjs.
+  const pre = read("frontend/electron/overlayPreload.cjs");
+  const keys = [...pre.matchAll(/^\s{2,4}(\w+):\s*(?:\(|function)/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.overlayAPI).sort()), keys, "overlayAPI keys = overlayPreload.cjs");
+  await page.evaluate((st) => window.__overlayUpdate(st), ovState());
+  await page.waitForTimeout(60);
+  assert.equal(await page.textContent("#title"), "Ayşe");
+  assert.match(await page.textContent("#status"), /1:0\d/, "call time from since");
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, "mini-card.png") });
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+await step("mini card: mute / deafen / leave reach the shell (overlay_action), buttons outside the drag row", async () => {
+  const { page, context, errors } = await miniCard();
+  await page.evaluate((st) => window.__overlayUpdate(st), ovState());
+  // WebView2 turns app-region: drag into a caption (HTCAPTION) that swallows clicks (round 1
+  // bug class): no button may sit inside a drag region.
+  const inDrag = await page.evaluate(() => [...document.querySelectorAll("button")].filter((b) => {
+    for (let el = b; el; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      const r = cs.getPropertyValue("app-region") || cs.getPropertyValue("-webkit-app-region");
+      if (r === "drag") return true;
+      if (r === "no-drag") return false;
+    }
+    return false;
+  }).map((b) => b.id));
+  assert.deepEqual(inDrag, [], "buttons inside a drag region");
+  for (const [id, act] of [["#muteBtn", "mute"], ["#deafenBtn", "deafen"], ["#leaveBtn", "leave"]]) {
+    await page.click(id);
+    await waitCall(page, "overlay_action", (a) => a.action === act);
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+await step("mini card: every locale labels its buttons (shell language)", async () => {
+  for (const locale of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+    const { page, context, errors } = await miniCard(locale);
+    await page.evaluate((st) => window.__overlayUpdate(st), ovState({ lang: "en" }));
+    const labels = await page.evaluate(() => ["muteBtn", "deafenBtn", "leaveBtn"].map((id) => document.getElementById(id).getAttribute("aria-label") || document.getElementById(id).title || ""));
+    assert.ok(labels.every((l) => l.length > 1), `${locale}: ${JSON.stringify(labels)}`);
     assert.deepEqual(errors, [], locale);
     await context.close();
   }

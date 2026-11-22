@@ -1,3 +1,4 @@
+import { isDesktopShell } from "./desktopShell.js";
 /**
  * Google Identity Services only runs on an http(s) origin that is registered
  * in the Google client. The packaged Electron app is descall:// (and iOS uses
@@ -7,7 +8,7 @@
 export function isGoogleSignInOffered(win) {
   const w = win !== undefined ? win : (typeof window !== "undefined" ? window : null);
   if (!w) return true;
-  if (w.electronAPI && w.electronAPI.isElectron) return false;
+  if (isDesktopShell(w)) return false;
   try {
     const cap = w.Capacitor;
     if (

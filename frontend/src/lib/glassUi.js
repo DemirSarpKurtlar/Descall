@@ -1,3 +1,4 @@
+import { isDesktopShell } from "./desktopShell.js";
 /**
  * Liquid Glass UI gate.
  *
@@ -140,7 +141,7 @@ function snapshotInputs(w, remoteOverride) {
   return {
     isNativeIos: platform === "ios" || isNativeIosShell(w),
     isNativeAndroid: platform === "android",
-    isElectron: Boolean(w?.electronAPI?.isElectron),
+    isElectron: Boolean(w) && isDesktopShell(w),
     shortSide,
     viewportWidth,
     viewportShortSide: viewportWidth > 0 && viewportHeight > 0 ? Math.min(viewportWidth, viewportHeight) : 0,

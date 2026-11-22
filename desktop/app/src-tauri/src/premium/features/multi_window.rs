@@ -41,7 +41,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         if let Some(w) = h.app.get_webview_window(&label) {
             let _ = w.unminimize();
             wins::show(h, &w, "popout");
-            let _ = w.set_focus();
+            crate::commands::window::focus_soon(&w);
         }
         return ok(json!({ "reused": true }));
     }
@@ -72,14 +72,14 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .additional_browser_args(crate::BROWSER_ARGS)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        // <a download> / blob: exports: Downloads + Explorer under a safe free name, as in the
+        // main window (no Edge download bubble over the app).
+        .on_download(crate::webview::on_download)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {
-            if u.scheme() == "https" {
-                if let Some(h) = crate::premium::host() {
-                    use tauri_plugin_opener::OpenerExt;
-                    let _ = h.app.opener().open_url(u.as_str(), None::<&str>);
-                }
+            if let Some(h) = crate::premium::host() {
+                crate::boot::open_external_window(&h.app, &u);
             }
             tauri::webview::NewWindowResponse::Deny
         })
@@ -97,6 +97,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     // No browser menu / shortcuts, media without prompts: as in the main window.
     crate::webview::install_permission_handler(&w);
     crate::webview::install_browser_guards(&w);
+    crate::commands::window::forward_maximized(&w); // title bar Restore / Maximize
     wins::track(h, &label, "popout", "multi_window", json!({ "route": r }));
     wins::apply_behaviour(h, &label, "popout");
     wins::show(h, &w, "popout");

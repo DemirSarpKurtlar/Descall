@@ -48,7 +48,7 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null, local = null } = {}) {
   const invokes = [];
   const winListeners = new Map();
   const listeners = new Map();
@@ -83,7 +83,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const ctx = {
     window,
     document: { addEventListener: () => {}, documentElement: { classList: { _s: new Set(), add(c) { this._s.add(c); } } } },
-    localStorage: store(),
+    localStorage: local || store(),
     sessionStorage: session || store(),
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
     navigator: {},
@@ -238,6 +238,149 @@ for (const [path, args, cmd, expected] of CASES) {
   deq(s.invokes.map((c) => c[0]), [cmd], `${path} -> ${cmd}`);
   deq(s.invokes[0][1], expected, `${path} args`);
   called.add(cmd);
+}
+
+// One-time Electron localStorage import (boot.rs import_from_electron_once): applied once per
+// import, never again on a reload of the same window, and again for a later migration (the
+// user went back to Electron after a rollback, changed settings, then migrated again).
+{
+  const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
+  const local = mem();
+  const first = { importLocalStorage: { theme: "dark", "descall-sound": "on" }, importId: "mig-1@100" };
+  const a = loadShim({ boot: first, local });
+  assert.equal(local.getItem("theme"), "dark");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-1@100");
+  assert.equal(a.window.__DESCALL_BOOT__.importLocalStorage, undefined, "the import is not left on window");
+  assert.equal(a.window.__DESCALL_BOOT__.importId, undefined);
+  local.setItem("theme", "light"); // changed by the user in this run
+  loadShim({ boot: first, local }); // a reload: the window keeps the same init script
+  assert.equal(local.getItem("theme"), "light", "a reload never applies the same import again");
+  loadShim({ boot: { importLocalStorage: { theme: "midnight" }, importId: "mig-2@900" }, local });
+  assert.equal(local.getItem("theme"), "midnight", "a later migration's import is applied");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // A profile marked by an earlier shell (timestamp marker) still takes a new import.
+  const old = mem();
+  old.setItem("__descall_import_v1", "1763700000000");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" }, importId: "mig-3@5" }, local: old });
+  assert.equal(old.getItem("theme"), "dark");
+  // Without an id (older shell): applied once, as before.
+  const legacy = mem();
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  legacy.setItem("theme", "light");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  assert.equal(legacy.getItem("theme"), "light");
+  // No import on a normal start: the marker is left alone.
+  loadShim({ boot: { version: "4.1.0" }, local });
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // The shell sends the id (boot.rs Boot.import_id, ImportMarker::import_id).
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  assert.match(bootRs, /import_id: imported\.map\(\|i\| i\.id\.as_str\(\)\)/);
+  assert.match(bootRs, /Imported \{ local_storage: h\.local_storage\.clone\(\), id: record\.import_id\(\) \}/);
+  assert.match(bootRs, /Imported \{ local_storage, id: import_id \}/, "extra-account windows too");
+}
+
+// The secure store refused the token (DPAPI / disk error; token_set answered false): like
+// Electron's false answer, the page's localStorage copy keeps the session for the next start.
+{
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const refused = loadShim({ responses: { token_set: false } });
+  assert.equal(refused.api.secureToken.set("a.b.c"), true);
+  await tick(); await tick();
+  assert.equal(refused.ctx.localStorage.getItem("descall_token"), "a.b.c", "refused: kept in localStorage like storage.js did on Electron");
+  const broken = loadShim({ fail: ["token_set"] });
+  broken.api.secureToken.set("d.e.f");
+  await tick(); await tick();
+  assert.equal(broken.ctx.localStorage.getItem("descall_token"), "d.e.f", "a failed command too");
+  const stored = loadShim({ responses: { token_set: true } });
+  stored.api.secureToken.set("g.h.i");
+  await tick(); await tick();
+  assert.equal(stored.ctx.localStorage.getItem("descall_token"), null, "stored: never in localStorage");
+  const late = loadShim({ responses: { token_set: false } });
+  late.api.secureToken.set("j.k.l");
+  late.api.secureToken.clear(); // signed out before the answer came
+  await tick(); await tick();
+  assert.equal(late.ctx.localStorage.getItem("descall_token"), null, "a token signed out meanwhile is not kept");
+  const popout = loadShim({ responses: { token_set: false }, label: "popout-1" });
+  popout.api.secureToken.set("m.n.o");
+  await tick(); await tick();
+  assert.equal(popout.ctx.localStorage.getItem("descall_token"), null, "only the main window keeps a copy");
+}
+
+// Quit from the tray: the page runs its pagehide / beforeunload handlers first (Electron's
+// app.quit closed the window: draft saved, voice left at once, app time flushed).
+{
+  const s = loadShim();
+  const seen = [];
+  s.ctx.Event = class { constructor(type, init) { this.type = type; Object.assign(this, init || {}); } };
+  s.ctx.PageTransitionEvent = class extends s.ctx.Event {};
+  s.window.dispatchEvent = (ev) => { seen.push([ev.type, ev.persisted]); return true; };
+  s.emit("app:will-quit", null, "popout-1");
+  deq(seen, [], "another window's quit is not this page's");
+  s.emit("app:will-quit", null);
+  deq(seen, [["pagehide", false], ["beforeunload", undefined]], "pagehide (not persisted, so voice is left) then beforeunload");
+  s.emit("app:will-quit", null);
+  assert.equal(seen.length, 2, "once");
+  const pop = loadShim({ label: "popout-1" });
+  assert.equal((pop.listeners.get("app:will-quit") || []).length, 0, "pop-outs close with the app, no extra handlers");
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  const trayRs = readFileSync(join(here, "..", "src-tauri", "src", "tray.rs"), "utf8");
+  assert.match(stateRs, /to_main\(app, "app:will-quit", \(\)\);[\s\S]{0,200}QUIT_UNLOAD_GRACE_MS[\s\S]{0,80}app\.exit\(0\)/, "the shell waits before it exits");
+  assert.match(trayRs, /pub fn quit[\s\S]*?state::exit_after_unload\(app\);\s*\}/, "tray Quit goes through it");
+  assert.doesNotMatch(trayRs.slice(trayRs.indexOf("pub fn quit")), /^\s*app\.exit\(0\);/m);
+}
+
+// Every restart records how the window was left first: app.restart() reuses this run's
+// arguments, and a login session's --autostart --hidden brought the window back hidden.
+{
+  const src = (f) => readFileSync(join(here, "..", "src-tauri", "src", ...f.split("/")), "utf8");
+  for (const f of ["commands/updates.rs", "webview.rs", "main.rs", "tray.rs", "boot.rs", "commands/app.rs", "commands/window.rs"]) {
+    assert.doesNotMatch(src(f), /app\.restart\(\)/, `${f}: restarts go through state::restart`);
+  }
+  assert.match(src("state.rs"), /pub fn restart<R: Runtime>\(app: &AppHandle<R>\) -> ! \{\s*set_quitting\(app\);\s*crate::boot::write_relaunch_marker\(app\);\s*app\.restart\(\)/);
+  const launchRs = readFileSync(join(repo, "desktop", "crates", "descall-shell", "src", "launch.rs"), "utf8");
+  const rule = launchRs.slice(launchRs.indexOf("pub fn decide_cold_start"));
+  assert.ok(rule.indexOf("if updater_relaunch") < rule.indexOf("if is_autostart_launch(argv)"), "the fresh marker decides before the login flags");
+}
+
+// Descall+ raises the main window (toast click, quick launcher, command center, account
+// switch) through the shell's show_main, which also sends app:visibility { backgrounded: false }.
+{
+  const premiumRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "mod.rs"), "utf8");
+  const body = premiumRs.slice(premiumRs.indexOf("pub fn show_main(&self)"));
+  assert.match(body.slice(0, 120), /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/);
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main"), stateRs.indexOf("pub fn request_show")), /"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
+}
+
+// An updater relaunch that was minimized comes back minimized without activation
+// (main.cjs showInactive + minimize); show() is SW_SHOW and took the focus from a game.
+{
+  const mainSrc = readFileSync(join(here, "..", "src-tauri", "src", "main.rs"), "utf8");
+  const arm = mainSrc.slice(mainSrc.indexOf("StartAction::Minimize =>"), mainSrc.indexOf("StartAction::Hide =>"));
+  assert.match(arm, /platform::show_minimized_inactive\(&w\)/);
+  assert.doesNotMatch(arm, /w\.show\(\)/);
+  const plat = readFileSync(join(here, "..", "src-tauri", "src", "platform.rs"), "utf8");
+  assert.match(plat, /ShowWindow\(HWND\(h as \*mut core::ffi::c_void\), SW_SHOWMINNOACTIVE\)/);
+}
+
+// The paint watchdog never shows its "could not open" box over a window hidden in the tray
+// (login auto-start), like main.cjs (if (!win.isVisible()) return).
+{
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  const ask = bootRs.slice(bootRs.indexOf("PaintStep::Ask => {"));
+  assert.ok(ask.indexOf("if !win.is_visible().unwrap_or(false)") > -1 && ask.indexOf("if !win.is_visible().unwrap_or(false)") < ask.indexOf("ask_retry"), "hidden: no dialog");
+}
+
+// A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
+// reported once and asked about once, 10 s in, with the window on screen (main.cjs
+// 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).
+{
+  const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  const hung = webviewRs.slice(webviewRs.indexOf("if kind == 2 {"), webviewRs.indexOf("if action != RendererGone::ReportOnly"));
+  assert.match(hung, /h\.report\(crate::state::now_ms\(\)\)[\s\S]*if !new \{\s*return;/, "repeats of the same hang return early");
+  assert.match(hung, /HANG_ASK_AFTER_MS[\s\S]*is_visible\(\)[\s\S]*h\.due\(hang, visible\)[\s\S]*ask\(&win, kind\)/, "asked once, later, only on screen");
+  assert.ok(hung.indexOf("errors::report") > hung.indexOf("if !new"), "reported once per hang");
+  assert.doesNotMatch(hung, /reset_voice/, "a hung call still counts as busy (no update install over it)");
 }
 
 // Values answered locally (sync in Electron) and return shapes.
@@ -543,7 +686,10 @@ for (const [path, args, cmd, expected] of CASES) {
   const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
   const overlayRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "overlay.rs"), "utf8");
   const trayHtml = readFileSync(join(here, "..", "..", "..", "frontend", "public", "tray-menu", "tray-menu.html"), "utf8");
-  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay", overlayRs], ["tray menu page", trayHtml]]) {
+  // The HUD's CSP lives next to the shell pages' one (pages.rs HUD_CSP, same image hosts).
+  assert.match(overlayRs, /"Content-Security-Policy", descall_shell::pages::HUD_CSP\)/, "the Descall+ overlay sends pages::HUD_CSP");
+  const hudCsp = (pagesRs.match(/pub const HUD_CSP: &str = concat!\(([^\n]+)\);/) || [])[1] || "";
+  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay (pages.rs HUD_CSP)", hudCsp], ["tray menu page", trayHtml]]) {
     assert.match(src, /connect-src ipc: http:\/\/ipc\.localhost https:\/\/ipc\.localhost/, `${name}: https IPC origin in connect-src`);
   }
   // Descall+ portal windows (call, sidebar): links go to the browser, never a bare popup.
@@ -889,9 +1035,19 @@ for (const label of ["popout-1", "acct-42"]) {
   const glob = (pattern, label) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`).test(label);
   const capsFor = (label) => caps.filter((c) => c.windows.some((w) => glob(w, label)));
   // core:default bundles core:event:default (listen / unlisten), core:window:default, ...
-  const allowed = (label, perm) => capsFor(label).some((c) => c.permissions.includes(perm)
-    || (perm.startsWith("core:event:") && c.permissions.includes("core:default"))
-    || (perm === "opener:allow-open-url" && c.permissions.includes("opener:allow-open-url")));
+  // A permission is a string or a scoped grant { identifier, allow: [...] }.
+  const ids = (c) => c.permissions.map((p) => (typeof p === "string" ? p : p.identifier));
+  const allowed = (label, perm) => capsFor(label).some((c) => ids(c).includes(perm)
+    || (perm.startsWith("core:event:") && ids(c).includes("core:default")));
+  // The opener scope is the shell's own external-link rule (trust::is_safe_external_url):
+  // http, https and mailto. opener:allow-default-urls also allowed tel:.
+  {
+    const def = caps[0];
+    const opener = def.permissions.find((p) => typeof p === "object" && p.identifier === "opener:allow-open-url");
+    assert.ok(opener, "opener:allow-open-url is a scoped grant");
+    deq(opener.allow.map((e) => e.url).sort(), ["http://*", "https://*", "mailto:*"], "opener scope: web and mail only");
+    assert.ok(!ids(def).includes("opener:allow-default-urls"), "no opener:allow-default-urls (tel:)");
+  }
   // [shim, windows it is injected into (one sample label per glob)]
   const WINDOWS = {
     "electron-api-shim.js": ["main", "admin", "signup-stats", "popout-1", "acct-7"],
@@ -1241,6 +1397,34 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   down(el(true, true));
   down(el(false, false));
   assert.equal(t.dragged(), 1, "a press on '.drag' (not on its buttons / list) moves the window");
+  // Quick drop: a file the shell refuses (too large, store full) is counted, not lost silently,
+  // and a drop where every upload failed still reaches the shell so the zone can say so.
+  const d = loadHud();
+  const big = new ArrayBuffer(4);
+  d.hud.action("drop", { target: "dm:1", files: [{ name: "a.txt", type: "text/plain", size: 1, data: new ArrayBuffer(1) }, { name: "b.bin", size: 4, data: big }] });
+  await flush(); await flush(); await flush();
+  const drops = d.invokes.filter(([c, a]) => c === "premium_hud_action" && a.kind === "drop").map(([, a]) => a.payload);
+  assert.equal(drops.length, 1, "one drop action");
+  assert.equal(drops[0].files.length, 2);
+  assert.equal(drops[0].skipped, 0, "nothing skipped when every upload worked");
+}
+{
+  const hudSrc = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  const invokes = [];
+  const T = {
+    core: { invoke: (cmd, args) => { invokes.push([cmd, args]); return cmd === "premium_blob_put" ? Promise.reject(new Error("too-large")) : Promise.resolve(null); } },
+    event: { listen: () => Promise.resolve(() => {}) },
+  };
+  const window = { __TAURI__: T };
+  window.top = window;
+  const doc = { documentElement: { appendChild() {} }, createElement: () => ({}), getElementById: () => null, addEventListener() {} };
+  const ctx = { window, document: doc, Promise, Set, String, Array, Object, console };
+  vm.createContext(ctx);
+  vm.runInContext(hudSrc, ctx, { filename: "premium-hud-shim.js" });
+  window.descallHud.action("drop", { target: "dm:1", files: [{ name: "huge.iso", size: 1, data: new ArrayBuffer(1) }] });
+  for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0));
+  const drops = invokes.filter(([c, a]) => c === "premium_hud_action" && a.kind === "drop").map(([, a]) => a.payload);
+  deq(drops.map((p) => [p.files.length, p.skipped]), [[0, 1]], "a refused upload is reported as skipped");
 }
 
 // 7. Every shell / Descall+ window the Rust side builds (static check of the builder chains).
@@ -1334,6 +1518,25 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   const platRs = readFileSync(join(srcDir, "premium", "platform.rs"), "utf8");
   assert.equal((platRs.match(/pub fn mouse_button_down\(\) -> bool/g) || []).length, 2, "mouse_button_down on Windows and the stub");
   assert.match(platRs, /if ex & WS_EX_TRANSPARENT\.0 as isize == 0 \{\s*SetWindowLongPtrW\(h, GWL_EXSTYLE, ex & !\(WS_EX_LAYERED/, "a click-through HUD at 100 % keeps WS_EX_LAYERED");
+}
+
+// 8. HUD avatars: the URL goes into style="background-image:url('...')". esc() turns ' into
+// &#39;, which the attribute decodes back, so a quote in an avatar URL closed the CSS string
+// and injected CSS into the HUD. URLs that could leave url('...') are dropped (initial shown).
+{
+  const hud = readFileSync(join(here, "..", "src-tauri", "src", "premium", "hud", "hud.html"), "utf8");
+  const pick = (name) => hud.split("\n").find((l) => l.startsWith(`function ${name}(`));
+  const ctx = vm.createContext({});
+  vm.runInContext([pick("esc"), pick("initial"), pick("av")].join("\n"), ctx);
+  const av = (m) => vm.runInContext(`av(${JSON.stringify(m)})`, ctx);
+  assert.match(av({ id: "1", name: "Ayse", avatar: "https://x.supabase.co/a.png" }), /style="background-image:url\('https:\/\/x\.supabase\.co\/a\.png'\)"/, "a normal avatar is drawn");
+  for (const evil of ["https://x/a.png');background:url('https://evil/b", "https://x/a.png)\\", "https://x/a b.png", "https://x/\"a.png", "javascript:alert(1)"]) {
+    const html = av({ id: "1", name: "Ayse", avatar: evil });
+    assert.doesNotMatch(html, /style=/, `no style for ${evil}`);
+    assert.match(html, />A<\/span>$/, "the initial instead");
+  }
+  // Every value the HUD writes into its markup is escaped or a number.
+  assert.doesNotMatch(hud, /data-since="'\+(?!\(Number\()/, "data-since takes numbers only");
 }
 
 console.log("electron-api-shim.test: ok");

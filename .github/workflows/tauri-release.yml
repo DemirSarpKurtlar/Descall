@@ -154,6 +154,10 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     env:
+      # Pinned: the NSIS installer template (and so desktop/app/src-tauri/nsis/hooks.nsh, which
+      # relies on its $UpdateMode and shortcut names) comes from the CLI's tauri-bundler.
+      # 2.12.6 = tauri-bundler 2.10.6, the template the hooks were checked against. Bump together.
+      TAURI_CLI: "2.12.6"
       VERSION: ${{ needs.preflight.outputs.version }}
       TAG: ${{ needs.preflight.outputs.tag }}
       DO_SETUP: ${{ needs.preflight.outputs.setup }}
@@ -194,7 +198,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "DESCALL_SETUP_SIGNING_KEY does not belong to desktop/keys/setup-manifest.pub. Put the matching public key in the repo or the matching private key in the secret." }
           }
           if ($env:DO_UPDATER -eq 'true') {
-            npx --yes @tauri-apps/cli@2 signer sign $probe
+            npx --yes @tauri-apps/cli@${{ env.TAURI_CLI }} signer sign $probe
             if ($LASTEXITCODE -ne 0) { throw "TAURI_SIGNING_PRIVATE_KEY could not sign (wrong TAURI_SIGNING_PRIVATE_KEY_PASSWORD?)" }
             python desktop/tools/publish/desktop_release.py verify-updater $probe "$probe.sig" desktop/keys/tauri-updater.pub
             if ($LASTEXITCODE -ne 0) { throw "TAURI_SIGNING_PRIVATE_KEY does not belong to desktop/keys/tauri-updater.pub. Installed apps would refuse this update." }
@@ -277,7 +281,7 @@ jobs:
           $path = Join-Path $env:RUNNER_TEMP 'tauri-release.conf.json'
           $conf | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $path -Encoding utf8
           Get-Content $path
-          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis --config $path
+          npx --yes @tauri-apps/cli@${{ env.TAURI_CLI }} build --target x86_64-pc-windows-msvc --bundles nsis --config $path
           if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
           python ../../tools/publish/desktop_release.py check-app-dir "../../../$env:REL"
           if ($LASTEXITCODE -ne 0) { throw "the built app folder lacks the capture helper" }

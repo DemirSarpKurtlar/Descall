@@ -92,7 +92,7 @@ fn open(h: &Host, id: &str) -> Value {
     if let Some(w) = h.app.get_webview_window(&label) {
         let _ = w.unminimize();
         let _ = w.show();
-        let _ = w.set_focus();
+        crate::commands::window::focus_soon(&w);
         return ok(json!({ "id": id }));
     }
     let Some(url) = super::multi_window::app_url(h, "/") else { return json!({ "ok": false, "error": "no-main" }) };
@@ -113,14 +113,24 @@ fn open(h: &Host, id: &str) -> Value {
         .additional_browser_args(crate::BROWSER_ARGS)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        // <a download> / blob: exports: Downloads + Explorer under a safe free name, as in the
+        // main window (no Edge download bubble over the app).
+        .on_download(crate::webview::on_download)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
-        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+        // Links that open a new window go to the default browser, as in the main window.
+        .on_new_window(|u, _| {
+            if let Some(h) = crate::premium::host() {
+                crate::boot::open_external_window(&h.app, &u);
+            }
+            tauri::webview::NewWindowResponse::Deny
+        })
         .build();
     match built {
         Ok(w) => {
             crate::webview::install_permission_handler(&w);
             crate::webview::install_browser_guards(&w);
+            crate::commands::window::forward_maximized(&w); // title bar Restore / Maximize
             wins::track(h, &label, "account", "multi_account", json!({ "id": id }));
             ok(json!({ "id": id }))
         }

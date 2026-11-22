@@ -36,6 +36,15 @@ impl Feature for F {
             }
         });
         let ok = h.hotkeys.register_extra("command_center", &accel, f);
-        Ok(json!({ "ok": ok, "hotkey": if ok { accel } else { String::new() } }))
+        if ok {
+            return Ok(json!({ "ok": true, "hotkey": accel }));
+        }
+        // Refused: name the Descall feature that holds it (quick launcher, same default
+        // Ctrl+Shift+K) so Settings can show the clash; otherwise another app has it.
+        let conflict = h.hotkeys.holder_of(&accel).filter(|o| o != "command_center");
+        if let Some(o) = &conflict {
+            log::info!("[premium:command_center] {accel} is held by {o}");
+        }
+        Ok(json!({ "ok": false, "hotkey": "", "conflict": conflict }))
     }
 }

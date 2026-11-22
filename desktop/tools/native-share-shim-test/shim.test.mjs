@@ -204,7 +204,10 @@ test("lane L2: no loopback -> video only, user told", async () => {
   // The page stopping the track stops the native share.
   stream.getVideoTracks()[0].stop();
   await new Promise((r) => setTimeout(r, 0));
-  assert.ok(p.calls.some((c) => c[0] === "screen_share_stop"));
+  // Round 2: scoped to this session, so a late stop never ends the next share.
+  const stop = p.calls.find((c) => c[0] === "screen_share_stop");
+  assert.ok(stop);
+  assert.equal(stop[1] && stop[1].id, START.id, "stop carries the session id");
 });
 
 test("lane L4: no restrictOwnAudio support -> no audio requested at all", async () => {

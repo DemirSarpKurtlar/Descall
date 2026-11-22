@@ -60,6 +60,14 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
         // Main-process errors queued so far (and the previous run's crash) to Sentry.
         crate::errors::attach();
     }
+    // The boot splash is on screen: show the window now on a normal start, not only once the
+    // main bundle has run (PageLoadEvent::Finished in main.rs, which stays as the fallback).
+    if report.phase == "splash" && shell(&app).show_on_load.load(Ordering::Acquire) {
+        let mounted = shell(&app).boot.lock().unwrap().mounted;
+        if !mounted && !window.is_visible().unwrap_or(true) {
+            state::show_main(&app);
+        }
+    }
     if report.phase == "inline-missing" {
         log::error!("[boot] index.html inline boot scripts did not run (CSP hash mismatch?)");
     }
@@ -102,6 +110,8 @@ pub fn voice_set_busy<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, b
     }
     if shell(&app).voice_busy.swap(busy, Ordering::AcqRel) != busy {
         crate::commands::updates::note_busy(&app);
+        // A call in the tray keeps the page at its normal memory target.
+        crate::webview::update_main_memory(&app);
     }
 }
 

@@ -25,6 +25,12 @@ pub const REQUIRED_FILES: &[(&str, &str)] = &[(EXE, "PKG-0EXE"), (CAPTURE_HOST, 
 pub const UNINSTALLER: &str = "uninstall.exe";
 pub const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall";
 pub const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+/// Task Manager's "Startup apps" on/off state for the Run value (same value name).
+pub const STARTUP_APPROVED_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+/// `descall://`, registered by the app itself at run time (tauri-plugin-deep-link), so this
+/// installer never wrote it and its uninstaller left it behind, pointing at a deleted exe.
+pub const DEEP_LINK_KEY: &str = r"Software\Classes\descall";
+pub const DEEP_LINK_COMMAND_KEY: &str = r"Software\Classes\descall\shell\open\command";
 pub const TOAST_CLSID: &str = "{BCF5A315-F914-4A7E-95BD-313CBE4B661B}";
 /// Same arguments Electron's login item used, so the app starts hidden in the tray.
 pub const AUTOSTART_ARGS: &str = "--autostart --hidden";
@@ -88,7 +94,20 @@ pub fn toast_registry(dir: &str) -> Vec<RegValue> {
 
 /// HKCU keys and values the uninstaller deletes: (key, Some(value name)) or (key, None) for a whole key.
 pub fn uninstall_registry() -> Vec<(String, Option<&'static str>)> {
-    vec![(UNINSTALL_KEY.to_string(), None), (toast_clsid_key(), None), (RUN_KEY.to_string(), Some(APP_ID))]
+    vec![
+        (UNINSTALL_KEY.to_string(), None),
+        (toast_clsid_key(), None),
+        (RUN_KEY.to_string(), Some(APP_ID)),
+        (STARTUP_APPROVED_KEY.to_string(), Some(APP_ID)),
+    ]
+}
+
+/// The `descall://` open command belongs to the install in `dir` (`"<dir>\Descall.exe" "%1"`,
+/// what tauri-plugin-deep-link writes); another copy of Descall keeps its own registration.
+pub fn deep_link_is_ours(command: &str, dir: &str) -> bool {
+    let want = format!("{} \"%1\"", quoted_exe(dir));
+    // Windows paths compare case-insensitively, also outside ASCII (user names like Şükrü).
+    command.trim().to_lowercase() == want.to_lowercase()
 }
 
 #[derive(Debug, Clone)]
@@ -179,6 +198,17 @@ mod tests {
         assert!(u.contains(&(toast_clsid_key(), None)));
         assert!(u.contains(&(UNINSTALL_KEY.to_string(), None)));
         assert!(u.contains(&(RUN_KEY.to_string(), Some("com.descall.app"))));
+        assert!(u.contains(&(STARTUP_APPROVED_KEY.to_string(), Some("com.descall.app"))), "Task Manager entry goes too");
+    }
+
+    #[test]
+    fn deep_link_removed_only_when_it_points_here() {
+        let dir = r"C:\Users\Şükrü Çelik\AppData\Local\Programs\Descall";
+        assert!(deep_link_is_ours(r#""C:\Users\Şükrü Çelik\AppData\Local\Programs\Descall\Descall.exe" "%1""#, dir));
+        assert!(deep_link_is_ours(r#""c:\users\şükrü çelik\appdata\local\programs\descall\descall.exe" "%1""#, &format!("{dir}\\")));
+        assert!(!deep_link_is_ours(r#""D:\Other\Descall.exe" "%1""#, dir), "another copy keeps its link");
+        assert!(!deep_link_is_ours("", dir));
+        assert_eq!(DEEP_LINK_COMMAND_KEY, format!(r"{DEEP_LINK_KEY}\shell\open\command"));
     }
 
     #[test]

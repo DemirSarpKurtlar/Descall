@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { desktopBridge, isDesktopShell } from "../../lib/desktopShell.js";
 import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, Users } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import useVoiceActivity from "../../hooks/useVoiceActivity";
@@ -48,8 +49,8 @@ function viewport() {
  * margin. The bar is measured when mounted; the CSS token is the fallback.
  */
 function safeInsets() {
-  const api = typeof window !== "undefined" ? window.electronAPI : null;
-  const electron = Boolean(api?.isElectron) || document.documentElement.classList.contains("electron-app");
+  const api = desktopBridge();
+  const electron = isDesktopShell() || document.documentElement.classList.contains("electron-app");
   let titlebarH = NaN;
   let bottom = 0;
   if (electron) {

@@ -14,7 +14,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { open, premiumCalls, pw, OUT, SHOTS } = require('./harness.cjs');
+const { open, premiumCalls, pw, OUT, SHOTS, CHROME } = require('./harness.cjs');
 
 const fails = [];
 const check = (cond, msg) => { if (!cond) fails.push(msg); else console.log('  ok', msg); };
@@ -200,7 +200,7 @@ async function web(browser) {
 }
 
 (async () => {
-  const browser = await pw.chromium.launch({ proxy: { server: 'http://127.0.0.1:9' }, args: ['--no-sandbox', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE tauri.localhost'] });
+  const browser = await pw.chromium.launch({ ...(CHROME ? { executablePath: CHROME } : {}), proxy: { server: 'http://127.0.0.1:9' }, args: ['--no-sandbox', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE tauri.localhost'] });
   const only = process.env.ONLY || '';
   try {
     if (!only || only === 'bridge') await withBridge(browser);

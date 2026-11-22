@@ -5,6 +5,8 @@ import { Download, RefreshCw, CheckCircle, AlertTriangle, X } from "./ui/Icon";
 import "../styles/update-toast.css";
 import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
 import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/updateTiming";
+import { toastStateAfterError, updateDownloadPage } from "../lib/desktopUpdateState.js";
+import { isTauriShell } from "../lib/desktopShell.js";
 
 /**
  * Desktop update card (3.7.14 redesign): the same theme glass as the
@@ -14,8 +16,6 @@ import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/up
  * "ready" is a small chip bottom right with "Şimdi yükle".
  * Does not steal focus (render-only; Electron showsInactive for OS notifs).
  */
-const UPDATE_DOWNLOAD_PAGE = "https://github.com/DemirSarpKurtlar/Descall/releases/latest";
-
 export default function ElectronUpdateToast() {
   const t = useT();
   const [state, setState] = useState(null); // null | downloading | installing | ready | error
@@ -24,6 +24,7 @@ export default function ElectronUpdateToast() {
   const [deferred, setDeferred] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(() => getVoiceBusy());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [errorPhase, setErrorPhase] = useState(null);
   const confirmingRef = useRef(false);
 
   const [activityBusy, setActivityBusy] = useState(() => getActivityBusy());
@@ -96,7 +97,9 @@ export default function ElectronUpdateToast() {
           // a quiet background check that failed stays quiet (polish pass: the card used
           // to vanish without a word and flash back every five minutes).
           setPercent(null);
-          setState((prev) => (phase === "download" || prev === "downloading" ? "error" : prev === "ready" ? prev : null));
+          confirmingRef.current = false;
+          setErrorPhase(phase === "install" ? "install" : "download");
+          setState((prev) => toastStateAfterError(prev, phase));
         }),
       );
     }
@@ -172,7 +175,7 @@ export default function ElectronUpdateToast() {
   };
   const openDownloadPage = () => {
     // setWindowOpenHandler hands https links to the OS browser.
-    window.open(UPDATE_DOWNLOAD_PAGE, "_blank", "noopener");
+    window.open(updateDownloadPage({ tauri: isTauriShell(), version }), "_blank", "noopener");
   };
 
   const barWidth =
@@ -182,9 +185,10 @@ export default function ElectronUpdateToast() {
         ? percent
         : 0;
   const v = { version: version || "" };
+  const installFailed = state === "error" && errorPhase === "install";
   const title =
     state === "error"
-      ? t("updateToast.titleError")
+      ? t(installFailed ? "updateToast.titleInstallError" : "updateToast.titleError")
       : state === "installing"
       ? t("updateToast.titleInstalling", v)
       : state === "ready"
@@ -192,7 +196,7 @@ export default function ElectronUpdateToast() {
         : t("updateToast.titleDownloading", v);
   const sub =
     state === "error"
-      ? t("updateToast.subError")
+      ? t(installFailed ? "updateToast.subInstallError" : "updateToast.subError")
       : state === "installing"
       ? t("updateToast.subInstalling")
       : state === "downloading"

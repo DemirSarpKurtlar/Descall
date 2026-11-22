@@ -341,6 +341,24 @@ export function matchPushToTalkEvent(event, acceleratorId) {
   return true;
 }
 
+/**
+ * keyup that ends a held push-to-talk combination: the main key, or one of the modifiers the
+ * combination needs. matchPushToTalkEvent wants the exact combination, so a keyup of M after
+ * Shift or Ctrl was already let go never matched and the microphone stayed open until the
+ * next press (every accelerator is a three-key combination; releasing a modifier a few ms
+ * before the letter is common).
+ */
+export function isPushToTalkRelease(event, acceleratorId) {
+  const spec = PTT_ACCELERATORS.find((item) => item.id === acceleratorId);
+  if (!spec || !event || event.type !== "keyup") return false;
+  if (event.code === spec.code) return true;
+  const key = String(event.key || "");
+  if (spec.shift && key === "Shift") return true;
+  if (spec.alt && key === "Alt") return true;
+  if (spec.mod && (key === "Control" || key === "Meta")) return true;
+  return false;
+}
+
 export function softCueVolume(base) {
   const n = Number(base);
   const v = Number.isFinite(n) ? n : 1;

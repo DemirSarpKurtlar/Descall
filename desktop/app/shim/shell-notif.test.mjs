@@ -16,6 +16,13 @@
 // 8. A Descall+ "toast" style notification opens the chat when clicked.
 // 9. Unread messages put a dot on the tray icon.
 // 10. While Descall+ app lock is locked, notifications show nothing personal.
+// 11. A toast clicked in the Action Center after Descall was closed still opens its chat.
+// 12. Taskbar thumbnail tooltips follow a language change live.
+// 13. The native tray menu (panel fallback) has Electron's order.
+// 14. Taskbar badge and tray dot count the same unread messages.
+// 15. The process has Descall's AppUserModelID: one taskbar button however it was started.
+// 16. Every way back to the window tells the page it is on screen; a page that loads in the
+//     tray learns it is not (DM read receipts, html.app-backgrounded).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -213,6 +220,13 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(platform, /ThumbBarUpdateButtons\(hw, &list\)\.is_err\(\)/, "update falls back to add");
   const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
   assert.match(tb, /Bus::Focus\(l, true\) if l == "main" =>[\s\S]{0,120}set_badge/, "badge re-applied when the window comes back");
+  // A new taskbar button without the focus (shown from the tray while Windows refuses the
+  // foreground, Explorer restarted) also gets its badge back, not only on the next focus.
+  assert.match(proc, /ON_BUTTON_CREATED\.get\(\)\.copied\(\)[\s\S]{0,60}std::thread::spawn\(f\)/, "the subclass runs the hook on TaskbarButtonCreated");
+  assert.match(tb, /fn start\(&self, h: &Host\) \{\s*platform::on_taskbar_button_created\(on_button_created\);/, "taskbar_plus registers it");
+  assert.match(tb, /fn on_button_created\(\) \{\s*if let Some\(h\) = host\(\) \{\s*h\.bus\(Bus::Settings\("taskbar_plus"\.into\(\)\)\);/, "which re-applies badge and buttons");
+  const other = platform.length; // stub keeps the non-Windows build type-checking
+  assert.ok(other > 0 && /pub fn on_taskbar_button_created\(_f: fn\(\)\) \{\}/.test(read("desktop/app/src-tauri/src/premium/platform.rs")), "non-Windows stub");
 }
 
 // ---- 7: first close to the tray tells where Descall went (main.cjs 'close') ---------------------------
@@ -242,9 +256,9 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.ok(branch.indexOf("show_toast(") >= 0 && branch.indexOf("show_toast(") < branch.indexOf(".notification()"), "native toast with click first, plugin fallback");
   assert.match(branch, /json!\(\{ "title": title, "body": body, "tag": tag, "data": data \}\)/, "same click envelope as Electron");
   const qr = codeOnly(read("desktop/app/src-tauri/src/premium/features/quick_reply.rs"));
-  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush"));
+  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush()"));
   assert.ok(act.indexOf("parse_toast_click") >= 0 && act.indexOf("parse_toast_click") < act.indexOf("parse_toast_args"), "plain toast clicks handled before reply toasts");
-  assert.match(act, /show_main\(\)[\s\S]*"notification:click"/, "click shows Descall and opens the chat");
+  assert.match(act, /show_main\(\)[\s\S]*deliver_click\(h, click\)/, "click shows Descall and opens the chat");
   const toast = codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs"));
   const plain = toast.slice(toast.indexOf("pub fn plain_toast_xml"), toast.indexOf("pub fn show("));
   assert.doesNotMatch(plain, /<input/, "no reply box on a plain toast");
@@ -277,6 +291,18 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   const show = notify.slice(notify.search(/pub (?:async )?fn notification_show\b/), notify.indexOf("fn flash_taskbar"));
   assert.match(show, /let title = filtered\.get\("title"\)/, "the capsule uses the filtered title");
   assert.doesNotMatch(show.slice(show.indexOf("let title = filtered")), /payload\.title\b(?!\.as_str\(\)\))/, "never the raw sender after filtering");
+  // One redaction path (round 1 had two): redact_locked is defined once and called only by
+  // app_lock's final filter; the shell's notification code has no lock check of its own.
+  const rustFiles = ["commands/notify.rs", "commands/app.rs", "boot.rs", "tray.rs", "tray_menu.rs", "state.rs", "premium/mod.rs", "premium/toast.rs", "premium/features/quick_reply.rs", "premium/features/app_lock.rs", "premium/logic/rules.rs"];
+  const callers = rustFiles.filter((f) => {
+    const src = codeOnly(read(`desktop/app/src-tauri/src/${f}`));
+    const body = src.includes("#[cfg(test)]") ? src.slice(0, src.indexOf("#[cfg(test)]")) : src;
+    return /redact_locked\(&/.test(body);
+  });
+  assert.deepEqual(callers, ["premium/features/app_lock.rs"], "redact_locked is called from app_lock only");
+  assert.equal((codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs")).match(/pub fn redact_locked\(/g) || []).length, 1, "one redact_locked");
+  assert.doesNotMatch(codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs")), /locked|app_lock/i, "no second lock check in notify.rs");
+  assert.equal((notify.match(/crate::premium::notify_filter\(/g) || []).length, 1, "notification_show runs the filter chain once");
   // The Rust port keeps Electron's rules (appLockRedact.cjs), checked side by side here.
   const { redactLockedNotification, LOCKED_TAG } = await import(join(repo, "frontend/electron/premium/appLockRedact.cjs"));
   const rules = codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs"));
@@ -310,4 +336,126 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.ok(3200 - (second.rect.x + second.rect.width / 2) > 400);
 }
 
+// ---- 11: cold start from a toast click opens the chat ---------------------------------------------
+{
+  // The click envelope of a live toast lives in memory (quick_reply.rs LIVE). A toast clicked in
+  // the Action Center after Descall was closed starts it through the COM activator: the envelope
+  // is gone and the page is not loaded yet. The routing ids ride in the toast arguments and the
+  // click waits until the page reported its state.
+  const rules = codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs"));
+  const keys = rules.match(/pub const TOAST_CLICK_KEYS: \[&str; (\d+)\] = \[([^\]]+)\];/);
+  assert.ok(keys, "routing keys listed");
+  const list = [...keys[2].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(list.length, Number(keys[1]));
+  // Every key App.jsx onNotifClick routes by (ids and the type), and no names or text.
+  const app = read("frontend/src/App.jsx");
+  const click = app.slice(app.indexOf("const onNotifClick"), app.indexOf("const onCallAction"));
+  for (const k of list.filter((k) => k !== "type")) assert.match(click, new RegExp(`data\\.${k}\\b`), `App.jsx routes by data.${k}`);
+  for (const k of ["conversationId", "fromId", "groupId", "serverId", "channelId"]) assert.ok(list.includes(k), `${k} carried`);
+  for (const k of ["from", "preview", "groupName", "serverName", "channelName", "username"]) assert.ok(!list.includes(k), `${k} (a name or text) stays out of the toast arguments`);
+  assert.match(rules, /fn toast_click_carries_the_chat_for_a_cold_start\(\)/, "argument rules unit-tested in Rust");
+  const qr = codeOnly(read("desktop/app/src-tauri/src/premium/features/quick_reply.rs"));
+  assert.match(qr, /toast_click_args\(&id, &route\)/, "the plain toast carries its click data");
+  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush()"));
+  assert.match(act, /\.or_else\(\|\| route\.as_object\(\)/, "without the live envelope the ids from the arguments open the chat");
+  assert.doesNotMatch(act, /emit_to\(/, "every activation goes through deliver_click (queued until the page is up)");
+  const deliver = qr.slice(qr.indexOf("fn deliver_click"), qr.indexOf("pub(crate) fn flush_clicks"));
+  assert.match(deliver, /if page_ready\(h\) \{[\s\S]*emit_to\(&h\.app, "main", "notification:click", click\)[\s\S]*\} else \{[\s\S]*push\(\(click, Instant::now\(\)\)\)/);
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const appState = mod.slice(mod.indexOf('"premium:app-state" =>'), mod.indexOf("_ => return None", mod.indexOf('"premium:app-state" =>')));
+  assert.match(appState, /features::quick_reply::flush_clicks\(\)/, "the page's first state flushes waiting clicks, with or without quick_reply running");
+  // The page sends that state as soon as the Descall+ host mounts, for every desktop user.
+  const host = read("frontend/src/premium/desktop/PremiumDesktopHost.jsx");
+  assert.match(host, /b\.invoke\("premium:app-state"/);
+  assert.match(app, /const premiumDesktopHost = typeof window !== "undefined" && Boolean\(window\.descallPremium\) && !isPopoutWindow\(\);/);
+  // JS mirror of the Rust rules (same inputs as the Rust test) to show the shape end to end.
+  const ok = (v) => v.length >= 1 && v.length <= 64 && /^[A-Za-z0-9._:-]+$/.test(v);
+  const args = (id, data) => [`descall-n|${id}`, ...list.flatMap((k) => (typeof data[k] === "string" || typeof data[k] === "number") && ok(String(data[k])) ? [`${k}=${data[k]}`] : [])].join("|");
+  assert.equal(args("descall-n-1-2", { type: "dm", conversationId: "6a1f-22", fromId: "6a1f-22", from: "Ayşe", preview: "gizli" }), "descall-n|descall-n-1-2|type=dm|conversationId=6a1f-22|fromId=6a1f-22");
+  assert.match(rules, /assert_eq!\(args, "descall-n\|descall-n-1-2\|type=dm\|conversationId=6a1f-22\|fromId=6a1f-22"\);/, "Rust test expects the same string");
+}
+
+// ---- 12: thumbnail tooltips follow the language ----------------------------------------------------
+{
+  const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
+  assert.match(tb, /let key = if on \{ format!\("\{\}\|\{\}\|\{\}", flag\("muted"\), flag\("deafened"\), h\.locale\(\)\)/, "language in the button key");
+  assert.match(tb, /Bus::App => \{\s*self\.set_badge\(h\);\s*self\.set_buttons\(h, false\);/, "re-checked on Bus::App");
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const setLocale = mod.slice(mod.indexOf("pub fn set_locale"), mod.indexOf("pub fn set_tray_rebuilder"));
+  assert.match(setLocale, /h\.refresh_tray\(\);\s*h\.bus\(Bus::App\);/, "a language change reaches the taskbar");
+  const appRs = codeOnly(read("desktop/app/src-tauri/src/commands/app.rs"));
+  assert.match(appRs, /crate::premium::set_locale\(&locale\);/, "app_set_locale tells Descall+");
+}
+
+// ---- 13: native tray menu order (main.cjs buildMenu) -----------------------------------------------
+{
+  const tray = codeOnly(read("desktop/app/src-tauri/src/tray.rs"));
+  const build = tray.slice(tray.indexOf("fn build_menu"), tray.indexOf("pub fn quit"));
+  const at = (needle) => { const i = build.indexOf(needle); assert.ok(i >= 0, needle); return i; };
+  assert.ok(at("&[&open, &PredefinedMenuItem::separator(app)?]") < at("crate::premium::tray::append(a, m)"), "Open, then Descall+ items");
+  assert.ok(at("crate::premium::tray::append(a, m)") < at("menu.append(&autostart)"), "then Start with Windows");
+  assert.ok(at("menu.append(&autostart)") < at("menu.append(&quit)"), "then Quit");
+  const main = read("frontend/electron/main.cjs");
+  const em = main.slice(main.indexOf("const buildMenu = () => Menu.buildFromTemplate(["), main.indexOf("// Windows: right click opens the tray panel"));
+  const ei = (n) => em.indexOf(n);
+  assert.ok(ei("tray.open") < ei("premium.trayMenuItems()") && ei("premium.trayMenuItems()") < ei("tray.startWithWindows") && ei("tray.startWithWindows") < ei("tray.quit"), "Electron order");
+}
+
+// ---- 14: badge and tray dot agree ---------------------------------------------------------------------
+{
+  // Both count DM + group unread from the same App.jsx maps; both are off when signed out
+  // (the dot by signedIn, the badge because Descall+ stops on sign-out).
+  const snap = read("frontend/src/premium/desktop/usePremiumAppSnapshot.js");
+  assert.match(snap, /unread: sum\(dmUnread\) \+ sum\(groupUnread\)/);
+  const trayHook = read("frontend/src/hooks/useDesktopTray.js");
+  assert.match(trayHook, /total\(dmUnread\) \+ total\(groupUnread\)/);
+  const app = read("frontend/src/App.jsx");
+  assert.match(app, /usePremiumAppSnapshot\(\{ me, friends, onlineUsers, dmUnread, groupUnread,/);
+  assert.match(app, /useDesktopTray\(\{ me, myStatus, dmUnread, groupUnread,/);
+  const tm = codeOnly(read("desktop/app/src-tauri/src/tray_menu.rs"));
+  assert.match(tm, /let unread = next\.get\("signedIn"\)\.and_then\(Value::as_bool\) == Some\(true\) && next\.get\("unreadMessages"\)/);
+}
+
+// ---- 15: one taskbar button (process AppUserModelID) ---------------------------------------------------
+{
+  // Electron set it at boot (toastIdentity.cjs app.setAppUserModelId); Tauri never did, so only
+  // a start from the Start Menu shortcut carried the id and an autostart / update / toast / link
+  // start got its own taskbar button next to the pinned one (badge and thumbnail buttons on it).
+  const platform = codeOnly(read("desktop/app/src-tauri/src/platform.rs"));
+  const fn = platform.slice(platform.indexOf("pub fn set_app_user_model_id"), platform.indexOf("pub fn session_locked"));
+  const id = fn.match(/SetCurrentProcessExplicitAppUserModelID\(w!\("([^"]+)"\)\)/);
+  assert.ok(id, "SetCurrentProcessExplicitAppUserModelID with a literal id");
+  const conf = JSON.parse(read("desktop/app/src-tauri/tauri.conf.json"));
+  assert.equal(id[1], conf.identifier, "same id as the Tauri identifier");
+  assert.match(read("desktop/app/src-tauri/nsis/hooks.nsh"), new RegExp(`!define DESCALL_AUMID "${id[1].replace(/\./g, "\\.")}"`), "and the installer's shortcut");
+  assert.match(codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs")), new RegExp(`APP_USER_MODEL_ID: &str = "${id[1].replace(/\./g, "\\.")}"`), "and the toasts");
+  assert.match(read("frontend/electron/premium/toastIdentity.cjs"), new RegExp(`'${id[1].replace(/\./g, "\\.")}'`), "and Electron");
+  const main = codeOnly(read("desktop/app/src-tauri/src/main.rs"));
+  const body = main.slice(main.indexOf("fn main()"));
+  assert.ok(body.indexOf("platform::set_app_user_model_id()") > 0 && body.indexOf("platform::set_app_user_model_id()") < body.indexOf("tauri::Builder::default()"), "set before the app and its first window");
+}
+
+// ---- 16: the page knows whether it is on screen ------------------------------------------------------
+{
+  // Descall+ (toast click, hotkeys, tray entries) brought the window back with its own
+  // unminimize / show / focus: no app:visibility, no skip-taskbar reset. Electron's premium
+  // ctx.showMainWindow is main.cjs showMainWindow, the one path.
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const sm = mod.slice(mod.indexOf("pub fn show_main(&self)"), mod.indexOf("// -- blobs"));
+  assert.match(sm, /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/, "Descall+ uses the shell's show_main");
+  const state = codeOnly(read("desktop/app/src-tauri/src/state.rs"));
+  const shell = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn to_main"));
+  assert.match(shell, /"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/, "which tells the page");
+  assert.match(read("frontend/electron/main.cjs"), /showMain: \(\) => showMainWindow\(\),/, "Electron: one path");
+  // Loaded while in the tray (autostart --hidden, reload while hidden): no hide event follows.
+  const boot = codeOnly(read("desktop/app/src-tauri/src/boot.rs"));
+  const away = boot.slice(boot.indexOf("pub fn tell_page_if_away"), boot.indexOf("const BACKGROUND_NOTICE"));
+  assert.match(away, /let away = !w\.is_visible\(\)\.unwrap_or\(true\) \|\| w\.is_minimized\(\)\.unwrap_or\(false\);\s*if !away \{\s*return;\s*\}\s*visibility\(&w, true\);/, "only while still away");
+  const main = codeOnly(read("desktop/app/src-tauri/src/main.rs"));
+  const finished = main.slice(main.indexOf("PageLoadEvent::Finished =>"), main.indexOf(".build()?", main.indexOf("PageLoadEvent::Finished =>")));
+  assert.match(finished, /boot::tell_page_if_away\(&load_app\);/, "on every page load of the main window");
+}
+
+// The capsule's "time left" on resume is clamped to a capsule's lifetime in the shell.
+assert.match(readFileSync(new URL("../src-tauri/src/commands/notify.rs", import.meta.url), "utf8"), /c\.remaining_ms = ms\.clamp\(0\.0, notif::DEFAULT_DURATION_MS as f64\) as u64;/, "resume time left is clamped");
 console.log("shell-notif.test: ok");

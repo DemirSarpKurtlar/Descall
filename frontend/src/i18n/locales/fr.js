@@ -138,7 +138,8 @@ export const nested = {
         "push_to_talk": "Appuyer pour parler",
         "quick_launcher": "Lanceur rapide",
         "volume_up": "Monter la personne épinglée",
-        "volume_down": "Baisser la personne épinglée"
+        "volume_down": "Baisser la personne épinglée",
+        "command_center": "Centre de commande"
       },
       "reason": {
         "invalid": "{action} : {accel} n'est pas un raccourci valide.",
@@ -1602,6 +1603,8 @@ export const nested = {
       }
     },
     "commandCenter": {
+      "hotkeyClash": "Le lanceur rapide et le centre de commande utilisent le même raccourci ({accel}). Un raccourci ne fonctionne que pour l'un des deux ; modifiez l'un d'eux.",
+      "hotkeyFailed": "Le raccourci du centre de commande ({accel}) n'a pas pu être enregistré : une autre application l'utilise peut-être. Choisissez un autre raccourci.",
       "title": "Centre de commande",
       "desc": "Messages, amis, appels et notifications dans un seul panneau.",
       "open": "Ouvrir le centre de commande",
@@ -6611,6 +6614,8 @@ export const nested = {
     "subInstalling": "Descall se rouvre dans quelques secondes",
     "titleError": "Impossible de télécharger la mise à jour",
     "subError": "Vérifie ta connexion et réessaie",
+    "titleInstallError": "Impossible d'installer la mise à jour",
+    "subInstallError": "Réessaie ou télécharge le programme d'installation",
     "retry": "Réessayer",
     "downloadPage": "Page de téléchargement",
     "titleDownloading": "Téléchargement de Descall {version}",

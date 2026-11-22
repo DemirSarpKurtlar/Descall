@@ -293,6 +293,13 @@ impl ShareHost {
         stop_slot(&self.active, None, reason)
     }
 
+    /// Stop share `id` only. The page's stop for a session that already ended must not end
+    /// a newer share: Tauri runs async commands concurrently, so a late stop of the old
+    /// session could land after the next screen_share_start (quality change = stop + start).
+    pub fn stop_id(&self, id: u32, reason: &str) -> bool {
+        stop_slot(&self.active, Some(id), reason)
+    }
+
     pub fn update(&self, u: &UpdateRequest) -> bool {
         self.active.lock().ok().and_then(|g| g.as_ref().map(|a| a.share.update(u))).unwrap_or(false)
     }

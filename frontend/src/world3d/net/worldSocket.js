@@ -4,6 +4,7 @@
  * opened only while the world view is open.
  */
 import { io } from "socket.io-client";
+import { isDesktopRuntime } from "../../lib/desktopShell.js";
 
 export function connectWorld({ url, token, app = "web", path = "/socket.io" } = {}) {
   const socket = io(`${url.replace(/\/$/, "")}/world`, {
@@ -54,6 +55,6 @@ export function connectWorld({ url, token, app = "web", path = "/socket.io" } = 
 
 export function appPlatform() {
   if (typeof window === "undefined") return "web";
-  if (window.electronAPI?.isElectron || /Electron/i.test(navigator.userAgent || "")) return "electron";
+  if (isDesktopRuntime()) return "electron";
   return "web";
 }

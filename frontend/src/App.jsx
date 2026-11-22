@@ -1,7 +1,9 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isDesktopShell } from "./lib/desktopShell.js";
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
+import { pageHiddenFromUser } from "./lib/appVisibility.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
 import { elapsedSeconds } from "./lib/callClock";
 import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
@@ -76,7 +78,8 @@ import { apiBase } from "./lib/nodeRouting";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
 import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
-import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
+import { isPushToTalkRelease, matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
+import { createPttFocusGuard } from "./lib/pttFocusGuard.js";
 import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
 import { afterFirstScreen } from "./lib/afterFirstScreen.js";
@@ -754,10 +757,22 @@ export default function App() {
   // Polish messaging-03: a DM that got messages while the window was hidden is
   // marked read ("Görüldü") only once the window is visible again.
   const pendingDmReadRef = useRef(null);
+  // The same for an open group: its unread count goes once the window is seen again.
+  const pendingGroupReadRef = useRef(null);
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
     const flush = () => {
-      if (document.visibilityState !== "visible") return;
+      if (pageHiddenFromUser()) return;
+      const groupId = pendingGroupReadRef.current;
+      pendingGroupReadRef.current = null;
+      if (groupId && activeGroupRef.current?.id === groupId) {
+        setGroupUnread((prev) => {
+          if (!prev[groupId]) return prev;
+          const n = { ...prev };
+          delete n[groupId];
+          return n;
+        });
+      }
       const peerId = pendingDmReadRef.current;
       if (!peerId) return;
       pendingDmReadRef.current = null;
@@ -770,11 +785,14 @@ export default function App() {
       });
       socketRef.current?.emit("dm:mark_read", { withUserId: peerId });
     };
+    // Desktop shells: back from the tray / minimized shows up as focus or the first input
+    // (html.app-backgrounded is cleared by then, lib/appVisibility.js).
+    const proof = ["focus", "pointerdown", "keydown"];
     document.addEventListener("visibilitychange", flush);
-    window.addEventListener("focus", flush);
+    for (const ev of proof) window.addEventListener(ev, flush, { passive: true });
     return () => {
       document.removeEventListener("visibilitychange", flush);
-      window.removeEventListener("focus", flush);
+      for (const ev of proof) window.removeEventListener(ev, flush);
     };
   }, []);
   const activeGroupRef = useRef(null);
@@ -893,20 +911,40 @@ export default function App() {
   useEffect(() => startNativeDeepLinks((path) => deepLinkNavigateRef.current(path)), []);
 
   useEffect(() => {
+    // Releases a held key when the window loses focus (the keyup goes to the other app and
+    // the mic stayed open), lib/pttFocusGuard.js.
+    const guard = createPttFocusGuard((detail) => {
+      window.dispatchEvent(new CustomEvent("descall:ptt", { detail }));
+    });
     const onKey = (event) => {
       const profile = readVoiceProfile();
       if (!profile.pushToTalk) return;
+      // Letting go of the letter or of a modifier first both end the hold.
+      if (guard.held && isPushToTalkRelease(event, profile.pttAccelerator)) {
+        if (matchPushToTalkEvent(event, profile.pttAccelerator)) event.preventDefault();
+        guard.key(false);
+        return;
+      }
       if (!matchPushToTalkEvent(event, profile.pttAccelerator)) return;
       event.preventDefault();
-      window.dispatchEvent(
-        new CustomEvent("descall:ptt", { detail: { down: event.type === "keydown" } })
-      );
+      guard.key(event.type === "keydown");
+    };
+    const onPtt = (event) => guard.observe(event.detail);
+    const onBlur = () => guard.lostFocus();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") guard.lostFocus();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
+    window.addEventListener("descall:ptt", onPtt);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKey);
+      window.removeEventListener("descall:ptt", onPtt);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -2389,7 +2427,7 @@ export default function App() {
               avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
-        } else if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        } else if (pageHiddenFromUser()) {
           // Open chat but the window is minimised / in the tray / a background tab:
           // count it as unread and keep "Görüldü" back until the window is seen again.
           pendingDmReadRef.current = convWith;
@@ -2610,7 +2648,12 @@ export default function App() {
           avatarUrl: normalized.from?.avatarUrl || null,
         });
       } else if (!isFromMe) {
-        // Open group but window hidden / in tray / unfocused: still notify.
+        // Open group but window hidden / in tray / unfocused: still notify. Out of sight
+        // (minimized, in the tray, a hidden tab) it also counts as unread until seen, like a DM.
+        if (pageHiddenFromUser()) {
+          pendingGroupReadRef.current = groupId;
+          setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
+        }
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),
@@ -3414,8 +3457,7 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
-    const isElectronDesktop =
-      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    const isElectronDesktop = isDesktopShell();
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
     // Electron must NOT hard-navigate: file:// + location.replace("/") leaves
@@ -5161,7 +5203,7 @@ export default function App() {
       if (kind === "vanity") setServerVanityAuthOpen(true);
       else if (kind === "group") setInviteAuthOpen(true);
       else setServerInviteAuthOpen(true);
-      const isElectronDesktop = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+      const isElectronDesktop = isDesktopShell();
       // Native / desktop render AuthView directly; the web site opens its
       // login / sign-up dialog from the route. The code waits in the pending slot.
       if (!Capacitor.isNativePlatform() && !isElectronDesktop) {
@@ -5285,8 +5327,7 @@ export default function App() {
 
   // Public marketing site for logged-out users (real SEO routes)
   if (!me) {
-    const isElectronDesktop =
-      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    const isElectronDesktop = isDesktopShell();
     const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
     // Token still present on an app deep-link (e.g. /friends): never dump to
     // marketing, keep the boot skeleton. Hard refresh used to Navigate → "/"

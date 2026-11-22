@@ -72,7 +72,9 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title(crate::state::et(app, title_key, &[]))
         .inner_size(w, h)
-        .min_inner_size(min_w, min_h)
+        // Never above the fitted size: a 960 x 640 minimum on a 1366 x 768 laptop at 125 %
+        // (614 px of work area) kept the bottom of the window under the taskbar.
+        .min_inner_size(min_w.min(w), min_h.min(h))
         .decorations(false)
         // Shown once it sits where placement() put it (no flash at the default spot).
         .visible(false)

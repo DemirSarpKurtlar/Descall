@@ -72,6 +72,15 @@ pub fn run(args: &Args, layout: &Layout, lang: &str) -> i32 {
     }
 }
 
+/// descall:// is written by the app (not by this installer): drop it when it opens this install.
+fn remove_deep_link_into(dir: &Path) {
+    let cu = &windows_registry::CURRENT_USER;
+    let cmd = cu.open(crate::layout::DEEP_LINK_COMMAND_KEY).and_then(|k| k.get_string("")).unwrap_or_default();
+    if crate::layout::deep_link_is_ours(&cmd, &dir.display().to_string()) {
+        let _ = cu.remove_tree(crate::layout::DEEP_LINK_KEY);
+    }
+}
+
 fn remove(dir: &Path, layout: &Layout, purge: bool) -> bool {
     log::info(&format!("uninstall {}", dir.display()));
     // Never delete a folder that is not a Descall install.
@@ -88,6 +97,7 @@ fn remove(dir: &Path, layout: &Layout, purge: bool) -> bool {
         shell::remove_link_into(&l, dir);
     }
     shell::unregister_all();
+    remove_deep_link_into(dir);
     shell::notify_shell();
     // Only our own files: the folder holds nothing else (installed from a verified payload).
     let ok = std::fs::remove_dir_all(dir).is_ok() || !dir.exists();

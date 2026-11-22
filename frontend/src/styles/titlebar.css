@@ -303,3 +303,32 @@ html.tauri-app .st3 .st-tb * {
   -webkit-app-region: no-drag !important;
   app-region: no-drag !important;
 }
+/* Windows 11 Snap layouts (Tauri, src-tauri/src/snap.rs): the shell lays an invisible native
+   input sink over the maximize button so Windows offers the snap layouts on hover. The page
+   then gets no hover or press of its own there; the shim mirrors the sink's state into
+   data-snap-state, styled like :hover / :active of each bar's button. */
+html.tauri-app .titlebar .win-btn[data-snap-state="hover"],
+html.tauri-app .titlebar .win-btn[data-snap-state="press"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+html.tauri-app .titlebar .win-btn[data-snap-state="press"] {
+  background: rgba(255, 255, 255, 0.14);
+}
+html.tauri-app .adm-wc[data-snap-state="hover"],
+html.tauri-app .adm-wc[data-snap-state="press"],
+html.tauri-app .st3 .st-tb .wc[data-snap-state="hover"],
+html.tauri-app .st3 .st-tb .wc[data-snap-state="press"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+html.tauri-app .pgl-winbtn[data-snap-state="hover"],
+html.tauri-app .pgl-winbtn[data-snap-state="press"] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+html.tauri-app .adm-wc[data-snap-state="press"],
+html.tauri-app .st3 .st-tb .wc[data-snap-state="press"],
+html.tauri-app .pgl-winbtn[data-snap-state="press"] {
+  background: rgba(255, 255, 255, 0.14);
+}

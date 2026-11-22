@@ -15,7 +15,7 @@ const memoryStore = () => {
 };
 
 /** The shim in a vm with a fake Tauri bridge. `responses[cmd]` may be a value or a function returning a promise. */
-function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } = {}) {
+function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore(), document: docExtra = {}, extra = {} } = {}) {
   const invokes = [];
   const listeners = new Map();
   const winListeners = new Map();
@@ -42,7 +42,7 @@ function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } 
   window.top = window;
   const ctx = {
     window,
-    document: { addEventListener: () => {}, documentElement: { classList: { add() {} } } },
+    document: { addEventListener: () => {}, documentElement: { classList: { add() {} } }, ...docExtra },
     localStorage: memoryStore(),
     sessionStorage,
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost" },
@@ -51,6 +51,7 @@ function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } 
     Promise,
     Uint8Array,
     ArrayBuffer,
+    ...extra,
   };
   vm.createContext(ctx);
   vm.runInContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
@@ -180,7 +181,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   const main = readFileSync(join(src, "main.rs"), "utf8");
   // app:visibility like main.cjs: restore and show also clear "backgrounded" without a focus event.
   assert.match(boot, /if was_minimized(?:\.swap\(false, [^)]*\))?(?: && win\.is_visible\(\)\.unwrap_or\(false\))? \{\s*visibility\(&win, false\);/, "restore from minimized resumes the page");
-  const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn show_main") + 600);
+  const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn request_show"));
   assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "tray / second launch show resumes the page");
   // First close to the tray tells the user once (main.cjs background-notice-shown).
   assert.match(boot, /let _ = win\.hide\(\);\s*background_notice_once\(app\);/);
@@ -192,6 +193,119 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(admin, /crate::webview::install_browser_guards\(&win\);/, "admin windows have no browser menu / reload keys");
   assert.match(admin, /is_safe_external_url\(next\.as_str\(\)\)[\s\S]{0,120}open_url\(next\.as_str\(\)/, "admin links open in the default browser");
   assert.match(admin, /let place = placement\(app, w, h\);/);
+  assert.match(admin, /\.min_inner_size\(min_w\.min\(w\), min_h\.min\(h\)\)/, "admin minimum size fits the work area too");
+  // Descall+ pop-out and account windows run the full app with its title bar: they get
+  // window:maximized on change too (Electron multi_window.cjs), not only the start-up answer.
+  const win = readFileSync(join(src, "commands", "window.rs"), "utf8");
+  const fwd = win.slice(win.indexOf("pub fn forward_maximized"), win.indexOf("pub fn forward_maximized") + 900);
+  assert.match(fwd, /last\.swap\(now, Ordering::AcqRel\) != now[\s\S]{0,80}emit_to\(w\.label\(\), "window:maximized", now == 1\)/);
+  for (const f of ["multi_window.rs", "multi_account.rs"]) {
+    const rs = readFileSync(join(src, "premium", "features", f), "utf8");
+    assert.match(rs, /crate::commands::window::forward_maximized\(&w\);/, `${f}: maximized state reaches the window's title bar`);
+    assert.match(rs, /crate::commands::window::focus_soon\(&w\);/, `${f}: an existing window is really focused again`);
+  }
+  // containRestoredWindow: unmaximize and restore pull a window that hangs off its monitor back.
+  assert.match(boot, /if !maximized \{\s*contain_restored\(&win\); \/\/ mainWindow 'unmaximize'/);
+  assert.match(boot, /if was_minimized \{\s*contain_restored\(&win\); \/\/ mainWindow 'restore'/);
+  assert.match(boot, /if !overflows\(b, work\) \{\s*return;\s*\}\s*let f = fit_bounds_to_work_area/);
+  assert.match(boot, /\|\| in_move_size_loop\(\) \{\s*return;/, "never while the user drags a maximized window out");
+  // show_main runs on the event loop thread (tao's set_focus saw a still-hidden window when
+  // called from a toast click, the ready fallback or a Descall+ action).
+  assert.match(showMain, /if MAIN_THREAD\.get\(\)\.is_some\(\) && !on_main_thread\(\) \{\s*let a = app\.clone\(\);\s*let _ = app\.run_on_main_thread\(move \|\| show_main\(&a\)\);\s*return;/);
+  assert.match(main, /fn main\(\) \{\s*state::mark_main_thread\(\);/);
+  const premium = readFileSync(join(src, "premium", "mod.rs"), "utf8");
+  assert.match(premium, /pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/, "Descall+ actions use the same show path");
+  // A second launch while the main window is still being built is kept (round 2).
+  assert.match(main, /\.plugin\(tauri_plugin_single_instance::init\([\s\S]{0,300}state::request_show\(app\);/);
+}
+
+// 5. Windows 11 Snap layouts: the page reports its visible maximize button to the shell (the
+//    native input sink goes over it) and mirrors the sink's hover / press onto the button.
+{
+  const mkBtn = (rect) => {
+    const attrs = {};
+    return {
+      rect,
+      getBoundingClientRect() { return this.rect; },
+      contains(o) { return o === this; },
+      setAttribute: (n, v) => { attrs[n] = String(v); },
+      removeAttribute: (n) => { delete attrs[n]; },
+      attrs,
+    };
+  };
+  const main = mkBtn({ left: 1308, top: 0, width: 46, height: 32 });
+  const lock = mkBtn({ left: 1300, top: 0, width: 44, height: 40 });
+  let buttons = [main];
+  let covering = null; // element on top at the button centre
+  const frames = [];
+  const s = loadShim({
+    document: {
+      querySelectorAll: (sel) => (sel === "[data-snap-layout]" ? buttons : []),
+      elementFromPoint: (x, y) => covering || buttons.slice().reverse().find((b) => x >= b.rect.left && x < b.rect.left + b.rect.width && y >= b.rect.top && y < b.rect.top + b.rect.height) || null,
+    },
+    extra: { requestAnimationFrame: (f) => { frames.push(f); return frames.length; } },
+  });
+  const flush = () => { while (frames.length) frames.shift()(); };
+  // JSON round trip: the rects come from the vm realm.
+  const sent = () => JSON.parse(JSON.stringify(s.invokes.filter(([c]) => c === "window_snap_button").map(([, a]) => a.rect)));
+  const resize = () => { for (const fn of s.winListeners.get("resize") || []) fn({}); flush(); };
+  resize();
+  assert.deepEqual(sent(), [{ x: 1308, y: 0, width: 46, height: 32, dpr: 1 }], "the title bar's maximize button is reported with the page scale");
+  resize();
+  assert.equal(sent().length, 1, "unchanged: not sent again");
+  // The app lock bar comes up over the title bar: its button is the one on top.
+  buttons = [main, lock];
+  resize();
+  assert.deepEqual(sent().at(-1), { x: 1300, y: 0, width: 44, height: 40, dpr: 1 });
+  // Hover / press from the sink light the button the page sees.
+  s.emit("window:snap-state", "hover");
+  assert.equal(lock.attrs["data-snap-state"], "hover");
+  s.emit("window:snap-state", "press");
+  assert.equal(lock.attrs["data-snap-state"], "press");
+  s.emit("window:snap-state", "none");
+  assert.equal(lock.attrs["data-snap-state"], undefined);
+  assert.equal(main.attrs["data-snap-state"], undefined, "the covered button is left alone");
+  // Something covers the button (or the bar is gone): the sink is withdrawn.
+  s.emit("window:snap-state", "hover");
+  covering = { nodeType: 1 };
+  resize();
+  assert.equal(sent().at(-1), null, "no visible button: no sink");
+  assert.equal(lock.attrs["data-snap-state"], undefined, "a stale hover is cleared");
+  covering = null;
+  buttons = [];
+  resize();
+  assert.equal(sent().filter((r) => r === null).length, 1, "still none: not sent again");
+  // The once-a-second check exists, so bars that come and go are picked up without a resize,
+  // and it stops while the window is in the tray (no repeating timer there, idle-perf.test).
+  assert.match(shimSrc, /snapTimer = setTimeout\(snapTick, 1000\)/);
+  assert.match(shimSrc, /const snapTick = \(\) => \{\s*snapTimer = 0;\s*if \(snapAway\(\)\) return;/);
+  assert.match(shimSrc, /\(c\.contains\("app-backgrounded"\) \|\| c\.contains\("app-hidden"\)\)\) return true;/);
+  assert.match(shimSrc, /on\("app:visibility", \(p\) => \{ if \(!\(p && p\.backgrounded\)\) snapWatch\(\); \}\);/);
+}
+
+// 6. Alt+Space opens the window menu (keyboard position); AltGr+Space and Space do not.
+{
+  const s = loadShim();
+  const menus = () => s.invokes.filter(([c]) => c === "window_system_menu");
+  const ev = s.key(" ", { code: "Space", altKey: true });
+  assert.equal(ev.defaultPrevented, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(menus())), [["window_system_menu", { keyboard: true }]]);
+  s.key(" ", { code: "Space", altKey: true, ctrlKey: true });
+  s.key(" ", { code: "Space" });
+  s.key(" ", { code: "Space", altKey: true, repeat: true });
+  assert.equal(menus().length, 1, "AltGr, plain Space and auto-repeat leave it alone");
+}
+
+// 7. Alt+F4 closes the window (main: to the tray, in the shell); Ctrl+Alt+F4 and F4 do not.
+{
+  const s = loadShim();
+  const closes = () => s.invokes.filter(([c]) => c === "window_close").length;
+  assert.equal(s.key("F4", { code: "F4", altKey: true }).defaultPrevented, true);
+  assert.equal(closes(), 1);
+  s.key("F4", { code: "F4" });
+  s.key("F4", { code: "F4", altKey: true, ctrlKey: true });
+  s.key("F4", { code: "F4", altKey: true, repeat: true });
+  assert.equal(closes(), 1);
 }
 
 console.log("window-shim.test: ok");

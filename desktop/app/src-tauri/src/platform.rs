@@ -20,6 +20,23 @@ pub fn system_idle_ms() -> u64 {
     0
 }
 
+/// The process AppUserModelID, before the first window (Electron toastIdentity.cjs
+/// app.setAppUserModelId). Same id as the Start Menu shortcut, the Run value and the toasts
+/// (descall_setup::layout::APP_ID, premium/toast.rs). Without it only a start from that
+/// shortcut carried the id: Descall started by Windows at sign-in (Run key), by an update, by
+/// a toast or a descall:// link got a second taskbar button next to the pinned one, and its
+/// overlay badge and thumbnail buttons sat on that second button.
+pub fn set_app_user_model_id() {
+    #[cfg(windows)]
+    unsafe {
+        use windows::core::w;
+        use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
+        if let Err(e) = SetCurrentProcessExplicitAppUserModelID(w!("com.descall.app")) {
+            log::warn!("[shell] AppUserModelID not set: {e}");
+        }
+    }
+}
+
 /// Lock screen up (powerMonitor 'lock-screen'): the input desktop cannot be opened for
 /// switching while Winlogon's secure desktop is active.
 pub fn session_locked() -> bool {
@@ -173,6 +190,24 @@ pub fn ensure_autostart(app_data: &std::path::Path, electron_user_data: Option<&
     if !marker_exists {
         let _ = std::fs::write(&marker, crate::state::now_ms().to_string());
     }
+}
+
+/// Updater relaunch of a window that was minimized: on the taskbar, minimized, without taking
+/// the focus (SW_SHOWMINNOACTIVE; main.cjs showInactive() then minimize()). show() is
+/// SW_SHOW: it activated Descall over the game or app the user was in, for a moment.
+pub fn show_minimized_inactive<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        if let Some(h) = w.hwnd().ok().map(|h| h.0 as isize) {
+            use windows::Win32::Foundation::HWND;
+            use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_SHOWMINNOACTIVE};
+            unsafe {
+                let _ = ShowWindow(HWND(h as *mut core::ffi::c_void), SW_SHOWMINNOACTIVE);
+            }
+            return;
+        }
+    }
+    let _ = w.minimize();
 }
 
 /// app.setLoginItemSettings({ openAtLogin, args: ['--autostart', '--hidden'] }). Turning it on

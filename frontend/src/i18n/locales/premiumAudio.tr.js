@@ -41,6 +41,7 @@ export const PREMIUM_AUDIO_TR = {
       quick_launcher: "Hızlı başlatıcı",
       volume_up: "Sabitlenen kişiyi yükselt",
       volume_down: "Sabitlenen kişiyi alçalt",
+      command_center: "Komuta merkezi",
     },
     reason: {
       invalid: "{action}: {accel} geçerli bir kısayol değil.",

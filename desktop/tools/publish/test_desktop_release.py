@@ -149,5 +149,21 @@ class Outputs(unittest.TestCase):
             dr.latest_json("4.0.1", "http://insecure/x.exe", data("installer.bin.sig"), "")
 
 
+class WorkflowPinsTheBundler(unittest.TestCase):
+    """nsis/hooks.nsh relies on the NSIS template of one tauri-bundler ($UpdateMode, shortcut
+    names); `@tauri-apps/cli@2` floated to whatever 2.x was newest on the release day."""
+
+    def test_tauri_cli_is_pinned(self):
+        import re
+        wf = open(os.path.join(HERE, "..", "..", "..", ".github", "workflows", "tauri-release.yml"), encoding="utf-8").read()
+        calls = re.findall(r"@tauri-apps/cli@(\S+)", wf)
+        self.assertTrue(calls)
+        for c in calls:
+            self.assertEqual(c, "${{", "every tauri CLI call uses env.TAURI_CLI: " + c)
+        self.assertEqual(len(re.findall(r"@tauri-apps/cli@\$\{\{ env\.TAURI_CLI \}\}", wf)), len(calls))
+        pin = re.search(r'TAURI_CLI: "([^"]+)"', wf)
+        self.assertTrue(pin and re.fullmatch(r"\d+\.\d+\.\d+", pin.group(1)), "TAURI_CLI is an exact version")
+
+
 if __name__ == "__main__":
     unittest.main()

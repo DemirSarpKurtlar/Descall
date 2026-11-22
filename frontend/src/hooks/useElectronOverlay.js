@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { hasDesktopBridge } from "../lib/desktopShell.js";
 import { resolveAvatarUrl, resolveDisplayName } from "../lib/userProfile.js";
 import { t } from "../i18n/runtime.js";
 import { auxCoversOverlay, auxSlot, callSlot, publishCallState, setCallActionHandler } from "../premium/desktop/desktopBus.js";
 
-const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
+const isElectron = hasDesktopBridge();
 
 /** Theme accent as "r, g, b" (desktop Liquid Glass token), or "" when unset. */
 export function readOverlayBrandRgb(doc = typeof document !== "undefined" ? document : null) {

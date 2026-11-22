@@ -38,10 +38,24 @@ pub enum BackgroundMode {
     Minimized,
 }
 
+/// True for an argument that is a URI (`descall:dm/x`, `descall://...`, `https://...`): what a
+/// web page or a document can make Windows start the app with. Drive paths (`C:\x`) are not.
+pub fn is_uri_arg(arg: &str) -> bool {
+    let arg = arg.trim().trim_matches('"');
+    if arg.contains("://") {
+        return true;
+    }
+    match arg.split_once(':') {
+        Some((scheme, _)) => scheme.len() >= 2 && scheme.starts_with(|c: char| c.is_ascii_alphabetic()) && scheme.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.')),
+        None => false,
+    }
+}
+
 pub fn has_arg<S: AsRef<str>>(argv: &[S], flag: &str) -> bool {
     // A URL argument (an OS link such as descall://... that a web page can start the app
-    // with) never carries launch flags, whatever text it holds.
-    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty() && !a.contains("://")).any(|raw| {
+    // with) never carries launch flags, whatever text it holds: `descall:x --hidden` (a link
+    // with raw spaces, which Windows hands over as one argument) used to start Descall hidden.
+    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty() && !is_uri_arg(a)).any(|raw| {
         if raw == flag {
             return true;
         }
@@ -65,18 +79,37 @@ pub fn is_fresh_relaunch_marker(mtime_ms: Option<i64>, now_ms: i64) -> bool {
 }
 
 pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<BackgroundMode>, updater_relaunch: bool) -> ColdStart {
+    // --updated alone is not enough: a manual launch that installs from the splash is
+    // relaunched with that flag, and a stale tray file must not hide it. A fresh marker comes
+    // first: tauri-plugin-updater (and app.restart) relaunch with the SAME argv (NSIS /ARGS),
+    // so an app that was started at login keeps `--autostart --hidden` and would come back
+    // hidden after "Restart now" although its window was open (electron-updater relaunched
+    // with `--updated` only).
+    if updater_relaunch {
+        return match background {
+            Some(mode) => {
+                let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
+                ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch }
+            }
+            None => ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::UpdaterRelaunch },
+        };
+    }
     if is_autostart_launch(argv) {
         return ColdStart { action: StartAction::Hide, show_splash: false, reason: StartReason::Autostart };
     }
-    // --updated alone is not enough: a manual launch that installs from the splash is
-    // relaunched with that flag, and a stale tray file must not hide it.
-    if updater_relaunch {
-        if let Some(mode) = background {
-            let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
-            return ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch };
-        }
-    }
     ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
+}
+
+/// A second launch (desktop shortcut, taskbar, Start menu) reached this instance while it was
+/// still starting, before its main window existed (Electron `userRequestedShow`): the user
+/// asked for the window, so a hidden login start or a quiet updater relaunch shows it too.
+/// Before this the request found no window and was dropped: the second click did nothing.
+pub fn with_show_request(start: ColdStart, requested: bool) -> ColdStart {
+    if requested {
+        ColdStart { action: StartAction::Show, ..start }
+    } else {
+        start
+    }
 }
 
 /// Marker file (app data folder) once the first start has decided on auto-start. Same name
@@ -118,8 +151,27 @@ mod tests {
     const EXE: &str = r"C:\Program Files\Descall\Descall.exe";
 
     #[test]
+    fn a_second_launch_during_boot_shows_the_window() {
+        let hidden = decide_cold_start(&["descall.exe", "--autostart", "--hidden"], None, false);
+        assert_eq!(hidden.action, StartAction::Hide);
+        let shown = with_show_request(hidden, true);
+        assert_eq!(shown.action, StartAction::Show);
+        assert_eq!(shown.reason, StartReason::Autostart, "only the visibility changes");
+        assert_eq!(with_show_request(hidden, false), hidden);
+        let quiet = decide_cold_start(&["descall.exe"], Some(BackgroundMode::Minimized), true);
+        assert_eq!(with_show_request(quiet, true).action, StartAction::Show);
+        let manual = decide_cold_start(&["descall.exe"], None, false);
+        assert_eq!(with_show_request(manual, true), manual);
+    }
+
+    #[test]
     fn url_arguments_never_carry_flags() {
         assert!(!is_autostart_launch(&[EXE, "descall://open --autostart --hidden"]));
+        // Links without "//" (descall:whats-new is a valid deep link) carry no flags either.
+        assert!(!is_autostart_launch(&[EXE, "descall:x --hidden"]));
+        assert!(!is_autostart_launch(&[EXE, "\"DESCALL:dm/a --autostart\""]));
+        assert!(!is_autostart_launch(&[EXE, "mailto:a --hidden"]));
+        assert!(is_uri_arg("descall:whats-new") && is_uri_arg("https://descall.com") && !is_uri_arg(r"C:\Program Files\Descall\Descall.exe") && !is_uri_arg("--hidden") && !is_uri_arg("--migration-id=m-1"));
         assert!(!is_autostart_launch(&[EXE, "https://x.example/ --hidden"]));
         assert!(is_autostart_launch(&[EXE, "--autostart --hidden"]), "a joined flag string still counts");
         assert_eq!(decide_cold_start(&[EXE, "descall://x --hidden"], None, false).action, StartAction::Show);
@@ -167,6 +219,20 @@ mod tests {
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
         assert_eq!(decide_cold_start(&[EXE, "--updated"], None, true).action, StartAction::Show);
+    }
+
+    /// Started at login, opened from the tray, then "Restart now": the updater relaunches with
+    /// the same `--autostart --hidden` argv. The marker ("shown") must win, or the window is gone.
+    #[test]
+    fn updater_relaunch_of_a_login_start_comes_back_as_left() {
+        let argv = [EXE, "--autostart", "--hidden"];
+        let d = decide_cold_start(&argv, None, true);
+        assert_eq!((d.action, d.reason), (StartAction::Show, StartReason::UpdaterRelaunch));
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Hidden), true).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
+        // No (or a stale) marker: a real login start stays in the tray.
+        assert_eq!(decide_cold_start(&argv, None, false).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&argv, Some(BackgroundMode::Minimized), false).action, StartAction::Hide);
     }
 
     #[test]

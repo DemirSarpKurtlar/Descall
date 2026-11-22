@@ -20,6 +20,7 @@ mod premium_hooks;
 #[cfg(windows)]
 mod screenshare;
 mod secure_store;
+mod snap;
 mod state;
 mod tray;
 mod tray_menu;
@@ -57,6 +58,15 @@ fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -
             invoke.resolver.reject("forbidden");
             return true;
         }
+        // Tauri's local-origin test ignores the port: a page on <app host>:<port> (a local
+        // server) must not reach app commands even if some navigation got there.
+        if let Ok(url) = invoke.message.webview_ref().url() {
+            if !descall_shell::ipc_policy::origin_allows_ipc(url.as_str(), state::is_dev()) {
+                log::warn!("[ipc] {label}: refused {} from a page with a port", invoke.message.command());
+                invoke.resolver.reject("forbidden");
+                return true;
+            }
+        }
         inner(invoke)
     }
 }
@@ -75,8 +85,11 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    state::mark_main_thread();
     logging::init();
     errors::init_early();
+    // One taskbar button however Descall was started (before any window exists).
+    platform::set_app_user_model_id();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
@@ -89,7 +102,7 @@ fn main() {
             if let Some(url) = descall_shell::deep_link::from_args(&argv) {
                 state::deliver_deep_link(app, url);
             }
-            state::show_main(app);
+            state::request_show(app);
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -137,6 +150,9 @@ fn main() {
             let boot_js = boot::boot_script(&handle, imported.as_ref());
             let script = format!("{boot_js}\n{SHIM}\n{NATIVE_SHARE}");
             let launch = boot::cold_start(&handle, &argv);
+            if launch.action == descall_shell::launch::StartAction::Show {
+                state::shell(&handle).show_on_load.store(true, std::sync::atomic::Ordering::Release);
+            }
             let ws = boot::initial_window_state(&handle);
 
             let nav_app = handle.clone();
@@ -177,10 +193,7 @@ fn main() {
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
-                        use tauri_plugin_opener::OpenerExt;
-                        let _ = nav_app.opener().open_url(url.as_str(), None::<&str>);
-                    }
+                    boot::open_external_window(&nav_app, &url);
                     NewWindowResponse::Deny
                 })
                 .on_page_load(move |w, p| match p.event() {
@@ -198,6 +211,8 @@ fn main() {
                         if !state::shell(&load_app).boot.lock().unwrap().mounted && launch.action == descall_shell::launch::StartAction::Show && !w.is_visible().unwrap_or(false) {
                             state::show_main(&load_app);
                         }
+                        // Loaded in the tray / minimized: the page learns it is out of sight.
+                        boot::tell_page_if_away(&load_app);
                     }
                 })
                 .build()?;
@@ -217,6 +232,12 @@ fn main() {
             premium_hooks::install(&handle);
 
             use descall_shell::launch::StartAction;
+            // A second launch that came in while the window was being built (request_show).
+            let requested = state::shell(&handle).show_requested.swap(false, std::sync::atomic::Ordering::AcqRel);
+            let launch = descall_shell::launch::with_show_request(launch, requested);
+            if requested {
+                state::show_main(&handle);
+            }
             match launch.action {
                 StartAction::Show => {
                     // ready-to-show fallback: show even if the page never finishes loading.
@@ -228,12 +249,12 @@ fn main() {
                         }
                     });
                 }
-                StartAction::Minimize => {
-                    let _ = w.show();
-                    let _ = w.minimize();
-                }
+                StartAction::Minimize => platform::show_minimized_inactive(&w),
                 StartAction::Hide => {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
+                    // Start in the tray (Windows sign-in): no hide event ever comes, so the
+                    // WebView2 memory target is evaluated here (low after LOW_AFTER_MS).
+                    webview::update_main_memory(&handle);
                 }
             }
 
@@ -275,6 +296,7 @@ fn main() {
             commands::window::window_focus,
             commands::window::window_set_zoom,
             commands::window::window_system_menu,
+            snap::window_snap_button,
             commands::updates::updates_check,
             commands::updates::updates_restart,
             commands::updates::updates_status,
@@ -320,9 +342,9 @@ fn main() {
 
 #[cfg(test)]
 mod config_tests {
-    /// Tauri updates run the old uninstaller with /UPDATE before installing: the uninstall
-    /// hook must not delete the login auto-start (Run value) or the toast activator then,
-    /// or every update turns "Start with Windows" off.
+    /// An uninstall run with /UPDATE (WiX migration path in tauri-bundler 2.10, every update in
+    /// older templates) must not delete the login auto-start (Run value) or the toast activator,
+    /// or the update turns "Start with Windows" off. $UpdateMode is the template's variable.
     #[test]
     fn update_keeps_autostart_and_toast_activator() {
         let hooks = include_str!("../nsis/hooks.nsh");
@@ -334,6 +356,31 @@ mod config_tests {
             assert!(pos > guard && pos < body.find("${EndIf}").unwrap(), "unguarded: {line}");
         }
         assert!(body.contains(r#"CurrentVersion\Run" "${DESCALL_AUMID}""#), "a real uninstall still removes auto-start");
+        assert_eq!(launch_value_name(), descall_shell::launch::RUN_VALUE, "hook removes the Run value the app writes");
+    }
+
+    /// An app installed by DescallSetup.exe and updated by the Tauri updater must be updated
+    /// in its own folder, not installed a second time at the template default.
+    #[test]
+    fn update_adopts_the_descall_setup_folder() {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let pre = &hooks[hooks.find("!macro NSIS_HOOK_PREINSTALL").unwrap()..];
+        assert!(pre[..pre.find("!macroend").unwrap()].contains("!insertmacro DESCALL_ADOPT_SETUP_FOLDER"));
+        let m = &hooks[hooks.find("!macro DESCALL_ADOPT_SETUP_FOLDER").unwrap()..];
+        let m = &m[..m.find("!macroend").unwrap()];
+        assert!(m.trim_start_matches("!macro DESCALL_ADOPT_SETUP_FOLDER").trim_start().starts_with("${If} $UpdateMode = 1"), "update mode only");
+        // The exact entry descall-setup writes (win/shell.rs register_uninstall).
+        let setup_shell = include_str!("../../../crates/descall-setup/src/win/shell.rs");
+        assert!(setup_shell.contains(r#"k.set_string("UninstallString", format!("\"{}\" --uninstall", un.display()))?;"#));
+        assert!(setup_shell.contains(r#"k.set_string("InstallLocation", e.dir.display().to_string())?;"#));
+        assert!(m.contains(r#"${AndIf} $1 == '"$0\uninstall.exe" --uninstall'"#));
+        assert!(m.contains("StrCpy $INSTDIR $0") && m.contains("SetOutPath $INSTDIR"));
+    }
+
+    fn launch_value_name() -> &'static str {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let at = hooks.find("!define DESCALL_AUMID \"").unwrap() + "!define DESCALL_AUMID \"".len();
+        &hooks[at..at + hooks[at..].find('"').unwrap()]
     }
 
     /// Single instance before every other plugin (Tauri requires it first so a second launch
@@ -345,8 +392,20 @@ mod config_tests {
         let first_plugin = builder.find(".plugin(").unwrap();
         assert!(builder[first_plugin..].starts_with(".plugin(tauri_plugin_single_instance::init("), "single instance is the first plugin");
         let cb = &builder[first_plugin..first_plugin + 400];
-        assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::show_main(app)"));
+        assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::request_show(app)"));
+        // A request that arrives while the main window is still being built is kept and
+        // honoured once the window exists (round 2: the second click did nothing then).
+        let state = include_str!("state.rs");
+        let req = &state[state.find("pub fn request_show").unwrap()..];
+        assert!(req[..400].contains("show_requested.store(true"));
+        assert!(main.contains("show_requested.swap(false") && main.contains("with_show_request(launch, requested)"));
         assert!(main.contains("commands::app::deep_link_take,"));
+        // Any other show (descall:// link, toast click) before the window exists is kept the
+        // same way (an auto-started hidden app opened during boot stayed hidden), and taken
+        // once, before the start mode is applied.
+        assert!(state.contains("let Some(w) = main_window(app) else {\n        shell(app).show_requested.store(true"));
+        let shipped = &main[..main.find("#[cfg(test)]").unwrap()];
+        assert_eq!(shipped.matches("show_requested.swap(false").count(), 1);
     }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
     /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,

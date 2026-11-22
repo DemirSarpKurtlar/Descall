@@ -1,5 +1,6 @@
 import { registerVoiceCapture } from "../lib/voiceCaptureRegistry";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import audioManager from "../lib/audioManager";
 import notificationService from "../lib/notificationService";
@@ -126,7 +127,7 @@ function incomingEntryMeta(opts) {
 
 function callPlatformTag() {
   if (IOS_NATIVE) return "ios-app";
-  if (typeof window !== "undefined" && window.electronAPI?.isElectron) return "electron";
+  if (isDesktopShell()) return "electron";
   try {
     const cap = typeof window !== "undefined" ? window.Capacitor : null;
     if (cap?.isNativePlatform?.() && cap.getPlatform?.() === "android") return "android-app";

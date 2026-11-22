@@ -10,6 +10,7 @@
  * Dependency-free apart from serverInviteRoute.js, so the marketing entry stays small.
  */
 import { peekPendingLanding } from "./serverInviteRoute.js";
+import { isDesktopShell } from "./desktopShell.js";
 
 function currentWindow(win) {
   if (win !== undefined) return win;
@@ -20,7 +21,7 @@ export function signupClientPlatform(win) {
   const w = currentWindow(win);
   if (!w) return "web";
   try {
-    if (w.electronAPI && w.electronAPI.isElectron) return "electron";
+    if (isDesktopShell(w)) return "electron";
     const cap = w.Capacitor;
     const native = cap && typeof cap.isNativePlatform === "function" ? cap.isNativePlatform() : false;
     if (native && typeof cap.getPlatform === "function") {

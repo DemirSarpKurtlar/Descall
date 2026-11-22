@@ -275,6 +275,8 @@ export const nested = {
     "subInstalling": "Descall reopens in a few seconds",
     "titleError": "Update could not be downloaded",
     "subError": "Check your connection and try again",
+    "titleInstallError": "Update could not be installed",
+    "subInstallError": "Try again or download the installer",
     "retry": "Try again",
     "downloadPage": "Download page",
     "kicker": "Desktop update",
