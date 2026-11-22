@@ -35,10 +35,11 @@ function walk(dir, ext, out = []) {
 // file -> [count, "when it runs / why it is bounded"]. Counted: thread::sleep(, time::sleep(,
 // Host::every( and Poll::start(h, "..." (Descall+ repeating ticks), outside #[cfg(test)].
 const RUST = {
-  "app/src-tauri/src/boot.rs": [3, "window-state save debounce 400 ms (one-shot); paint watchdog every 2 s until the first paint of a document; transparency watcher waits on RegNotifyChangeKeyValue, 3 s only if that call fails"],
+  "app/src-tauri/src/boot.rs": [4, "window-state save debounce 400 ms (one-shot); paint watchdog every 2 s until the first paint of a document; tell_page_if_away checks twice (2 s, 6 s) after a load in the tray, then stops; transparency watcher waits on RegNotifyChangeKeyValue, 3 s only if that call fails"],
   "app/src-tauri/src/main.rs": [1, "ready fallback, one-shot after start"],
+  "app/src-tauri/src/state.rs": [1, "quit: page unload grace 400 ms before exit (one-shot)"],
   "app/src-tauri/src/tray_menu.rs": [2, "tray panel destroyed after it stayed hidden (one-shot); show delay (one-shot)"],
-  "app/src-tauri/src/webview.rs": [1, "memory target low after 30 s in the tray (one-shot per hide)"],
+  "app/src-tauri/src/webview.rs": [2, "memory target low after 30 s in the tray (one-shot per hide); hung page asked once 10 s into a hang (one-shot per hang)"],
   "app/src-tauri/src/migration.rs": [3, "first run after the Electron migration only: auth retries (bounded tries), commit wait (bounded), legacy cleanup after 30 s"],
   "app/src-tauri/src/commands/notify.rs": [3, "capsule slide (8 x 15 ms per move), capsule expiry (one-shot per capsule), focus-check delay (one-shot)"],
   "app/src-tauri/src/commands/updates.rs": [3, "update check every 5 min (Electron UPDATE_CHECK_INTERVAL_MS), first one 45 s after start; install poll only while an update is staged"],

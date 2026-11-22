@@ -275,8 +275,12 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   buttons = [];
   resize();
   assert.equal(sent().filter((r) => r === null).length, 1, "still none: not sent again");
-  // The interval check exists, so bars that come and go are picked up without a resize.
-  assert.match(shimSrc, /setInterval\(snapSoon, 1000\)/);
+  // The once-a-second check exists, so bars that come and go are picked up without a resize,
+  // and it stops while the window is in the tray (no repeating timer there, idle-perf.test).
+  assert.match(shimSrc, /snapTimer = setTimeout\(snapTick, 1000\)/);
+  assert.match(shimSrc, /const snapTick = \(\) => \{\s*snapTimer = 0;\s*if \(snapAway\(\)\) return;/);
+  assert.match(shimSrc, /\(c\.contains\("app-backgrounded"\) \|\| c\.contains\("app-hidden"\)\)\) return true;/);
+  assert.match(shimSrc, /on\("app:visibility", \(p\) => \{ if \(!\(p && p\.backgrounded\)\) snapWatch\(\); \}\);/);
 }
 
 // 6. Alt+Space opens the window menu (keyboard position); AltGr+Space and Space do not.

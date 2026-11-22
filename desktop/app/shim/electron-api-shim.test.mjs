@@ -349,7 +349,7 @@ for (const [path, args, cmd, expected] of CASES) {
   const body = premiumRs.slice(premiumRs.indexOf("pub fn show_main(&self)"));
   assert.match(body.slice(0, 120), /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/);
   const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
-  assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main")), /^[\s\S]{0,900}"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
+  assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main"), stateRs.indexOf("pub fn request_show")), /"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
 }
 
 // An updater relaunch that was minimized comes back minimized without activation

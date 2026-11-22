@@ -98,11 +98,18 @@
   };
 
   // One-time Electron import of localStorage (descall://app -> https://tauri.localhost).
+  // The boot script carries it on the import start only, for the whole life of the window: the
+  // marker keeps a reload from writing it over settings changed since. The marker names the
+  // import (BOOT.importId): a later migration (after a rollback the user went on in Electron)
+  // imports again and must not be skipped because an earlier one already ran in this profile.
   try {
     const imp = BOOT.importLocalStorage;
-    if (imp && !localStorage.getItem("__descall_import_v1")) {
+    const IMPORT_KEY = "__descall_import_v1";
+    const id = typeof BOOT.importId === "string" && BOOT.importId ? BOOT.importId : "";
+    const prev = imp ? localStorage.getItem(IMPORT_KEY) : null;
+    if (imp && (id ? prev !== id : prev === null)) {
       for (const [k, v] of Object.entries(imp)) localStorage.setItem(k, v);
-      localStorage.setItem("__descall_import_v1", String(Date.now()));
+      localStorage.setItem(IMPORT_KEY, id || String(Date.now()));
     }
   } catch (_) { /* storage disabled */ }
 
@@ -110,6 +117,8 @@
   // clear during this run wins and is mirrored to sessionStorage, so a reload (boot retry)
   // sees it before the next app start writes a new snapshot.
   const TOKEN_OVERRIDE = "__descall_token_override";
+  /** storage.js / secureToken.js SECURE_TOKEN_KEY: the page's own fallback copy. */
+  const LOCAL_TOKEN_KEY = "descall_token";
   let tokenCache = (() => {
     try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) { /* ignore */ }
     return BOOT.token || null;
@@ -120,7 +129,7 @@
   // script, after a sign-out, until the next start). Electron's preload never put it on window.
   if ("token" in BOOT || "importLocalStorage" in BOOT) {
     const rest = {};
-    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
+    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage" && k !== "importId") rest[k] = v;
     try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
   }
   // Signed out: the Descall+ desktop features (global hotkeys, push-to-talk input, tray
@@ -162,6 +171,22 @@
   };
   on("native-theme:reduced-transparency-changed", setReducedTransparency);
   invoke("app_reduced_transparency").then((v) => { if (typeof v === "boolean") setReducedTransparency(v); }, noop);
+
+  // Quit (tray Quit): Electron's app.quit() closed the window, so the page ran its pagehide /
+  // beforeunload handlers (unsent draft saved, voice channel left at once, app time flushed).
+  // app.exit() tears WebView2 down without them; the shell sends app:will-quit to the main
+  // window and waits a moment before it exits (state::exit_after_unload).
+  let willQuit = false;
+  if (LABEL === "main") {
+    on("app:will-quit", () => {
+      if (willQuit) return;
+      willQuit = true;
+      let hide;
+      try { hide = new PageTransitionEvent("pagehide", { persisted: false }); } catch (_) { hide = new Event("pagehide"); }
+      try { window.dispatchEvent(hide); } catch (err) { console.error(err); }
+      try { window.dispatchEvent(new Event("beforeunload")); } catch (err) { console.error(err); }
+    });
+  }
 
   const nativeShare = () => window.__descallNativeShare || null;
   const toElectronSource = (s) => ({
@@ -302,8 +327,20 @@
         const v = String(token || "");
         if (v.length > 16 * 1024) return false;
         remember(v);
-        fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined);
-        if (!v) premiumSignedOut();
+        if (!v) {
+          fire("token_clear");
+          premiumSignedOut();
+          return true;
+        }
+        // Electron answered false when safeStorage could not write the file, and storage.js
+        // then kept the token in localStorage. The answer is async here: when the store
+        // refuses it (DPAPI / disk error), keep the same localStorage copy, or the session
+        // would be gone at the next start. storage.js moves it back into the store then.
+        const keepLocal = () => {
+          if (LABEL !== "main" || tokenCache !== v) return;
+          try { localStorage.setItem(LOCAL_TOKEN_KEY, v); } catch (_) { /* storage disabled */ }
+        };
+        invoke("token_set", { token: v }).then((ok) => { if (ok === false) keepLocal(); }, keepLocal);
         return true;
       },
       clear: () => { remember(""); fire("token_clear"); premiumSignedOut(); return true; },
@@ -454,11 +491,31 @@
     if (state === "hover" || state === "press") snapEl.setAttribute("data-snap-state", state);
     else snapEl.removeAttribute("data-snap-state");
   });
-  window.addEventListener("resize", snapSoon);
   // Bars come and go (sign-in, app lock, admin loading screens) and move with zoom: a light
-  // check every second, sent only when the button moved.
-  if (typeof setInterval === "function") setInterval(snapSoon, 1000);
-  document.addEventListener("DOMContentLoaded", snapSoon);
+  // check every second, sent only when the button moved. Not in the tray or minimized
+  // (html.app-backgrounded / app-hidden, idle-perf.test.mjs): no repeating timer there; it
+  // starts again when the window is back (app:visibility, focus, resize).
+  let snapTimer = 0;
+  const snapAway = () => {
+    if (!document || typeof document.elementFromPoint !== "function") return true; // no layout: nothing to check
+    const c = document.documentElement && document.documentElement.classList;
+    if (c && typeof c.contains === "function" && (c.contains("app-backgrounded") || c.contains("app-hidden"))) return true;
+    return document.visibilityState === "hidden";
+  };
+  const snapTick = () => {
+    snapTimer = 0;
+    if (snapAway()) return;
+    snapSoon();
+    snapTimer = setTimeout(snapTick, 1000);
+  };
+  const snapWatch = () => {
+    snapSoon();
+    if (!snapTimer && typeof setTimeout === "function") snapTimer = setTimeout(snapTick, 1000);
+  };
+  on("app:visibility", (p) => { if (!(p && p.backgrounded)) snapWatch(); });
+  window.addEventListener("resize", snapWatch);
+  window.addEventListener("focus", snapWatch);
+  document.addEventListener("DOMContentLoaded", snapWatch);
 
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
