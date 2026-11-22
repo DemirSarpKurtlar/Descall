@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { Funnel } from "../analytics";
 import { useT } from "../../context/localeContextInstance";
 
@@ -26,7 +26,7 @@ export default function EmailCapture({ source = "marketing_footer" }) {
     Funnel.ctaClick({ page: typeof window !== "undefined" ? window.location.pathname : "", placement: source, label: "waitlist", intent: "waitlist" });
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/marketing/waitlist`, {
+      const res = await fetch(`${apiBase()}/api/marketing/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

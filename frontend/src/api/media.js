@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase, primaryApiBase } from "../lib/nodeRouting";
 import { t } from "../i18n/runtime.js";
 import { serverErrorText } from "./httpError";
 import { getToken } from "../lib/storage";
@@ -8,7 +8,7 @@ export async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/media/upload`, {
+  const response = await fetch(`${apiBase()}/api/media/upload`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -24,7 +24,7 @@ export async function uploadAvatar(file) {
   const formData = new FormData();
   formData.append("avatar", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/media/avatar`, {
+  const response = await fetch(`${apiBase()}/api/media/avatar`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -38,7 +38,7 @@ export async function uploadAvatar(file) {
 export function getMediaUrl(relativePath) {
   if (!relativePath) return null;
   if (relativePath.startsWith("http")) return relativePath;
-  return `${API_BASE_URL}${relativePath}`;
+  return `${primaryApiBase()}${relativePath}`;
 }
 
 /**
@@ -50,7 +50,7 @@ export async function uploadAvatarWithCrop(file, crop = null) {
   const formData = new FormData();
   if (crop) formData.append("crop", JSON.stringify(crop));
   formData.append("avatar", file);
-  const response = await fetch(`${API_BASE_URL}/api/media/avatar`, {
+  const response = await fetch(`${apiBase()}/api/media/avatar`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -66,7 +66,7 @@ export async function uploadBannerImage(file, crop = null) {
   const formData = new FormData();
   if (crop) formData.append("crop", JSON.stringify(crop));
   formData.append("banner", file);
-  const response = await fetch(`${API_BASE_URL}/api/media/banner-image`, {
+  const response = await fetch(`${apiBase()}/api/media/banner-image`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -78,5 +78,5 @@ export async function uploadBannerImage(file, crop = null) {
 
 /** QR image for "Telefonundan yükle" (public, encodes only the universal link). */
 export function handoffQrSrc(target) {
-  return `${API_BASE_URL}/api/media/handoff-qr.svg?target=${target === "banner" ? "banner" : "avatar"}`;
+  return `${primaryApiBase()}/api/media/handoff-qr.svg?target=${target === "banner" ? "banner" : "avatar"}`;
 }

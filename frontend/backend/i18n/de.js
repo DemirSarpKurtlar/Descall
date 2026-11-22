@@ -119,6 +119,13 @@ module.exports = {
     antibotTitle: "Anti-Bot-Warnung",
     antibotBody: "{count, plural, one {# Konto hat} other {# Konten haben}} den Risikoschwellenwert überschritten (höchster Wert {topScore})",
     antibotWatchBody: "{count, plural, one {# neue Warnung der Beobachtungsliste} other {# neue Warnungen der Beobachtungsliste}}",
+    // Sunucu Ağı (hybrid server) owner alerts
+    nodesTitle: "Servernetz-Warnung",
+    nodesPcDown: "Der PC-Knoten ist plötzlich ausgefallen; Nutzer wechseln zu Render.",
+    nodesKvFull: "Gemeinsamer Speicher (Key Value) ist zu {pct} % voll.",
+    nodesKvDown: "Gemeinsamer Speicher (Key Value) ist nicht erreichbar; Einzelserver-Modus aktiv.",
+    nodesRender90: "Render-Speicher bei {pct} %; PC-Anteil erhöhen oder Last prüfen.",
+    nodesTest: "Testbenachrichtigung: Servernetz-Warnungen erreichen dieses Gerät.",
     // Web push + FCM (browser and Android notifications)
     voicePlain: "Sprachnachricht",
     attachmentPlain: "Hat einen Anhang gesendet",

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { serverErrorText } from "./httpError";
 import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
@@ -14,7 +14,7 @@ function makeHttpError(status, body) {
 
 async function adminFetchOnce(path, options = {}) {
   const token = getToken();
-  const url = `${API_BASE_URL}/admin${path}`;
+  const url = `${apiBase()}/admin${path}`;
 
   const isFormData = options.body instanceof FormData;
   const headers = {

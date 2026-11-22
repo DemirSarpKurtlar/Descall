@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "./nodeRouting";
 import { getToken } from "./storage";
 
 function urlBase64ToUint8Array(value) {
@@ -28,7 +28,7 @@ export async function subscribeWebPush() {
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
 
-  const response = await fetch(`${API_BASE_URL}/api/web-push/subscription`, {
+  const response = await fetch(`${apiBase()}/api/web-push/subscription`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

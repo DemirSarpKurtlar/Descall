@@ -106,6 +106,8 @@ router.use(require("./adminAnnouncements"));
 router.use("/premium", require("./adminPremium"));
 // Admin Token (owner only): tokens, usage, alerts, auto-pause, and GET /openapi.json.
 router.use(require("./adminTokens"));
+// Sunucu Ağı (hybrid server, owner only): routes/adminNodes.js.
+router.use(require("./adminNodes"));
 
 router.get("/directory", async (req, res) => {
   try {

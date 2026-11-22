@@ -64,6 +64,8 @@ const RULES = [
   [/^\/step-up$/, null],
   // Admin Token tab and the OpenAPI document: owner only, checked by routes/adminTokens.js.
   [/^\/(tokens|openapi\.json)(\/|$)/, null],
+  // Sunucu Ağı (hybrid server): owner only, checked by routes/adminNodes.js.
+  [/^\/nodes(\/|$)/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
   [/^\/staff(\/|$)/, "staff"],
   [/^\/agent(\/|$)/, "agent"],
@@ -156,10 +158,12 @@ async function loadRow(userId) {
   return row;
 }
 
-function invalidate(userId) {
+function invalidateLocal(userId) {
   if (userId) cache.delete(userId);
   else cache.clear();
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("./cluster").linkInvalidate("adminPerms", invalidateLocal);
 
 /** Express middleware for the admin router (after requireAdmin). */
 async function requireAdminSection(req, res, next) {

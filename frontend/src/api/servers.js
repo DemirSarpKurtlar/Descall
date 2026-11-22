@@ -1,10 +1,10 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
 
 async function serversRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${apiBase()}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",

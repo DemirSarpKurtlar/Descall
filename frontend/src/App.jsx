@@ -72,7 +72,7 @@ import { emitRoomOnce, nextGroupRejoin } from "./lib/socketResubscribe";
 import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, startupPrefetchLimits, setChatPrefetchHandler } from "./lib/chatPrefetch";
 import { createSocket, rememberBootFriendsHash, forgetBootHashes } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
-import { API_BASE_URL } from "./config/api";
+import { apiBase } from "./lib/nodeRouting";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
 import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
@@ -503,7 +503,7 @@ async function fetchConversationReactions(type, conversationId) {
   try {
     const token = getToken();
     const res = await fetch(
-      `${API_BASE_URL}/api/reactions/conversation/${encodeURIComponent(type)}/${encodeURIComponent(conversationId)}`,
+      `${apiBase()}/api/reactions/conversation/${encodeURIComponent(type)}/${encodeURIComponent(conversationId)}`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     );
     if (!res.ok) return {};
@@ -1664,7 +1664,7 @@ export default function App() {
       });
     // Native iOS app masks bad words; merge the admin-managed extra words.
     if (profanityMaskingActive()) {
-      fetch(`${API_BASE_URL}/api/features/profanity`)
+      fetch(`${apiBase()}/api/features/profanity`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!cancelled && Array.isArray(data?.words)) setExtraProfanityWords(data.words);
@@ -1761,7 +1761,7 @@ export default function App() {
       const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
       const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
       try {
-        await fetch(`${API_BASE_URL}/health`, { method: "GET", ...(ctrl ? { signal: ctrl.signal } : {}) });
+        await fetch(`${apiBase()}/health`, { method: "GET", ...(ctrl ? { signal: ctrl.signal } : {}) });
       } finally {
         if (timer) clearTimeout(timer);
       }
@@ -1864,6 +1864,9 @@ export default function App() {
     socket.on("connect_error", (error) => {
       setIsConnected(false);
       const msg = error?.message || "Socket authentication failed";
+      // Hybrid server: a draining PC node refused the socket; lib/nodeRouting.js already
+      // reconnected it to Render, so no transport fallback or error text here.
+      if (msg === "node draining") return;
       if (isBanSocketMessage(msg)) {
         // Banned or blocked: no transport retries. Ask the API for the details (it answers the
         // ban body for this token) so the ban screen, not a raw English error, is shown.
@@ -4665,7 +4668,7 @@ export default function App() {
     }
     // HTTP fallback when socket is down
     const token = getToken();
-    fetch(`${API_BASE_URL}/friends/accept`, {
+    fetch(`${apiBase()}/friends/accept`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -4715,7 +4718,7 @@ export default function App() {
       return;
     }
     const token = getToken();
-    fetch(`${API_BASE_URL}/friends/remove`, {
+    fetch(`${apiBase()}/friends/remove`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ friendId: id }),
@@ -4732,7 +4735,7 @@ export default function App() {
       return;
     }
     const token = getToken();
-    fetch(`${API_BASE_URL}/friends/decline`, {
+    fetch(`${apiBase()}/friends/decline`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

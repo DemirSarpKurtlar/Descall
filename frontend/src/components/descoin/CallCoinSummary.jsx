@@ -18,7 +18,8 @@ import { useLocale, useT } from "../../context/LocaleContext";
 import { formatNumber, formatTime, formatDate } from "../../i18n/format.js";
 import { localizeShopItem } from "../../lib/shopItemI18n.js";
 import { SHOP_CATEGORY_TABS } from "../../lib/shopCategories.js";
-import { API_BASE_URL } from "../../config/api";
+// Asset URLs stay on the primary: rendered images must not break when a node drains.
+import { primaryApiBase } from "../../lib/nodeRouting";
 import {
   absoluteAssetUrl,
   activeMinutes,
@@ -178,7 +179,7 @@ function initials(name) {
 
 function Avatar({ url, name, square }) {
   const [broken, setBroken] = useState(false);
-  const src = absoluteAssetUrl(url, API_BASE_URL);
+  const src = absoluteAssetUrl(url, primaryApiBase());
   return (
     <span className={`ccs-av${square ? " is-square" : ""}`} aria-hidden="true">
       {src && !broken ? <img src={src} alt="" onError={() => setBroken(true)} /> : <b>{initials(name)}</b>}
@@ -373,7 +374,7 @@ export default function CallCoinSummary({
   const balanceAfter = s.balance || 0;
   const affordable = item ? balanceAfter >= item.price : false;
   const missing = item ? Math.max(0, item.price - balanceAfter) : 0;
-  const itemImg = item ? absoluteAssetUrl(item.imageUrl, API_BASE_URL) : null;
+  const itemImg = item ? absoluteAssetUrl(item.imageUrl, primaryApiBase()) : null;
 
   const ringSize = sheet ? 168 : 184;
   const ringStroke = sheet ? 11 : 12;

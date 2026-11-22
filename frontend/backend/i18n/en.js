@@ -121,6 +121,13 @@ module.exports = {
     antibotTitle: "Anti-bot alert",
     antibotBody: "{count, plural, one {# account crossed} other {# accounts crossed}} the risk threshold (top {topScore})",
     antibotWatchBody: "{count, plural, one {# new watch list alert} other {# new watch list alerts}}",
+    // Sunucu Ağı (hybrid server) owner alerts
+    nodesTitle: "Server network alert",
+    nodesPcDown: "The PC node dropped suddenly; users are moving to Render.",
+    nodesKvFull: "Shared memory (Key Value) is {pct}% full.",
+    nodesKvDown: "Shared memory (Key Value) is unreachable; running in single-server mode.",
+    nodesRender90: "Render memory is at {pct}%; raise the PC share or check the load.",
+    nodesTest: "Test notification: server network alerts reach this device.",
     // Web push + FCM (browser and Android notifications)
     voicePlain: "Voice message",
     attachmentPlain: "Sent an attachment",

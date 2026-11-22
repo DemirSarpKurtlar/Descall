@@ -258,4 +258,10 @@ export const API_ES = {
   "Account closed. It will be permanently deleted after the grace period.": "Cuenta cerrada. Se eliminará definitivamente al terminar el periodo de gracia.",
   "Could not cancel the request.": "No se pudo cancelar la solicitud.",
   "File is too large (max {max} MB).": "El archivo es demasiado grande (máx. {max} MB).",
+  "Invalid node key": "Clave de nodo de servidor no válida",
+  "Not the primary node": "Este no es el nodo de servidor principal",
+  "Invalid node id": "ID de nodo de servidor no válido",
+  "Invalid node url": "Dirección de nodo de servidor no válida",
+  "Invalid node state": "Estado de nodo de servidor no válido",
+  "Invalid setting: {field}": "Ajuste no válido: {field}",
 };

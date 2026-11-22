@@ -6,6 +6,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { inlineScriptHashes } from "./csp-sync-lib.mjs";
+import { PC_NODE_ORIGIN, PC_NODE_WS_ORIGIN } from "../src/config/nodeOrigins.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = process.argv[2] ? resolve(process.argv[2]) : join(root, "dist");
@@ -18,6 +19,11 @@ const allowed = new Set(INLINE_SCRIPT_HASHES);
 const problems = [];
 const scriptSrc = (SITE_CSP.match(/script-src[^;]*/) || [""])[0];
 if (/'unsafe-inline'/.test(scriptSrc)) problems.push("script-src still contains 'unsafe-inline'");
+// Hybrid server: the PC node must be reachable (REST + Socket.IO) from the shipped page.
+const directive = (name) => ((SITE_CSP.match(new RegExp(`(?:^|;\\s*)${name}\\s([^;]*)`)) || [])[1] || "").split(/\s+/);
+for (const [name, origins] of [["connect-src", [PC_NODE_ORIGIN, PC_NODE_WS_ORIGIN]], ["img-src", [PC_NODE_ORIGIN]], ["media-src", [PC_NODE_ORIGIN]]]) {
+  for (const o of origins) if (!directive(name).includes(o)) problems.push(`${name} does not allow the PC node origin ${o} (src/config/nodeOrigins.js)`);
+}
 const headers = existsSync(join(dist, "_headers")) ? readFileSync(join(dist, "_headers"), "utf8") : "";
 if (!headers.includes(SITE_CSP)) problems.push("dist/_headers CSP differs from security-policy.js");
 

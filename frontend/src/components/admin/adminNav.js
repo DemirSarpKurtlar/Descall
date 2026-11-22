@@ -16,7 +16,8 @@ export const ADMIN_NAV_GROUPS = [
   ]],
   ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
   // Admin Token (owner only) sits under Güvenlik, like the draft's breadcrumb.
-  ["system", ["system", "security", "adminToken", "errors", "audit", "staff"]],
+  // Sunucu Ağı (owner only) sits right after Sistem.
+  ["system", ["system", "nodes", "security", "adminToken", "errors", "audit", "staff"]],
 ];
 
 const GROUP_LABEL = {
@@ -53,14 +54,29 @@ export const SECTION_LABEL = Object.freeze({ premium: "premiumAdmin.navGroup" })
 
 /**
  * Pages only the owner sees, whatever the server lists: Admin Token (bot tokens that act as
- * the owner account; the server checks userIsSuperAdmin on every /admin/tokens call).
+ * the owner account; the server checks userIsSuperAdmin on every /admin/tokens call) and
+ * Sunucu Ağı (hybrid server; every /admin/nodes call is owner only too).
  */
-export const OWNER_ONLY_TABS = Object.freeze(["adminToken"]);
+export const OWNER_ONLY_TABS = Object.freeze(["adminToken", "nodes"]);
 
 /** The sections a viewer may open: the server's list, plus the owner-only pages for the owner. */
 export function withOwnerTabs(sections, owner) {
   const list = (Array.isArray(sections) ? sections : ["overview"]).filter((s) => !OWNER_ONLY_TABS.includes(s));
   return owner ? [...list, ...OWNER_ONLY_TABS] : list;
+}
+
+/**
+ * "?tab=<id>" in the panel URL (the Descall Node tray app opens /admin/panel?tab=nodes):
+ * the page id when it is a known menu page, else null. Permission is checked by the panel.
+ */
+export function initialTabFromQuery(search) {
+  try {
+    const id = new URLSearchParams(String(search || "")).get("tab");
+    if (!id || !/^[A-Za-z0-9]{2,40}$/.test(id)) return null;
+    return ADMIN_NAV_GROUPS.some(([, ids]) => ids.includes(id)) ? id : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Permission section of a menu page (its own id unless listed in TAB_SECTION). */

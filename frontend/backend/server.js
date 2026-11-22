@@ -71,6 +71,11 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 const httpServer = http.createServer(app);
+// Hybrid server (Render + the owner's PC): node registry, leader lock, shared state.
+// Without REDIS_URL this is a single node and nothing here touches the network.
+const cluster = require("./lib/cluster");
+// p95 latency / error rate for the node metrics (one hrtime per request).
+app.use(cluster.metricsMiddleware);
 
 const isVercel = Boolean(process.env.VERCEL);
 const { isAllowedOrigin, corsOrigin } = require("./lib/corsOrigins");
@@ -104,6 +109,12 @@ const io = new Server(httpServer, {
   },
 });
 
+// Clustered: io.to(room).emit / fetchSockets / disconnectSockets reach every node's
+// sockets through the Key Value (pub/sub on dc:sio#). Must be set before any socket joins.
+{
+  const adapter = cluster.socketAdapter();
+  if (adapter) io.adapter(adapter);
+}
 app.set("io", io);
 // Güvenlik Merkezi: live feed pushes to admins with the section, emergency lock expiry timer.
 require("./lib/securityCenter").attach(io);
@@ -237,6 +248,9 @@ app.get("/api/status", (_req, res) => {
 app.use("/api/features", publicFeatureRoutes);
 app.use("/api/maintenance", require("./routes/maintenanceStatus"));
 app.use("/maintenance", require("./routes/maintenanceStatus"));
+// Hybrid server (Render + PC node): /api/node/assign, /health, /register, /drain-done.
+// Single-node mode (no REDIS_URL) answers this node, so nothing changes without the env.
+require("./routes/node").attachNodeRouting({ app, io });
 // 2.11.7 (scale S3): public ES256 keys for the Cloudflare edge. Empty until
 // JWT_ES256_PRIVATE_KEY is set. Public by design; shared cache 1 h.
 app.get("/api/jwks.json", (_req, res) => {
@@ -846,6 +860,20 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+// Heartbeat, leader election, metrics ring and replicated shared state (no-op extras on a single node).
+cluster.start({ io, state });
+if (cluster.configured()) {
+  // Deploy / restart: hand over the leader lock and drop this node's users at once
+  // instead of after the 15 s TTL, then exit as before.
+  const shutdown = (signal) => {
+    const done = () => process.exit(signal === "SIGINT" ? 130 : 0);
+    const t = setTimeout(done, 3000);
+    t.unref?.();
+    cluster.stop({ graceful: true }).catch(() => {}).finally(done);
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
+}
 // Temporary server memberships also expire after a restart or for REST-only joins (IM-8).
 require("./lib/serverMemberJoin").startTemporaryMemberSweeper(io);
 // 3D world (phase 1): separate /world namespace, desktop + admins only (socket/worldHandlers.js).
@@ -893,6 +921,13 @@ async function runBoot() {
     console.warn("[boot] premium scheduler failed:", e.message);
   }
   try {
+    // Sunucu Ağı (hybrid server): leader-only phone alerts (PC down, Key Value full, Render
+    // 90 %) and the saved-cost ledger; unref'd 30 s tick, off in tests (lib/nodeKeys/monitor.js).
+    require("./lib/nodeKeys/monitor").start(io);
+  } catch (e) {
+    console.warn("[boot] node monitor failed:", e.message);
+  }
+  try {
     // DesCoin anti-bot (Faz 0): monitor-only risk scoring; never changes balances or earning.
     if (process.env.NODE_ENV !== "test") require("./lib/descoinAntibot").startAntibotScheduler();
   } catch (e) {
@@ -914,6 +949,9 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] system settings load failed:", e.message);
   }
+  // Hybrid server: catalog upkeep below writes shared rows; Render (primary) does it,
+  // a secondary node (the owner's PC) only serves.
+  if (cluster.role === "secondary") return;
   try {
     const { retireSoundPacks } = require("./lib/shop");
     await retireSoundPacks();
@@ -952,8 +990,13 @@ if (isVercel) {
   void runBoot();
   module.exports = httpServer;
 } else {
-  httpServer.listen(PORT, async () => {
-    console.log(`Server listening on port ${PORT}`);
+  // Hybrid server: a secondary node (the owner's PC) is reached only through its Cloudflare
+  // Tunnel and the local Descall Node app, so it binds to loopback; Render binds as before.
+  const listenHost = require("./lib/cluster/config").readListenHost(process.env);
+  const onListen = async () => {
+    console.log(`Server listening on ${listenHost ? `${listenHost}:` : "port "}${PORT}`);
     await runBoot();
-  });
+  };
+  if (listenHost) httpServer.listen(PORT, listenHost, onListen);
+  else httpServer.listen(PORT, onListen);
 }

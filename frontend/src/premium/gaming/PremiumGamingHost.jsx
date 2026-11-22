@@ -13,7 +13,7 @@ import { brandRgb, logPremiumEvent, pinvoke, pon, setAppBridge } from "./bridge.
 import { subscribeActiveSpeakers } from "../../lib/activeSpeakers.js";
 import { resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile.js";
 import { gameNameFromActivity } from "../../lib/gameActivity.js";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { recordLocalSession, stepGame } from "./gameData.js";
 import { emptyState, evaluate, idleThresholdSec, normalizeRules } from "./ruleEngine.js";
 import { runAction } from "./actions.js";
@@ -223,7 +223,7 @@ export default function PremiumGamingHost({
       if (document.hidden && !gamingHudOn) return;
       const t0 = performance.now();
       try {
-        await fetch(`${API_BASE_URL}/api/health`, { method: "GET", cache: "no-store" });
+        await fetch(`${apiBase()}/api/health`, { method: "GET", cache: "no-store" });
         if (live) setPing(performance.now() - t0);
       } catch { if (live) setPing(null); }
     };

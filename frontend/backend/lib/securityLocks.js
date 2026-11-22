@@ -146,7 +146,9 @@ async function sweep(io = ioRef, now = Date.now()) {
 function startTimer(io) {
   ioRef = io || ioRef;
   if (sweepTimer) return;
+  // Hybrid server: lifting expired locks writes the config and tells everyone: leader only.
   sweepTimer = setInterval(() => {
+    if (!require("./cluster").isLeader()) return;
     sweep().catch((err) => console.warn("[security-locks] sweep:", err?.message || err));
   }, SWEEP_MS);
   if (typeof sweepTimer.unref === "function") sweepTimer.unref();

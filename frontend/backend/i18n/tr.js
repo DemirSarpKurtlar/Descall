@@ -118,6 +118,13 @@ module.exports = {
     antibotTitle: "Anti-bot uyarısı",
     antibotBody: "{count} hesap risk eşiğini geçti (en yüksek {topScore})",
     antibotWatchBody: "İzleme listesinde {count} yeni uyarı",
+    // Sunucu Ağı (hybrid server) owner alerts
+    nodesTitle: "Sunucu Ağı uyarısı",
+    nodesPcDown: "PC düğümü aniden düştü; kullanıcılar Render'a geçiyor.",
+    nodesKvFull: "Ortak bellek (Key Value) %{pct} dolu.",
+    nodesKvDown: "Ortak belleğe (Key Value) ulaşılamıyor; tek sunucu moduna geçildi.",
+    nodesRender90: "Render belleği %{pct}; PC payını artır ya da yükü kontrol et.",
+    nodesTest: "Deneme bildirimi: Sunucu Ağı uyarıları bu cihaza geliyor.",
     voicePlain: "Sesli mesaj",
     attachmentPlain: "Dosya gönderdi",
     incomingCall: "Gelen arama",

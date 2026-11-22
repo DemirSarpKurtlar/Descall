@@ -234,7 +234,9 @@ async function buildPayload(session, { endedAt = Date.now(), origin = "server" }
 }
 
 function userSocketCount(io, userId) {
-  return io?.sockets?.adapter?.rooms?.get?.(`user:${userId}`)?.size || 0;
+  const local = io?.sockets?.adapter?.rooms?.get?.(`user:${userId}`)?.size || 0;
+  // Clustered: a socket on another node gets the room emit through the adapter.
+  return local || (require("./cluster").hasRemoteUser(userId) ? 1 : 0);
 }
 
 function socketConnected(io, socketId) {

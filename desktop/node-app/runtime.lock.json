@@ -1,0 +1,14 @@
+{
+  "_comment": "Pinned runtime of Descall Node, bundled by tools/package_runtime.py (CI). node: the official win-x64 node.exe, sha256 from https://nodejs.org/dist/<version>/SHASUMS256.txt (backend engines: node 24.x). cloudflared: GitHub release asset cloudflared-windows-amd64.exe; the build checks it against the release's published sha256 digest and, once pinned here, against this value too (set sha256 to the value the build log prints).",
+  "node": {
+    "version": "v24.22.3",
+    "url": "https://nodejs.org/dist/v24.22.3/win-x64/node.exe",
+    "sha256": "86fc4785327db5f5c7558dc6156c543b433c313e813a222e088086222ab4afa6"
+  },
+  "cloudflared": {
+    "repo": "cloudflare/cloudflared",
+    "version": "latest",
+    "asset": "cloudflared-windows-amd64.exe",
+    "sha256": null
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "popover",
+  "description": "Descall Node tray popover: listens for its state only. Its app commands (node_*) check the window label and validate every argument in src/popover.rs; secrets go in through node_setup_save and never come back out.",
+  "windows": ["popover"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

@@ -12,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import useModalFocus from "../../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { adminFetch } from "../../../api/adminHttp";
-import { API_BASE_URL } from "../../../config/api";
+import { apiBase } from "../../../lib/nodeRouting";
 import { getToken } from "../../../lib/storage";
 import { useLocale } from "../../../context/LocaleContext";
 import logoIcon from "../../../assets/admin-logo-icon.png";
@@ -625,7 +625,7 @@ function useSignupStats() {
 }
 
 async function downloadCsv(query, fallbackName) {
-  const res = await fetch(`${API_BASE_URL}/admin/signup-stats/csv?${qs(query)}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  const res = await fetch(`${apiBase()}/admin/signup-stats/csv?${qs(query)}`, { headers: { Authorization: `Bearer ${getToken()}` } });
   if (!res.ok) throw new Error(String(res.status));
   const blob = await res.blob();
   const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "")?.[1] || fallbackName;

@@ -1,6 +1,6 @@
 import { getDeviceId } from "./lib/deviceId";
 import { io } from "socket.io-client";
-import { SOCKET_URL } from "./config/api";
+import { attachNodeRouting, socketBase } from "./lib/nodeRouting";
 import { getDmMessages } from "./api/dm";
 import { shouldPullDmHistory } from "./lib/dmHistoryFetch";
 import { Capacitor } from "@capacitor/core";
@@ -135,8 +135,11 @@ export function createSocket(token, options = {}) {
     opts.path = "/socket.io";
   }
 
-  const socket = io(edgeUrl || SOCKET_URL, opts);
+  // Hybrid server: Render or the PC node, whichever this tab is routed to (lib/nodeRouting.js).
+  const socket = io(edgeUrl || socketBase(), opts);
   socket.edge = Boolean(edgeUrl);
+  // node:move (drain / rebalance), connect_error on the PC -> Render. Edge sockets are skipped.
+  attachNodeRouting(socket);
   const origEmit = socket.emit;
   socket.emit = function patchedEmit(event, ...args) {
     const ret = origEmit.apply(this, [event, ...args]);

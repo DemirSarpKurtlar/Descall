@@ -127,9 +127,11 @@ async function snapshot({ fresh = false } = {}) {
   }
 }
 
-function invalidate() {
+function invalidateLocal() {
   snapAt = 0;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("./cluster").linkInvalidate("casinoAdmin", invalidateLocal);
 
 function flagsFor(s, userId, now = Date.now()) {
   const row = s.limitsById.get(String(userId)) || null;

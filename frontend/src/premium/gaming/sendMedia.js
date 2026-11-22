@@ -6,7 +6,7 @@
  *
  * Target ids: "dm:<userId>", "group:<groupId>", "channel:<serverId>:<channelId>".
  */
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { getToken } from "../../lib/storage";
 
 export function parseTarget(id) {
@@ -36,7 +36,7 @@ export async function uploadMedia(file) {
   const form = new FormData();
   form.append("purpose", "message");
   form.append("file", file, file.name);
-  const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
+  const res = await fetch(`${apiBase()}/api/media/upload`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getToken()}` },
     body: form,

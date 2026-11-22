@@ -1,5 +1,5 @@
 import { getToken } from "../lib/storage";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { t } from "../i18n/runtime.js";
 import { serverErrorText } from "./httpError";
 
@@ -17,7 +17,7 @@ export const REPORT_REASONS = [
 
 export async function submitUserReport(payload) {
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/api/reports`, {
+  const res = await fetch(`${apiBase()}/api/reports`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -988,4 +988,10 @@ export const API_TR = {
   "Account closed. It will be permanently deleted after the grace period.": "Hesap kapatıldı. Bekleme süresinin sonunda kalıcı olarak silinecek.",
   "Could not cancel the request.": "İstek geri çekilemedi.",
   "File is too large (max {max} MB).": "Dosya çok büyük (en fazla {max} MB).",
+  "Invalid node key": "Geçersiz sunucu düğümü anahtarı",
+  "Not the primary node": "Bu ana sunucu düğümü değil",
+  "Invalid node id": "Geçersiz sunucu düğümü kimliği",
+  "Invalid node url": "Geçersiz sunucu düğümü adresi",
+  "Invalid node state": "Geçersiz sunucu düğümü durumu",
+  "Invalid setting: {field}": "Geçersiz ayar: {field}",
 };

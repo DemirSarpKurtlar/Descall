@@ -66,8 +66,8 @@ async function sendQuickReply(conv, text) {
     const r = await authedRequest("/api/messages/notify-token", { method: "POST" });
     notifyToken = { token: r?.token || "", exp: Date.parse(r?.expiresAt || "") || Date.now() + 10 * 60000 };
   }
-  const { API_BASE_URL } = await import("../config/api");
-  const res = await fetch(`${API_BASE_URL}/api/messages/quick-reply`, {
+  const { apiBase } = await import("../lib/nodeRouting.js");
+  const res = await fetch(`${apiBase()}/api/messages/quick-reply`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${notifyToken.token}` },
     body: JSON.stringify({ conv, text }),

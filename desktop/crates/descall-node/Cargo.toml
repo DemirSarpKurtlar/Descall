@@ -1,0 +1,13 @@
+[package]
+name = "descall-node"
+description = "Pure, host-independent logic of the Descall Node PC app (desktop/node-app): supervisor state machine, Windows Job Object limits, Europe/Istanbul schedule, game mode detector, heartbeat payloads, capacity and saved-cost math, log redaction, secret setup model, tray popover view model. Unit-tested on any host."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+regex = "1"
+sha2 = "0.10"

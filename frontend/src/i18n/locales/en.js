@@ -26,6 +26,7 @@ import { MOD_DESK_EN } from "./modDesk.en.js";
 import { GAMES_ADMIN_EN } from "./gamesAdmin.en.js";
 import { SYSX_EN } from "./sysx.en.js";
 import { ATOK_EN } from "./atok.en.js";
+import { ANODES_EN } from "./anodes.en.js";
 import { AUDIT_LOG_EN } from "./auditLog.en.js";
 import { LIVE_POPUP_EN } from "./livePopup.en.js";
 import { ANNC_EN } from "./annc.en.js";
@@ -100,6 +101,7 @@ export const nested = {
   gamesAdmin: GAMES_ADMIN_EN,
   sysx: SYSX_EN,
   atok: ATOK_EN,
+  "anodes": ANODES_EN,
   auditLog: AUDIT_LOG_EN,
   livePopup: LIVE_POPUP_EN,
   annc: ANNC_EN,

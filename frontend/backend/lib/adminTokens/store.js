@@ -130,13 +130,15 @@ async function findByHash(hash, { now = Date.now() } = {}) {
 }
 
 /** Drop cached lookups of one token (or all). */
-function invalidate(tokenId = null) {
+function invalidateLocal(tokenId = null) {
   if (!tokenId) {
     byHash.clear();
     return;
   }
   for (const [hash, v] of byHash) if (!v.row || v.row.id === tokenId) byHash.delete(hash);
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("adminTokens", invalidateLocal);
 
 async function getById(id) {
   const res = check(await db().from(TABLES.tokens).select(TOKEN_COLS).eq("id", String(id)).maybeSingle());

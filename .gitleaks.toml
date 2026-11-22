@@ -31,4 +31,13 @@ regexes = [
   # The placeholder admin token in docs/admin-token.md examples (commit 5b981cac). A real
   # dsk_admin_ token is 43 base64url characters and never contains "...".
   '''^dsk_admin_\.\.\.$''',
+  # Fake secrets in the Descall Node crate's unit tests (desktop/crates/descall-node
+  # redact.rs and secrets.rs, commit 2a6f5cbf): a JWT whose payload is
+  # {"role":"service_role"} with a dummy signature, dummy sb_secret_ keys and a
+  # 20-character hex jwtSecret used only to test validation and log redaction.
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoic2VydmljZV9yb2xlIn0\.c2lnbmF0dXJlLXZhbHVl''',
+  '''eyJhbGciOiJIUzI1NiJ9\.eyJyb2xlIjoic2VydmljZV9yb2xlIn0\.sig''',
+  '''sb_secret_abcdefgh12345678''',
+  '''sb_secret_0123456789abcdef''',
+  '''^0123456789abcdef0123$''',
 ]
