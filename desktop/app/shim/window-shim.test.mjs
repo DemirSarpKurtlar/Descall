@@ -193,6 +193,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(admin, /crate::webview::install_browser_guards\(&win\);/, "admin windows have no browser menu / reload keys");
   assert.match(admin, /is_safe_external_url\(next\.as_str\(\)\)[\s\S]{0,120}open_url\(next\.as_str\(\)/, "admin links open in the default browser");
   assert.match(admin, /let place = placement\(app, w, h\);/);
+  assert.match(admin, /\.min_inner_size\(min_w\.min\(w\), min_h\.min\(h\)\)/, "admin minimum size fits the work area too");
   // Descall+ pop-out and account windows run the full app with its title bar: they get
   // window:maximized on change too (Electron multi_window.cjs), not only the start-up answer.
   const win = readFileSync(join(src, "commands", "window.rs"), "utf8");
