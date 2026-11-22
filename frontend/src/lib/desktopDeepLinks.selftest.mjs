@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { desktopDeepLinkBridge, startDesktopDeepLinks } from "./desktopDeepLinks.js";
+import { resolveDeepLink } from "./deepLinks.js";
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -67,6 +68,38 @@ assert.equal(typeof startDesktopDeepLinks({ isElectron: true }, () => {}), "func
   startDesktopDeepLinks(broken, (p) => paths.push(p));
   await tick();
   assert.deepEqual(paths, []);
+}
+
+// Hostile descall: links (any web page or document can make Windows start the app with one;
+// the shell only checks scheme, length and control characters): whatever they hold, the page
+// routes to an in-app path without traversal, a second scheme or a protocol-relative URL.
+{
+  const hostile = [
+    "descall://settings/..%2F..%2Fadmin",
+    "descall://settings/%2e%2e",
+    "descall://dm/%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+    "descall://dm/a%2Fb",
+    "descall://server/1/%2F%2Fevil.example",
+    "descall:javascript:alert(1)",
+    "descall://app//evil.example/x",
+    "descall:////evil.example",
+    "descall://invite/../../admin",
+    "descall://join/%E0%A4%A",
+    "descall://settings/profile?picker=avatar%22onerror",
+    `descall://dm/${"a".repeat(3000)}`,
+    "descall://whats-new#//evil.example",
+  ];
+  for (const url of hostile) {
+    const link = resolveDeepLink(url);
+    if (link === null) continue;
+    const out = link.path;
+    assert.ok(out.startsWith("/") && !out.startsWith("//"), `${url} -> ${out}: an app path`);
+    assert.ok(!/(^|\/)\.\.?(\/|$)/.test(decodeURIComponent(out.split("?")[0])), `${url} -> ${out}: no dot segments`);
+    assert.ok(!/[<>"'\s]/.test(out) && !/^\/[a-z][a-z0-9+.-]*:/i.test(out), `${url} -> ${out}: nothing to inject`);
+    assert.ok(!out.includes("evil.example"), `${url} -> ${out}`);
+  }
+  assert.equal(resolveDeepLink("descall://settings/..%2F..%2Fadmin").path, "/settings");
+  assert.equal(resolveDeepLink("descall://settings/profile?picker=avatar%22onerror").path, "/settings/profile");
 }
 
 // The app entry point uses it (nativeDeepLinks.js -> App.jsx startNativeDeepLinks).
