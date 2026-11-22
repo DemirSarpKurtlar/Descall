@@ -89,8 +89,8 @@ const files = rustFiles(srcRoot).map((p) => {
   return { path: p, stem, code, fns: functions(code) };
 });
 
-/** Code that runs in the fn itself, not in a task it spawns. */
-const ownCode = (body) => body.split(/\b(?:async_runtime|thread)::spawn(?:_blocking)?\s*\(/)[0];
+/** Code that runs in the fn itself, not in a task it spawns (also a named thread::Builder one). */
+const ownCode = (body) => body.split(/\b(?:async_runtime|thread)::spawn(?:_blocking)?\s*\(|\bthread::Builder::new\(\)/)[0];
 
 /**
  * Fns that match `direct` in their own code, or call one that does (same file or module::fn).
