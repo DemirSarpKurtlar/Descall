@@ -23,9 +23,11 @@ async function loadBlockedSet(userId) {
   return set;
 }
 
-function invalidate(userId) {
+function invalidateLocal(userId) {
   blockedSetCache.delete(userId);
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("./cluster").linkInvalidate("blocks", invalidateLocal);
 
 /** True if either user has blocked the other. */
 async function isBlockedEitherWay(userA, userB) {

@@ -19,7 +19,7 @@ import EmptyState from "../ui/EmptyState";
 import CallsView from "../calls/CallsView";
 import { getToken } from "../../lib/storage";
 import { subscribeTyping, getTypingSnapshot } from "../../lib/typingStore";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";

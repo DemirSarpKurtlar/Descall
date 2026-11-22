@@ -12,7 +12,7 @@ import {
 import { decodeRoleMentions, encodeRoleMentions, roleTokensToText } from "../../lib/roleMentions";
 import { ATTACH_ACCEPT, attachmentKind, attachmentProblem, formatBytes } from "../../lib/scheduledAttachment";
 import { getToken } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import "../../styles/messaging-sheets.css";
 
 const api = (path, opts) => import("../../api/authedHttp").then((m) => m.authedRequest(path, opts));
@@ -22,7 +22,7 @@ async function uploadAttachment(file) {
   const form = new FormData();
   form.append("purpose", "message");
   form.append("file", file);
-  const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
+  const res = await fetch(`${apiBase()}/api/media/upload`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getToken()}` },
     body: form,

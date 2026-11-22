@@ -384,6 +384,19 @@ const sync = {
   localChanges: new Map(),
 };
 
+function withoutReplication(fn) {
+  try {
+    return require("./cluster").withoutReplication(fn);
+  } catch {
+    return fn();
+  }
+}
+
+/** A ban / unban made on another node (lib/cluster/sharedStore.js): a reload must not undo it. */
+function noteRemoteBanChange(userId, detail) {
+  noteLocalBanChange(userId, detail);
+}
+
 function noteLocalBanChange(userId, detail) {
   sync.localChanges.set(String(userId), { at: Date.now(), detail });
   if (sync.localChanges.size > 2000) {
@@ -508,10 +521,14 @@ async function reloadModerationState() {
       nextDetails.delete(id);
     }
   }
-  state.bannedUserIds.clear();
-  state.banDetailsByUser.clear();
-  for (const id of nextIds) state.bannedUserIds.add(id);
-  for (const [id, d] of nextDetails) state.banDetailsByUser.set(id, d);
+  // Every node reloads from the database itself: this bulk rewrite is not replicated
+  // (lib/cluster; a no-op wrapper on a single node). Single changes above are.
+  withoutReplication(() => {
+    state.bannedUserIds.clear();
+    state.banDetailsByUser.clear();
+    for (const id of nextIds) state.bannedUserIds.add(id);
+    for (const [id, d] of nextDetails) state.banDetailsByUser.set(id, d);
+  });
   for (const id of [...banRevokedSessions.keys()]) if (!nextIds.has(id)) banRevokedSessions.delete(id);
 
   // Timeouts: same rule, a failed read keeps the current map.
@@ -540,17 +557,19 @@ async function reloadModerationState() {
         .gt("timeout_until", nowIso)
         .order("id", { ascending: true })
     );
-    state.timedOutUsers.clear();
-    for (const row of timed) {
-      state.timedOutUsers.set(String(row.id), {
-        until: row.timeout_until,
-        category: row.timeout_category || "other",
-        reason: row.timeout_reason || null,
-        message: row.timeout_message || null,
-        timedOutAt: row.timed_out_at || null,
-        actorId: row.timed_out_by || null,
-      });
-    }
+    withoutReplication(() => {
+      state.timedOutUsers.clear();
+      for (const row of timed) {
+        state.timedOutUsers.set(String(row.id), {
+          until: row.timeout_until,
+          category: row.timeout_category || "other",
+          reason: row.timeout_reason || null,
+          message: row.timeout_message || null,
+          timedOutAt: row.timed_out_at || null,
+          actorId: row.timed_out_by || null,
+        });
+      }
+    });
   } catch (e) {
     console.warn("[moderation] load timeouts (kept previous):", e?.message || e);
   }
@@ -776,4 +795,5 @@ module.exports = {
   listHistory,
   fetchUserBanRow,
   recordAction,
+  noteRemoteBanChange,
 };

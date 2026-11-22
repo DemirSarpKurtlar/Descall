@@ -150,9 +150,11 @@ let catalogCache = null; // { at, items, assetsById }
 let catalogLoading = null;
 
 /** Drop the in-memory catalog so the next request re-reads shop_items. */
-function invalidateCatalogCache() {
+function invalidateCatalogCacheLocal() {
   catalogCache = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidateCatalogCache = require("./cluster").linkInvalidate("shopCatalog", invalidateCatalogCacheLocal);
 
 /**
  * Active, non-retired shop rows (normalized) plus decoded inline images keyed

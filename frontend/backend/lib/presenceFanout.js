@@ -238,7 +238,14 @@ function createPresenceFanout({
       if (entry) list.push(entry);
     }
     stats.legacyGlobalEmits += 1;
-    io.emit("users:update", list);
+    // Clustered: every node sends the (merged) roster to its own sockets only.
+    let clustered = false;
+    try {
+      clustered = Boolean(io.local) && require("./cluster").enabled();
+    } catch {
+      clustered = false;
+    }
+    (clustered ? io.local : io).emit("users:update", list);
   }
 
   function flush() {

@@ -97,15 +97,32 @@ async function tick() {
 function start({ getIo } = {}) {
   if (timer) return;
   if (typeof getIo === "function") getIoRef = getIo;
-  timer = setInterval(() => { tick().catch(() => {}); }, TICK_MS);
+  // Hybrid server: plans and scheduled tasks run once per cluster, on the leader.
+  const leaderTick = () => {
+    if (!require("../cluster").isLeader()) return;
+    tick().catch(() => {});
+  };
+  timer = setInterval(leaderTick, TICK_MS);
   timer.unref?.();
-  setTimeout(() => { tick().catch(() => {}); }, 5000).unref?.();
+  setTimeout(leaderTick, 5000).unref?.();
 }
 
 /** Run a tick soon (after "run now"). */
 function kick() {
+  const cluster = require("../cluster");
+  // Hybrid server: only the leader runs tasks; another node asks it to look now.
+  if (!cluster.isLeader()) {
+    cluster.publish("dc:agent:kick", { at: Date.now() });
+    return;
+  }
   setTimeout(() => { tick().catch(() => {}); }, 200).unref?.();
 }
+
+require("../cluster").subscribe("dc:agent:kick", (_m, meta) => {
+  const cluster = require("../cluster");
+  if (meta?.from === cluster.nodeId || !cluster.isLeader()) return;
+  setTimeout(() => { tick().catch(() => {}); }, 200).unref?.();
+});
 
 function stop() {
   if (timer) clearInterval(timer);

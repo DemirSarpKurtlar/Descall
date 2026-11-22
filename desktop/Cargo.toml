@@ -5,6 +5,7 @@
 #   cargo test                                   platform-independent crates, any host
 #   cargo check --workspace --target x86_64-pc-windows-gnu
 #   (CI) .github/workflows/tauri-build.yml       windows-latest build of app + setup
+#   (CI) .github/workflows/descall-node.yml      Descall Node (node-app): tests, cross check, setup
 [workspace]
 resolver = "2"
 members = [
@@ -12,12 +13,14 @@ members = [
   "crates/descall-migrate",
   "crates/descall-migrator",
   "crates/descall-setup",
+  "crates/descall-node",
   "crates/descall-shell",
   "tools/descall-capture-bench",
   "premium-logic",
   "app/src-tauri",
+  "node-app",
 ]
-default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-setup", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
+default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-setup", "crates/descall-node", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
 
 [workspace.package]
 edition = "2021"

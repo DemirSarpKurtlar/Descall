@@ -2,13 +2,13 @@
  * Public server directory API (item 8, backend/routes/directory.js).
  * The read endpoints and the join action need no login; listing settings do.
  */
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
 
 async function directoryRequest(path, { method = "GET", body, auth = false, signal } = {}) {
   const token = auth ? getToken() : null;
-  const res = await fetch(`${API_BASE_URL}/api/directory${path}`, {
+  const res = await fetch(`${apiBase()}/api/directory${path}`, {
     method,
     signal,
     headers: {

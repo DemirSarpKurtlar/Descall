@@ -748,17 +748,22 @@ async function runRetention(now = Date.now()) {
 let timers = null;
 function startAntibotScheduler() {
   if (timers || process.env.DESCOIN_ANTIBOT_SCHEDULER === "0" || !config.collecting()) return false;
+  // Hybrid server: every node flushes its own buffered signals and warms its own
+  // cache; the risk job and the retention run once per cluster, on the leader.
+  const isLeader = () => require("../cluster").isLeader();
   const boot = setTimeout(() => {
     warmRiskCache().catch(() => {});
-    runRetention().catch(() => {});
+    if (isLeader()) runRetention().catch(() => {});
   }, 20_000);
   const riskEvery = setInterval(() => {
     store
       .flush()
-      .then(() => runRiskJob())
+      .then(() => (isLeader() ? runRiskJob() : null))
       .catch((e) => console.warn("[antibot] job:", String(e?.message || e).slice(0, 200)));
   }, 10 * 60_000);
-  const retEvery = setInterval(() => runRetention().catch(() => {}), DAY_MS);
+  const retEvery = setInterval(() => {
+    if (isLeader()) runRetention().catch(() => {});
+  }, DAY_MS);
   for (const t of [boot, riskEvery, retEvery]) t.unref?.();
   timers = { boot, riskEvery, retEvery };
   return true;

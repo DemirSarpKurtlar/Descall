@@ -258,4 +258,10 @@ export const API_RU = {
   "Account closed. It will be permanently deleted after the grace period.": "Аккаунт закрыт. Он будет окончательно удалён по окончании льготного периода.",
   "Could not cancel the request.": "Не удалось отменить запрос.",
   "File is too large (max {max} MB).": "Файл слишком большой (макс. {max} МБ).",
+  "Invalid node key": "Неверный ключ серверного узла",
+  "Not the primary node": "Это не основной серверный узел",
+  "Invalid node id": "Неверный идентификатор серверного узла",
+  "Invalid node url": "Неверный адрес серверного узла",
+  "Invalid node state": "Неверное состояние серверного узла",
+  "Invalid setting: {field}": "Недопустимая настройка: {field}",
 };

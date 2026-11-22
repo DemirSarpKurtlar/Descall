@@ -13,7 +13,7 @@
  */
 
 import { getToken } from "./storage.js";
-import { API_BASE_URL } from "../config/api.js";
+import { apiBase as routedApiBase } from "./nodeRouting.js";
 
 const LANGS = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];
 
@@ -89,7 +89,7 @@ export function configureAnnouncements(next = {}) {
 }
 
 function apiBase() {
-  return (cfg.apiBase || API_BASE_URL || "").replace(/\/$/, "");
+  return (cfg.apiBase || routedApiBase() || "").replace(/\/$/, "");
 }
 
 function token() {

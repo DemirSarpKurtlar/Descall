@@ -117,6 +117,13 @@ module.exports = {
     antibotTitle: "Оповещение защиты от ботов",
     antibotBody: "{count, plural, one {# аккаунт превысил} few {# аккаунта превысили} many {# аккаунтов превысили} other {# аккаунта превысили}} порог риска (максимум {topScore})",
     antibotWatchBody: "{count, plural, one {# новое оповещение} few {# новых оповещения} many {# новых оповещений} other {# нового оповещения}} списка наблюдения",
+    // Sunucu Ağı (hybrid server) owner alerts
+    nodesTitle: "Оповещение сети серверов",
+    nodesPcDown: "Узел ПК внезапно отключился; пользователи переходят на Render.",
+    nodesKvFull: "Общая память (Key Value) заполнена на {pct} %.",
+    nodesKvDown: "Общая память (Key Value) недоступна; работает один сервер.",
+    nodesRender90: "Память Render заполнена на {pct} %; увеличьте долю ПК или проверьте нагрузку.",
+    nodesTest: "Тестовое уведомление: оповещения сети серверов приходят на это устройство.",
     voicePlain: "Голосовое сообщение",
     attachmentPlain: "Отправил(а) вложение",
     incomingCall: "Входящий звонок",

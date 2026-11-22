@@ -44,9 +44,21 @@ function markPresenceDirty(...uids) {
   for (const u of uids) instance.markDirty(u);
 }
 
+/** Relationship changed (friends, blocks): resend rosters; other nodes reload their friends cache. */
 function refreshPresenceFor(...uids) {
+  try {
+    const cluster = require("../lib/cluster");
+    for (const u of uids) if (u != null) cluster.invalidate("friends", u);
+  } catch {
+    /* single node */
+  }
+  refreshPresenceLocal(...uids);
+}
+
+/** Same, this node only (used by the dc:inval handler itself). */
+function refreshPresenceLocal(...uids) {
   if (!instance) return;
   instance.refreshUsers(...uids);
 }
 
-module.exports = { getPresenceFanout, markPresenceDirty, refreshPresenceFor };
+module.exports = { getPresenceFanout, markPresenceDirty, refreshPresenceFor, refreshPresenceLocal };

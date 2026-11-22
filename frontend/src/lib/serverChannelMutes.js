@@ -3,7 +3,7 @@
  * localStorage is the optimistic cache; API is source of truth on login/toggle.
  */
 
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "./nodeRouting";
 import { getToken } from "./storage";
 
 const KEY = "descall_muted_server_channels";
@@ -29,7 +29,7 @@ function writeMap(map) {
 
 async function apiRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${apiBase()}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",

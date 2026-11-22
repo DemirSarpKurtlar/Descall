@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { notificationTapAction } from "./callTap.js";
 import { PushNotifications } from "@capacitor/push-notifications";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "./nodeRouting";
 import { getToken } from "./storage";
 import { getLocale, t } from "../i18n/runtime";
 import { clearNotifyActionToken, refreshNotifyActionToken } from "./notifyActionToken.js";
@@ -174,7 +174,7 @@ export function setNativeTapConsumerReady(ready) {
 async function deleteServerToken(authToken, token) {
   if (!authToken || !token) return;
   try {
-    await fetch(`${API_BASE_URL}/api/web-push/fcm-token`, {
+    await fetch(`${apiBase()}/api/web-push/fcm-token`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -200,7 +200,7 @@ async function uploadFcmToken(token) {
   const locale = IS_IOS ? getLocale() : undefined;
   const key = `${auth}|${token}|${locale || ""}`;
   if (uploadedFor === key) return true;
-  const response = await fetch(`${API_BASE_URL}/api/web-push/fcm-token`, {
+  const response = await fetch(`${apiBase()}/api/web-push/fcm-token`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth}`,

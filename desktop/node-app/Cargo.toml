@@ -1,0 +1,46 @@
+[package]
+name = "descall-node-app"
+description = "Descall Node: the owner's Windows PC as the second backend node of the hybrid server. Tray-only Tauri 2 app (Draft A popover) that supervises the bundled Node.js backend and cloudflared."
+version = "1.0.0"
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "DescallNode"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+# Same feature set as app/src-tauri, so the workspace shares one build of Tauri.
+tauri = { version = "2.12", features = ["tray-icon", "image-png", "devtools"] }
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream", "system-proxy", "json"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+tokio = { version = "1", features = ["time"] }
+getrandom = "0.3"
+descall-node = { path = "../crates/descall-node" }
+
+[target.'cfg(windows)'.dependencies]
+descall-migrate = { path = "../crates/descall-migrate" }
+windows-core.workspace = true
+windows-registry = "0.6"
+windows = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_JobObjects",
+  "Win32_System_Threading",
+  "Win32_System_ProcessStatus",
+  "Win32_System_SystemInformation",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Shutdown",
+  "Win32_System_Performance",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Shell",
+  "Win32_Graphics_Dwm",
+] }

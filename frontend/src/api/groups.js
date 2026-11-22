@@ -1,9 +1,10 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { t } from "../i18n/runtime.js";
 import { httpError, serverErrorText } from "./httpError";
 
-const BASE = `${API_BASE_URL}/groups`;
+// Read per call: the base follows the node this tab is routed to (lib/nodeRouting.js).
+const base = () => `${apiBase()}/groups`;
 
 function getHeaders() {
   const token = getToken();
@@ -14,13 +15,13 @@ function getHeaders() {
 }
 
 export async function getMyGroups() {
-  const res = await fetch(`${BASE}/my`, { headers: getHeaders() });
+  const res = await fetch(`${base()}/my`, { headers: getHeaders() });
   if (!res.ok) throw new Error("Failed to fetch groups");
   return res.json();
 }
 
 export async function createGroup({ name, memberIds }) {
-  const res = await fetch(`${BASE}/create`, {
+  const res = await fetch(`${base()}/create`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ name, memberIds }),
@@ -32,7 +33,7 @@ export async function createGroup({ name, memberIds }) {
 const groupMessageFlight = new Map();
 
 export async function getGroupMessages(groupId, { before, since, limit = 50 } = {}) {
-  const url = new URL(`${BASE}/${groupId}/messages`, window.location.origin);
+  const url = new URL(`${base()}/${groupId}/messages`, window.location.origin);
   if (before) url.searchParams.set("before", before);
   if (since && !before) url.searchParams.set("since", since);
   url.searchParams.set("limit", limit);
@@ -51,7 +52,7 @@ export async function getGroupMessages(groupId, { before, since, limit = 50 } = 
 }
 
 export async function sendGroupMessage(groupId, { content, mediaUrl, mediaType }) {
-  const res = await fetch(`${BASE}/${groupId}/messages`, {
+  const res = await fetch(`${base()}/${groupId}/messages`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ content, mediaUrl, mediaType }),
@@ -61,14 +62,14 @@ export async function sendGroupMessage(groupId, { content, mediaUrl, mediaType }
 }
 
 export async function getGroupMembers(groupId) {
-  const res = await fetch(`${BASE}/${groupId}/members`, { headers: getHeaders() });
+  const res = await fetch(`${base()}/${groupId}/members`, { headers: getHeaders() });
   if (!res.ok) throw new Error("Failed to fetch members");
   return res.json();
 }
 
 export async function inviteToGroup(groupId, invitedUserId) {
   const value = typeof invitedUserId === "string" ? invitedUserId.trim() : invitedUserId;
-  const res = await fetch(`${BASE}/${groupId}/invite`, {
+  const res = await fetch(`${base()}/${groupId}/invite`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({
@@ -82,7 +83,7 @@ export async function inviteToGroup(groupId, invitedUserId) {
 }
 
 export async function respondToInvite(inviteId, accept) {
-  const res = await fetch(`${BASE}/invites/${inviteId}/respond`, {
+  const res = await fetch(`${base()}/invites/${inviteId}/respond`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ accept }),
@@ -92,7 +93,7 @@ export async function respondToInvite(inviteId, accept) {
 }
 
 export async function leaveGroup(groupId) {
-  const res = await fetch(`${BASE}/${groupId}/leave`, {
+  const res = await fetch(`${base()}/${groupId}/leave`, {
     method: "POST",
     headers: getHeaders(),
   });
@@ -101,7 +102,7 @@ export async function leaveGroup(groupId) {
 }
 
 export async function addMemberToGroup(groupId, userId) {
-  const res = await fetch(`${BASE}/${groupId}/members`, {
+  const res = await fetch(`${base()}/${groupId}/members`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ userId }),
@@ -121,7 +122,7 @@ export async function addMemberToGroup(groupId, userId) {
 export async function renameGroup(groupId, newName) {
   let res;
   try {
-    res = await fetch(`${BASE}/${groupId}/rename`, {
+    res = await fetch(`${base()}/${groupId}/rename`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ name: newName }),
@@ -138,7 +139,7 @@ export async function renameGroup(groupId, newName) {
 }
 
 export async function createGroupInviteLink(groupId, { maxUses = null, expiresInHours = 24 * 7 } = {}) {
-  const res = await fetch(`${BASE}/${groupId}/invite-links`, {
+  const res = await fetch(`${base()}/${groupId}/invite-links`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ maxUses, expiresInHours }),
@@ -149,7 +150,7 @@ export async function createGroupInviteLink(groupId, { maxUses = null, expiresIn
 }
 
 export async function previewGroupInvite(code) {
-  const res = await fetch(`${BASE}/invite-links/${encodeURIComponent(code)}`, {
+  const res = await fetch(`${base()}/invite-links/${encodeURIComponent(code)}`, {
     headers: getHeaders(),
   });
   const body = await res.json().catch(() => ({}));
@@ -158,7 +159,7 @@ export async function previewGroupInvite(code) {
 }
 
 export async function joinGroupByInvite(code) {
-  const res = await fetch(`${BASE}/invite-links/${encodeURIComponent(code)}/join`, {
+  const res = await fetch(`${base()}/invite-links/${encodeURIComponent(code)}/join`, {
     method: "POST",
     headers: getHeaders(),
   });
@@ -170,7 +171,7 @@ export async function joinGroupByInvite(code) {
 /** Set (url) or remove (null) the group photo. Any member may change it. */
 export async function setGroupAvatar(groupId, avatarUrl) {
   const remove = !avatarUrl;
-  const res = await fetch(`${BASE}/${groupId}/avatar`, {
+  const res = await fetch(`${base()}/${groupId}/avatar`, {
     method: remove ? "DELETE" : "POST",
     headers: getHeaders(),
     body: remove ? undefined : JSON.stringify({ avatarUrl }),
@@ -181,7 +182,7 @@ export async function setGroupAvatar(groupId, avatarUrl) {
 }
 
 async function groupRequest(path, init) {
-  const res = await fetch(`${BASE}${path}`, { ...init, headers: getHeaders() });
+  const res = await fetch(`${base()}${path}`, { ...init, headers: getHeaders() });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = httpError(body, res.status);

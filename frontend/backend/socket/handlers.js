@@ -1,5 +1,6 @@
 "use strict";
 
+const cluster = require("../lib/cluster");
 const { apiText } = require("../lib/apiError");
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const { resolveDmReplyMeta } = require("../lib/replyMeta");
@@ -174,6 +175,7 @@ async function publishDmCallSummary(io, record) {
   cacheDmMessages(convKey(record.callerId, record.calleeId), [
     { ...messagePayload, to: { id: record.calleeId } },
   ]);
+  cluster.invalidate("dmConv", convKey(record.callerId, record.calleeId));
 
   const calleeSocket = getSocketForUser(io, record.calleeId);
   const calleeViewing = calleeSocket?.data?.activeDmPeer === record.callerId;
@@ -210,7 +212,7 @@ function getRingFanout(io) {
     sendWebPushEnd: (calleeId, end) => require("../lib/webPush").sendCallRingEndedPush([calleeId], end),
     onMissed: (ring) => finishDmCall(io, ring.callerId, ring.calleeId, "missed"),
     onCallerLost: (ring) => finishDmCall(io, ring.callerId, ring.calleeId, "missed"),
-    hasLiveSockets: (userId) => (io.sockets?.adapter?.rooms?.get(`user:${userId}`)?.size || 0) > 0,
+    hasLiveSockets: (userId) => (io.sockets?.adapter?.rooms?.get(`user:${userId}`)?.size || 0) > 0 || cluster.hasRemoteUser(userId),
   });
   return ringFanout;
 }
@@ -279,6 +281,7 @@ function pushNotification(io, userId, n) {
   list.unshift(entry);
   if (list.length > MAX_NOTIFICATIONS) list.length = MAX_NOTIFICATIONS;
   notificationsByUser.set(userId, list);
+  cluster.invalidate("notif", userId, { item: entry });
   emitToUser(io, userId, "notification:new", { notification: entry });
 }
 
@@ -334,7 +337,8 @@ function emitToUser(io, userId, event, payload) {
   // and multi-tab sessions (socket always joins `user:${id}` on connect).
   const room = `user:${userId}`;
   const roomSet = io.sockets?.adapter?.rooms?.get(room);
-  if (roomSet && roomSet.size > 0) {
+  // Clustered: the room may only exist on another node; the adapter carries it there.
+  if ((roomSet && roomSet.size > 0) || cluster.hasRemoteUser(userId)) {
     io.to(room).emit(event, payload);
     return;
   }
@@ -351,6 +355,8 @@ function emitToUser(io, userId, event, payload) {
 async function emitFriendState(io, userId, { requests = true } = {}) {
   if (!io || !userId) return;
   await loadFriendsFromDB(userId);
+  // Other nodes reload their friends cache for this user (no-op on a single node).
+  cluster.invalidate("friends", userId);
   await ensureCosmeticsCached([...(friends.get(userId) || [])]).catch(() => {});
   io.to(`user:${userId}`).emit("friend:list", getFriendList(userId));
   if (requests) io.to(`user:${userId}`).emit("friend:requests", getPendingList(userId));
@@ -739,6 +745,8 @@ function registerSocketHandlers(io) {
     touchLastSeen(myId).catch(() => {});
 
     setupAdminSocket(io, socket);
+    // Sunucu Ağı live push (admin:nodes:watch, owner room only): lib/nodeKeys/monitor.js.
+    require("../lib/nodeKeys/monitor").setupSocket(io, socket);
     // Canlı popup: receipts from the recipient + missed popups shown on connect.
     require("./popupReceipts").registerPopupReceipts(io, socket);
 
@@ -1535,6 +1543,7 @@ function registerSocketHandlers(io) {
       } else {
         ensureDmUnreadMap(toUserId).delete(myId);
       }
+      cluster.invalidate("dmUnread", toUserId, { peer: myId, count: unreadCount });
 
       const messagePayload = {
         id: messageId,
@@ -1553,6 +1562,7 @@ function registerSocketHandlers(io) {
         ...(pollSnapshot ? { poll: pollSnapshot } : {}),
       };
       cacheDmMessages(convKey(myId, toUserId), [{ ...messagePayload, to: { id: toUserId } }]);
+      cluster.invalidate("dmConv", convKey(myId, toUserId));
       void Promise.all([
         dmPrefs.revealOnMessage(myId, toUserId),
         dmPrefs.revealOnMessage(toUserId, myId),
@@ -1688,6 +1698,7 @@ function registerSocketHandlers(io) {
       }
       const umap = ensureDmUnreadMap(myId);
       umap.delete(withUserId);
+      cluster.invalidate("dmUnread", myId, { peer: withUserId, count: 0 });
       emitToUser(io, myId, "dm:unread:sync", { peerId: withUserId, count: 0 });
       // "Görüldü" (messaging phase 4): only when both people share read receipts.
       if (await bothShareReceipts(myId, withUserId).catch(() => true)) {
@@ -1701,6 +1712,7 @@ function registerSocketHandlers(io) {
       const umap = ensureDmUnreadMap(myId);
       const cur = umap.get(withUserId) || 0;
       if (cur < 1) umap.set(withUserId, 1);
+      cluster.invalidate("dmUnread", myId, { peer: withUserId, count: umap.get(withUserId) || 1 });
       emitToUser(io, myId, "dm:unread:sync", { peerId: withUserId, count: umap.get(withUserId) || 1 });
       void dmPrefs.upsertPref(myId, withUserId, { markedUnread: true });
     });
@@ -1744,12 +1756,14 @@ function registerSocketHandlers(io) {
       if (!list) return;
       const n = list.find((x) => x.id === id);
       if (n) n.read = true;
+      cluster.invalidate("notifRead", myId, { nid: id });
       emitToUser(io, myId, "notifications:sync", { notifications: getNotifications(myId) });
     });
 
     socket.on("notification:read_all", () => {
       const list = notificationsByUser.get(myId);
       if (list) for (const n of list) n.read = true;
+      cluster.invalidate("notifRead", myId, { all: true });
       emitToUser(io, myId, "notifications:sync", { notifications: getNotifications(myId) });
     });
 
@@ -1765,7 +1779,7 @@ function registerSocketHandlers(io) {
 
       // Always attempt delivery via durable user room + presence fallback.
       const room = io.sockets?.adapter?.rooms?.get(`user:${targetId}`);
-      const presenceHit = Boolean(presence.get(targetId)?.socketId);
+      const presenceHit = Boolean(presence.get(targetId)?.socketId) || cluster.hasRemoteUser(targetId);
       const delivered = (room && room.size > 0) || presenceHit;
 
       // Clients since 2.9.133 say whether this is a renegotiation inside a
@@ -2459,6 +2473,7 @@ function registerSocketHandlers(io) {
       if (["poll_v2", "poll_end", "app_card"].includes(current.media_type)) return fail("This message can't be edited as text.");
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const arr = dmHistory.get(key) || [];
       const msg = arr.find((message) => message.id === messageId && message.from?.id === myId);
       const editedAt = new Date().toISOString();
@@ -2516,6 +2531,7 @@ function registerSocketHandlers(io) {
           .maybeSingle();
         if (error || !data) return fail(error?.message || "Failed to delete message.");
         const key = convKey(myId, toUserId);
+        cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
         const arr = dmHistory.get(key);
         if (arr) {
           const idx = arr.findIndex((m) => m.id === messageId);
@@ -2546,6 +2562,7 @@ function registerSocketHandlers(io) {
       }
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const msg = (dmHistory.get(key) || []).find((m) => m.id === messageId);
       if (msg) {
         msg.pinnedAt = pinnedAt;
@@ -2573,6 +2590,7 @@ function registerSocketHandlers(io) {
       }
 
       const key = convKey(myId, toUserId);
+      cluster.invalidate("dmConv", key); // other nodes drop their cached copy of this thread
       const msg = (dmHistory.get(key) || []).find((m) => m.id === messageId);
       if (msg) {
         msg.pinnedAt = null;
@@ -2809,7 +2827,8 @@ function registerSocketHandlers(io) {
       const remaining = io.sockets?.adapter?.rooms?.get(`user:${myId}`);
       const otherSocketIds = remainingUserSocketIds(remaining, socket.id);
       const hasOtherSockets = otherSocketIds.length > 0;
-      if (!hasOtherSockets) {
+      // Clustered: still connected on another node = not gone (calls, rings, temp members).
+      if (!hasOtherSockets && !cluster.hasRemoteUser(myId)) {
         for (const groupId of activeGroupCalls.keys()) {
           scheduleParticipantDisconnectGrace(io, groupId, myId);
         }
@@ -2878,4 +2897,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification, emitFriendState };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, loadPendingRequestsFromDB, finishDmCall, getRingFanout, pushNotification, emitFriendState };

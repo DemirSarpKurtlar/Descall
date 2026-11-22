@@ -58,7 +58,23 @@ function recordFailure(key, { windowMs = WINDOW_MS, max = 30, now = Date.now() }
   }
   if (row.stamps.length >= max) return lock(row, now);
   row.stamps.push(now);
+  if (replicate) replicate(key, now, windowMs);
   return { ok: true };
+}
+
+// Hybrid server: the other nodes count this failure too (lib/cluster/sharedStore.js).
+// Null on a single node.
+let replicate = null;
+function setReplicator(fn) {
+  replicate = typeof fn === "function" ? fn : null;
+}
+
+/** A failure recorded on another node: same window, no lockout decision here. */
+function applyRemoteStamp(key, at, windowMs = WINDOW_MS) {
+  if (!key) return;
+  const t = Number(at) || Date.now();
+  const row = stateFor(String(key), Date.now(), Number(windowMs) || WINDOW_MS);
+  row.stamps.push(t);
 }
 
 /** True when this key is already locked. Does not record a new failure. */
@@ -94,4 +110,6 @@ module.exports = {
   isReviewDemo,
   rejectIfLimited,
   TOO_MANY_TR,
+  setReplicator,
+  applyRemoteStamp,
 };

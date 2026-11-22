@@ -71,7 +71,9 @@ async function tick({ getIo = null, now = Date.now() } = {}) {
 
 function start({ getIo } = {}) {
   if (timer) return;
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md).
   timer = setInterval(() => {
+    if (!require("../cluster").isLeader()) return;
     tick({ getIo }).catch((e) => console.warn("[shop2] tick failed:", e?.message || e));
   }, TICK_MS);
   if (timer.unref) timer.unref();

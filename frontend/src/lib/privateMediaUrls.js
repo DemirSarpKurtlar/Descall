@@ -4,7 +4,7 @@
 // copy has been retired) are exchanged through POST /api/media/refresh, which only answers
 // for members of the conversation. Results are cached in memory, keyed by storage path.
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "../config/api.js";
+import { apiBase } from "./nodeRouting.js";
 import { getToken } from "./storage.js";
 
 const SIGNED_RE = /\/api\/media\/f\/((?:images|files)\/[A-Za-z0-9._-]+)(?:\?|$)/;
@@ -66,7 +66,7 @@ async function flush(fetchImpl) {
   try {
     const token = getToken();
     if (token) {
-      const res = await fetchImpl(`${API_BASE_URL}/api/media/refresh`, {
+      const res = await fetchImpl(`${apiBase()}/api/media/refresh`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ urls }),

@@ -358,6 +358,8 @@ function createScheduledMessages(deps = {}) {
   function start({ getIo = () => null, intervalMs = TICK_MS } = {}) {
     if (timer) return stop;
     const run = async () => {
+      // Hybrid server: scheduled messages are sent once, by the leader (lib/cluster/jobs.md).
+      if (!require("./cluster").isLeader()) return;
       if (running) return;
       running = true;
       try {

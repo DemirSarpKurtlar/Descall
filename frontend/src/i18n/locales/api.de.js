@@ -258,4 +258,10 @@ export const API_DE = {
   "Account closed. It will be permanently deleted after the grace period.": "Konto geschlossen. Es wird nach der Schonfrist endgültig gelöscht.",
   "Could not cancel the request.": "Die Anfrage konnte nicht zurückgezogen werden.",
   "File is too large (max {max} MB).": "Die Datei ist zu groß (max. {max} MB).",
+  "Invalid node key": "Ungültiger Serverknoten-Schlüssel",
+  "Not the primary node": "Das ist nicht der Hauptserverknoten",
+  "Invalid node id": "Ungültige Serverknoten-ID",
+  "Invalid node url": "Ungültige Serverknoten-Adresse",
+  "Invalid node state": "Ungültiger Serverknoten-Status",
+  "Invalid setting: {field}": "Ungültige Einstellung: {field}",
 };

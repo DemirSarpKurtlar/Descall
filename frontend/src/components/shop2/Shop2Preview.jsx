@@ -7,7 +7,8 @@ import { useLocale } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import { CountryBadge, NameEffectText, profileAuraClass, presenceFlareClass } from "../ui/Cosmetics";
 import { JoinSoundPreview, VoiceTileSkin, voiceTileHostClass } from "../voice/VoiceCosmetics.jsx";
-import { API_BASE_URL } from "../../config/api";
+// Asset URLs stay on the primary: rendered images must not break when a node drains.
+import { primaryApiBase } from "../../lib/nodeRouting";
 import { absoluteAssetUrl } from "../../lib/callCoinPrefs.js";
 import { cssUrl } from "../../lib/cssUrl";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
@@ -17,7 +18,7 @@ import { Mic, Volume2 } from "./shop2Icons.jsx";
 /** Item art URL: s2 art is served as /api/shop2/assets/:id (relative to the API host). */
 export function assetSrc(item, prefer = "preview") {
   const raw = prefer === "asset" ? item?.asset_url || item?.preview_url : item?.preview_url || item?.asset_url;
-  return absoluteAssetUrl(raw, API_BASE_URL) || null;
+  return absoluteAssetUrl(raw, primaryApiBase()) || null;
 }
 const imgOf = (item) => assetSrc(item);
 const keyOf = (item) => item?.effect_key || "";

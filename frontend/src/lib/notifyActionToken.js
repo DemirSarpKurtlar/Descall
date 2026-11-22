@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { API_BASE_URL } from "../config/api.js";
+import { apiBase, primaryApiBase } from "./nodeRouting.js";
 
 /**
  * 3.0.0 (A4): scoped token for quick reply / reactions / "okundu" straight
@@ -70,13 +70,13 @@ export function refreshNotifyActionToken(authToken, { userId = "", force = false
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/messages/notify-token`, {
+      const response = await fetch(`${apiBase()}/api/messages/notify-token`, {
         method: "POST",
         headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "application/json" },
         body: "{}",
       });
       if (!response.ok) return false;
-      const args = nativeTokenArgs(await response.json(), API_BASE_URL);
+      const args = nativeTokenArgs(await response.json(), primaryApiBase());
       if (!args) return false;
       await native.setActionToken(args);
       lastIssuedAt = Date.now();

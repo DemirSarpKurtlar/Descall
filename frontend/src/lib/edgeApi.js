@@ -7,7 +7,7 @@
  * socket stay on the origin. Any network error or 5xx from the edge falls
  * back to the origin at once and parks the edge for 30 minutes.
  */
-import { API_BASE_URL } from "../config/api.js";
+import { apiBase } from "./nodeRouting.js";
 
 export const EDGE_API_HOSTS = ["api.descall.com", "api-staging.descall.com"];
 const KEY = "descall:edge-api";
@@ -74,7 +74,7 @@ function parkEdge(store = storage(), now = Date.now()) {
 export async function fetchPublic(path, init = {}, deps = {}) {
   const doFetch = deps.fetch || ((...a) => fetch(...a));
   const store = deps.store === undefined ? storage() : deps.store;
-  const origin = (deps.origin || API_BASE_URL || "").replace(/\/$/, "");
+  const origin = (deps.origin || apiBase() || "").replace(/\/$/, "");
   const edge = edgeApiBase({ store, now: deps.now || Date.now() });
   if (edge && edge !== origin) {
     const { headers, ...rest } = init;

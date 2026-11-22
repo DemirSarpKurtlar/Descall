@@ -483,8 +483,10 @@ async function pruneOldRows(now = new Date()) {
 let pruneTimer = null;
 function startRetention() {
   if (pruneTimer || process.env.NODE_ENV === "test") return;
-  setTimeout(() => pruneOldRows(), 60_000).unref?.();
-  pruneTimer = setInterval(() => pruneOldRows(), DAY_MS);
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md).
+  const run = require("./cluster").leaderOnly("signupStatsPrune", () => pruneOldRows());
+  setTimeout(run, 60_000).unref?.();
+  pruneTimer = setInterval(run, DAY_MS);
   pruneTimer.unref?.();
 }
 

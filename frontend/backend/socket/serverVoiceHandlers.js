@@ -1632,7 +1632,9 @@ let afkScannerTimer = null;
 
 function startAfkIdleScanner(io) {
   if (afkScannerTimer || !io) return;
+  // Hybrid server: the call state is shared, so one scan per cluster (the leader).
   afkScannerTimer = setInterval(async () => {
+    if (!require("../lib/cluster").isLeader()) return;
     try {
       await runAfkScan(io);
     } catch (err) {

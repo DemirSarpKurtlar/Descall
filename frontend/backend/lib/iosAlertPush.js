@@ -410,6 +410,21 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "admin-antibot-watch", count },
     };
   }
+  // Sunucu Ağı (hybrid server): owner-only alert, kind + percent only (lib/webPush.js).
+  if (type === "admin-nodes") {
+    const kinds = { pcDown: "nodesPcDown", kvFull: "nodesKvFull", kvDown: "nodesKvDown", render90: "nodesRender90", test: "nodesTest" };
+    const key = kinds[String(event.kind || "")];
+    if (!key) return null;
+    const pct = Math.max(0, Math.min(100, Math.floor(Number(event.pct) || 0)));
+    return {
+      ...base,
+      threadId: "admin-nodes",
+      collapseId: `admin-nodes-${event.kind}`,
+      title: s.t("nodesTitle"),
+      body: s.t(key, { pct }),
+      data: { type: "admin-nodes", kind: String(event.kind), pct },
+    };
+  }
   // Duyurular: the admin wrote the text in this person's language (lib/announcements/service.js).
   if (type === "announcement") {
     return {

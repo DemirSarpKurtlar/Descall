@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase, failoverOnTransportError } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
 import { isTransientHttpStatus, transientFailureError, withReadRetry } from "./transportRetry";
@@ -14,7 +14,7 @@ export async function authedRequest(path, opts = {}) {
 async function authedRequestOnce(path, { method = "GET", body, signal } = {}, extraHeaders = {}) {
   const token = getToken();
   const send = () =>
-    fetch(`${API_BASE_URL}${path}`, {
+    fetch(`${apiBase()}${path}`, {
       method,
       cache: "no-store",
       signal,
@@ -24,7 +24,7 @@ async function authedRequestOnce(path, { method = "GET", body, signal } = {}, ex
         ...extraHeaders,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    }).catch(failoverOnTransportError);
   const res = await withReadRetry(send, { method, signal });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

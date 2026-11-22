@@ -6,7 +6,7 @@
  * there and no plugin method is ever called.
  */
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "./nodeRouting";
 import { getToken } from "./storage";
 import { setCallKitEnabled } from "./iosCallKitState";
 
@@ -145,7 +145,7 @@ export function initIosCallKit() {
 async function deleteVoipToken(authToken, token) {
   if (!authToken || !token) return;
   try {
-    await fetch(`${API_BASE_URL}/api/web-push/fcm-token`, {
+    await fetch(`${apiBase()}/api/web-push/fcm-token`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -163,7 +163,7 @@ export async function syncIosVoipToken() {
   const key = `${auth}|${voipToken}`;
   if (uploadedFor === key) return true;
   try {
-    const response = await fetch(`${API_BASE_URL}/api/web-push/fcm-token`, {
+    const response = await fetch(`${apiBase()}/api/web-push/fcm-token`, {
       method: "POST",
       headers: { Authorization: `Bearer ${auth}`, "Content-Type": "application/json" },
       body: JSON.stringify({ token: voipToken, platform: VOIP_PLATFORM }),

@@ -11,6 +11,15 @@ const m = require("./maintenance");
 const TABLE = "maintenance_windows";
 const AUDIT = "maintenance_audit";
 
+/** Hybrid server (lib/cluster); a single node answers enabled() false / isLeader() true. */
+function clusterApi() {
+  try {
+    return require("./cluster");
+  } catch {
+    return null;
+  }
+}
+
 function createMaintenanceService({ supabase, getIo = () => null, now = () => Date.now(), log = console } = {}) {
   let rows = [];
   let loaded = false;
@@ -35,14 +44,23 @@ function createMaintenanceService({ supabase, getIo = () => null, now = () => Da
     return m.publicView(m.currentWindow(rows, now()), now());
   }
 
-  function emitState(force = false) {
+  function emitState(force = false, { local = false } = {}) {
     const pub = publicState();
     const key = JSON.stringify(pub);
     if (!force && key === lastPublic) return pub;
     lastPublic = key;
     const io = getIo();
-    if (io) io.emit("maintenance:state", { maintenance: pub, serverTime: new Date(now()).toISOString() });
+    // Clustered ticks: every node tells its own sockets (io.emit would reach every node's).
+    const target = local && io?.local && clusterApi()?.enabled() ? io.local : io;
+    if (target) target.emit("maintenance:state", { maintenance: pub, serverTime: new Date(now()).toISOString() });
+    if (force && !local) clusterApi()?.invalidate("maintenance", "windows");
     return pub;
+  }
+
+  /** Another node changed a window and already told every socket: reload quietly. */
+  async function reloadQuiet() {
+    await reload();
+    lastPublic = JSON.stringify(publicState());
   }
 
   async function audit(windowId, actor, action, details = {}) {
@@ -76,8 +94,9 @@ function createMaintenanceService({ supabase, getIo = () => null, now = () => Da
   async function tick() {
     try {
       await ensure();
-      await finishIfDue();
-      emitState();
+      // The end notice and its database mark run once per cluster (the leader).
+      if (clusterApi()?.isLeader() !== false) await finishIfDue();
+      emitState(false, { local: true });
     } catch (err) {
       log.warn?.("[maintenance] tick:", err?.message || err);
     }
@@ -221,7 +240,7 @@ function createMaintenanceService({ supabase, getIo = () => null, now = () => Da
     return m.adminView(row, now());
   }
 
-  return { reload, ensure, publicState, emitState, tick, start, stop, overview, create, update, extend, endNow, cancel, _rows: () => rows };
+  return { reload, reloadQuiet, ensure, publicState, emitState, tick, start, stop, overview, create, update, extend, endNow, cancel, _rows: () => rows };
 }
 
 module.exports = { createMaintenanceService };

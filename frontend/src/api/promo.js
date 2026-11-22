@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { adminFetch } from "./adminHttp";
 import { authedRequest } from "./authedHttp";
@@ -10,7 +10,7 @@ import { authedRequest } from "./authedHttp";
  */
 export async function redeemPromoCode(code) {
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/api/promo/redeem`, {
+  const res = await fetch(`${apiBase()}/api/promo/redeem`, {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

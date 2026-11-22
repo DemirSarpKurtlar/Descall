@@ -39,6 +39,9 @@ const INTERNAL_ONLY = new Set([
   // Admin Token tab (owner only): the panel shows its own Turkish text per error code
   // (TOKENS_UNAVAILABLE, TOKEN_NOT_FOUND, NAME_REQUIRED, ... in the tab's contract).
   "routes/adminTokens.js",
+  // Sunucu Ağı tab (owner only): the panel shows its own text per error code (anodes.err.*).
+  "routes/adminNodes.js",
+  "lib/nodeKeys/store.js",
 ]);
 
 // Developer / diagnostic text: never shown in the app (logs, health checks, protocol

@@ -343,6 +343,7 @@ async function createCampaign({ content, audience, includeSelf = false, schedule
     E.campaigns.set(row.id, entry);
     await store.saveCampaign(row);
     if (templateId) store.bumpTemplate(templateId).catch(() => {});
+    scheduledChanged(row.id);
     return entry;
   }
   const res = await sendCampaign(entry, { requireRecipients: true });
@@ -696,6 +697,7 @@ async function cancelScheduled(id, reason) {
   entry.c.recall_reason = reason || null;
   await store.saveCampaign(entry.c);
   notifyAdmins(id);
+  scheduledChanged(id);
   return entry;
 }
 
@@ -725,8 +727,29 @@ async function updateScheduled(id, { content, audience, includeSelf, scheduleAt 
   });
   await store.saveCampaign(c);
   notifyAdmins(id);
+  scheduledChanged(id);
   return entry;
 }
+
+/*
+ * Hybrid server: scheduled sends run on the leader only (two nodes load the same
+ * scheduled rows at boot). A schedule made / changed / cancelled on another node
+ * reaches the leader's memory through dc:inval. No-ops on a single node.
+ */
+function cluster() {
+  return require("../cluster");
+}
+
+function scheduledChanged(id) {
+  cluster().invalidate("livePopupScheduled", id);
+}
+
+cluster().onInvalidate("livePopupScheduled", (m) => {
+  const hit = m.id ? E.campaigns.get(m.id) : null;
+  if (hit && hit.c.status !== "scheduled") return;
+  if (m.id) E.campaigns.delete(m.id);
+  getEntry(m.id).catch(() => {});
+});
 
 /** "Telefonuma test gönder": to the admin's own phone sockets (or every own socket), never tracked. */
 function testSend(actor, content) {
@@ -991,6 +1014,7 @@ async function tick() {
   for (const entry of [...E.campaigns.values()]) {
     const c = entry.c;
     if (c.status === "scheduled" && c.scheduled_at && Date.parse(c.scheduled_at) <= t) {
+      if (!cluster().isLeader()) continue;
       await sendCampaign(entry).catch((err) => console.warn("[live-popup] scheduled send failed:", err?.message || err));
       continue;
     }

@@ -3,7 +3,7 @@
  * needs a 2FA code opens the step-up prompt and retries once.
  */
 import { adminFetch } from "../../../api/adminHttp";
-import { API_BASE_URL } from "../../../config/api";
+import { apiBase } from "../../../lib/nodeRouting";
 import { getToken } from "../../../lib/storage";
 import { clearStepUpToken, stepUpHeaders } from "../../../lib/adminStepUp";
 import { parseSse } from "../agentMarkdown.js";
@@ -58,7 +58,7 @@ export const agentApi = {
  * @param {(event: object) => void} onEvent
  */
 export async function streamChat(body, onEvent, { signal } = {}) {
-  const res = await fetch(`${API_BASE_URL}/admin/agent/chat`, {
+  const res = await fetch(`${apiBase()}/admin/agent/chat`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json", ...stepUpHeaders() },
     body: JSON.stringify(body),

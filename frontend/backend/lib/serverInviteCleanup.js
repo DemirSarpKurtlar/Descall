@@ -45,8 +45,10 @@ async function pruneExpiredInvites(supabase, now = new Date()) {
 let timer = null;
 function startInviteCleanup(supabase) {
   if (timer || process.env.NODE_ENV === "test") return;
-  setTimeout(() => pruneExpiredInvites(supabase), 90_000).unref?.();
-  timer = setInterval(() => pruneExpiredInvites(supabase), 6 * HOUR_MS);
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md). Always true on a single node.
+  const run = require("./cluster").leaderOnly("inviteCleanup", () => pruneExpiredInvites(supabase));
+  setTimeout(run, 90_000).unref?.();
+  timer = setInterval(run, 6 * HOUR_MS);
   timer.unref?.();
 }
 

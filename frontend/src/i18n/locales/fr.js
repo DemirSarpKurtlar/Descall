@@ -30,6 +30,7 @@ import { MOD_DESK_FR, MOD_DESK_API_FR } from "./modDesk.fr.js";
 import { GAMES_ADMIN_FR } from "./gamesAdmin.fr.js";
 import { SYSX_FR } from "./sysx.fr.js";
 import { ATOK_FR } from "./atok.fr.js";
+import { ANODES_FR } from "./anodes.fr.js";
 import { AUDIT_LOG_FR } from "./auditLog.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
@@ -81,6 +82,7 @@ export const nested = {
   "gamesAdmin": GAMES_ADMIN_FR,
   "sysx": SYSX_FR,
   "atok": ATOK_FR,
+  "anodes": ANODES_FR,
   "auditLog": AUDIT_LOG_FR,
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,

@@ -502,7 +502,8 @@ function startPollSweeper(io, { intervalMs = 30000 } = {}) {
       console.warn("[polls] sweeper tick failed:", err?.message || err);
     }
   };
-  sweeper = setInterval(tick, intervalMs);
+  // Hybrid server: expiring polls runs once per cluster, on the leader.
+  sweeper = setInterval(require("./cluster").leaderOnly("pollSweeper", tick), intervalMs);
   sweeper.unref?.();
   return sweeper;
 }
