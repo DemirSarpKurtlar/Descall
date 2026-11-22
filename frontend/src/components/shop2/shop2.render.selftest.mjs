@@ -184,6 +184,9 @@ for (const layout of ["desktop", "phone"]) {
   const co = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
   has(co, "s2-hold", "hold-to-confirm");
   has(co, "Fener Halkası");
+  // Short of DesCoin: the balance line is not shown going negative ("5.120 -> -1.000").
+  const poor = m.render("checkout", { ...c, balance: 10 }, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
+  assert.ok(!/→ <\/span>(<!-- -->)?-/.test(poor) && !/>-\d/.test(poor.split("shop2.checkout.balance")[1]?.slice(0, 400) || ""), `${layout} checkout: no negative balance after`);
   const done = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", phase: "done", result: { purchaseId: "p1", paid: 2870, balance: 2250, refundableUntil: new Date(NOW + 600e3).toISOString() } }, onClose: noop });
   for (const x of ["s2-cele", "s2-parts", "s2-cele-slots", "is-glow"]) has(done, x, `${layout} celebration ${x}`);
 }

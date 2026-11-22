@@ -111,7 +111,7 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
           <><span>{t("shop2.checkout.nightDiscount", { n: c.card.discountPct })}</span><b className="s2-num is-green">-<Num value={c.card.basePrice - total} /> {t("shop2.common.d")}</b></>
         ) : null}
         <span className="is-strong">{t("shop2.checkout.toPay")}</span><b className="s2-num is-big"><Num value={total} /> {t("shop2.common.d")}</b>
-        <span>{t("shop2.checkout.balance")}</span><b className="s2-num"><span className="s2-dim"><Num value={s2.balance} /> {"→"} </span><Num value={after} /> {t("shop2.common.d")}</b>
+        <span>{t("shop2.checkout.balance")}</span><b className="s2-num">{after < 0 ? <><Num value={s2.balance} /> {t("shop2.common.d")}</> : <><span className="s2-dim"><Num value={s2.balance} /> {"→"} </span><Num value={after} /> {t("shop2.common.d")}</>}</b>
       </div>
       {c.kind !== "cart" ? (
         <label className="s2-check"><GlassCheckbox checked={equipNow} onChange={(e) => setEquipNow(e.target.checked)} /><span>{c.kind === "set" ? t("shop2.checkout.equipAll") : t("shop2.checkout.equipNow")}</span></label>
