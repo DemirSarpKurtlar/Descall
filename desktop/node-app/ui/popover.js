@@ -51,11 +51,11 @@
   }
   function gb1(mb) { var v = (mb / 1024).toFixed(1); return (tr() ? v.replace(".", ",") : v) + " GB"; }
 
-  /* Same formula as descall_node::capacity::estimate_users. */
+  /* Same formula as descall_node::capacity::estimate_users and the admin panel. */
   function estimate(ramMb, cap) {
-    var usable = ramMb * (Math.min(100, Math.max(10, cap.pcHighPct)) / 100) - cap.baseMb;
+    var usable = ramMb * (cap.headroom || 0.85) - cap.baseMb;
     if (usable <= 0) return 0;
-    return Math.floor(Math.floor(usable / cap.perUserMb) / 10) * 10;
+    return Math.floor(usable / cap.perUserMb);
   }
 
   function show(name) {

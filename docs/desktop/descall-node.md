@@ -24,20 +24,20 @@ Neden Windows servisi değil de oturum uygulaması: panel, DPAPI (kullanıcıya 
 - Panelden değişen ayar yerel backend üzerinden (`PUT /api/node/local/cfg`) kümeye yazılır; backend o an kapalıysa "yalnız bu PC'de, sunucu açılınca eşitlenecek" yazar ve açılınca gönderilir.
 - RAM payı değişirse kullanıcılar Render'a aktarılır ve backend yeni payla yeniden başlar (V8 yığın sınırı çalışırken değişemez); çekirdek sayısı anında uygulanır.
 
-### Yerel kontrol uçları (backend tarafında uygulanacak sözleşme)
-Uygulama kendi backend'iyle yalnız 127.0.0.1 üstünden ve her açılışta rastgele üretilen `DESCALL_NODE_CONTROL_TOKEN` ile (`x-descall-node-control` başlığı) konuşur:
+### Yerel kontrol uçları (`frontend/backend/routes/node.js`)
+Uygulama kendi backend'iyle yalnız 127.0.0.1 üstünden ve her açılışta rastgele üretilen `DESCALL_NODE_CONTROL_TOKEN` ile (`x-descall-node-control` başlığı) konuşur. Backend jetonu sabit sürede karşılaştırır; isteğin doğrudan 127.0.0.1 / ::1'den gelmesini, `Host` değerinin 127.0.0.1 / localhost olmasını, `Origin` olmamasını ve Cloudflare / vekil başlıklarının (`CF-Connecting-IP`, `cf-ray`, `X-Forwarded-For` ...) hiç olmamasını ister; tünelden gelen istek de 127.0.0.1'den gelir ama bu başlıkları her zaman taşır, bu yüzden reddedilir:
 
 | Uç | Gövde / cevap |
 | --- | --- |
 | `GET /api/node/health` | `{ ok, nodeId, role, state }` (genel sözleşmede var) |
-| `GET /api/node/local/status` | `{ state, conns, remaining, p95ms, mbps, memRss, cfg, kv: { ok } }` |
-| `POST /api/node/local/drain` | `{ reason, timeoutMs }` -> durum "draining", bu düğümdeki her sokete `node:move` |
-| `POST /api/node/local/state` | `{ state, gameMode, memoryMb }` -> `dc:nodes` kaydı buna uyar |
-| `PUT /api/node/local/cfg` | kısmi `dc:cfg:pc` -> `{ cfg }` (`cluster.setCfg(partial, "pc-tray")`) |
+| `GET /api/node/local/status` | `{ state, conns, remaining, p95ms, memRss (MB), memLimit, cpu, cores, gameMode, draining, cfg, kv: { ok } }` |
+| `POST /api/node/local/drain` | `{ reason, timeoutMs }` -> hemen `{ ok, remaining }`; arkada durum "draining", her sokete `node:move`, sonra "paused" ve Render'a `drain-done` |
+| `POST /api/node/local/state` | `{ state: active\|paused\|draining, gameMode, memoryMb }` -> `dc:nodes` kaydı buna uyar |
+| `PUT /api/node/local/cfg` | kısmi `dc:cfg:pc` -> `{ cfg }` (yönetim paneliyle aynı doğrulama; acil durum anahtarı buradan değişmez) |
 
 Bu uçlar yoksa (eski backend) uygulama yine çalışır: boşaltma yerine süreci durdurur (istemciler 2-5 sn içinde Render'a bağlanır) ve ayarları kayıt cevabından alır.
 
-Backend'e giden ortam: `NODE_ENV=production`, `PORT=3210`, `DESCALL_NODE_ID=pc-xxxxxx`, `DESCALL_NODE_ROLE=secondary`, `DESCALL_NODE_PUBLIC_URL`, `DESCALL_NODE_PRIMARY_URL`, `DESCALL_NODE_KEY`, `DESCALL_NODE_MEMORY_MB`, `DESCALL_NODE_CORES`, `DESCALL_NODE_CONTROL_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `REDIS_URL` (varsa) ve "Ek ortam değişkenleri" satırları. Bilgisayarın kendi ortamından yalnız Windows'un temel değişkenleri geçer.
+Backend'e giden ortam: `NODE_ENV=production`, `PORT=3210`, `DESCALL_NODE_ID=pc-xxxxxx`, `DESCALL_NODE_ROLE=secondary`, `DESCALL_NODE_PUBLIC_URL`, `DESCALL_NODE_PRIMARY_URL` (backend eski adı `DESCALL_PRIMARY_URL`'i de kabul eder), `DESCALL_NODE_KEY`, `DESCALL_NODE_MEMORY_MB`, `DESCALL_NODE_CORES`, `DESCALL_NODE_CONTROL_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `REDIS_URL` (varsa) ve "Ek ortam değişkenleri" satırları. Bilgisayarın kendi ortamından yalnız Windows'un temel değişkenleri geçer.
 
 ## Kurulum
 
@@ -103,7 +103,7 @@ Sonra formu doldur (her alanın altında nereden alınacağı yazar):
 - **BitLocker'ı aç** (Ayarlar > Gizlilik ve güvenlik > Cihaz şifreleme / BitLocker). DPAPI kayıtları Windows hesabına bağlıdır; disk şifreli değilse ve bilgisayar çalınırsa hesap parolası kırılarak açılabilir. Windows hesabında güçlü parola veya Windows Hello kullan.
 - **PC kaybolur veya çalınırsa**: hemen Admin > Sunucu Ağı'nda düğüm anahtarını iptal et (PC artık kayıt olamaz ve trafik almaz), Cloudflare'de tüneli sil, sonra sırayla Supabase service role anahtarını, `JWT_SECRET`'i (bütün oturumlar düşer), LiveKit API gizlisini ve Key Value parolasını yenile ve Render'a da yaz.
 - Gizliler yalnız backend sürecinin ve cloudflared'in ortamına gider: dosyada düz metin, günlükte, panelde veya ağda başka bir yerde bulunmaz. Panel bir değeri yalnız "ayarlı" olarak görür.
-- Dışarıdan yalnız Cloudflare tüneli üzerinden (`pc.descall.com`, TLS) ulaşılır; modeminde port açman gerekmez. Backend bugün `server.js`'in varsayılanıyla bütün arayüzlerde 3210'u dinler: Windows Güvenlik Duvarı node.exe için izin sorarsa **izin verme** (tünel yerel bağlantı kullanır, gerekmez). Backend `DESCALL_NODE_ROLE=secondary` iken yalnız 127.0.0.1'e bağlanacak şekilde güncellenince bu soru da kalkar.
+- Dışarıdan yalnız Cloudflare tüneli üzerinden (`pc.descall.com`, TLS) ulaşılır; modeminde port açman gerekmez. Backend `DESCALL_NODE_ROLE=secondary` iken yalnız 127.0.0.1:3210'u dinler; Windows Güvenlik Duvarı yine de node.exe için izin sorarsa **izin verme** (tünel yerel bağlantı kullanır, gerekmez).
 - Yerel kontrol uçları yalnız 127.0.0.1'den ve her açılışta değişen rastgele jetonla çalışır.
 - Bu PC'de her tür veri işlenebilir (sahibin onayıyla); PC'yi başkalarıyla paylaşıyorsan Descall Node'u ayrı ve yönetici olmayan bir Windows hesabında çalıştır.
 - Kurulum dosyası henüz imzasız; yalnız bu deponun GitHub Actions çıktısından indir.
