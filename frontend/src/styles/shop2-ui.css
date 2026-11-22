@@ -6295,6 +6295,15 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
   width: 36px;
   height: 36px;
 }
+.s2-root.is-phone .s2-banner-next {
+  min-height: 32px;
+  padding: 0 10px;
+}
+/* "Hepsini dene" next to the phone set's piece list: a 15 px tall link is hard to hit. */
+.s2-root.is-phone .s2-sech-r {
+  padding: 10px 0;
+  margin: -10px 0;
+}
 .s2-root.is-phone .s2-banner h2 {
   font-size: var(--fs-20);
 }
