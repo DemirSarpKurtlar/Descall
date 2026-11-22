@@ -53,6 +53,29 @@ pub fn reduced_transparency() -> bool {
     }
 }
 
+/// Blocks until a value under the Personalize key changes (RegNotifyChangeKeyValue: no
+/// polling, the thread sleeps in the kernel). False when the key cannot be watched; the
+/// caller then falls back to a slow poll.
+pub fn wait_personalize_change() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Registry::{RegCloseKey, RegNotifyChangeKeyValue, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, KEY_NOTIFY, REG_NOTIFY_CHANGE_LAST_SET};
+        let path = windows_core::HSTRING::from(PERSONALIZE);
+        let mut key = HKEY::default();
+        if RegOpenKeyExW(HKEY_CURRENT_USER, &path, None, KEY_NOTIFY, &mut key) != ERROR_SUCCESS {
+            return false;
+        }
+        let r = RegNotifyChangeKeyValue(key, false, REG_NOTIFY_CHANGE_LAST_SET, None, false);
+        let _ = RegCloseKey(key);
+        r == ERROR_SUCCESS
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
+}
+
 /// OS UI languages, most preferred first ("tr-TR", "en-US"), plus the user locale.
 pub fn os_languages() -> Vec<String> {
     #[allow(unused_mut)]

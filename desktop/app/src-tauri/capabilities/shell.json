@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "shell-pages",
+  "description": "The shell's own small windows: notification capsules, voice overlay, Descall+ HUD / widget / quick drop windows and the quick launcher. They listen for their state and (HUD) move their window; their app commands are listed in src/ipc_policy.rs. No opener, clipboard, shortcut, updater or event emit.",
+  "windows": [
+    "notif-*",
+    "overlay",
+    "hud-*",
+    "widget-*",
+    "launcher"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging"
+  ]
+}

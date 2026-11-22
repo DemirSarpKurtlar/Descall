@@ -68,6 +68,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .use_https_scheme(true)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
+        .disable_drag_drop_handler()
         .on_new_window(|u, _| {
             if u.scheme() == "https" {
                 if let Some(h) = crate::premium::host() {
@@ -85,6 +86,8 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
             return json!({ "ok": false, "error": "failed" });
         }
     };
+    // No browser menu or browser shortcuts (Back, Reload, Print...), as in the main window.
+    crate::webview::install_browser_guards(&w);
     if let Some(b) = b {
         wins::set_bounds(&w, b);
     }

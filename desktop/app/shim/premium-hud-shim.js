@@ -26,9 +26,12 @@
   Object.defineProperty(window, "descallHud", {
     value: Object.freeze({
       onState: (cb) => {
+        if (typeof cb !== "function") return () => {};
         let un = null;
-        T.event.listen("descall:hud:state", (e) => cb(e.payload || {})).then((u) => { un = u; });
-        return () => { if (un) un(); };
+        let dead = false;
+        // An unsubscribe before listen() resolved used to leave the listener registered.
+        T.event.listen("descall:hud:state", (e) => cb(e.payload || {})).then((u) => { if (dead) u(); else un = u; }).catch(() => {});
+        return () => { dead = true; if (un) { un(); un = null; } };
       },
       action: (type, payload) => {
         if (!ACTIONS.has(type)) return;

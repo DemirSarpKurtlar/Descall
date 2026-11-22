@@ -352,6 +352,26 @@ pub fn drop_targets(next: &Value) -> Vec<Value> {
 }
 
 pub const DROP_MAX_BYTES: usize = 100 * 1024 * 1024;
+/// All raw bodies held at once (premium_blob_put, clip exports). Without a total, a page or
+/// HUD window could park 100 MB per call for two minutes, without limit.
+pub const BLOB_TOTAL_MAX_BYTES: usize = 3 * DROP_MAX_BYTES;
+
+/// Blob ids to drop, oldest (smallest id) first, so `incoming` more bytes fit under
+/// [`BLOB_TOTAL_MAX_BYTES`]. `held` is (id, size) of the blobs still held.
+pub fn blobs_to_evict(held: &[(u64, usize)], incoming: usize) -> Vec<u64> {
+    let mut by_age: Vec<(u64, usize)> = held.to_vec();
+    by_age.sort_by_key(|(id, _)| *id);
+    let mut total: usize = by_age.iter().map(|(_, n)| *n).sum::<usize>().saturating_add(incoming);
+    let mut out = Vec::new();
+    for (id, n) in by_age {
+        if total <= BLOB_TOTAL_MAX_BYTES {
+            break;
+        }
+        total -= n;
+        out.push(id);
+    }
+    out
+}
 
 /// instant_clip save name: [\w.-] only, at most 80 chars, "clip.webm" when empty.
 pub fn safe_file_name(name: &str) -> String {
@@ -385,6 +405,16 @@ pub fn looks_like_jwt(t: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn blob_store_has_a_total_cap() {
+        const MB: usize = 1024 * 1024;
+        assert!(blobs_to_evict(&[(1, 10 * MB)], 10 * MB).is_empty());
+        let held = [(5, 100 * MB), (2, 100 * MB), (9, 100 * MB)];
+        assert_eq!(blobs_to_evict(&held, 100 * MB), vec![2], "the oldest goes first");
+        assert_eq!(blobs_to_evict(&held, 250 * MB), vec![2, 5, 9], "everything older goes when one big body arrives");
+        assert!(blobs_to_evict(&[], 100 * MB).is_empty());
+    }
 
     #[test]
     fn channels_and_keys() {

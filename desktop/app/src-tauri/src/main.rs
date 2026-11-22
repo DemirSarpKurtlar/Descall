@@ -11,6 +11,7 @@ mod admin;
 mod assets;
 mod boot;
 mod commands;
+mod logging;
 mod migration;
 mod platform;
 mod premium;
@@ -45,13 +46,31 @@ pub fn shell_url(page: &str) -> tauri::Url {
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 
+/// The app commands, behind the per-window policy (descall_shell::ipc_policy): the shell's own pages
+/// (capsules, overlay, HUD, launcher, tray panel) reach their bridge's commands only.
+fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    move |invoke| {
+        let label = invoke.message.webview_ref().label().to_string();
+        if !descall_shell::ipc_policy::allowed(&label, invoke.message.command()) {
+            log::warn!("[ipc] {label} may not call {}", invoke.message.command());
+            invoke.resolver.reject("forbidden");
+            return true;
+        }
+        inner(invoke)
+    }
+}
+
 /// Main-process errors reach the page (electronAPI.onMainError) and the log.
 fn install_panic_hook() {
     let default = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         log::error!("[main] panic: {info}");
         if let Some(app) = APP.get() {
-            state::to_main(app, "app:main-error", serde_json::json!({ "message": info.to_string() }));
+            // Message only: the location and any path in it would name the build machine's
+            // and the user's folders (descall_shell::crash).
+            let p = info.payload();
+            let text = p.downcast_ref::<&str>().copied().or_else(|| p.downcast_ref::<String>().map(String::as_str));
+            state::to_main(app, "app:main-error", serde_json::json!({ "message": descall_shell::crash::page_message(text) }));
         }
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
@@ -60,6 +79,7 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    logging::init();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
@@ -124,23 +144,23 @@ fn main() {
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
+                // HTML5 drag and drop (chat file drops, server reordering) needs WebView2's own
+                // handler; Tauri's replaces it on Windows and the page never sees a drop.
+                .disable_drag_drop_handler()
                 .on_navigation(boot::is_app_url)
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {
                         return r;
                     }
-                    // Other about:blank windows keep their opener; any other http(s) link opens
-                    // in the default browser (setWindowOpenHandler).
+                    // Admin routes get their own window; web and mail links open in the default
+                    // browser; nothing else opens (setWindowOpenHandler: no in-app popups).
                     if admin::is_admin_url(&url) {
                         let h = nav_app.clone();
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if url.as_str() == "about:blank" || boot::is_app_url(&url) {
-                        return NewWindowResponse::Allow;
-                    }
-                    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+                    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
                         use tauri_plugin_opener::OpenerExt;
                         let _ = nav_app.opener().open_url(url.as_str(), None::<&str>);
                     }
@@ -198,12 +218,13 @@ fn main() {
             commands::updates::schedule_background_checks(&handle);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(guarded(tauri::generate_handler![
             commands::app::app_version,
             commands::app::app_set_locale,
             commands::app::app_boot_retry,
             commands::app::app_boot_state,
             commands::app::app_reduced_transparency,
+            commands::app::app_log,
             commands::app::voice_set_busy,
             commands::app::activity_set_busy,
             commands::window::window_minimize,
@@ -243,7 +264,7 @@ fn main() {
             tray_menu::tray_set_state,
             tray_menu::tray_menu_state,
             tray_menu::tray_menu_act,
-        ])
+        ]))
         .build(assets::with_nested_routes(tauri::generate_context!()))
         .expect("Descall failed to start");
 

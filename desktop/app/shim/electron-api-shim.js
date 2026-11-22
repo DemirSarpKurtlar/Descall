@@ -86,6 +86,14 @@
     return BOOT.token || null;
   })();
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
+  // The sign-in token and the imported settings stay in this closure: window.__DESCALL_BOOT__
+  // keeps the other values only, so the token is not readable from window (for any page
+  // script, after a sign-out, until the next start). Electron's preload never put it on window.
+  if ("token" in BOOT || "importLocalStorage" in BOOT) {
+    const rest = {};
+    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
+    try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
+  }
 
   let zoomFactor = 1;
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
@@ -254,6 +262,47 @@
   const markTauri = () => { if (document.documentElement) document.documentElement.classList.add("tauri-app"); };
   markTauri();
   document.addEventListener("DOMContentLoaded", markTauri);
+
+  // Page warnings and errors to main.log (Electron logged console-message during the boot
+  // window): console.warn / console.error of the first minute, uncaught errors, unhandled
+  // rejections and CSP violations (blocked URL without its query). The shell drops tokens,
+  // caps and rate-limits the lines (app_log).
+  const LOG_MAX = 80;
+  const LOG_WINDOW_MS = 60000;
+  const logStart = Date.now();
+  let logged = 0;
+  const describe = (v) => {
+    if (v instanceof Error || (v && typeof v === "object" && typeof v.message === "string")) return `${v.name || "Error"}: ${v.message}`;
+    if (typeof v === "string") return v;
+    try { return JSON.stringify(v); } catch (_) { return String(v); }
+  };
+  const sendLog = (level, parts) => {
+    if (logged >= LOG_MAX) return;
+    logged += 1;
+    let text = "";
+    try { text = parts.map(describe).join(" "); } catch (_) { text = "(unprintable)"; }
+    fire("app_log", { level, message: String(text).slice(0, 2400) });
+  };
+  const withoutQuery = (u) => {
+    try { const x = new URL(String(u)); return `${x.origin}${x.pathname}`; } catch (_) { return String(u || "").slice(0, 120); }
+  };
+  try {
+    for (const level of ["warn", "error"]) {
+      const orig = console[level];
+      if (typeof orig !== "function") continue;
+      console[level] = function descallConsole(...args) {
+        try { if (Date.now() - logStart < LOG_WINDOW_MS) sendLog(level, args); } catch (_) { /* never break the page's logging */ }
+        return orig.apply(this, args);
+      };
+    }
+  } catch (_) { /* console not writable */ }
+  window.addEventListener("error", (e) => {
+    if (e && e.message) sendLog("error", [`uncaught: ${e.message} @ ${withoutQuery(e.filename)}:${e.lineno || 0}`]);
+  });
+  window.addEventListener("unhandledrejection", (e) => sendLog("error", ["unhandled rejection:", e && e.reason]));
+  document.addEventListener("securitypolicyviolation", (e) => {
+    sendLog("warn", [`CSP ${e.effectiveDirective || e.violatedDirective} blocked ${withoutQuery(e.blockedURI)}`]);
+  });
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).

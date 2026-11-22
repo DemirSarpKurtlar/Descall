@@ -97,6 +97,8 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(format!("window.__DESCALL_OVERLAY__ = {};", json!({ "locale": state::locale(app) })))
+        .on_navigation(|u| descall_shell::ipc_policy::is_shell_page(u.as_str()))
+        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .on_page_load(move |w, p| {
             if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
                 *app_load.state::<Overlay>().loaded.lock().unwrap() = true;

@@ -320,6 +320,8 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
         .use_https_scheme(true)
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(format!("window.__DESCALL_NOTIF__ = {};", input))
+        .on_navigation(|u| descall_shell::ipc_policy::is_shell_page(u.as_str()))
+        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .on_page_load(move |_w, p| {
             if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
                 reveal(&app_load, id);
