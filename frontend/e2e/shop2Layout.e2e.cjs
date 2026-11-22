@@ -263,12 +263,24 @@ async function run(browser, base, boot0, r, problems) {
         panel.scrollTop = 220;
         const top = panel.getBoundingClientRect().top;
         const hit = document.elementFromPoint(120, 20);
-        return { top, overClock: !!hit && !!hit.closest('.s2-layer-panel') };
+        // Just under the status bar: the sticky title's own background, not a scrolled row.
+        const below = document.elementFromPoint(120, top + 4);
+        return { top, overClock: !!hit && !!hit.closest('.s2-layer-panel'), gap: !!below && !below.closest('.s2-fullhead') };
       });
       await sleep(200);
       await shot(page, `${r.name}-gifts-scrolled`);
       check(!insets || sb.top >= 47, `gifts scroll box starts below the status bar (top ${Math.round(sb.top)}, insets ${insets})`);
       check(!insets || !sb.overClock, 'scrolled gift rows do not draw over the status bar');
+      check(!sb.gap, 'no strip of scrolled rows between the status bar and the title');
+      const hd = await page.evaluate(() => {
+        const h = document.querySelector('.s2-layer.is-full .s2-fullhead');
+        const x = h.querySelector('.s2-x').getBoundingClientRect();
+        const hit = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2);
+        return { top: h.getBoundingClientRect().top, xOk: !!hit && !!hit.closest('.s2-x') };
+      });
+      check(hd.xOk && (!insets || hd.top >= 47), `"Hediyeler" title and close stay on top while scrolled (top ${Math.round(hd.top)})`);
+      const note = await page.evaluate(() => document.querySelector('.s2-gifts .s2-gfoot-note')?.textContent || '');
+      check(/arkadaş seç/.test(note), `"Gonder" off without a friend says why (${note})`);
       await page.evaluate(() => document.querySelector('.s2-layer.is-full .s2-fullhead .s2-x').click());
       await sleep(700);
     }

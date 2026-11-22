@@ -4923,6 +4923,19 @@ button.s2-strip:hover {
 .s2-gfoot-note.is-block {
   color: #ffb4a8;
 }
+.s2-gfoot-note.is-step {
+  color: var(--s2-dim);
+}
+/* iPhone "Hediyeler" full screen: the title and its close button stay on top while the
+   friend list, form and preview scroll under them. */
+.s2-layer.is-full .s2-gifts > .s2-fullhead {
+  position: sticky;
+  top: -14px;
+  z-index: 4;
+  margin: -14px -16px 0;
+  padding: 14px 16px 10px;
+  background: linear-gradient(180deg, #10111a 80%, rgba(16, 17, 26, 0));
+}
 .s2-recent {
   display: flex;
   flex-direction: column;

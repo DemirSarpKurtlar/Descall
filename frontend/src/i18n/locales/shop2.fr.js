@@ -492,6 +492,8 @@ export const SHOP2_FR = {
     "saveDraft": "Enregistrer le brouillon",
     "draftSaved": "Brouillon enregistré",
     "send": "Envoyer",
+    "pickFriendFirst": "Choisis d'abord un ami",
+    "pickFutureTime": "Choisis une heure à venir",
     "schedule": "Programmer le cadeau",
     "sent": "Envoyé à {name}",
     "scheduled": "Programmé pour {name}",

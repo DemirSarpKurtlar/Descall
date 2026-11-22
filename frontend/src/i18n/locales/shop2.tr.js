@@ -492,6 +492,8 @@ export const SHOP2_TR = {
     "saveDraft": "Taslağa kaydet",
     "draftSaved": "Taslak kaydedildi",
     "send": "Gönder",
+    "pickFriendFirst": "Önce bir arkadaş seç",
+    "pickFutureTime": "Gelecekte bir zaman seç",
     "schedule": "Hediyeyi zamanla",
     "sent": "Gönderildi: {name}",
     "scheduled": "Zamanlandı: {name}",

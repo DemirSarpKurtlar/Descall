@@ -492,6 +492,8 @@ export const SHOP2_ES = {
     "saveDraft": "Guardar borrador",
     "draftSaved": "Borrador guardado",
     "send": "Enviar",
+    "pickFriendFirst": "Elige primero a un amigo",
+    "pickFutureTime": "Elige una hora en el futuro",
     "schedule": "Programar regalo",
     "sent": "Enviado a {name}",
     "scheduled": "Programado para {name}",

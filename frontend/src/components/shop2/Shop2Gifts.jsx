@@ -76,6 +76,12 @@ function useRecipients(target) {
   return { list, loading };
 }
 
+/** "YYYY-MM-DDTHH:mm" in local time, the value format of <input type="datetime-local">. */
+export function localMinute(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function Letter({ f, tone = 0 }) {
   const src = f?.avatarUrl || f?.avatar_url;
   return src ? <img className="s2-face" src={src} alt="" /> : <span className={`s2-letter tone-${tone % 6}`}>{nameOf(f).charAt(0) || "?"}</span>;
@@ -251,6 +257,9 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const limits = s2.data.gifts.limits;
   const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
   // Why "Gönder" is off for the chosen friend (server reason first, then the wallet).
+  const timeBad = when === "at" && !(sendAt && sendAt.getTime() > Date.now());
+  // Neutral hint for the next step when "Gonder" is off for no error: no friend, no time.
+  const stepNote = !friend ? t("shop2.gifts.pickFriendFirst") : timeBad ? t("shop2.gifts.pickFutureTime") : null;
   const blockNote = !friend ? null : blocked || (limits?.paused === true ? t("Gifts are paused right now.") : null) || (price > s2.balance ? t("shop2.kasa.shortBy", { n: formatNumber(price - s2.balance, locale) }) : null);
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
@@ -377,7 +386,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
             { id: "at", icon: Calendar, label: t("shop2.gifts.pickTime") },
           ]}
         />
-        {when === "at" ? <input type="datetime-local" className="s2-input is-sm" value={at} onChange={(e) => setAt(e.target.value)} aria-label={t("shop2.gifts.pickTime")} /> : null}
+        {when === "at" ? <input type="datetime-local" className="s2-input is-sm" min={localMinute(new Date(Date.now() + 60000))} value={at} onChange={(e) => setAt(e.target.value)} aria-label={t("shop2.gifts.pickTime")} /> : null}
       </div>
       <div className="s2-gopts">
         <label className="s2-toggle-row"><Eye size={15} /><span>{t("shop2.gifts.hideItem")}</span><Toggle checked={hiddenItem} onChange={setHiddenItem} label={t("shop2.gifts.hideItem")} /></label>
@@ -437,6 +446,8 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
       </div>
       {blockNote ? (
         <p className="s2-gfoot-note is-block" role="alert"><Info size={14} />{blockNote}</p>
+      ) : stepNote ? (
+        <p className="s2-gfoot-note is-step" aria-live="polite"><Info size={14} />{stepNote}</p>
       ) : (
         <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
       )}
