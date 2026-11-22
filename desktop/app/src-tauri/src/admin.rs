@@ -69,6 +69,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
     let (w, h) = place.map(|p| (p.width, p.height)).unwrap_or((w, h));
     let nav_app = app.clone();
     let built = WebviewWindowBuilder::new(app, label, WebviewUrl::App(target.into()))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title(crate::state::et(app, title_key, &[]))
         .inner_size(w, h)
         .min_inner_size(min_w, min_h)
@@ -77,6 +78,9 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         .visible(false)
         .background_color(tauri::window::Color(0x14, 0x15, 0x1e, 255))
         .use_https_scheme(true)
+        .disable_drag_drop_handler() // HTML5 drops (announcement images, set builder)
+        .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        .on_download(crate::webview::on_download) // CSV / JSON exports: Downloads + Explorer
         .additional_browser_args(crate::BROWSER_ARGS)
         .initialization_script(script)
         .on_navigation(move |next| crate::boot::is_app_url(next) && spec(next.path()).map(|s| s.0) == Some(label))
@@ -92,7 +96,6 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
             }
             tauri::webview::NewWindowResponse::Deny
         })
-        .disable_drag_drop_handler()
         .build();
     match built {
         Ok(win) => {

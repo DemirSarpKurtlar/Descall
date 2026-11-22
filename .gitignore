@@ -53,6 +53,7 @@ yarn-error.log*
 
 frontend/.vercel/
 frontend/dist-e2e/
+frontend/dist-tauri-e2e/
 .shots/
 .claude/worktrees/
 

@@ -38,7 +38,7 @@ mod tests {
         let v = conf["app"]["security"]["csp"][directive].as_str().unwrap_or_else(|| panic!("{directive} in tauri.conf.json"));
         let mut s = sources(v);
         // Tauri's own IPC and asset protocol.
-        for own in ["ipc:", "http://ipc.localhost", "asset:", "http://asset.localhost"] {
+        for own in ["ipc:", "http://ipc.localhost", "https://ipc.localhost", "asset:", "http://asset.localhost", "https://asset.localhost"] {
             s.remove(own);
         }
         s

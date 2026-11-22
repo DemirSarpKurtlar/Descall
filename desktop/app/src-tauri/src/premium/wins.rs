@@ -214,6 +214,7 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
     }
     let title = h.et(if kind == "call" { "window.call" } else { "window.sidebar" }, &[]);
     let built = WebviewWindowBuilder::new(&h.app, label, WebviewUrl::External("about:blank".parse().ok()?))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .window_features(features)
         .title(title)
         .decorations(false)
@@ -226,6 +227,17 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
         .visible_on_all_workspaces(kind != "call")
         .background_color(tauri::window::Color(0x14, 0x15, 0x1e, 0xff))
         .on_navigation(|u| u.scheme() == "about")
+        // A link in the call / sidebar portal: the default browser (as pop-outs do), never a
+        // bare WebView2 popup window (Electron's windowKit denied it).
+        .on_new_window(|u, _| {
+            if u.scheme() == "https" {
+                if let Some(h) = crate::premium::host() {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = h.app.opener().open_url(u.as_str(), None::<&str>);
+                }
+            }
+            NewWindowResponse::Deny
+        })
         .build();
     let w = match built {
         Ok(w) => w,

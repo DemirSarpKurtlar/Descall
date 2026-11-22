@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, cre
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { copyText as writeClipboardText } from "../../lib/copyText.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
-import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
+import { usePrivateMediaUrl, openFreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
@@ -2156,11 +2156,7 @@ function MessageBubbleView({
                   }
                   if (!needsPrivateMediaRefresh(mediaUrl)) return;
                   e.preventDefault();
-                  const popup = window.open("about:blank", "_blank", "noopener");
-                  refreshMediaUrl(rawMediaUrl).then((next) => {
-                    if (next && popup) popup.location.href = next;
-                    else if (popup) popup.close();
-                  });
+                  openFreshMediaUrl(rawMediaUrl);
                 }}
               >
                 <div className="message-file-ico">

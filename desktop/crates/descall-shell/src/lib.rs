@@ -23,6 +23,7 @@
 //! | `crash`             | (new) panic text for the page           | no paths, no source locations         |
 //! | `logfile`           | electron-log main.log (layout, 1 MB)    | line format, filter, rotation         |
 //! | `ipc_policy`        | per-window preloads (notif, overlay...) | commands per window, capabilities     |
+//! | `window_keys`       | windowKeys.cjs devToolsAllowed          | (DevTools opt-in file)                |
 
 pub mod clipboard;
 pub mod crash;
@@ -41,3 +42,4 @@ pub mod processes;
 pub mod tray_panel;
 pub mod trust;
 pub mod watchdog;
+pub mod window_keys;

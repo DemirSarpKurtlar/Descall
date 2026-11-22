@@ -135,6 +135,7 @@ fn main() {
             let nav_app = handle.clone();
             let load_app = handle.clone();
             let w = WebviewWindowBuilder::new(app, state::MAIN, WebviewUrl::App("index.html".into()))
+                .devtools(crate::webview::devtools_allowed(&handle)) // support opt-in only (webview.rs)
                 .title("Descall")
                 .inner_size(ws.width, ws.height)
                 .min_inner_size(ws.min_width, ws.min_height)
@@ -142,11 +143,17 @@ fn main() {
                 .visible(false)
                 .background_color(tauri::window::Color(11, 12, 18, 255))
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
+                // HTML5 drag and drop (files into a chat, avatar / banner pickers, server and
+                // folder reordering) like Electron. Tauri's own handler swallows every drop
+                // on Windows and the page got no dragenter / drop at all.
+                .disable_drag_drop_handler()
+                // No browser autofill dropdown under the app's fields (search, username,
+                // message composer); Electron never had one.
+                .general_autofill_enabled(false)
+                // <a download> / blob: exports: Downloads + Explorer, no Edge download bubble.
+                .on_download(webview::on_download)
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
-                // HTML5 drag and drop (chat file drops, server reordering) needs WebView2's own
-                // handler; Tauri's replaces it on Windows and the page never sees a drop.
-                .disable_drag_drop_handler()
                 .on_navigation(boot::is_app_url)
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
@@ -231,6 +238,7 @@ fn main() {
             commands::app::activity_set_busy,
             commands::window::window_minimize,
             commands::window::window_toggle_maximize,
+            commands::window::window_toggle_devtools,
             commands::window::window_close,
             commands::window::window_content_box,
             commands::window::window_is_focused,

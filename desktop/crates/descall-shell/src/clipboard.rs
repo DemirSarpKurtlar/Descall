@@ -67,6 +67,19 @@ pub enum PermissionKind {
     Other,
 }
 
+/// WebView2 context menu items the app keeps (Electron main.cjs 'context-menu'): editable
+/// fields get undo, redo, cut, copy, paste and select all (plus WebView2's emoji panel and
+/// "paste as plain text"); selected text elsewhere gets Copy only. Everything browser-like
+/// (back, reload, save as, print, share, inspect, open link in a new window) goes.
+/// `name` is ICoreWebView2ContextMenuItem::Name; separators are handled by the caller.
+pub fn context_menu_keep(name: &str, editable: bool) -> bool {
+    if editable {
+        matches!(name, "undo" | "redo" | "cut" | "copy" | "paste" | "pasteAndMatchStyle" | "selectAll" | "emoji")
+    } else {
+        name == "copy"
+    }
+}
+
 /// Grant without a prompt? (Electron: MEDIA_PERMISSIONS for the app window.)
 pub fn permission_allowed(kind: PermissionKind, url: &str, is_dev: bool) -> bool {
     match kind {
@@ -79,6 +92,20 @@ pub fn permission_allowed(kind: PermissionKind, url: &str, is_dev: bool) -> bool
 mod tests {
     //! clipboardText.selftest.mjs / clipboardImage selftest logic.
     use super::*;
+
+    #[test]
+    fn context_menu_items_like_electron() {
+        for name in ["undo", "redo", "cut", "copy", "paste", "selectAll"] {
+            assert!(context_menu_keep(name, true), "{name} in an editable field");
+        }
+        for name in ["back", "reload", "saveAs", "print", "share", "inspectElement", "openLinkInNewWindow", "webCapture"] {
+            assert!(!context_menu_keep(name, true), "{name} never");
+            assert!(!context_menu_keep(name, false), "{name} never");
+        }
+        assert!(context_menu_keep("copy", false), "selected text: Copy");
+        assert!(!context_menu_keep("paste", false), "no paste outside editable fields");
+        assert!(!context_menu_keep("selectAll", false));
+    }
 
     #[test]
     fn text_limits() {

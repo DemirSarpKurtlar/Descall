@@ -264,6 +264,10 @@
     }
     return false;
   };
+  // Selected text keeps a menu too (Electron offered Copy; webview.rs trims it to Copy).
+  const hasSelection = () => {
+    try { return Boolean(window.getSelection && String(window.getSelection() || "").trim()); } catch (_) { return false; }
+  };
   // Title bars drag through data-tauri-drag-region (Tauri's drag script). Same walk as that
   // script: a clickable element without the attribute blocks it, "deep" covers the subtree.
   const CLICKABLE = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|LABEL|SUMMARY)$/;
@@ -287,7 +291,7 @@
   window.addEventListener("contextmenu", (e) => {
     // Right-click on a title bar: the Windows window menu, as on Electron's native caption.
     if (!e.defaultPrevented && inDragRegion(e)) fire("window_system_menu");
-    if (!isEditable(e.target)) e.preventDefault();
+    if (!isEditable(e.target) && !hasSelection()) e.preventDefault();
   });
   const blockedKey = (e) => {
     const k = String(e.key || "");
@@ -301,11 +305,18 @@
   };
   window.addEventListener("keydown", (e) => {
     if (blockedKey(e)) e.preventDefault();
-    // F11 maximizes / restores the window, as Electron's windowKeys.cjs did (no fullscreen).
-    if (e.key === "F11" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+    // F11 maximizes / restores the window (Electron windowKeys.cjs): key down only, no
+    // auto-repeat, no Ctrl / Shift / Alt.
+    if ((e.key === "F11" || e.code === "F11") && !e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
     }
+    // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
+    // browser accelerator keys; the shell opens them only in a dev run or with the support
+    // opt-in file (webview::devtools_allowed), otherwise the command does nothing.
+    const devKey = (e.key === "F12" || e.code === "F12") ? !(e.ctrlKey || e.metaKey) && !e.shiftKey
+      : (e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === "KeyI" || String(e.key || "").toLowerCase() === "i");
+    if (devKey && !e.repeat && !e.altKey) fire("window_toggle_devtools");
   }, true);
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
@@ -359,9 +370,13 @@
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).
-  document.addEventListener("click", (e) => {
+  // Bubble phase on window, after React's root listener: a link the app handles itself
+  // (preventDefault, e.g. a private file chip that first fetches a fresh signed URL) is left
+  // alone, as Electron only acted on the navigation the page did not cancel. The capture
+  // listener on document ran first and opened the stale URL in the browser as well.
+  window.addEventListener("click", (e) => {
     const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-    if (!a || e.defaultPrevented) return;
+    if (!a || e.defaultPrevented || e.button > 1) return;
     let url;
     try { url = new URL(a.href, location.href); } catch (_) { return; }
     const external = url.origin !== location.origin && (/^https?:$/.test(url.protocol) || url.protocol === "mailto:");
@@ -369,5 +384,5 @@
       e.preventDefault();
       invoke("plugin:opener|open_url", { url: url.href }).catch(noop);
     }
-  }, true);
+  });
 })();

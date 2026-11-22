@@ -59,6 +59,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     let origin = url.origin();
     let script = app_window_script(h, &label, &h.renderer_token());
     let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::External(url))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .title("Descall")
         .decorations(false)
         .min_inner_size(420.0, 360.0)
@@ -66,9 +67,10 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
+        .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
-        .disable_drag_drop_handler()
         .on_new_window(|u, _| {
             if u.scheme() == "https" {
                 if let Some(h) = crate::premium::host() {

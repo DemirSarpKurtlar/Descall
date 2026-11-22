@@ -406,6 +406,10 @@ fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
 
 pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     let win = w.clone();
+    // Electron sent backgrounded:false on 'show' and 'restore' as well as 'focus'. Tauri only
+    // had Focused(true): a window restored without activation (Win+D twice, a taskbar
+    // thumbnail) kept html.app-backgrounded, every CSS animation stayed paused at frame 0
+    // and Settings > Magaza showed an empty body (its cards fade in).
     let was_minimized = std::sync::atomic::AtomicBool::new(false);
     w.on_window_event(move |e| {
         let app = win.app_handle();
@@ -443,7 +447,7 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 } else {
                     // Back from minimized (main.cjs 'restore'): the page resumes its animations
                     // even when Windows does not hand it the focus (foreground lock).
-                    if was_minimized.swap(false, std::sync::atomic::Ordering::Relaxed) {
+                    if was_minimized.swap(false, std::sync::atomic::Ordering::Relaxed) && win.is_visible().unwrap_or(false) {
                         visibility(&win, false);
                     }
                     publish_content_box(&win);

@@ -3,6 +3,19 @@
 
 use tauri::{Runtime, WebviewWindow};
 
+/// DevTools for every webview of the app (windowKeys.cjs canOpenDevTools): dev runs, or a
+/// release build with `<app data>/devtools-enabled` (support opt-in). The tauri `devtools`
+/// feature is on so the opt-in can work in release; without `.devtools(..)` a builder would then
+/// default to on, so every WebviewWindowBuilder sets it from here. Read once per run.
+pub fn devtools_allowed<R: Runtime>(app: &tauri::AppHandle<R>) -> bool {
+    use tauri::Manager;
+    static ALLOWED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ALLOWED.get_or_init(|| {
+        let dir = app.path().app_data_dir().ok();
+        descall_shell::window_keys::devtools_allowed(cfg!(debug_assertions), dir.as_deref(), |p| p.is_file())
+    })
+}
+
 /// Script fallback for a clean reload: drop Service Workers and Cache Storage, reload.
 const CLEAR_JS: &str = "(async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k);}catch(e){}location.reload();})()";
 
@@ -73,6 +86,11 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
                 };
                 if permission_allowed(k, &uri, cfg!(debug_assertions)) {
                     args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                } else if kind != COREWEBVIEW2_PERMISSION_KIND_MULTIPLE_AUTOMATIC_DOWNLOADS {
+                    // Electron's handler said no without asking (notifications, location,
+                    // clipboard read...); left at "default", WebView2 showed its own Edge
+                    // prompt ("tauri.localhost wants to show notifications") over the app.
+                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_DENY)?;
                 }
                 Ok(())
             }));
@@ -89,8 +107,9 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
 /// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
 /// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
 /// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
-/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (cut,
-/// copy, paste). The page's own menus call preventDefault, so WebView2 never asks for them.
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (undo,
+/// redo, cut, copy, paste, select all) and on selected text (Copy), as Electron's own menu.
+/// The page's own menus call preventDefault, so WebView2 never asks for them.
 /// electron-api-shim.js has the same rules on the page side.
 pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
@@ -113,7 +132,44 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
                 let target = args.ContextMenuTarget()?;
                 let mut editable = windows_core::BOOL(0);
                 target.IsEditable(&mut editable)?;
-                if !editable.as_bool() {
+                let mut selection = windows_core::BOOL(0);
+                let _ = target.HasSelection(&mut selection);
+                let editable = editable.as_bool();
+                if !editable && !selection.as_bool() {
+                    args.SetHandled(true)?;
+                    return Ok(());
+                }
+                // Electron's menu: undo / redo / cut / copy / paste / select all in fields, Copy
+                // for selected text (descall_shell::clipboard::context_menu_keep).
+                let items = args.MenuItems()?;
+                let mut count = 0u32;
+                items.Count(&mut count)?;
+                let mut last_sep = true; // no separator at the top
+                let mut i = 0u32;
+                while i < count {
+                    let item = items.GetValueAtIndex(i)?;
+                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
+                    item.Kind(&mut kind)?;
+                    let keep = if kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR {
+                        !last_sep
+                    } else {
+                        let mut name = windows_core::PWSTR::null();
+                        item.Name(&mut name)?;
+                        descall_shell::clipboard::context_menu_keep(&webview2_com::take_pwstr(name), editable)
+                    };
+                    if keep {
+                        last_sep = kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR;
+                        i += 1;
+                    } else {
+                        items.RemoveValueAtIndex(i)?;
+                        count -= 1;
+                    }
+                }
+                if count > 0 && last_sep {
+                    items.RemoveValueAtIndex(count - 1)?;
+                    count -= 1;
+                }
+                if count == 0 {
                     args.SetHandled(true)?;
                 }
                 Ok(())
@@ -125,6 +181,35 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(not(windows))]
     {
         let _ = window;
+    }
+}
+
+/// Page downloads (<a download> exports, blob: / data: files): WebView2's own download bubble
+/// (an Edge flyout over the app) is replaced by what electronAPI.downloadFile does: the file
+/// goes to Downloads under a free name (descall_shell::download) and is shown in Explorer.
+pub fn on_download<R: Runtime>(webview: tauri::Webview<R>, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    use tauri::webview::DownloadEvent;
+    use tauri::Manager;
+    match event {
+        DownloadEvent::Requested { destination, .. } => {
+            let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            if let Ok(dir) = webview.app_handle().path().download_dir() {
+                if let Ok((_, safe)) = descall_shell::download::resolve_download_path(&dir, &name) {
+                    *destination = descall_shell::download::unique_path(&dir, &safe, |p| p.exists());
+                }
+            }
+            true
+        }
+        DownloadEvent::Finished { path, success, .. } => {
+            if success {
+                if let Some(p) = path {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = webview.app_handle().opener().reveal_item_in_dir(&p);
+                }
+            }
+            true
+        }
+        _ => true,
     }
 }
 

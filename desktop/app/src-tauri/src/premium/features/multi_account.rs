@@ -101,15 +101,17 @@ fn open(h: &Host, id: &str) -> Value {
     let script = format!("{}\n{TOKEN_REDIRECT}", super::multi_window::app_window_script(h, &label, &tok));
     let title = Some(label_for(h, &acct)).filter(|l| !l.is_empty()).unwrap_or_else(|| "Descall".into());
     let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::External(url))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .title(title)
         .inner_size(1200.0, 800.0)
         .min_inner_size(900.0, 600.0)
         .decorations(false)
         .data_directory(dir(h, id).join("webview"))
         .use_https_scheme(true)
+        .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
+        .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
-        .disable_drag_drop_handler()
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .build();
     match built {

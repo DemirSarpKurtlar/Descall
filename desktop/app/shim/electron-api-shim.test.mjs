@@ -10,7 +10,7 @@
 //    the same way (including the legacy (event, info) callbacks and removeAllListeners).
 // 4. Every command the shim can call is registered in src-tauri/src/main.rs.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -268,6 +268,17 @@ for (const [path, args, cmd, expected] of CASES) {
   const composer = el("DIV", { isContentEditable: true });
   assert.equal(s.dispatch("contextmenu", ev({ target: el("SPAN", { parentElement: composer }) })).defaultPrevented, false, "contenteditable composer keeps it");
   assert.ok(s.winListeners.get("contextmenu").every((l) => !l.capture), "bubble phase: the app's own menus run first");
+  // Selected text on plain content: Electron's menu offered Copy; WebView2's is trimmed to it.
+  s.window.getSelection = () => ({ toString: () => "selected words" });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, false, "selected text keeps a (Copy) menu");
+  s.window.getSelection = () => ({ toString: () => "   " });
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "a blank selection does not");
+  delete s.window.getSelection;
+  const webviewRsMenu = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  assert.match(webviewRsMenu, /HasSelection/, "WebView2 keeps the menu for selected text");
+  assert.match(webviewRsMenu, /context_menu_keep/, "WebView2 menu trimmed to Electron's items");
+  const clipRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  assert.match(clipRs, /"undo" \| "redo" \| "cut" \| "copy" \| "paste"/, "editable fields: undo, redo, cut, copy, paste");
   const key = (k, mods = {}) => s.dispatch("keydown", ev({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })).defaultPrevented;
   for (const [k, m] of [["F5"], ["r", { ctrlKey: true }], ["R", { ctrlKey: true, shiftKey: true }], ["ArrowLeft", { altKey: true }], ["ArrowRight", { altKey: true }], ["p", { ctrlKey: true }], ["BrowserBack"], ["I", { ctrlKey: true, shiftKey: true }], ["F12"]]) {
     assert.equal(key(k, m), true, `${k} ${JSON.stringify(m || {})} blocked`);
@@ -276,11 +287,107 @@ for (const [path, args, cmd, expected] of CASES) {
     assert.equal(key(k, m), false, `${k} ${JSON.stringify(m || {})} stays with the app`);
   }
   assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
+  // F11: maximize / restore like Electron's windowKeys.cjs (never on repeat or with modifiers).
+  const toggles = () => s.invokes.filter((c) => c[0] === "window_toggle_maximize").length;
+  assert.equal(key("F11"), true, "F11 handled");
+  assert.equal(toggles(), 1, "F11 toggles maximize");
+  key("F11", { repeat: true });
+  key("F11", { shiftKey: true });
+  key("F11", { altKey: true });
+  key("F11", { ctrlKey: true });
+  assert.equal(toggles(), 1, "not on auto-repeat or with a modifier");
+  // F12 / Ctrl+Shift+I ask the shell for DevTools (it opens them only with the opt-in).
+  const devtools = () => s.invokes.filter((c) => c[0] === "window_toggle_devtools").length;
+  assert.equal(devtools(), 2, "F12 and Ctrl+Shift+I (pressed above) ask for DevTools");
+  key("F12", { repeat: true });
+  key("F12", { ctrlKey: true });
+  key("I", { ctrlKey: true, shiftKey: true, altKey: true });
+  key("i", { ctrlKey: true });
+  assert.equal(devtools(), 2, "not on repeat, with Ctrl on F12, with Alt, or without Shift");
+  const windowRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "window.rs"), "utf8");
+  assert.match(windowRs, /fn window_toggle_devtools[\s\S]*?if !crate::webview::devtools_allowed\(/, "DevTools toggle is gated by the opt-in");
+  assert.match(mainRs, /commands::window::window_toggle_devtools,/, "DevTools toggle registered");
+  const srcDir = join(here, "..", "src-tauri", "src");
+  const rsFiles = readdirSync(srcDir, { recursive: true }).map(String).filter((f) => f.endsWith(".rs"));
+  let builderFiles = 0;
+  for (const f of rsFiles) {
+    const rs = readFileSync(join(srcDir, f), "utf8");
+    if (rs.includes("WebviewWindowBuilder::new(")) builderFiles += 1;
+    const builders = rs.split("WebviewWindowBuilder::new(").length - 1;
+    const set = rs.split(".devtools(crate::webview::devtools_allowed(").length - 1;
+    assert.equal(set, builders, `${f}: every webview sets devtools from the opt-in (the tauri devtools feature defaults to on)`);
+  }
+  assert.ok(builderFiles >= 10, `window builders found (${builderFiles})`);
+  // Sign out (secure-token:clear) resets the Descall+ gate, as Electron's gate.reset().
+  const systemRs = readFileSync(join(srcDir, "commands", "system.rs"), "utf8");
+  assert.match(systemRs, /fn token_clear[\s\S]*?crate::premium::signed_out\(\);/, "token_clear resets the Descall+ gate");
   assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");
   assert.match(webviewRs, /add_ContextMenuRequested/, "WebView2 context menu handler installed");
   assert.match(mainRs, /webview::install_browser_guards\(&w\)/, "main window gets the WebView2 guards");
+}
+{
+  // External links: after the app's own handlers (bubble on window), never over a link the
+  // app cancelled (private file chip: it fetches a fresh signed URL first).
+  const s = loadShim();
+  const ev = (href, extra = {}) => ({
+    defaultPrevented: false,
+    button: 0,
+    preventDefault() { this.defaultPrevented = true; },
+    target: { closest: (sel) => (sel === "a[href]" && href ? { href } : null) },
+    ...extra,
+  });
+  const opened = () => s.invokes.filter((c) => c[0] === "plugin:opener|open_url").map((c) => c[1].url);
+  const clicks = s.winListeners.get("click") || [];
+  assert.equal(clicks.length, 1, "one link listener on window");
+  assert.equal(clicks[0].capture, false, "bubble phase: React's handlers run first");
+  assert.equal(s.dispatch("click", ev("https://example.com/a")).defaultPrevented, true, "http(s) link: default browser");
+  deq(opened(), ["https://example.com/a"]);
+  s.dispatch("click", ev("https://example.com/cancelled", { defaultPrevented: true }));
+  deq(opened(), ["https://example.com/a"], "a link the app cancelled is left alone");
+  assert.equal(s.dispatch("click", ev("https://tauri.localhost/settings")).defaultPrevented, false, "app links stay in the app");
+  s.dispatch("click", ev("mailto:a@b.c"));
+  deq(opened(), ["https://example.com/a", "mailto:a@b.c"], "mailto opens the mail app");
+  s.dispatch("click", ev("javascript:alert(1)"));
+  s.dispatch("click", ev("file:///C:/x"));
+  deq(opened(), ["https://example.com/a", "mailto:a@b.c"], "never javascript: or file:");
+
+  // HTML5 drag and drop reaches the page (files into chats, reordering): Tauri's own drop
+  // handler swallows every drop on Windows unless it is turned off per window.
+  assert.match(mainRs, /\.disable_drag_drop_handler\(\)/, "main window: HTML5 drag and drop");
+  // No WebView2 autofill dropdown under the app's fields (wry turns it on by default).
+  assert.match(mainRs, /\.general_autofill_enabled\(false\)/, "main window: no browser autofill");
+  for (const f of ["admin.rs", "premium/features/multi_account.rs", "premium/features/multi_window.rs"]) {
+    const src = readFileSync(join(here, "..", "src-tauri", "src", f), "utf8");
+    assert.match(src, /\.disable_drag_drop_handler\(\)/, `${f}: HTML5 drag and drop`);
+    assert.match(src, /\.general_autofill_enabled\(false\)/, `${f}: no browser autofill`);
+  }
+  // <a download> / blob: exports land in Downloads and show in Explorer (downloadFile's way),
+  // never in WebView2's Edge download bubble.
+  assert.match(mainRs, /\.on_download\(webview::on_download\)/, "main window: page downloads handled by the shell");
+  assert.match(readFileSync(join(here, "..", "src-tauri", "src", "admin.rs"), "utf8"), /\.on_download\(crate::webview::on_download\)/, "admin windows: exports handled by the shell");
+  const webviewRsDl = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  // Permissions Electron refused without asking are refused, not left to WebView2's prompt.
+  assert.match(webviewRsDl, /SetState\(COREWEBVIEW2_PERMISSION_STATE_DENY\)/, "no Edge permission prompts over the app");
+  assert.match(webviewRsDl, /unique_path\(/, "downloads never overwrite a file");
+  assert.match(webviewRsDl, /reveal_item_in_dir/, "the finished file is shown in Explorer");
+  // IPC: with use_https_scheme(true) Tauri's invoke fetches https://ipc.localhost/<cmd>. A CSP
+  // with only http://ipc.localhost blocked it (a securitypolicyviolation on every start) and
+  // Tauri fell back to the slower postMessage IPC (binary bodies as JSON number arrays).
+  const conf = JSON.parse(readFileSync(join(here, "..", "src-tauri", "tauri.conf.json"), "utf8"));
+  assert.match(mainRs, /\.use_https_scheme\(true\)/);
+  assert.ok(conf.app.security.csp["connect-src"].split(/\s+/).includes("https://ipc.localhost"), "app CSP allows the https IPC origin");
+  const pagesRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "pages.rs"), "utf8");
+  const overlayRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "overlay.rs"), "utf8");
+  const trayHtml = readFileSync(join(here, "..", "..", "..", "frontend", "public", "tray-menu", "tray-menu.html"), "utf8");
+  for (const [name, src] of [["shell pages (pages.rs)", pagesRs], ["Descall+ overlay", overlayRs], ["tray menu page", trayHtml]]) {
+    assert.match(src, /connect-src ipc: http:\/\/ipc\.localhost https:\/\/ipc\.localhost/, `${name}: https IPC origin in connect-src`);
+  }
+  // Descall+ portal windows (call, sidebar): links go to the browser, never a bare popup.
+  assert.match(readFileSync(join(here, "..", "src-tauri", "src", "premium", "wins.rs"), "utf8"), /\.on_navigation\(\|u\| u\.scheme\(\) == "about"\)\s*\/\/[^\n]*\n(\s*\/\/[^\n]*\n)*\s*\.on_new_window\(/, "portal windows handle new-window requests");
+  // Electron denied a plain about:blank window.open (only Descall+ portals and admin pages open).
+  assert.doesNotMatch(mainRs, /url\.as_str\(\) == "about:blank"/, "no empty about:blank windows");
 }
 
 // Admin windows: the same constants adminPreload.cjs answers, with no IPC.
