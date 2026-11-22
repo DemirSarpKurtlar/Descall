@@ -25,8 +25,10 @@
 ; Descall_SetToastClsid): IShellLinkW -> IPersistFile::Load -> IPropertyStore::SetValue
 ; (PKEY_AppUserModel_ToastActivatorCLSID, VT_CLSID) -> Commit -> IPersistFile::Save. Windows
 ; only hands a reply typed into a toast to a closed Descall through this activator; Tauri's
-; template writes the AppUserModelID but not this property, and re-creates the .lnk on every
-; install and update.
+; template writes the AppUserModelID but not this property. It creates the .lnk on a fresh
+; install only (an /UPDATE run keeps the existing one, whose stamp survives), and on a
+; migration it retargets the Electron link instead (tauri-bundler 2.10 installer.nsi
+; CreateOrUpdateStartMenuShortcut), so the property is written on every install.
 !macro DESCALL_SET_TOAST_CLSID LNK
   Push $0
   Push $1
@@ -89,10 +91,21 @@
   ; An update (the updater runs the new installer with /UPDATE, which runs this uninstaller
   ; with /UPDATE first) must keep the user's "Start with Windows" choice and the toast
   ; activator: before, every update silently turned auto-start off. Only a real uninstall
-  ; removes them.
+  ; removes them. $UpdateMode is the template's own variable (tauri-bundler 2.10 installer.nsi:
+  ; `Var UpdateMode`, set from /UPDATE in un.onInit; the template guards its own Run value and
+  ; shortcut removal the same way).
   ${If} $UpdateMode <> 1
     DeleteRegKey HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}"
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${DESCALL_AUMID}"
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "${DESCALL_AUMID}"
+    ; descall:// is registered by the app at run time (tauri-plugin-deep-link register_all),
+    ; so the template never removes it: links kept starting a deleted exe. Only our own
+    ; registration goes (another copy of Descall elsewhere keeps its own).
+    Push $0
+    ReadRegStr $0 HKCU "Software\Classes\descall\shell\open\command" ""
+    ${If} $0 == '"$INSTDIR\${MAINBINARYNAME}.exe" "%1"'
+      DeleteRegKey HKCU "Software\Classes\descall"
+    ${EndIf}
+    Pop $0
   ${EndIf}
 !macroend

@@ -334,6 +334,17 @@ mod config_tests {
             assert!(pos > guard && pos < body.find("${EndIf}").unwrap(), "unguarded: {line}");
         }
         assert!(body.contains(r#"CurrentVersion\Run" "${DESCALL_AUMID}""#), "a real uninstall still removes auto-start");
+        // descall:// (written by the app, not the template) goes with a real uninstall, and
+        // only when it still points at this install.
+        let dl = body.find(r#"DeleteRegKey HKCU "Software\Classes\descall""#).expect("deep link removed on uninstall");
+        assert!(dl > guard && body[guard..dl].contains(r#"${If} $0 == '"$INSTDIR\${MAINBINARYNAME}.exe" "%1"'"#));
+        assert_eq!(launch_value_name(), descall_shell::launch::RUN_VALUE, "hook removes the Run value the app writes");
+    }
+
+    fn launch_value_name() -> &'static str {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let at = hooks.find("!define DESCALL_AUMID \"").unwrap() + "!define DESCALL_AUMID \"".len();
+        &hooks[at..at + hooks[at..].find('"').unwrap()]
     }
 
     /// Single instance before every other plugin (Tauri requires it first so a second launch
