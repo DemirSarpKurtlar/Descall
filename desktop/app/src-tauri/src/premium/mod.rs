@@ -387,9 +387,12 @@ impl Host {
         lock(&self.hooks).boot_script.as_ref().and_then(|f| f(&self.app, label))
     }
 
-    /// The shell's single "bring Descall back" path (state::show_main): on the event loop
-    /// thread, so the focus really lands (this bus runs on its own thread), back on the
-    /// taskbar, and the page told it is in front again.
+    /// The shell's single "bring Descall back" path (state::show_main, Electron premium
+    /// ctx.showMainWindow): on the event loop thread, so the focus really lands (this bus
+    /// runs on its own thread), back on the taskbar, and the page told it is in front again
+    /// (app:visibility). A toast click, a Descall+ hotkey or tray entry after a hide to the
+    /// tray used to leave html.app-backgrounded on, so the page kept its animations paused
+    /// and held DM read receipts back.
     pub fn show_main(&self) {
         crate::state::show_main(&self.app);
     }
@@ -706,6 +709,9 @@ impl Host {
                     }
                 }
                 self.bus(Bus::App);
+                // A toast clicked while Descall was closed opens its chat once the page is up
+                // (whether or not quick_reply runs: the "toast" style is another feature).
+                features::quick_reply::flush_clicks();
                 ok(json!({}))
             }),
             _ => return None,
@@ -879,6 +885,8 @@ pub fn set_locale(locale: &str) {
     if let (Some(h), Some(l)) = (host(), logic::i18n::match_locale(locale)) {
         *lock(&h.locale) = Some(l.to_string());
         h.refresh_tray();
+        // Text drawn from the language outside the tray (taskbar thumbnail tooltips).
+        h.bus(Bus::App);
     }
 }
 

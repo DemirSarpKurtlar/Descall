@@ -27,7 +27,8 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         None => et(app, "tray.quit", &[]),
     };
     let quit = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &autostart, &PredefinedMenuItem::separator(app)?])?;
+    // Same order as main.cjs buildMenu: Open, Descall+ items, Start with Windows, Quit.
+    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?])?;
     // Descall+ items of the running features (they end with their own separator). The
     // premium module is written for the Wry runtime, the only one this app runs on.
     let any_app: &dyn Any = app;
@@ -37,6 +38,8 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             log::warn!("[tray] Descall+ items: {e}");
         }
     }
+    menu.append(&autostart)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&quit)?;
     Ok(menu)
 }

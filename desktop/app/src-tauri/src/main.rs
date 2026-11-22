@@ -79,6 +79,8 @@ fn main() {
     state::mark_main_thread();
     logging::init();
     errors::init_early();
+    // One taskbar button however Descall was started (before any window exists).
+    platform::set_app_user_model_id();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
@@ -200,6 +202,8 @@ fn main() {
                         if !state::shell(&load_app).boot.lock().unwrap().mounted && launch.action == descall_shell::launch::StartAction::Show && !w.is_visible().unwrap_or(false) {
                             state::show_main(&load_app);
                         }
+                        // Loaded in the tray / minimized: the page learns it is out of sight.
+                        boot::tell_page_if_away(&load_app);
                     }
                 })
                 .build()?;

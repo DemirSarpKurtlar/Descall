@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
+import { pageHiddenFromUser } from "./lib/appVisibility.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
 import { elapsedSeconds } from "./lib/callClock";
 import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
@@ -755,10 +756,22 @@ export default function App() {
   // Polish messaging-03: a DM that got messages while the window was hidden is
   // marked read ("Görüldü") only once the window is visible again.
   const pendingDmReadRef = useRef(null);
+  // The same for an open group: its unread count goes once the window is seen again.
+  const pendingGroupReadRef = useRef(null);
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
     const flush = () => {
-      if (document.visibilityState !== "visible") return;
+      if (pageHiddenFromUser()) return;
+      const groupId = pendingGroupReadRef.current;
+      pendingGroupReadRef.current = null;
+      if (groupId && activeGroupRef.current?.id === groupId) {
+        setGroupUnread((prev) => {
+          if (!prev[groupId]) return prev;
+          const n = { ...prev };
+          delete n[groupId];
+          return n;
+        });
+      }
       const peerId = pendingDmReadRef.current;
       if (!peerId) return;
       pendingDmReadRef.current = null;
@@ -771,11 +784,14 @@ export default function App() {
       });
       socketRef.current?.emit("dm:mark_read", { withUserId: peerId });
     };
+    // Desktop shells: back from the tray / minimized shows up as focus or the first input
+    // (html.app-backgrounded is cleared by then, lib/appVisibility.js).
+    const proof = ["focus", "pointerdown", "keydown"];
     document.addEventListener("visibilitychange", flush);
-    window.addEventListener("focus", flush);
+    for (const ev of proof) window.addEventListener(ev, flush, { passive: true });
     return () => {
       document.removeEventListener("visibilitychange", flush);
-      window.removeEventListener("focus", flush);
+      for (const ev of proof) window.removeEventListener(ev, flush);
     };
   }, []);
   const activeGroupRef = useRef(null);
@@ -2407,7 +2423,7 @@ export default function App() {
               avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
-        } else if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        } else if (pageHiddenFromUser()) {
           // Open chat but the window is minimised / in the tray / a background tab:
           // count it as unread and keep "Görüldü" back until the window is seen again.
           pendingDmReadRef.current = convWith;
@@ -2628,7 +2644,12 @@ export default function App() {
           avatarUrl: normalized.from?.avatarUrl || null,
         });
       } else if (!isFromMe) {
-        // Open group but window hidden / in tray / unfocused: still notify.
+        // Open group but window hidden / in tray / unfocused: still notify. Out of sight
+        // (minimized, in the tray, a hidden tab) it also counts as unread until seen, like a DM.
+        if (pageHiddenFromUser()) {
+          pendingGroupReadRef.current = groupId;
+          setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
+        }
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),
