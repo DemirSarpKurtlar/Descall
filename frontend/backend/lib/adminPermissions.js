@@ -64,6 +64,8 @@ const RULES = [
   [/^\/step-up$/, null],
   // Admin Token tab and the OpenAPI document: owner only, checked by routes/adminTokens.js.
   [/^\/(tokens|openapi\.json)(\/|$)/, null],
+  // Sunucu Ağı (hybrid server): owner only, checked by routes/adminNodes.js.
+  [/^\/nodes(\/|$)/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
   [/^\/staff(\/|$)/, "staff"],
   [/^\/agent(\/|$)/, "agent"],

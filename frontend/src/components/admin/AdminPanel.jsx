@@ -56,8 +56,10 @@ import AdminGames from "./games/AdminGames.jsx";
 import AdminAudit from "./audit/AdminAudit.jsx";
 // Admin Token (owner only, Draft B "Liste ve çalışma alanı"): tokens/AdminTokens.jsx
 import AdminTokens from "./tokens/AdminTokens.jsx";
+// Sunucu Ağı (owner only, Draft A "Kontrol merkezi"): hybrid server, nodes/AdminNodes.jsx
+import AdminNodes from "./nodes/AdminNodes.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
-import { sectionOfTab, withOwnerTabs } from "./adminNav.js";
+import { initialTabFromQuery, sectionOfTab, withOwnerTabs } from "./adminNav.js";
 import { KeyRound } from "../ui/Icon.jsx";
 import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
@@ -128,6 +130,8 @@ const TABS = [
   { id: "premiumAudit", label: "premiumAdmin.navAudit", icon: ScrollText },
   { id: "premiumPlans", label: "premiumAdmin.navPlans", icon: SlidersHorizontal },
   { id: "system", label: "admin.system", icon: Settings },
+  // Sunucu Ağı (owner pick Draft A "Kontrol merkezi"): owner only, Render + the owner's PC.
+  { id: "nodes", label: "anodes.nav", icon: Network },
   { id: "security", label: "admin.security", icon: Lock },
   // Admin Token (owner pick Draft B "Liste ve çalışma alanı"): owner only, bot tokens + MCP.
   { id: "adminToken", label: "atok.nav", icon: KeyRound },
@@ -188,7 +192,9 @@ function useAdminLayout() {
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, standalone = false }) {
   const { t, locale } = useLocale();
   // "El bağlantısını kopyala" (Oyunlar / Kredi) links open the panel on that page: #games/<user>/<hand>.
-  const [tab, setTab] = useState(() => (typeof window !== "undefined" && /^#games\//.test(window.location.hash) ? "casino" : typeof window !== "undefined" && /^#audit\//.test(window.location.hash) ? "audit" : "overview"));
+  // ?tab=<id> opens a page directly (the Descall Node tray app opens ?tab=nodes); a page this
+  // viewer may not open falls back to Genel Bakış below.
+  const [tab, setTab] = useState(() => (typeof window !== "undefined" && /^#games\//.test(window.location.hash) ? "casino" : typeof window !== "undefined" && /^#audit\//.test(window.location.hash) ? "audit" : initialTabFromQuery(typeof window !== "undefined" ? window.location.search : "") || "overview"));
   const [perm] = useAdminPermissions(socket);
   const tabs = useMemo(() => visibleTabs(perm.sections), [perm.sections]);
   const can = useCallback((id) => Array.isArray(perm.sections) && perm.sections.includes(id), [perm.sections]);
@@ -973,6 +979,17 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             socket={socket}
             onGoto={(id, opts = {}) => {
               if (id === "moderation" && opts.sub) setModerationTab(opts.sub);
+              selectTab(tabs.some((x) => x.id === id) ? id : "overview");
+            }}
+          />
+        )}
+
+        {/* Sunucu Ağı (owner pick Draft A "Kontrol merkezi"): nodes/AdminNodes.jsx */}
+        {tab === "nodes" && perm.owner && (
+          <AdminNodes
+            socket={socket}
+            onGoto={(id, opts = {}) => {
+              if (id === "audit") setAuditQuery(opts.q ? { q: opts.q, at: Date.now() } : null);
               selectTab(tabs.some((x) => x.id === id) ? id : "overview");
             }}
           />

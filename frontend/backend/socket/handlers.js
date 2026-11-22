@@ -739,6 +739,8 @@ function registerSocketHandlers(io) {
     touchLastSeen(myId).catch(() => {});
 
     setupAdminSocket(io, socket);
+    // Sunucu Ağı live push (admin:nodes:watch, owner room only): lib/nodeKeys/monitor.js.
+    require("../lib/nodeKeys/monitor").setupSocket(io, socket);
     // Canlı popup: receipts from the recipient + missed popups shown on connect.
     require("./popupReceipts").registerPopupReceipts(io, socket);
 

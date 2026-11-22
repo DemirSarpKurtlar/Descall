@@ -893,6 +893,13 @@ async function runBoot() {
     console.warn("[boot] premium scheduler failed:", e.message);
   }
   try {
+    // Sunucu Ağı (hybrid server): leader-only phone alerts (PC down, Key Value full, Render
+    // 90 %) and the saved-cost ledger; unref'd 30 s tick, off in tests (lib/nodeKeys/monitor.js).
+    require("./lib/nodeKeys/monitor").start(io);
+  } catch (e) {
+    console.warn("[boot] node monitor failed:", e.message);
+  }
+  try {
     // DesCoin anti-bot (Faz 0): monitor-only risk scoring; never changes balances or earning.
     if (process.env.NODE_ENV !== "test") require("./lib/descoinAntibot").startAntibotScheduler();
   } catch (e) {

@@ -308,7 +308,7 @@ assert.match(panel, /tab === "adminToken" && perm\.owner && \(/, "rendered for t
 assert.match(panel, /withOwnerTabs\(Array\.isArray\(d\?\.sections\) \? d\.sections : \["overview"\], Boolean\(d\?\.owner\)\)/, "owner-only tab added from /me/permissions");
 const sys = nav.ADMIN_NAV_GROUPS.find(([k]) => k === "system")[1];
 assert.equal(sys.indexOf("adminToken"), sys.indexOf("security") + 1, "under Güvenlik in the menu");
-assert.deepEqual(nav.withOwnerTabs(["overview", "audit"], true), ["overview", "audit", "adminToken"]);
+assert.deepEqual(nav.withOwnerTabs(["overview", "audit"], true), ["overview", "audit", "adminToken", "nodes"], "the owner-only pages (Admin Token, Sunucu Ağı)");
 assert.deepEqual(nav.withOwnerTabs(["overview", "adminToken"], false), ["overview"], "never for another admin, even if listed");
 assert.deepEqual(nav.withOwnerTabs(null, false), ["overview"]);
 assert.match(panel, /initialQuery=\{auditQuery\?\.q \? \{ q: auditQuery\.q \} : null\}/, "İşlem kaydında gör opens İşlem kaydı filtered");

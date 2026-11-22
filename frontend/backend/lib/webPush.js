@@ -487,8 +487,31 @@ async function sendFriendVoicePush(userIds, payload = {}) {
   });
 }
 
+/** Sunucu Ağı alert kinds -> push.* body key (lib/nodeKeys/monitor.js). */
+const NODE_ALERT_BODY = Object.freeze({ pcDown: "push.nodesPcDown", kvFull: "push.nodesKvFull", kvDown: "push.nodesKvDown", render90: "push.nodesRender90", test: "push.nodesTest" });
+
+/**
+ * Sunucu Ağı (hybrid server) alert to the owner's phones: PC dropped, Key Value full or
+ * unreachable, Render memory at 90 %, or a test. Web push, Android and iOS; kind and a
+ * percent only, the tap opens the admin panel.
+ */
+async function sendAdminNodesPush(userIds, alert = {}) {
+  const kind = alert.kind === "kvFull" && alert.reason === "down" ? "kvDown" : String(alert.kind || "");
+  const bodyKey = NODE_ALERT_BODY[kind];
+  if (!bodyKey) return;
+  const pct = Math.max(0, Math.min(100, Math.round(Number(alert.vars?.pct) || 0)));
+  const web = {
+    type: "admin-nodes",
+    tag: `admin-nodes-${kind}`,
+    deepLink: "/admin/panel",
+    i18n: { title: ref("push.nodesTitle"), body: ref(bodyKey, { pct }) },
+  };
+  await deliverPush(userIds, web, { type: "admin-nodes", kind, pct });
+}
+
 module.exports = {
   withoutDndRecipients,
+  sendAdminNodesPush,
   withPreviewSplit,
   sendCallRingEndedPush,
   sendWebPushToUsers,
