@@ -806,8 +806,13 @@ pub fn init() -> TauriPlugin<Wry> {
                     _ => {}
                 },
                 RunEvent::ExitRequested { .. } => {
-                    h.bus(Bus::BeforeQuit);
-                    h.flush();
+                    // Right here on the event loop thread, while every window still exists, like
+                    // Electron's synchronous before-quit. Posted to the bus thread, the session
+                    // snapshot (session_restore) raced the windows being torn down: their bounds
+                    // read failed and the pop-outs were saved as none, or the process was gone
+                    // before the bus got to it. Window getters on this thread are answered
+                    // directly (tauri-runtime-wry send_user_message), so this cannot block.
+                    h.run_bus(Bus::BeforeQuit);
                 }
                 RunEvent::Exit => h.flush(),
                 _ => {}
