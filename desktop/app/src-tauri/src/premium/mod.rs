@@ -881,3 +881,14 @@ pub fn is_aux_window(label: &str) -> bool {
 pub fn account_token(label: &str, token: Option<&str>) -> bool {
     host().is_some_and(|h| features::multi_account::store_token(h, label, token))
 }
+
+/// token_clear from the owner's window (sign out): entitlements and the renderer's token go,
+/// so Descall+ features stop at once, as Electron's secure-token:clear called gate.reset().
+pub fn signed_out() {
+    if let Some(h) = host() {
+        lock(&h.renderer_token).clear();
+        if lock(&h.gate).reset() {
+            h.bus(Bus::Reconcile);
+        }
+    }
+}

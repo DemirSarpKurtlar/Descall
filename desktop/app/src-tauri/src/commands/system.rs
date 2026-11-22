@@ -30,7 +30,11 @@ pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> b
     if crate::premium::account_token(window.label(), None) {
         return true;
     }
-    trusted(&window) && crate::secure_store::set(&app, crate::secure_store::TOKEN, "")
+    if !trusted(&window) {
+        return false;
+    }
+    crate::premium::signed_out();
+    crate::secure_store::set(&app, crate::secure_store::TOKEN, "")
 }
 
 /// clipboard:read-image: PNG bytes (raw IPC body, no base64), empty when there is none.

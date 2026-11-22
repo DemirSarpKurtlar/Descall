@@ -314,6 +314,9 @@ for (const [path, args, cmd, expected] of CASES) {
     assert.equal(set, builders, `${f}: every webview sets devtools from the opt-in (the tauri devtools feature defaults to on)`);
   }
   assert.ok(builderFiles >= 10, `window builders found (${builderFiles})`);
+  // Sign out (secure-token:clear) resets the Descall+ gate, as Electron's gate.reset().
+  const systemRs = readFileSync(join(srcDir, "commands", "system.rs"), "utf8");
+  assert.match(systemRs, /fn token_clear[\s\S]*?crate::premium::signed_out\(\);/, "token_clear resets the Descall+ gate");
   assert.ok(s.ctx.document.documentElement.classList._s.has("tauri-app"), "html.tauri-app marks the Tauri shell");
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");
