@@ -74,6 +74,8 @@ const SHELL_FILES = {
   "/notif.html": ["text/html; charset=utf-8", () => pageHtml("notif.js")],
   "/runtime.js": ["text/javascript; charset=utf-8", runtimeJs],
   "/notif.js": ["text/javascript; charset=utf-8", () => read("desktop/app/shim/shell-notif.js")],
+  "/overlay.html": ["text/html; charset=utf-8", () => pageHtml("overlay.js")],
+  "/overlay.js": ["text/javascript; charset=utf-8", () => read("desktop/app/shim/shell-overlay.js")],
 };
 
 // ---- fake Tauri bridge (init script, runs before any page script) --------------------------------
@@ -248,6 +250,68 @@ await step("capsule: every locale renders (shell language)", async () => {
     const { page, context, errors } = await capsule({ locale, title: "x", body: "y", data: { type: "call", from: "Ada" }, type: "call", duration: 0 });
     const label = await page.getAttribute("[data-act=accept]", "aria-label");
     assert.ok(label && label.length > 1, `${locale}: accept label`);
+    assert.deepEqual(errors, [], locale);
+    await context.close();
+  }
+});
+
+// ---- in-call mini card (overlay-<n>, commands/overlay.rs) ---------------------------------------------
+// Round 2: the card the shell shows during a call, outside the app. Size as overlay.rs builds it
+// (WIDTH 308, HEIGHT 136).
+async function miniCard(locale = "tr") {
+  const init = [`window.__DESCALL_OVERLAY__ = ${JSON.stringify({ locale })};`];
+  const p = await newPage({ width: 308, height: 136, init, label: "overlay-3" });
+  await p.page.goto(`${SHELL_ORIGIN}/overlay.html`);
+  await p.page.waitForSelector("#card");
+  return p;
+}
+// Payload as overlay.rs pushes it (merge() of useElectronOverlay's overlayShow payload).
+const ovState = (over = {}) => ({ title: "Ayşe", muted: false, deafened: false, connected: true, pending: false, kind: "dm", since: Date.now() - 65000, lang: "tr", avatarUrl: "", brandRgb: "", ...over });
+
+await step("mini card: overlayAPI bridge, state push renders title and call time", async () => {
+  const { page, context, errors } = await miniCard();
+  // Same members as frontend/electron/overlayPreload.cjs.
+  const pre = read("frontend/electron/overlayPreload.cjs");
+  const keys = [...pre.matchAll(/^\s{2,4}(\w+):\s*(?:\(|function)/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.overlayAPI).sort()), keys, "overlayAPI keys = overlayPreload.cjs");
+  await page.evaluate((st) => window.__overlayUpdate(st), ovState());
+  await page.waitForTimeout(60);
+  assert.equal(await page.textContent("#title"), "Ayşe");
+  assert.match(await page.textContent("#status"), /1:0\d/, "call time from since");
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, "mini-card.png") });
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+await step("mini card: mute / deafen / leave reach the shell (overlay_action), buttons outside the drag row", async () => {
+  const { page, context, errors } = await miniCard();
+  await page.evaluate((st) => window.__overlayUpdate(st), ovState());
+  // WebView2 turns app-region: drag into a caption (HTCAPTION) that swallows clicks (round 1
+  // bug class): no button may sit inside a drag region.
+  const inDrag = await page.evaluate(() => [...document.querySelectorAll("button")].filter((b) => {
+    for (let el = b; el; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      const r = cs.getPropertyValue("app-region") || cs.getPropertyValue("-webkit-app-region");
+      if (r === "drag") return true;
+      if (r === "no-drag") return false;
+    }
+    return false;
+  }).map((b) => b.id));
+  assert.deepEqual(inDrag, [], "buttons inside a drag region");
+  for (const [id, act] of [["#muteBtn", "mute"], ["#deafenBtn", "deafen"], ["#leaveBtn", "leave"]]) {
+    await page.click(id);
+    await waitCall(page, "overlay_action", (a) => a.action === act);
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+await step("mini card: every locale labels its buttons (shell language)", async () => {
+  for (const locale of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+    const { page, context, errors } = await miniCard(locale);
+    await page.evaluate((st) => window.__overlayUpdate(st), ovState({ lang: "en" }));
+    const labels = await page.evaluate(() => ["muteBtn", "deafenBtn", "leaveBtn"].map((id) => document.getElementById(id).getAttribute("aria-label") || document.getElementById(id).title || ""));
+    assert.ok(labels.every((l) => l.length > 1), `${locale}: ${JSON.stringify(labels)}`);
     assert.deepEqual(errors, [], locale);
     await context.close();
   }
