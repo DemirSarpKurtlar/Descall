@@ -68,16 +68,39 @@ pub enum PermissionKind {
 }
 
 /// WebView2 context menu items the app keeps (Electron main.cjs 'context-menu'): editable
-/// fields get undo, redo, cut, copy, paste and select all (plus WebView2's emoji panel and
-/// "paste as plain text"); selected text elsewhere gets Copy only. Everything browser-like
-/// (back, reload, save as, print, share, inspect, open link in a new window) goes.
-/// `name` is ICoreWebView2ContextMenuItem::Name; separators are handled by the caller.
+/// fields get undo, redo, cut, copy, paste and select all; selected text elsewhere gets Copy
+/// only. Everything else WebView2 adds (emoji, paste as plain text, back, reload, save as,
+/// print, share, web capture, inspect, open link in a new window) goes.
+/// `name` is ICoreWebView2ContextMenuItem::Name; separators: [`electron_menu_items`].
 pub fn context_menu_keep(name: &str, editable: bool) -> bool {
     if editable {
-        matches!(name, "undo" | "redo" | "cut" | "copy" | "paste" | "pasteAndMatchStyle" | "selectAll" | "emoji")
+        matches!(name, "undo" | "redo" | "cut" | "copy" | "paste" | "selectAll")
     } else {
         name == "copy"
     }
+}
+
+/// Which WebView2 menu items `(name, is_separator)` stay so the menu matches Electron's
+/// ([`context_menu_keep`]; outside a field only while text is selected). Separators survive
+/// only between two kept items. All false = show no menu at all.
+pub fn electron_menu_items(editable: bool, has_selection: bool, items: &[(String, bool)]) -> Vec<bool> {
+    let wanted = |name: &str| (editable || has_selection) && context_menu_keep(name, editable);
+    let mut keep: Vec<bool> = items.iter().map(|(name, sep)| !*sep && wanted(name.as_str())).collect();
+    let mut seen_item = false;
+    let mut pending: Option<usize> = None;
+    for (i, (_, sep)) in items.iter().enumerate() {
+        if *sep {
+            if seen_item && pending.is_none() {
+                pending = Some(i);
+            }
+        } else if keep[i] {
+            if let Some(p) = pending.take() {
+                keep[p] = true;
+            }
+            seen_item = true;
+        }
+    }
+    keep
 }
 
 /// Grant without a prompt? (Electron: MEDIA_PERMISSIONS for the app window.)
@@ -107,6 +130,36 @@ pub fn permission_decision(kind: PermissionKind, url: &str, is_dev: bool) -> Opt
 mod tests {
     //! clipboardText.selftest.mjs / clipboardImage selftest logic.
     use super::*;
+
+    fn menu(spec: &[&str]) -> Vec<(String, bool)> {
+        spec.iter().map(|s| if *s == "-" { (String::new(), true) } else { (s.to_string(), false) }).collect()
+    }
+    fn kept(spec: &[&str], keep: &[bool]) -> Vec<String> {
+        spec.iter().zip(keep).filter(|(_, k)| **k).map(|(s, _)| s.to_string()).collect()
+    }
+
+    // Moved from app/src-tauri/src/webview.rs (T9): one menu rule for the shell.
+    #[test]
+    fn editable_field_gets_electrons_edit_menu() {
+        let spec = ["emoji", "-", "undo", "redo", "-", "cut", "copy", "paste", "pasteAndMatchStyle", "-", "selectAll", "-", "other", "inspectElement"];
+        let keep = electron_menu_items(true, false, &menu(&spec));
+        assert_eq!(kept(&spec, &keep), ["undo", "redo", "-", "cut", "copy", "paste", "-", "selectAll"]);
+    }
+
+    #[test]
+    fn selected_text_gets_copy_only() {
+        let spec = ["copy", "-", "share", "webCapture", "-", "inspectElement"];
+        assert_eq!(kept(&spec, &electron_menu_items(false, true, &menu(&spec))), ["copy"]);
+    }
+
+    #[test]
+    fn page_without_selection_gets_no_menu() {
+        let spec = ["back", "forward", "reload", "-", "saveAs", "print", "-", "inspectElement"];
+        assert!(!electron_menu_items(false, false, &menu(&spec)).iter().any(|k| *k));
+        // A link or image without a selection: nothing either (the page's own menus handle those).
+        let link = ["openLinkInNewWindow", "copyLinkLocation", "-", "copy"];
+        assert!(!electron_menu_items(false, false, &menu(&link)).iter().any(|k| *k));
+    }
 
     #[test]
     fn context_menu_items_like_electron() {

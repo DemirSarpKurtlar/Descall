@@ -113,10 +113,12 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
 /// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
 /// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
 /// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
-/// Ctrl+C/V/X/A/Z stay with the page); the default menu stays only on editable fields (undo,
-/// redo, cut, copy, paste, select all) and on selected text (Copy), as Electron's own menu.
-/// The page's own menus call preventDefault, so WebView2 never asks for them.
-/// electron-api-shim.js has the same rules on the page side.
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu is trimmed to Electron's
+/// (descall_shell::clipboard::electron_menu_items: edit items on a field, Copy on selected
+/// text, else none). The page's own menus call preventDefault, so WebView2 never asks for them.
+/// Password saving goes off here; autofill pop-ups are off through the builders
+/// (general_autofill_enabled(false), Electron never showed either). electron-api-shim.js has
+/// the same rules on the page side.
 pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
     {
@@ -127,6 +129,11 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
             if let Ok(settings) = core.Settings() {
                 if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
                     let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
+                }
+                // Autofill is off through general_autofill_enabled(false) on every app window
+                // builder; WebView2's password manager has no builder switch.
+                if let Ok(s4) = settings.cast::<ICoreWebView2Settings4>() {
+                    let _ = s4.SetIsPasswordAutosaveEnabled(false);
                 }
                 if let Ok(s6) = settings.cast::<ICoreWebView2Settings6>() {
                     let _ = s6.SetIsSwipeNavigationEnabled(false);
@@ -140,43 +147,27 @@ pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
                 target.IsEditable(&mut editable)?;
                 let mut selection = windows_core::BOOL(0);
                 let _ = target.HasSelection(&mut selection);
-                let editable = editable.as_bool();
-                if !editable && !selection.as_bool() {
+                let menu = args.MenuItems()?;
+                let mut count = 0u32;
+                menu.Count(&mut count)?;
+                let mut items = Vec::with_capacity(count as usize);
+                for i in 0..count {
+                    let item = menu.GetValueAtIndex(i)?;
+                    let mut name = windows_core::PWSTR::null();
+                    item.Name(&mut name)?;
+                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
+                    item.Kind(&mut kind)?;
+                    items.push((webview2_com::take_pwstr(name), kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR));
+                }
+                let keep = descall_shell::clipboard::electron_menu_items(editable.as_bool(), selection.as_bool(), &items);
+                if !keep.iter().any(|k| *k) {
                     args.SetHandled(true)?;
                     return Ok(());
                 }
-                // Electron's menu: undo / redo / cut / copy / paste / select all in fields, Copy
-                // for selected text (descall_shell::clipboard::context_menu_keep).
-                let items = args.MenuItems()?;
-                let mut count = 0u32;
-                items.Count(&mut count)?;
-                let mut last_sep = true; // no separator at the top
-                let mut i = 0u32;
-                while i < count {
-                    let item = items.GetValueAtIndex(i)?;
-                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
-                    item.Kind(&mut kind)?;
-                    let keep = if kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR {
-                        !last_sep
-                    } else {
-                        let mut name = windows_core::PWSTR::null();
-                        item.Name(&mut name)?;
-                        descall_shell::clipboard::context_menu_keep(&webview2_com::take_pwstr(name), editable)
-                    };
-                    if keep {
-                        last_sep = kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR;
-                        i += 1;
-                    } else {
-                        items.RemoveValueAtIndex(i)?;
-                        count -= 1;
+                for i in (0..count).rev() {
+                    if !keep[i as usize] {
+                        menu.RemoveValueAtIndex(i)?;
                     }
-                }
-                if count > 0 && last_sep {
-                    items.RemoveValueAtIndex(count - 1)?;
-                    count -= 1;
-                }
-                if count == 0 {
-                    args.SetHandled(true)?;
                 }
                 Ok(())
             }));

@@ -419,10 +419,12 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, false, "selected text keeps a (Copy) menu");
   s.window.getSelection = () => ({ toString: () => "   " });
   assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "a blank selection does not");
+  s.window.getSelection = () => { throw new Error("detached"); };
+  assert.equal(s.dispatch("contextmenu", ev({ target: el("DIV") })).defaultPrevented, true, "no selection API: no menu");
   delete s.window.getSelection;
   const webviewRsMenu = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRsMenu, /HasSelection/, "WebView2 keeps the menu for selected text");
-  assert.match(webviewRsMenu, /context_menu_keep/, "WebView2 menu trimmed to Electron's items");
+  assert.match(webviewRsMenu, /descall_shell::clipboard::electron_menu_items\(/, "WebView2 menu trimmed to Electron's items");
   const clipRs = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
   assert.match(clipRs, /"undo" \| "redo" \| "cut" \| "copy" \| "paste"/, "editable fields: undo, redo, cut, copy, paste");
   const key = (k, mods = {}) => s.dispatch("keydown", ev({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })).defaultPrevented;
@@ -473,6 +475,16 @@ for (const [path, args, cmd, expected] of CASES) {
   const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
   assert.match(webviewRs, /SetAreBrowserAcceleratorKeysEnabled\(false\)/, "WebView2 browser accelerator keys off");
   assert.match(webviewRs, /add_ContextMenuRequested/, "WebView2 context menu handler installed");
+  // Electron's native menu, not WebView2's (Emoji, Share, Web capture, Inspect...), and no
+  // autofill pop-ups under the login / search fields (Electron never showed any).
+  // One rule (descall_shell::clipboard, Rust-tested): context_menu_keep + electron_menu_items.
+  const clipRsMenu = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  assert.match(clipRsMenu, /matches!\(name, "undo" \| "redo" \| "cut" \| "copy" \| "paste" \| "selectAll"\)/, "Electron's edit menu");
+  assert.match(webviewRs, /electron_menu_items\(editable\.as_bool\(\), selection\.as_bool\(\), &items\)/, "menu trimmed per target");
+  assert.match(webviewRs, /menu\.RemoveValueAtIndex\(i\)\?/, "the extra WebView2 items are removed");
+  assert.match(webviewRs, /SetIsPasswordAutosaveEnabled\(false\)/, "WebView2 password saving off");
+  const adminRs = readFileSync(join(here, "..", "src-tauri", "src", "admin.rs"), "utf8");
+  assert.match(adminRs, /crate::webview::install_browser_guards\(&win\)/, "admin windows get the same WebView2 guards");
   assert.match(mainRs, /webview::install_browser_guards\(&w\)/, "main window gets the WebView2 guards");
 }
 {
@@ -1093,6 +1105,33 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   assert.match(notifyRs, /crate::tray_menu::suppress_notification\(&app, &payload\.options\)/, "the snooze gates desktop cards");
   const trayRs = readFileSync(join(src, "src", "tray.rs"), "utf8");
   assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
+}
+{
+  // Every window: WebView2 shares one browser process per data folder and refuses a second
+  // environment with other arguments, so each builder passes BROWSER_ARGS (the Descall+ portal
+  // windows reuse the opener's environment through window_features). Windows that show the app
+  // or a drop zone disable Tauri's drop handler, which on Windows swallowed every HTML5 drop
+  // (files onto a chat, profile picker, admin sortable lists, quick drop).
+  const rs = (p) => readFileSync(join(here, "..", "src-tauri", "src", ...p.split("/")), "utf8");
+  const builders = ["main.rs", "admin.rs", "tray_menu.rs", "commands/overlay.rs", "commands/notify.rs", "premium/overlay.rs", "premium/features/multi_window.rs", "premium/features/multi_account.rs", "premium/features/quick_launcher.rs", "premium/wins.rs"];
+  for (const file of builders) {
+    const text = rs(file);
+    const chains = text.split("WebviewWindowBuilder::new(").slice(1).map((c) => c.slice(0, c.indexOf(".build()")));
+    assert.ok(chains.length, `${file} builds a window`);
+    for (const chain of chains) {
+      if (/\.window_features\(/.test(chain)) continue;
+      assert.match(chain, /\.additional_browser_args\((crate::)?BROWSER_ARGS\)/, `${file}: window without the shared WebView2 browser arguments`);
+    }
+  }
+  for (const file of ["main.rs", "admin.rs", "premium/overlay.rs", "premium/features/multi_window.rs", "premium/features/multi_account.rs"]) {
+    assert.match(rs(file), /\.disable_drag_drop_handler\(\)/, `${file}: HTML5 drag and drop reaches the page`);
+  }
+  // HUD / widget / quick drop pages: a CSS drag region would be a WebView2 caption over their
+  // close button and target picker; premium-hud-shim.js drags them instead.
+  const hud = rs("premium/hud/hud.html");
+  assert.doesNotMatch(hud, /app-region\s*:\s*drag/, "no CSS drag region on the HUD pages");
+  const hudShim = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  assert.match(hudShim, /closest\("\.drag"\)[\s\S]{0,80}closest\("\.nodrag, select, button, input"\)[\s\S]{0,200}startDragging\(\)/, "the HUD shim drags .drag except its controls");
 }
 
 // Page warnings / errors to main.log (app_log), like Electron's console-message logging.

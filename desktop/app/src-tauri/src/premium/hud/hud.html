@@ -1,4 +1,4 @@
-<!-- Generated from frontend/electron/premium/hudHtml.cjs (same markup and script); the shell fills in data-kind. -->
+<!-- Generated from frontend/electron/premium/hudHtml.cjs (same markup and script, except .drag: no CSS drag region); the shell fills in data-kind. -->
 <!doctype html><html><head><meta charset="utf-8"><style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:transparent;overflow:hidden;width:100%;height:100%;
@@ -8,7 +8,9 @@ html,body{background:transparent;overflow:hidden;width:100%;height:100%;
  background:linear-gradient(180deg,rgba(var(--brand,88,101,242),.16),rgba(var(--brand,88,101,242),.04)) ,rgba(16,18,26,.84);
  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 20px rgba(0,0,0,.35)}
 .head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;letter-spacing:.02em;color:rgba(242,244,248,.75);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drag{-webkit-app-region:drag;cursor:move}
+/* Tauri: no CSS drag region (WebView2 makes it a caption that swallows clicks on the close
+   button and target picker inside it); premium-hud-shim.js drags .drag on mousedown. */
+.drag{cursor:move}
 .nodrag{-webkit-app-region:no-drag}
 .row{display:flex;align-items:center;gap:8px;padding:4px 0;min-width:0}
 .av{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:#2b2f3d center/cover no-repeat;display:grid;place-items:center;font-weight:700;font-size:11px;color:#cfd3dc;transition:box-shadow .12s}
