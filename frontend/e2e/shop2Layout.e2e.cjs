@@ -332,6 +332,12 @@ async function run(browser, base, boot0, r, problems) {
         await sleep(1200);
         const c2 = await chip();
         check(c2.max - c2.x < 2, `picking the last category brings it into view (${Math.round(c2.x)} / ${Math.round(c2.max)})`);
+        const picked = await page.evaluate(() => { const b = [...document.querySelectorAll('.shop-chip-track .shop-category-tab')]; return b[b.length - 1].getAttribute('aria-selected'); });
+        check(picked === 'true', `the first tap after a drag picks the category (aria-selected ${picked})`);
+        if (phone) {
+          const arrows = await page.evaluate(() => [...document.querySelectorAll('.shop-chip-arrow')].filter((a) => a.getBoundingClientRect().width > 0).length);
+          check(arrows === 0, `no chip arrows cover the chips on a touch screen (${arrows})`);
+        }
       } else {
         log(`${r.name}: chips fit (${c0.max}px)`);
       }

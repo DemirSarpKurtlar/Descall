@@ -162,6 +162,11 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
       viewport.classList.remove("is-dragging");
       if (!dragging) return;
       dragging = false;
+      // Touch pans usually end with no click at all: clear the flag after this tick, or the
+      // next real tap on a chip (the one picking a category) would be swallowed.
+      setTimeout(() => {
+        suppressClick = false;
+      }, 0);
       const velocity = computeVelocity(samples);
       const offset = xRef.current;
       const max = maxRef.current;
