@@ -31,7 +31,12 @@ function loadLook(kind, ref) {
     }
     promise = catalogPromise.then((items) => ({ item: items.find((x) => String(x.id) === String(ref)) || null }));
   }
-  promise = promise.catch(() => ({}));
+  // A failed load (offline, a blip) is not cached: it used to stick as "unknown look" for
+  // five minutes on every card with that link, even after the connection came back.
+  promise = promise.catch(() => {
+    cache.delete(key);
+    return {};
+  });
   cache.set(key, { at: Date.now(), promise });
   return promise;
 }
