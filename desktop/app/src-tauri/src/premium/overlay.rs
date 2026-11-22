@@ -120,7 +120,9 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 // Tauri's own file-drop handler would swallow.
                 .disable_drag_drop_handler()
                 .initialization_script(HUD_SHIM)
-                .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
+                // Exact page (scheme, host, no port): Tauri's local-origin check ignores the
+                // port, so http://descallhud.localhost:<port> would be a local server with IPC.
+                .on_navigation(|u| descall_shell::ipc_policy::is_hud_page(u.as_str()))
                 .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
                 .build();
             match built {

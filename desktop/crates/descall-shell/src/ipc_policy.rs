@@ -28,6 +28,10 @@ pub enum WindowClass {
     Launcher,
     /// The tray panel (tray-menu-shim.js).
     TrayMenu,
+    /// A label the shell never creates: no app command at all. Before, every unknown label
+    /// fell through to `App` and got the whole electronAPI, so a window added later (or one
+    /// a plugin creates) silently had screen capture, clipboard and update install.
+    Unknown,
 }
 
 pub fn class_of(label: &str) -> WindowClass {
@@ -40,7 +44,12 @@ pub fn class_of(label: &str) -> WindowClass {
         l if l.starts_with("overlay-") => WindowClass::VoiceOverlay,
         l if l.starts_with("notif-") => WindowClass::Notification,
         l if l.starts_with("hud-") || l.starts_with("widget-") => WindowClass::Hud,
-        _ => WindowClass::App,
+        // The app windows: main, Descall+ pop-outs (popout-<n>), extra account windows
+        // (acct-<id>) and the call / sidebar portals (pip, sidebar: about:blank documents the
+        // main page draws into).
+        "main" | "pip" | "sidebar" => WindowClass::App,
+        l if l.strip_prefix("popout-").is_some_and(|n| !n.is_empty()) || l.strip_prefix("acct-").is_some_and(|n| !n.is_empty()) => WindowClass::App,
+        _ => WindowClass::Unknown,
     }
 }
 
@@ -89,6 +98,7 @@ pub fn commands_for(class: WindowClass) -> Option<&'static [&'static str]> {
         WindowClass::Hud => Some(HUD),
         WindowClass::Launcher => Some(LAUNCHER),
         WindowClass::TrayMenu => Some(TRAY_MENU),
+        WindowClass::Unknown => Some(&[]),
     }
 }
 
@@ -107,6 +117,22 @@ pub fn is_shell_page(url: &str) -> bool {
         _ => false,
     }
 }
+
+/// Navigation guard of the Descall+ HUD / widget / quick drop windows: their page is
+/// `http://descallhud.localhost/<kind>` (premium/overlay.rs) and nothing else.
+///
+/// Scheme, host and port are all checked. Tauri decides "local origin, may use IPC" from the
+/// scheme and the `<protocol>.localhost` host only, not the port, and Chromium resolves every
+/// `*.localhost` name to 127.0.0.1: `http://descallhud.localhost:8080/` is a page of whatever
+/// listens on that port, yet it would get the HUD's IPC. The old guard compared the host only.
+pub fn is_hud_page(url: &str) -> bool {
+    let Ok(u) = url::Url::parse(url) else { return false };
+    matches!(u.scheme(), "http" | "https") && u.host_str() == Some(HUD_HOST) && u.port().is_none() && u.username().is_empty() && u.password().is_none()
+}
+
+/// Host of the `descallhud` URI scheme on Windows (WebView2 serves custom schemes as
+/// `http(s)://<scheme>.localhost`).
+pub const HUD_HOST: &str = "descallhud.localhost";
 
 #[cfg(test)]
 mod tests {
@@ -153,6 +179,80 @@ mod tests {
         assert_eq!(class_of("widget-cpu"), WindowClass::Hud);
         assert_eq!(class_of("launcher"), WindowClass::Launcher);
         assert_eq!(class_of("tray-menu"), WindowClass::TrayMenu);
+    }
+
+    /// Every label the shell creates (src/**/*.rs) has a class; anything else gets nothing.
+    #[test]
+    fn unknown_labels_get_no_command() {
+        for label in ["", "x", "devtools", "popout-", "acct-", "mainx", "main-2", "pip2", "Main", "settings", "tauri-window", "webview-1"] {
+            assert_eq!(class_of(label), WindowClass::Unknown, "{label}");
+            for cmd in registered() {
+                assert!(!allowed(label, &cmd), "{label} must not call {cmd}");
+            }
+        }
+        for label in ["main", "pip", "sidebar", "popout-1", "acct-0123456789ab"] {
+            assert_eq!(class_of(label), WindowClass::App, "{label}");
+        }
+    }
+
+    /// The labels the window builders use, read from the sources: none falls into Unknown.
+    #[test]
+    fn every_built_window_has_a_class() {
+        let srcs = [
+            include_str!("../../../app/src-tauri/src/main.rs"),
+            include_str!("../../../app/src-tauri/src/admin.rs"),
+            include_str!("../../../app/src-tauri/src/tray_menu.rs"),
+            include_str!("../../../app/src-tauri/src/commands/notify.rs"),
+            include_str!("../../../app/src-tauri/src/commands/overlay.rs"),
+            include_str!("../../../app/src-tauri/src/premium/overlay.rs"),
+            include_str!("../../../app/src-tauri/src/premium/wins.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs"),
+            include_str!("../../../app/src-tauri/src/premium/features/quick_launcher.rs"),
+        ];
+        let builders: usize = srcs.iter().map(|s| s.matches("WebviewWindowBuilder::new(").count()).sum();
+        assert_eq!(builders, 10, "a window builder was added or removed: give its label a class here and in class_of");
+        // Label sources of those builders (state::MAIN, admin spec, LABEL consts, format! prefixes).
+        let labels = ["main", "admin", "signup-stats", "tray-menu", "notif-7", "overlay-3", "hud-voice_hud", "widget-cpu", "pip", "sidebar", "popout-2", "acct-0123456789ab", "launcher"];
+        for l in labels {
+            assert_ne!(class_of(l), WindowClass::Unknown, "{l}");
+        }
+        for prefix in ["\"notif-{", "\"popout-{", "\"acct-{", "\"widget-{", "\"hud-{"] {
+            assert!(srcs.iter().any(|s| s.contains(prefix)), "label prefix {prefix} no longer used: update the list above");
+        }
+    }
+
+    #[test]
+    fn hud_pages_are_exact() {
+        assert!(is_hud_page("http://descallhud.localhost/voice"));
+        assert!(is_hud_page("https://descallhud.localhost/widget"));
+        for u in [
+            "http://descallhud.localhost:8080/voice",
+            "https://descallhud.localhost:443x/voice",
+            "http://descallhud.localhost:1/",
+            "http://u:p@descallhud.localhost/voice",
+            "ws://descallhud.localhost/voice",
+            "file://descallhud.localhost/C:/x",
+            "http://descallhud.localhost.evil.example/",
+            "http://evil.example/descallhud.localhost",
+            "descallhud://localhost/voice",
+            "about:blank",
+            "",
+        ] {
+            assert!(!is_hud_page(u), "{u} is not a HUD page");
+        }
+        let overlay = include_str!("../../../app/src-tauri/src/premium/overlay.rs");
+        assert!(overlay.contains(".on_navigation(|u| descall_shell::ipc_policy::is_hud_page(u.as_str()))"), "the HUD windows use the exact guard");
+        assert!(overlay.contains(&format!("\"http://{{SCHEME}}.localhost/{{}}\"")) && HUD_HOST == "descallhud.localhost");
+    }
+
+    /// Every navigation guard compares the whole origin (scheme, host and port), because Tauri's
+    /// own local-origin check ignores the port.
+    #[test]
+    fn navigation_guards_compare_the_port() {
+        assert!(!is_shell_page("https://descall-shell.localhost:8443/notif.html"));
+        assert!(!crate::trust::is_app_url("https://tauri.localhost:8443/", false));
+        assert!(!crate::trust::is_app_url("http://tauri.localhost:80/", false));
     }
 
     #[test]
