@@ -280,6 +280,14 @@ async function run(browser, base, boot0, r, problems) {
       await sleep(1500);
       const s1 = await strip();
       check(s1.max - s1.sl < 2, 'picking the last set brings it into view');
+      await page.focus('.s2-switch > button.is-on');
+      await page.keyboard.press('Home');
+      await sleep(900);
+      const first = await page.evaluate(() => { const b = document.querySelectorAll('.s2-switch > button'); return { on: b[0].classList.contains('is-on'), focus: document.activeElement === b[0] }; });
+      check(first.on && first.focus, `Home in the set switcher picks and focuses the first set (${JSON.stringify(first)})`);
+      await page.keyboard.press('ArrowRight');
+      await sleep(600);
+      check(await page.evaluate(() => document.querySelectorAll('.s2-switch > button')[1].classList.contains('is-on')), 'ArrowRight in the set switcher picks the next set');
     } else {
       const dots = await page.evaluate(() => {
         const small = document.querySelector('.s2-pdots small');

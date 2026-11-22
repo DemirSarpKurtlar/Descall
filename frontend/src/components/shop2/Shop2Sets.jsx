@@ -19,6 +19,7 @@ import {
 } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
 import { useShop2Swipe } from "../../hooks/useShop2Swipe.js";
+import { keyStep } from "../../lib/shop2Swipe.js";
 import { Chip, HScroller, Layer, Num, Price, Seg, ShortBy, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import Shop2Stage, { StagePicker, useStage } from "./Shop2Stage.jsx";
@@ -72,10 +73,20 @@ function SetSwitcher({ sets, active, onPick }) {
   const now = useNow(true, 60000);
   const ends = sets.map((x) => x.endsAt).filter(Boolean).sort()[0];
   const left = ends ? countdownParts(ends, now) : null;
+  // Left / Right / Home / End move between sets (tabs pattern); focus follows the pick.
+  const onKeyDown = (e) => {
+    const at = sets.findIndex((x) => x.key === active);
+    const k = keyStep(e.key, Math.max(0, at), sets.length);
+    if (k == null) return;
+    e.preventDefault();
+    const strip = e.currentTarget;
+    onPick(sets[k].key);
+    requestAnimationFrame(() => strip.querySelectorAll(":scope > [role='tab']")[k]?.focus({ preventScroll: true }));
+  };
   // A real horizontal scroller (16+ sets never fit): wheel, drag, arrows, fades, snap.
   return (
     <div className="s2-switch-row">
-      <HScroller className="s2-switch" wrapClassName="s2-switch-hs" role="tablist" aria-label={t("shop2.sets.switch")} activeKey={active}>
+      <HScroller className="s2-switch" wrapClassName="s2-switch-hs" role="tablist" aria-label={t("shop2.sets.switch")} activeKey={active} onKeyDown={onKeyDown}>
         {sets.map((x) => (
           <button key={x.key} type="button" role="tab" aria-selected={x.key === active} className={x.key === active ? "is-on" : ""} onClick={() => onPick(x.key)} style={{ "--set-accent": x.palette?.[2] }}>
             <span className="s2-switch-art" style={{ background: setGradient(x.palette) }} />

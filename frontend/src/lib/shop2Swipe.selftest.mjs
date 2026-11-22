@@ -28,6 +28,7 @@ assert.match(vitrin, /keyStep\(/, "featured banner takes arrow keys");
 const sets = readFileSync(join(src, "components/shop2/Shop2Sets.jsx"), "utf8");
 assert.match(sets, /useShop2Swipe\(/, "phone set page swipes");
 assert.match(sets, /s2-pset-nav/, "phone set page has prev / next buttons");
+assert.match(sets, /activeKey=\{active\} onKeyDown=\{onKeyDown\}/, "desktop set switcher takes arrow keys");
 
 // The category chip strip mounts after the shop is ready (only on the Tumu tab): its hook must
 // use callback refs, or its drag / wheel / arrow listeners are never attached.
