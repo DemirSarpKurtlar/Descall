@@ -173,6 +173,9 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal((deliverySeg.match(/role="tab"/g) || []).length, 2, `${layout} gifts: two delivery choices`);
   has(deliverySeg, "shop2.gifts.now", `${layout} gifts: now`);
   has(deliverySeg, "shop2.gifts.pickTime", `${layout} gifts: at a time`);
+  // The friend's view is a real phone (status bar, Dynamic Island, home indicator) and
+  // "Gonder" off with no friend chosen says why.
+  for (const x of ["s2-gphone-screen", "s2-gphone-island", "s2-gphone-status", "s2-gphone-home", "s2-gnotif", "s2-gopen", "shop2.gifts.pickFriendFirst"]) has(g, x, `${layout} gifts ${x}`);
   for (const x of ["shop2.gifts.onBirthday", "shop2.gifts.filter.birthday", "shop2.gifts.bday", "s2-friend-bday"]) assert.ok(!g.includes(x), `${layout} gifts: no birthday ${x}`);
   const inv = m.render("inv", c);
   has(inv, "Aurora", "retired item listed");
@@ -192,6 +195,7 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal(m.render("look", c, { text: "https://descall.com/settings" }), "", "no card without a look link");
   const sh = m.render("share", { ...c, openShare: noop }, { target: { setKey: "gece-limani" }, onClose: noop });
   has(sh, "s2-share", "share sheet");
+  has(sh, "s2-skeleton", "share sheet shows loading rows, not 'no friends', before the list arrives");
 }
 const shell = m.renderMarket({ me: { id: "me", username: "d" }, balance: 2940, inventory: [], ownedItemIds: new Set(), allProducts: null });
 has(shell, "s2-root", "market shell renders");

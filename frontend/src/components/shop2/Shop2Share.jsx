@@ -17,6 +17,7 @@ export default function Shop2Share({ target, onClose }) {
   const { t } = useLocale();
   const s2 = useS2();
   const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [chosen, setChosen] = useState(() => new Set());
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
@@ -25,7 +26,10 @@ export default function Shop2Share({ target, onClose }) {
   const [err, setErr] = useState("");
   useEffect(() => {
     let off = false;
-    shop2Api.friends().then((r) => !off && setFriends(Array.isArray(r?.friends) ? r.friends : [])).catch(() => {});
+    shop2Api.friends()
+      .then((r) => !off && setFriends(Array.isArray(r?.friends) ? r.friends : []))
+      .catch(() => {})
+      .finally(() => !off && setLoading(false));
     return () => {
       off = true;
     };
@@ -73,7 +77,7 @@ export default function Shop2Share({ target, onClose }) {
       <p className="s2-muted">{t("shop2.share.body")}</p>
       <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       <div className="s2-share-list" role="group" aria-label={t("shop2.share.title")}>
-        {shown.length ? shown.map((f, i) => {
+        {loading ? <div className="s2-skeleton is-rows"><i /><i /><i /></div> : shown.length ? shown.map((f, i) => {
           const on = chosen.has(String(f.id));
           return (
             <button key={f.id} type="button" className={`s2-friend${on ? " is-on" : ""}`} aria-pressed={on} disabled={!on && chosen.size >= MAX} onClick={() => toggle(String(f.id))}>

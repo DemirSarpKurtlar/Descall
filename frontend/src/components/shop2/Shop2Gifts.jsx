@@ -311,7 +311,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const recipients = (
     <section className="s2-col s2-gto">
       <div className="s2-colh"><Users size={15} /><h3>{variant === "drawer" ? t("shop2.gifts.step1") : t("shop2.gifts.to")}</h3>{variant === "tab" ? <span className="s2-muted s2-colh-r">{t("shop2.gifts.friendsN", { n: friends.length })}</span> : null}</div>
-      {variant === "tab" ? (
+      {variant === "tab" || friends.length > 6 ? (
         <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       ) : null}
       <div className="s2-chips-wrap">

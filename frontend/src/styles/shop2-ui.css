@@ -4269,6 +4269,7 @@ button.s2-strip:hover {
   gap: 3px;
   max-height: 420px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .s2-friend {
   display: flex;
