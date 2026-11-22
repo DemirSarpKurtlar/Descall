@@ -536,6 +536,45 @@ mod capability_tests {
         }
     }
 
+    /// WebView2 browser arguments: one string for every window (a shared user data folder
+    /// refuses a second environment with other arguments), Tauri's own defaults kept, and no
+    /// switch that weakens the browser (debug port, web security, sandbox, certificates, file
+    /// access). Portal windows reuse the opener's environment (window_features) instead.
+    #[test]
+    fn browser_args_are_shared_and_safe() {
+        let main = include_str!("../../../app/src-tauri/src/main.rs");
+        let start = main.find("pub const BROWSER_ARGS: &str = \"").expect("BROWSER_ARGS") + "pub const BROWSER_ARGS: &str = \"".len();
+        let args = main[start..start + main[start..].find("\";").unwrap()].replace("\\\n", " ");
+        for flag in ["remote-debugging", "disable-web-security", "no-sandbox", "ignore-certificate-errors", "allow-file-access", "allow-running-insecure-content", "disable-site-isolation", "user-data-dir", "load-extension", "enable-automation", "js-flags", "unsafely-treat-insecure-origin"] {
+            assert!(!args.contains(flag), "BROWSER_ARGS must not carry --{flag}");
+        }
+        for keep in ["msWebOOUI", "msPdfOOUI", "msSmartScreenProtection"] {
+            assert!(args.contains(keep), "Tauri's default --disable-features={keep} is repeated");
+        }
+        for (file, src) in [
+            ("main.rs", main),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("tray_menu.rs", include_str!("../../../app/src-tauri/src/tray_menu.rs")),
+            ("commands/notify.rs", include_str!("../../../app/src-tauri/src/commands/notify.rs")),
+            ("commands/overlay.rs", include_str!("../../../app/src-tauri/src/commands/overlay.rs")),
+            ("premium/overlay.rs", include_str!("../../../app/src-tauri/src/premium/overlay.rs")),
+            ("premium/wins.rs", include_str!("../../../app/src-tauri/src/premium/wins.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+            ("quick_launcher.rs", include_str!("../../../app/src-tauri/src/premium/features/quick_launcher.rs")),
+        ] {
+            let mut rest = src;
+            while let Some(i) = rest.find("WebviewWindowBuilder::new(") {
+                let chain = &rest[i..];
+                let chain = &chain[..chain.find(".build()").unwrap_or(chain.len())];
+                assert!(chain.contains("BROWSER_ARGS)") || chain.contains(".window_features("), "{file}: a window builder with WebView2's default arguments");
+                assert!(chain.contains(".on_navigation("), "{file}: a window builder without a navigation guard");
+                assert!(chain.contains(".on_new_window("), "{file}: a window builder that lets window.open create raw WebView2 popups");
+                rest = &rest[i + 1..];
+            }
+        }
+    }
+
     /// Windows that take HTML5 drops (chat files, server reordering, the quick drop zone) keep
     /// WebView2's own drag and drop: Tauri's handler swallows every drop on Windows.
     #[test]
