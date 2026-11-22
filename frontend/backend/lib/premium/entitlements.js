@@ -49,10 +49,12 @@ async function hasFeature(userId, feature, opts) {
   return featuresFor(plan).includes(String(feature));
 }
 
-function invalidate(userId) {
+function invalidateLocal(userId) {
   if (userId) cache.delete(String(userId));
   else cache.clear();
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("premiumEntitlements", invalidateLocal);
 
 /** Express middleware: the signed-in account's plan must include `feature`. */
 function requireFeature(feature) {

@@ -26,9 +26,11 @@ function decideSession(decoded, { cutoffMs = SESSION_LESS_ACCEPT_BEFORE_MS, acti
   return { ok: true };
 }
 
-function invalidateSessionCache(userId) {
+function invalidateSessionCacheLocal(userId) {
   if (userId) cache.delete(userId);
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidateSessionCache = require("./cluster").linkInvalidate("sessionCache", invalidateSessionCacheLocal);
 
 function noteDroppedSessions(userId, ids) {
   invalidateSessionCache(userId);

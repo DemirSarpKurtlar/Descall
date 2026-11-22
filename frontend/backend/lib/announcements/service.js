@@ -31,10 +31,12 @@ function now() {
 
 /* ---------------- live rows cache ---------------- */
 
-function invalidate() {
+function invalidateLocal() {
   S.live.at = 0;
   S.live.rows = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("announcements", invalidateLocal);
 
 async function liveRows() {
   if (S.live.rows && now() - S.live.at < LIVE_TTL_MS) return S.live.rows;
@@ -329,7 +331,11 @@ async function tick() {
 function start(io) {
   if (io) S.io = io;
   if (S.timer || process.env.NODE_ENV === "test") return;
-  S.timer = setInterval(() => tick().catch((err) => console.warn("[announcements] tick failed:", err?.message || err)), TICK_MS);
+  // Hybrid server: publishing / ending rows runs once per cluster, on the leader.
+  S.timer = setInterval(() => {
+    if (!require("../cluster").isLeader()) return;
+    tick().catch((err) => console.warn("[announcements] tick failed:", err?.message || err));
+  }, TICK_MS);
   S.timer.unref?.();
 }
 

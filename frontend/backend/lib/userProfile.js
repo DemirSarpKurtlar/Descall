@@ -362,6 +362,8 @@ async function broadcastUserProfileUpdate(io, userId) {
 
   // Roster rows of this user refresh through the scoped presence fan-out.
   require("../runtime/presenceFanoutInstance").markPresenceDirty(userId);
+  // Hybrid server: other nodes refresh their cached profile (no-op on a single node).
+  require("./cluster").invalidate("profile", userId);
 
   // Server voice seats copy the profile at join: refresh them (new voice tile, join sound,
   // avatar or name shows to the channel without a rejoin).

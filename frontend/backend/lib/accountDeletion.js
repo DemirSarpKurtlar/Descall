@@ -175,7 +175,8 @@ async function purgeDueAccounts() {
 }
 
 function startDeletionSweeper() {
-  const run = () => purgeDueAccounts().catch((e) => console.warn("[accountDeletion]", e?.message || e));
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md).
+  const run = require("./cluster").leaderOnly("accountDeletion", () => purgeDueAccounts().catch((e) => console.warn("[accountDeletion]", e?.message || e)));
   setTimeout(run, 60 * 1000).unref?.();
   setInterval(run, 60 * 60 * 1000).unref?.();
 }

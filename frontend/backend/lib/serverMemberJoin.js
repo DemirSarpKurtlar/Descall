@@ -62,7 +62,8 @@ async function postWelcomeMessage(io, server, userId) {
 
 function userHasLiveSockets(io, userId) {
   const room = io.sockets?.adapter?.rooms?.get(`user:${userId}`);
-  return Boolean(room && room.size > 0);
+  // Clustered: connected on another node counts as live.
+  return Boolean(room && room.size > 0) || require("./cluster").hasRemoteUser(userId);
 }
 
 function userIsInServerVoice(userId) {
@@ -180,7 +181,8 @@ async function sweepTemporaryMembers(io) {
 
 function startTemporaryMemberSweeper(io, { intervalMs = 5 * 60 * 1000 } = {}) {
   if (sweepTimer || !io) return;
-  const run = () => sweepTemporaryMembers(io).catch((err) => console.warn("[ServerJoin] temp sweep error:", err?.message || err));
+  // Hybrid server: once per cluster, on the leader (lib/cluster/jobs.md).
+  const run = require("./cluster").leaderOnly("tempMemberSweep", () => sweepTemporaryMembers(io).catch((err) => console.warn("[ServerJoin] temp sweep error:", err?.message || err)));
   setTimeout(run, 30_000).unref?.();
   sweepTimer = setInterval(run, intervalMs);
   sweepTimer.unref?.();

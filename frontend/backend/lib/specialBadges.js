@@ -70,9 +70,11 @@ function fail(result) {
 let catalogCache = { at: 0, rows: null };
 const CATALOG_TTL_MS = 30_000;
 
-function invalidateCatalog() {
+function invalidateCatalogLocal() {
   catalogCache = { at: 0, rows: null };
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidateCatalog = require("./cluster").linkInvalidate("specialBadgeCatalog", invalidateCatalogLocal);
 
 async function catalog({ fresh = false } = {}) {
   if (!fresh && catalogCache.rows && Date.now() - catalogCache.at < CATALOG_TTL_MS) return catalogCache.rows;

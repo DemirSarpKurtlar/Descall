@@ -17,11 +17,20 @@
  * Emit `event`/`payload` to every socket currently in `user:${userId}`.
  * No-op when the room is empty (offline).
  */
+/** Hybrid server: the user has sockets on another node (the adapter carries room emits there). */
+function remoteUser(userId) {
+  try {
+    return require("./cluster").hasRemoteUser(userId);
+  } catch {
+    return false;
+  }
+}
+
 function emitToUserRoom(io, userId, event, payload) {
   if (!io || !userId) return;
   const room = `user:${userId}`;
   const roomSet = io.sockets?.adapter?.rooms?.get(room);
-  if (roomSet && roomSet.size > 0) {
+  if ((roomSet && roomSet.size > 0) || remoteUser(userId)) {
     io.to(room).emit(event, payload);
     return;
   }
@@ -45,7 +54,7 @@ function emitToUserRoomExcept(io, userId, exceptSocketId, event, payload) {
   const room = `user:${userId}`;
   const roomSet = io.sockets?.adapter?.rooms?.get(room);
   const sockets = io.sockets?.sockets;
-  if (roomSet && roomSet.size > 0 && sockets) {
+  if (roomSet && roomSet.size > 0 && sockets && !remoteUser(userId)) {
     for (const sid of roomSet) {
       if (exceptSocketId && sid === exceptSocketId) continue;
       const s = typeof sockets.get === "function" ? sockets.get(sid) : null;

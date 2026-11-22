@@ -213,7 +213,8 @@ async function sample() {
   today.peakSockets = Math.max(today.peakSockets, sockets);
   today.peakEdge = Math.max(today.peakEdge, edgeSockets);
   today.peakRssMb = Math.max(today.peakRssMb, rssMb);
-  if (before !== `${today.peakSockets}|${today.peakEdge}|${today.peakRssMb}`) await writeDaily();
+  // Hybrid server: the daily peaks row is Render's (a secondary node would overwrite it).
+  if (before !== `${today.peakSockets}|${today.peakEdge}|${today.peakRssMb}` && require("./cluster").role !== "secondary") await writeDaily();
   return row;
 }
 

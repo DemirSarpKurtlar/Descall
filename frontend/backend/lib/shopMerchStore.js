@@ -32,10 +32,12 @@ let ctxCache = null;
 let ctxLoading = null;
 let salesCache = null;
 
-function invalidate() {
+function invalidateLocal() {
   ctxCache = null;
   salesCache = null;
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("./cluster").linkInvalidate("shopMerch", invalidateLocal);
 
 async function safeRows(query) {
   try {

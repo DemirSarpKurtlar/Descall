@@ -264,6 +264,12 @@ async function persistSystemConfig(client, patch, opts) {
     console.warn("[system-settings] persist:", res.error.message || res.error);
     return { ...loaded, config, persisted: false, error: res.error };
   }
+  // Hybrid server: the other nodes reload their copy (no-op on a single node).
+  try {
+    require("./cluster").invalidate("sysconfig", "global");
+  } catch {
+    /* cluster layer unavailable */
+  }
   return {
     config: mergeSystemConfig(res?.data?.config || stored),
     startedAt: res?.data?.started_at || loaded.startedAt,

@@ -31,6 +31,8 @@ function isPresenceSocketLive(io, userId, entry) {
   if (!io) return true;
   const room = userRoom(io, userId);
   if (room && room.size > 0) return true;
+  // Clustered: an entry another node owns is live there.
+  if (require("./cluster").hasRemoteUser(userId)) return true;
   const socketId = entry?.socketId;
   if (socketId && io.sockets?.sockets?.get(socketId)) return true;
   return false;

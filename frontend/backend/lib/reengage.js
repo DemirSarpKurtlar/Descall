@@ -572,8 +572,12 @@ function createReengage(deps = {}) {
   function start() {
     if (timer) return;
     const minutes = Math.max(15, Math.min(60, Number(getEnv().REENGAGE_TICK_MINUTES) || 30));
-    const first = setTimeout(() => void runLifecycle(), 2 * 60 * 1000);
-    const every = setInterval(() => void runLifecycle(), minutes * 60 * 1000);
+    // Hybrid server: lifecycle emails go out once per cluster, from the leader.
+    const run = () => {
+      if (require("./cluster").isLeader()) void runLifecycle();
+    };
+    const first = setTimeout(run, 2 * 60 * 1000);
+    const every = setInterval(run, minutes * 60 * 1000);
     first.unref?.();
     every.unref?.();
     timer = { first, every };

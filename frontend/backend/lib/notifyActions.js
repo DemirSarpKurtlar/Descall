@@ -215,7 +215,8 @@ function createNotifyActions(deps = {}) {
     if (!io || !userId) return;
     const room = `user:${userId}`;
     const roomSet = io.sockets?.adapter?.rooms?.get(room);
-    if (roomSet && roomSet.size > 0) {
+    // Clustered: the adapter carries the room emit to the node the user is on.
+    if ((roomSet && roomSet.size > 0) || require("./cluster").hasRemoteUser(userId)) {
       io.to(room).emit(event, payload);
       return;
     }
@@ -398,6 +399,7 @@ function createNotifyActions(deps = {}) {
       timestamp,
     };
     cacheDmMessages(convKey(myId, peerId), [{ ...messagePayload, to: { id: peerId } }]);
+    require("./cluster").invalidate("dmConv", convKey(myId, peerId));
     void Promise.all([prefs().revealOnMessage(myId, peerId), prefs().revealOnMessage(peerId, myId)]).catch(() => {});
     emitToUser(io, peerId, "dm:message", { ...messagePayload, convWith: myId });
     // The sender's own open devices (no tempId: nothing optimistic to replace).

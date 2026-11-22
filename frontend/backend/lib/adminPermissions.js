@@ -156,10 +156,12 @@ async function loadRow(userId) {
   return row;
 }
 
-function invalidate(userId) {
+function invalidateLocal(userId) {
   if (userId) cache.delete(userId);
   else cache.clear();
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("./cluster").linkInvalidate("adminPerms", invalidateLocal);
 
 /** Express middleware for the admin router (after requireAdmin). */
 async function requireAdminSection(req, res, next) {

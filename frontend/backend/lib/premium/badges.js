@@ -106,9 +106,11 @@ async function attachPlans(list, getId = (u) => u?.id, key = "premium_plan") {
   return items;
 }
 
-function invalidate(userId) {
+function invalidateLocal(userId) {
   cache.delete(String(userId ?? ""));
 }
+// Hybrid server: clearing this cache also clears it on the other nodes (no-op on a single node).
+const invalidate = require("../cluster").linkInvalidate("premiumBadges", invalidateLocal);
 
 function __resetForTests({ rpc: fn = null } = {}) {
   cache.clear();

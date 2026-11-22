@@ -586,6 +586,9 @@ function _resetDmCallStateForTests() {
 }
 
 module.exports = {
+  // Hybrid server: replicated across nodes by lib/cluster/sharedStore.js.
+  pendingDmCalls,
+  recentlyEndedPairs,
   _resetDmCallStateForTests,
   trackOffer,
   getPendingCall,
