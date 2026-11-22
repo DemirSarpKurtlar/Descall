@@ -89,6 +89,14 @@ export function installPageHiddenPause(win = typeof window !== "undefined" ? win
 }
 const INPUT_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 
+/** Direct input (press, key, touch): the pause classes that say "not on screen" are wrong. */
+export function clearStalePause(root) {
+  if (!root?.classList) return;
+  for (const c of [BACKGROUNDED_CLASS, HIDDEN_CLASS, BLURRED_CLASS]) {
+    if (root.classList.contains(c)) root.classList.toggle(c, false);
+  }
+}
+
 export function applyAppVisibility(root, { backgrounded } = {}) {
   if (!root?.classList) return false;
   root.classList.toggle(BACKGROUNDED_CLASS, Boolean(backgrounded));
@@ -144,10 +152,15 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
     if (timer) clearT(timer);
     timer = setT(() => { timer = 0; setIdle(true); }, idleMs());
   };
-  const onInput = () => {
+  const onInput = (e) => {
     // pointermove fires per pixel: re-arm at most every 250 ms.
     const now = Date.now();
     if (root.classList.contains(IDLE_CLASS)) setIdle(false);
+    // A press or key means the window is on screen and focused, whatever the shell said last:
+    // drop a stale backgrounded / hidden / blurred pause (Tauri can report "backgrounded" after
+    // a restore with no focus event, a frameless window can read hidden, the native file
+    // dialog's blur may not get its focus back). Everything mounted afterwards animates.
+    if (e && (e.type === "pointerdown" || e.type === "keydown" || e.type === "touchstart")) clearStalePause(root);
     if (now - lastInput < 250 && timer) return;
     lastInput = now;
     arm();

@@ -99,7 +99,7 @@ function ThemeCards({ prefs, premium, onPick }) {
     { id: "auto", label: t("shell.appearance.themeAuto"), bg: "linear-gradient(135deg,#151722 50%,#EEF0F6 50%)", bars: [null, ac, null] },
   ];
   return (
-    <div className="s3-group s3-th" style={{ "--ac": ac }} role="radiogroup" aria-label={t("shell.appearance.theme")}>
+    <div className="s3-th" style={{ "--ac": ac }} role="radiogroup" aria-label={t("shell.appearance.theme")}>
       {cards.map((c) => {
         const on = !premium && prefs.themeMode === c.id;
         return (
@@ -212,31 +212,35 @@ export default function AppearancePane({
   const left = (
     <>
       <S3Sec first>{t("shell.appearance.theme")}</S3Sec>
-      <ThemeCards prefs={prefs} premium={premium} onPick={pickMode} />
-      <S3Group className="s3-store">
-        <S3Row
-          icon="palette"
-          color="brand"
-          title={t("shell.appearance.shopThemes")}
-          value={storeValue}
-          chevron
-          className={storeOpen ? "is-open" : ""}
-          onClick={() => (ownedThemes.length ? setStoreOpen((v) => !v) : onOpenShop?.())}
-        />
-        {storeOpen && ownedThemes.length
-          ? [
-              ...ownedThemes.map((item) => (
-                <S3Row
-                  key={item.id}
-                  lead={<span className={`s3-theme-dot us-theme-swatch theme-${item.theme_key}`} aria-hidden="true" />}
-                  title={localizedShopItemName(item, locale)}
-                  check={item.theme_key === equippedThemeKey}
-                  onClick={() => onPickPremiumTheme?.(item)}
-                />
-              )),
-              <S3Row key="shop" icon="bag" color="brand" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
-            ]
-          : null}
+      {/* One grouped card (iOS settings style): the three theme tiles on top and the shop
+          themes row as its bottom row, split by a hairline, same fill and radius. */}
+      <S3Group className="s3-themes">
+        <ThemeCards prefs={prefs} premium={premium} onPick={pickMode} />
+        <div className="s3-store">
+          <S3Row
+            icon="palette"
+            color="brand"
+            title={t("shell.appearance.shopThemes")}
+            value={storeValue}
+            chevron
+            className={storeOpen ? "is-open" : ""}
+            onClick={() => (ownedThemes.length ? setStoreOpen((v) => !v) : onOpenShop?.())}
+          />
+          {storeOpen && ownedThemes.length
+            ? [
+                ...ownedThemes.map((item) => (
+                  <S3Row
+                    key={item.id}
+                    lead={<span className={`s3-theme-dot us-theme-swatch theme-${item.theme_key}`} aria-hidden="true" />}
+                    title={localizedShopItemName(item, locale)}
+                    check={item.theme_key === equippedThemeKey}
+                    onClick={() => onPickPremiumTheme?.(item)}
+                  />
+                )),
+                <S3Row key="shop" icon="bag" color="brand" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
+              ]
+            : null}
+        </div>
       </S3Group>
 
       <S3Sec>{t("shell.appearance.accent")}</S3Sec>

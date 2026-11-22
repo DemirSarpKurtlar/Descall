@@ -47,7 +47,7 @@ import {
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { confirmAction } from "../../lib/glassConfirm";
-import { profileDraftDirty, nestedOverlayOpen } from "../../lib/settingsClose";
+import { profileDraftDirty, nestedOverlayOpen, shellClickClosesSettings } from "../../lib/settingsClose";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
@@ -3052,8 +3052,11 @@ const UserPanel = forwardRef(function UserPanel({
   });
 
   const handleShellClick = (e) => {
-    // Close only when the click lands outside the dialog panel
-    if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
+    // Close only on the Settings backdrop itself. Layers portaled to <body> (the photo /
+    // banner picker, the crop dialog, the username modal) still bubble their React clicks
+    // up here; a click on their own backdrop closes them and must not close Settings too.
+    if (!shellClickClosesSettings(e, panelRef.current)) return;
+    requestClose();
   };
 
   const desktopFade = reduceMotion
