@@ -15,10 +15,40 @@
   Pop $0
 !macroend
 
+; DescallSetup.exe (desktop/crates/descall-setup) installs into its own folder (default
+; %LOCALAPPDATA%\Programs\Descall) and writes Uninstall\Descall itself, with UninstallString
+; `"<dir>\uninstall.exe" --uninstall` but without the template's Software\Descall\Descall
+; install-location value. When the Tauri updater then runs this installer with /UPDATE, the
+; template's .onInit falls back to $LOCALAPPDATA\Descall: a second copy was installed and
+; started, while the Start menu, desktop and login entries kept starting the old folder (which
+; downloaded and installed the update again on every start). Only in /UPDATE mode (the old
+; uninstaller has finished by now; a manual reinstall may still be removing it), only for that
+; exact DescallSetup entry: install over its folder, which from then on is a template install.
+!macro DESCALL_ADOPT_SETUP_FOLDER
+  ${If} $UpdateMode = 1
+    Push $0
+    Push $1
+    ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCTNAME}" "InstallLocation"
+    ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCTNAME}" "UninstallString"
+    ${If} $0 != ""
+    ${AndIf} $1 == '"$0\uninstall.exe" --uninstall'
+    ${AndIf} $0 != $INSTDIR
+    ${AndIf} ${FileExists} "$0\${MAINBINARYNAME}.exe"
+      ; SetOutPath already created the template's default folder: drop it if still empty.
+      RMDir "$INSTDIR"
+      StrCpy $INSTDIR $0
+      SetOutPath $INSTDIR
+    ${EndIf}
+    Pop $1
+    Pop $0
+  ${EndIf}
+!macroend
+
 !macro NSIS_HOOK_PREINSTALL
   ; The migrator passes /D=<old InstallLocation> so Descall.exe keeps its path. The old files
   ; were moved to <dir>.legacy by the migrator before we run.
   !insertmacro DESCALL_STOP_CAPTURE_HOST
+  !insertmacro DESCALL_ADOPT_SETUP_FOLDER
 !macroend
 
 ; System.AppUserModel.ToastActivatorCLSID on a shortcut (port of installer.nsh
@@ -98,14 +128,7 @@
     DeleteRegKey HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}"
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${DESCALL_AUMID}"
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "${DESCALL_AUMID}"
-    ; descall:// is registered by the app at run time (tauri-plugin-deep-link register_all),
-    ; so the template never removes it: links kept starting a deleted exe. Only our own
-    ; registration goes (another copy of Descall elsewhere keeps its own).
-    Push $0
-    ReadRegStr $0 HKCU "Software\Classes\descall\shell\open\command" ""
-    ${If} $0 == '"$INSTDIR\${MAINBINARYNAME}.exe" "%1"'
-      DeleteRegKey HKCU "Software\Classes\descall"
-    ${EndIf}
-    Pop $0
+    ; descall:// needs nothing here: tauri-cli passes plugins.deep-link to the bundler, whose
+    ; template writes it on install and removes it on uninstall when it points at $INSTDIR.
   ${EndIf}
 !macroend

@@ -334,11 +334,25 @@ mod config_tests {
             assert!(pos > guard && pos < body.find("${EndIf}").unwrap(), "unguarded: {line}");
         }
         assert!(body.contains(r#"CurrentVersion\Run" "${DESCALL_AUMID}""#), "a real uninstall still removes auto-start");
-        // descall:// (written by the app, not the template) goes with a real uninstall, and
-        // only when it still points at this install.
-        let dl = body.find(r#"DeleteRegKey HKCU "Software\Classes\descall""#).expect("deep link removed on uninstall");
-        assert!(dl > guard && body[guard..dl].contains(r#"${If} $0 == '"$INSTDIR\${MAINBINARYNAME}.exe" "%1"'"#));
         assert_eq!(launch_value_name(), descall_shell::launch::RUN_VALUE, "hook removes the Run value the app writes");
+    }
+
+    /// An app installed by DescallSetup.exe and updated by the Tauri updater must be updated
+    /// in its own folder, not installed a second time at the template default.
+    #[test]
+    fn update_adopts_the_descall_setup_folder() {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let pre = &hooks[hooks.find("!macro NSIS_HOOK_PREINSTALL").unwrap()..];
+        assert!(pre[..pre.find("!macroend").unwrap()].contains("!insertmacro DESCALL_ADOPT_SETUP_FOLDER"));
+        let m = &hooks[hooks.find("!macro DESCALL_ADOPT_SETUP_FOLDER").unwrap()..];
+        let m = &m[..m.find("!macroend").unwrap()];
+        assert!(m.trim_start_matches("!macro DESCALL_ADOPT_SETUP_FOLDER").trim_start().starts_with("${If} $UpdateMode = 1"), "update mode only");
+        // The exact entry descall-setup writes (win/shell.rs register_uninstall).
+        let setup_shell = include_str!("../../../crates/descall-setup/src/win/shell.rs");
+        assert!(setup_shell.contains(r#"k.set_string("UninstallString", format!("\"{}\" --uninstall", un.display()))?;"#));
+        assert!(setup_shell.contains(r#"k.set_string("InstallLocation", e.dir.display().to_string())?;"#));
+        assert!(m.contains(r#"${AndIf} $1 == '"$0\uninstall.exe" --uninstall'"#));
+        assert!(m.contains("StrCpy $INSTDIR $0") && m.contains("SetOutPath $INSTDIR"));
     }
 
     fn launch_value_name() -> &'static str {
