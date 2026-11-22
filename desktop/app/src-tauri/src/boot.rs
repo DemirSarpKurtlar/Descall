@@ -406,7 +406,7 @@ pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool
 /// minimized, a monitor went away) is pulled back inside it, smaller if it must be.
 fn contain_restored<R: Runtime>(w: &WebviewWindow<R>) {
     use descall_shell::occlusion::{fit_bounds_to_work_area, overflows, Rect};
-    if w.is_maximized().unwrap_or(false) || w.is_fullscreen().unwrap_or(false) || w.is_minimized().unwrap_or(false) {
+    if w.is_maximized().unwrap_or(false) || w.is_fullscreen().unwrap_or(false) || w.is_minimized().unwrap_or(false) || in_move_size_loop() {
         return;
     }
     let Some(m) = w.current_monitor().ok().flatten() else { return };
@@ -425,6 +425,21 @@ fn contain_restored<R: Runtime>(w: &WebviewWindow<R>) {
     if let (Some(x), Some(y)) = (f.x, f.y) {
         let _ = w.set_position(tauri::LogicalPosition::new(x, y));
     }
+}
+
+/// The user is dragging or sizing the window (a maximized window dragged off its title bar is
+/// restored inside that loop): moving it then would fight the drag; the drag ends where the
+/// user puts it.
+fn in_move_size_loop() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::Threading::GetCurrentThreadId;
+        use windows::Win32::UI::WindowsAndMessaging::{GetGUIThreadInfo, GUITHREADINFO, GUI_INMOVESIZE};
+        let mut info = GUITHREADINFO { cbSize: std::mem::size_of::<GUITHREADINFO>() as u32, ..Default::default() };
+        GetGUIThreadInfo(GetCurrentThreadId(), &mut info).is_ok() && (info.flags.0 & GUI_INMOVESIZE.0) != 0
+    }
+    #[cfg(not(windows))]
+    false
 }
 
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {

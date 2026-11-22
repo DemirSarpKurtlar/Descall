@@ -208,6 +208,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(boot, /if !maximized \{\s*contain_restored\(&win\); \/\/ mainWindow 'unmaximize'/);
   assert.match(boot, /if was_minimized \{\s*contain_restored\(&win\); \/\/ mainWindow 'restore'/);
   assert.match(boot, /if !overflows\(b, work\) \{\s*return;\s*\}\s*let f = fit_bounds_to_work_area/);
+  assert.match(boot, /\|\| in_move_size_loop\(\) \{\s*return;/, "never while the user drags a maximized window out");
   // show_main runs on the event loop thread (tao's set_focus saw a still-hidden window when
   // called from a toast click, the ready fallback or a Descall+ action).
   assert.match(showMain, /if MAIN_THREAD\.get\(\)\.is_some\(\) && !on_main_thread\(\) \{\s*let a = app\.clone\(\);\s*let _ = app\.run_on_main_thread\(move \|\| show_main\(&a\)\);\s*return;/);
