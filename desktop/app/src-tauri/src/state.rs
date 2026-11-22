@@ -30,6 +30,9 @@ pub struct Shell {
     pub minimized: AtomicBool,
     /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
     pub deep_link: Mutex<Option<String>>,
+    /// A second launch asked for the window before the main window existed (Electron
+    /// userRequestedShow); setup shows it once the window is built.
+    pub show_requested: AtomicBool,
 }
 
 #[derive(Default)]
@@ -78,6 +81,19 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
         // main.cjs mainWindow.on('show', publishBox).
         to_main(app, "window:content-box", crate::commands::window::content_box(&w));
+    }
+}
+
+/// Second launch (shortcut, taskbar): show the main window. Early in the boot it does not exist
+/// yet (WebView2 creation pumps messages, so the single-instance message is handled inside
+/// the window build): the request is kept and setup honours it (descall_shell::launch::
+/// with_show_request). Dropping it left the second click without any window.
+pub fn request_show<R: Runtime>(app: &AppHandle<R>) {
+    if main_window(app).is_some() {
+        show_main(app);
+    } else {
+        log::info!("[boot] second launch before the main window exists: shown when ready");
+        shell(app).show_requested.store(true, Ordering::Release);
     }
 }
 

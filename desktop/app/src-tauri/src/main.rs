@@ -89,7 +89,7 @@ fn main() {
             if let Some(url) = descall_shell::deep_link::from_args(&argv) {
                 state::deliver_deep_link(app, url);
             }
-            state::show_main(app);
+            state::request_show(app);
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -217,6 +217,12 @@ fn main() {
             premium_hooks::install(&handle);
 
             use descall_shell::launch::StartAction;
+            // A second launch that came in while the window was being built (request_show).
+            let requested = state::shell(&handle).show_requested.swap(false, std::sync::atomic::Ordering::AcqRel);
+            let launch = descall_shell::launch::with_show_request(launch, requested);
+            if requested {
+                state::show_main(&handle);
+            }
             match launch.action {
                 StartAction::Show => {
                     // ready-to-show fallback: show even if the page never finishes loading.
@@ -345,7 +351,13 @@ mod config_tests {
         let first_plugin = builder.find(".plugin(").unwrap();
         assert!(builder[first_plugin..].starts_with(".plugin(tauri_plugin_single_instance::init("), "single instance is the first plugin");
         let cb = &builder[first_plugin..first_plugin + 400];
-        assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::show_main(app)"));
+        assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::request_show(app)"));
+        // A request that arrives while the main window is still being built is kept and
+        // honoured once the window exists (round 2: the second click did nothing then).
+        let state = include_str!("state.rs");
+        let req = &state[state.find("pub fn request_show").unwrap()..];
+        assert!(req[..400].contains("show_requested.store(true"));
+        assert!(main.contains("show_requested.swap(false") && main.contains("with_show_request(launch, requested)"));
         assert!(main.contains("commands::app::deep_link_take,"));
     }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
