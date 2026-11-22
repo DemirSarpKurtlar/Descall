@@ -8,6 +8,7 @@
  *   before it loads are buffered and sent once it is ready.
  */
 import { afterFirstScreen } from "./afterFirstScreen.js";
+import { isDesktopShell } from "./desktopShell.js";
 import { desktopShellTag, isDesktopDevOrigin, isLocalHost } from "./sentryShell.js";
 
 const SENTRY_DSN =
@@ -37,7 +38,7 @@ function isNativeShell() {
 }
 
 function isElectron() {
-  return typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  return isDesktopShell();
 }
 
 /** Platform tag: 'ios' (native Capacitor iOS), 'electron', 'android' (native shell) or 'web'. */

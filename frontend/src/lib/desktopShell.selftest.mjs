@@ -2,12 +2,13 @@
  * Run: node frontend/src/lib/desktopShell.selftest.mjs
  * Desktop shell detection (Electron / Tauri) and the call sites that use it.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   desktopBridge,
   desktopShellKind,
+  hasDesktopBridge,
   isDesktopRuntime,
   isDesktopShell,
   isElectronAppShell,
@@ -72,5 +73,40 @@ for (const [file, uses] of Object.entries(SITES)) {
   assert(!/electronAPI(\?\.|\.|\s*&&\s*window\.electronAPI\.)isElectron/.test(text), `${file} no longer detects desktop by electronAPI.isElectron`);
   assert(!/window\.descallPremium/.test(text), `${file} no longer reads window.descallPremium directly`);
 }
+
+// hasDesktopBridge is exactly the old check (call sites that go on to call bridge members).
+for (const w of [web, electron, tauri, tauriNoBridge]) {
+  assert(hasDesktopBridge(w) === Boolean(w.electronAPI?.isElectron), "hasDesktopBridge == old electronAPI?.isElectron");
+}
+assert(!hasDesktopBridge(null), "hasDesktopBridge without a window");
+
+// Whole tree: nobody detects the shell by reading the bridge flags directly any more (about
+// 30 files did after round 1). A new direct read fails here; ask lib/desktopShell.js instead:
+//   isDesktopShell()   "this is the desktop app" (copy, layout, platform tags)
+//   hasDesktopBridge() "the bridge is loaded" (the code then calls window.electronAPI.*)
+//   isTauriShell() / isElectronAppShell()  one shell only
+// ALLOW: files that may read the flags (the helper itself; add one only with a reason).
+const ALLOW = new Set(["lib/desktopShell.js"]);
+const DIRECT = /electronAPI\s*(\?\.|\.|\[\s*["'])\s*(isElectron|isTauri)\b/;
+const SKIP_DIR = new Set(["node_modules", "dist", "__snapshots__"]);
+function walk(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    if (SKIP_DIR.has(name) || name.startsWith(".")) continue;
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p, out);
+    else if (/\.(m?jsx?|tsx?)$/.test(name) && !/\.(selftest|test|unit\.test|e2e)\./.test(name)) out.push(p);
+  }
+  return out;
+}
+const offenders = [];
+for (const file of walk(src)) {
+  const rel = file.slice(src.length + 1).split("\\").join("/");
+  if (ALLOW.has(rel)) continue;
+  const text = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  text.split("\n").forEach((line, i) => { if (DIRECT.test(line)) offenders.push(`${rel}:${i + 1}: ${line.trim()}`); });
+}
+assert(offenders.length === 0, `direct electronAPI.isElectron / isTauri reads outside lib/desktopShell.js:\n${offenders.join("\n")}`);
+// The guard itself still sees a direct read.
+assert(DIRECT.test("if (window.electronAPI?.isElectron) x();") && DIRECT.test("w.electronAPI && w.electronAPI.isTauri"), "guard pattern");
 
 console.log("desktopShell.selftest: ok");

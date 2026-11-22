@@ -12,6 +12,7 @@
  */
 
 import { getSoundSettings, setSoundSettings } from "./storage.js";
+import { isDesktopShell } from "./desktopShell.js";
 import { SOFT_CUE_TYPES, softCueVolume } from "./voiceProfile.js";
 import { getOutputSinkId, onOutputSinkChange, routeToSink } from "./callAudioDevices.js";
 import {
@@ -25,7 +26,7 @@ import { startRingLoop, webRingSupported } from "./ringLoop.js";
 import { isNativeAndroid } from "./platform.js";
 
 // Detect Electron environment
-const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+const isElectron = isDesktopShell();
 
 const SYNTH_TYPES = new Set(["message", "notification", "incomingCall", "outgoingCall", "callStart"]);
 

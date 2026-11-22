@@ -9,6 +9,7 @@
  * Data: GET /api/admin/signup-stats (admin only on the server; moderators get 403).
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { hasDesktopBridge, isTauriShell } from "../../../lib/desktopShell.js";
 import useModalFocus from "../../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { adminFetch } from "../../../api/adminHttp";
@@ -98,7 +99,7 @@ function failLabel(key, t) {
   return t(`sgx.admin.fail.${FAIL_KEYS.has(key) ? key : "unknown"}`);
 }
 
-const isElectron = () => typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+const isElectron = () => hasDesktopBridge();
 
 /** Electron desktop: open the real window. Returns false when the caller should show the in-app one. */
 export function openSignupStatsWindow(layout) {
@@ -108,7 +109,7 @@ export function openSignupStatsWindow(layout) {
     // Tauri: the shell opens the stats window natively (src-tauri/src/admin.rs) and denies the
     // page's window.open, which returns null although the window did open (adminNav.js does
     // the same); false here also opened the in-app copy over the main window.
-    if (!w && window.electronAPI?.isTauri) return true;
+    if (!w && isTauriShell()) return true;
     return Boolean(w);
   } catch {
     return false;

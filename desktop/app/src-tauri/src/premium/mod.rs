@@ -243,12 +243,14 @@ impl Host {
         let _ = lock(&self.bus_tx).send(ev);
     }
 
-    /// Deliver `ev` on the bus after `ms`. Cheap thread per timer; features ignore stale
-    /// ticks with their own generation counter.
+    /// Deliver `ev` on the bus after `ms`; features ignore stale ticks with their own
+    /// generation counter. A timer task on the async runtime: it was an OS thread per timer,
+    /// and the debounces (widget / sidebar moves, window snaps, settings flush) start one per
+    /// event, so a drag created and tore down a thread for every Moved event.
     pub fn after(&self, ms: u64, ev: Bus) {
         let tx = lock(&self.bus_tx).clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(ms));
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(ms)).await;
             let _ = tx.send(ev);
         });
     }

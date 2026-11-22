@@ -17,7 +17,9 @@ pub const PAINT_ASK_MS: u64 = 45_000;
 pub const MAX_PAINT_RELOADS: u32 = 1;
 /// What a boot retry clears. Never localStorage / IndexedDB / cookies: the session lives there.
 pub const BOOT_RETRY_STORAGES: [&str; 2] = ["serviceworkers", "cachestorage"];
-pub const BOOT_PHASES: [&str; 7] = ["painted", "splash-failed", "auto-retry", "app-mounted", "visible", "inline-missing", "forced-dismiss"];
+/// "splash": Tauri only (electron-api-shim.js), the boot splash is on screen: a normal start
+/// shows the window then instead of after the main bundle ran (PageLoadEvent::Finished).
+pub const BOOT_PHASES: [&str; 8] = ["painted", "splash-failed", "auto-retry", "app-mounted", "visible", "inline-missing", "forced-dismiss", "splash"];
 
 /// Delay before the next load attempt, or None when it is time to ask the user.
 pub fn next_load_retry_delay(failures: usize) -> Option<u64> {
@@ -153,5 +155,8 @@ mod tests {
         assert_eq!(normalize_boot_report("app-mounted", -1.0), Some(BootReport { phase: "app-mounted", ms: None }));
         assert_eq!(normalize_boot_report("painted", f64::NAN).unwrap().ms, None);
         assert!(ends_paint_watch("forced-dismiss") && !ends_paint_watch("app-mounted"));
+        // Tauri start-up: the splash phase is accepted and does not end the paint watch.
+        assert_eq!(normalize_boot_report("splash", 140.0), Some(BootReport { phase: "splash", ms: Some(140) }));
+        assert!(!ends_paint_watch("splash"));
     }
 }

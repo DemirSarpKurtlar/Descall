@@ -42,6 +42,7 @@ pub mod ipc_policy;
 pub mod launch;
 pub mod logfile;
 pub mod main_errors;
+pub mod memory_target;
 pub mod notif;
 pub mod occlusion;
 pub mod pages;

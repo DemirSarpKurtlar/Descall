@@ -33,6 +33,11 @@ pub struct Shell {
     /// A second launch asked for the window before the main window existed (Electron
     /// userRequestedShow); setup shows it once the window is built.
     pub show_requested: AtomicBool,
+    /// A normal start (StartAction::Show): the main window shows once its boot splash is up
+    /// (app_boot_state "splash") or the page finished loading, whichever comes first.
+    pub show_on_load: AtomicBool,
+    /// WebView2 memory target of the main window (webview::update_main_memory).
+    pub memory: Mutex<descall_shell::memory_target::Target>,
 }
 
 #[derive(Default)]
@@ -102,6 +107,7 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
         // main.cjs mainWindow.on('show', publishBox).
         to_main(app, "window:content-box", crate::commands::window::content_box(&w));
+        crate::webview::update_main_memory(app);
     }
 }
 

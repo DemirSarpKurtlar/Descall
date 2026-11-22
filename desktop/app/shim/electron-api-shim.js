@@ -469,6 +469,35 @@
   markTauri();
   document.addEventListener("DOMContentLoaded", markTauri);
 
+  // Start-up: the shell showed the main window on PageLoadEvent::Finished, i.e. after the
+  // main bundle had been parsed and run, so a cold start showed nothing for that long.
+  // Electron put its splash window up at once. Tell the shell as soon as index.html has
+  // mounted the boot splash (a frame later, or 120 ms if no frame comes while hidden):
+  // app_boot_state "splash" shows the window then (commands/app.rs; only for a normal
+  // start that has not mounted the app yet, never for a tray / minimized start).
+  if (!ADMIN && LABEL === "main") {
+    let seen = false;
+    let told = false;
+    const tell = () => {
+      if (told) return;
+      told = true;
+      fire("app_boot_state", { phase: "splash", ms: Math.round((window.performance && performance.now()) || 0) });
+    };
+    let watch = null;
+    const onSplash = () => {
+      if (seen || !document.getElementById("boot-splash")) return;
+      seen = true;
+      if (watch) watch.disconnect();
+      try { requestAnimationFrame(() => setTimeout(tell, 0)); } catch (_) { /* no frames */ }
+      setTimeout(tell, 120);
+    };
+    try {
+      watch = new MutationObserver(onSplash);
+      watch.observe(document, { childList: true, subtree: true });
+    } catch (_) { /* no observer: PageLoadEvent::Finished shows the window */ }
+    document.addEventListener("DOMContentLoaded", () => { onSplash(); if (watch) watch.disconnect(); }, { once: true });
+  }
+
   // Page warnings and errors to main.log (Electron logged console-message during the boot
   // window): console.warn / console.error of the first minute, uncaught errors, unhandled
   // rejections and CSP violations (blocked URL without its query). The shell drops tokens,

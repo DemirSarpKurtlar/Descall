@@ -19,7 +19,7 @@ const cosmetics = readFileSync(join(root, "components/ui/Cosmetics.jsx"), "utf8"
 
 assert(/window\.location\.replace\(home\)/.test(app), "web logout must hard-navigate so iOS never lazy-loads marketing inside the app");
 assert(/Capacitor\.isNativePlatform\(\)/.test(app.split("handleLogout")[1] || app), "native logout must stay in the app shell");
-assert(/electronAPI\?\.isElectron/.test(app.split("handleLogout")[1] || app), "Electron logout must soft-clear (no hard-nav white screen)");
+assert(/isElectronDesktop = isDesktopShell\(\)/.test(app.split("handleLogout")[1] || app), "Electron logout must soft-clear (no hard-nav white screen)");
 assert(/!isElectronDesktop/.test(app.split("handleLogout")[1] || app), "Electron must be excluded from web location.replace logout");
 assert(/isElectronDesktop/.test(app.split("if (!me)")[1] || app) || /electronAPI\?\.isElectron/.test(app), "Electron logged-out must render AuthView");
 assert(/isModuleLoadError/.test(boundary), "ErrorBoundary must recognize Safari module-import crashes");

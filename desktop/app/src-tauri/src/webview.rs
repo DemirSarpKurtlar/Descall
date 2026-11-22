@@ -343,3 +343,63 @@ pub fn ask_retry(title: &str, detail: &str) -> bool {
         true
     }
 }
+
+/// WebView2 MemoryUsageTargetLevel (ICoreWebView2_19, Runtime 114+; older runtimes ignore it).
+/// The page keeps running either way (no TrySuspend).
+pub fn set_memory_low<R: Runtime>(window: &WebviewWindow<R>, low: bool) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(move |pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::{
+                ICoreWebView2_19, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
+            };
+            use windows_core::Interface;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            let Ok(core19) = core.cast::<ICoreWebView2_19>() else { return };
+            let level = if low { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW } else { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL };
+            let _ = core19.SetMemoryUsageTargetLevel(level);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, low);
+    }
+}
+
+/// The main window went to the background or came back, or a call started / ended:
+/// re-evaluate its memory target (descall_shell::memory_target). Low only after the window
+/// stayed hidden / minimized for LOW_AFTER_MS without a call; Normal again at once.
+pub fn update_main_memory<R: Runtime>(app: &tauri::AppHandle<R>) {
+    use descall_shell::memory_target::{Level, Step};
+    let Some(w) = crate::state::main_window(app) else { return };
+    // Read the window first: is_visible / is_minimized can wait for the event loop, never
+    // with the lock held.
+    let level = main_memory_level(app, &w);
+    let step = crate::state::shell(app).memory.lock().unwrap().want(level);
+    match step {
+        Step::Keep => {}
+        Step::NormalNow => {
+            log::info!("[memory] main window target normal");
+            set_memory_low(&w, false);
+        }
+        Step::LowLater { gen, ms } => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+                let Some(w) = crate::state::main_window(&app) else { return };
+                let still = main_memory_level(&app, &w);
+                let due = crate::state::shell(&app).memory.lock().unwrap().due(gen, still);
+                if due && still == Level::Low {
+                    log::info!("[memory] main window in the background: target low");
+                    set_memory_low(&w, true);
+                }
+            });
+        }
+    }
+}
+
+fn main_memory_level<R: Runtime>(app: &tauri::AppHandle<R>, w: &WebviewWindow<R>) -> descall_shell::memory_target::Level {
+    let backgrounded = !w.is_visible().unwrap_or(true) || w.is_minimized().unwrap_or(false);
+    let busy = crate::state::shell(app).voice_busy.load(std::sync::atomic::Ordering::Acquire) || crate::commands::overlay::is_visible(app);
+    descall_shell::memory_target::wanted(backgrounded, busy)
+}

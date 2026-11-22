@@ -150,6 +150,9 @@ fn main() {
             let boot_js = boot::boot_script(&handle, imported.as_ref());
             let script = format!("{boot_js}\n{SHIM}\n{NATIVE_SHARE}");
             let launch = boot::cold_start(&handle, &argv);
+            if launch.action == descall_shell::launch::StartAction::Show {
+                state::shell(&handle).show_on_load.store(true, std::sync::atomic::Ordering::Release);
+            }
             let ws = boot::initial_window_state(&handle);
 
             let nav_app = handle.clone();
@@ -252,6 +255,9 @@ fn main() {
                 }
                 StartAction::Hide => {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
+                    // Start in the tray (Windows sign-in): no hide event ever comes, so the
+                    // WebView2 memory target is evaluated here (low after LOW_AFTER_MS).
+                    webview::update_main_memory(&handle);
                 }
             }
 

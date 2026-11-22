@@ -7,6 +7,7 @@
  */
 
 import { routeToSink } from "./callAudioDevices.js";
+import { isDesktopShell } from "./desktopShell.js";
 
 /** Play `audio` on `sinkId` ("" = default): switch the output first, then start. */
 function playOn(audio, sinkId, isCancelled = () => false) {
@@ -57,7 +58,7 @@ const ROLE_FILE = {
 };
 
 function isElectron() {
-  return typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  return isDesktopShell();
 }
 
 function packUrl(effectKey, filename) {

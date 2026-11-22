@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { hasDesktopBridge } from "../lib/desktopShell.js";
 import { createPortal } from "react-dom";
 import { Minus, Square, X } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
@@ -30,8 +31,7 @@ function titleBarHost() {
 export default function TitleBar() {
   const t = useT();
   const [isMaximized, setIsMaximized] = useState(false);
-  const isElectron =
-    typeof window !== "undefined" && !!window.electronAPI?.isElectron;
+  const isElectron = hasDesktopBridge();
 
   useEffect(() => {
     if (!isElectron) return undefined;

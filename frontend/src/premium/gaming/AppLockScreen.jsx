@@ -3,6 +3,7 @@
  * the person's avatar and name below, and a row of PIN dots fed by a hidden input. The
  * background is opaque, so nothing of the app shows through while it is locked. */
 import { useEffect, useRef, useState } from "react";
+import { hasDesktopBridge } from "../../lib/desktopShell.js";
 import { createPortal } from "react-dom";
 import { useLocale } from "../../context/LocaleContext";
 import { pinvoke, pon, logPremiumEvent } from "./bridge.js";
@@ -138,7 +139,7 @@ export default function AppLockScreen({ me = null }) {
   const slots = pinSlots(pin.length, pinLen);
   // The app behind the lock (title bar included) is inert, so the lock draws its own bar:
   // one brand, a fixed colour, and window buttons that still work while locked.
-  const winApi = typeof window !== "undefined" && window.electronAPI?.isElectron ? window.electronAPI : null;
+  const winApi = hasDesktopBridge() ? window.electronAPI : null;
   const maxLen = pinLen || MAX;
 
   const onKeyDown = (e) => {

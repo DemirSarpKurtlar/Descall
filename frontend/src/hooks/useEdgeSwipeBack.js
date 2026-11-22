@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { flushSync } from "react-dom";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -226,7 +227,7 @@ function prefersReducedMotion() {
 /** Touch-capable mobile runtimes only. Electron and the Android app opt out. */
 export function swipeBackSupported() {
   if (typeof window === "undefined") return false;
-  if (window.electronAPI?.isElectron) return false;
+  if (isDesktopShell()) return false;
   if (/Electron/i.test(navigator.userAgent || "")) return false;
   try {
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") return false;

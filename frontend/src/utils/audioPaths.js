@@ -1,7 +1,8 @@
+import { isDesktopShell } from "../lib/desktopShell.js";
 // Audio path resolver for both web and Electron
 export function getAudioPath(filename) {
   // Electron environment
-  if (window.electronAPI?.isElectron) {
+  if (isDesktopShell()) {
     // In Electron, sounds are in extraResources (sounds folder)
     // Use relative path from the app
     return `sounds/${filename}`;
