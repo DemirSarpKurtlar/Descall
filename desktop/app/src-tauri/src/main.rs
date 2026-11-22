@@ -88,6 +88,7 @@ fn main() {
     let app = tauri::Builder::default()
         // Second launch (shortcut, taskbar) raises the existing window: Electron second-instance.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| state::show_main(app)))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())

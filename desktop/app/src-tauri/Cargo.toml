@@ -15,6 +15,7 @@ tauri-build = { version = "2.7", features = [] }
 [dependencies]
 tauri = { version = "2.12", features = ["tray-icon", "image-png"] }
 tauri-plugin-single-instance = "2.5"
+tauri-plugin-deep-link = "2.6"
 tauri-plugin-global-shortcut = "2.4"
 tauri-plugin-notification = "2.8"
 tauri-plugin-clipboard-manager = "2.5"
