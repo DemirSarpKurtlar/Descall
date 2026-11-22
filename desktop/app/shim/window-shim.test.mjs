@@ -181,7 +181,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   const main = readFileSync(join(src, "main.rs"), "utf8");
   // app:visibility like main.cjs: restore and show also clear "backgrounded" without a focus event.
   assert.match(boot, /if was_minimized(?:\.swap\(false, [^)]*\))?(?: && win\.is_visible\(\)\.unwrap_or\(false\))? \{\s*visibility\(&win, false\);/, "restore from minimized resumes the page");
-  const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn show_main") + 600);
+  const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn show_main") + 900);
   assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "tray / second launch show resumes the page");
   // First close to the tray tells the user once (main.cjs background-notice-shown).
   assert.match(boot, /let _ = win\.hide\(\);\s*background_notice_once\(app\);/);
@@ -206,6 +206,10 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(boot, /if !maximized \{\s*contain_restored\(&win\); \/\/ mainWindow 'unmaximize'/);
   assert.match(boot, /if was_minimized \{\s*contain_restored\(&win\); \/\/ mainWindow 'restore'/);
   assert.match(boot, /if !overflows\(b, work\) \{\s*return;\s*\}\s*let f = fit_bounds_to_work_area/);
+  // show_main runs on the event loop thread (tao's set_focus saw a still-hidden window when
+  // called from a toast click, the ready fallback or a Descall+ action).
+  assert.match(showMain, /if MAIN_THREAD\.get\(\)\.is_some\(\) && !on_main_thread\(\) \{\s*let a = app\.clone\(\);\s*let _ = app\.run_on_main_thread\(move \|\| show_main\(&a\)\);\s*return;/);
+  assert.match(main, /fn main\(\) \{\s*state::mark_main_thread\(\);/);
   // A second launch while the main window is still being built is kept (round 2).
   assert.match(main, /\.plugin\(tauri_plugin_single_instance::init\([\s\S]{0,300}state::request_show\(app\);/);
 }

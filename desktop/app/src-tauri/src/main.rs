@@ -76,6 +76,7 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    state::mark_main_thread();
     logging::init();
     errors::init_early();
     install_panic_hook();

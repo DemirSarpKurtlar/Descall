@@ -68,8 +68,29 @@ pub fn app_in_background<R: Runtime>(app: &AppHandle<R>) -> bool {
     !main_in_front(app)
 }
 
+/// The thread that runs the event loop (set first thing in main()).
+static MAIN_THREAD: std::sync::OnceLock<std::thread::ThreadId> = std::sync::OnceLock::new();
+
+pub fn mark_main_thread() {
+    let _ = MAIN_THREAD.set(std::thread::current().id());
+}
+
+fn on_main_thread() -> bool {
+    MAIN_THREAD.get().is_some_and(|id| *id == std::thread::current().id())
+}
+
 /// Bring the main window up (tray click, second launch, notification click).
+///
+/// On the event loop thread: tao queues show / unminimize from any other thread, and its
+/// set_focus checks the visible / minimized flags at once, so from the ready fallback, a
+/// toast click, an update prompt or a Descall+ action (all off that thread) a window coming
+/// out of the tray was shown but never focused (Electron's showMainWindow always raised it).
 pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
+    if MAIN_THREAD.get().is_some() && !on_main_thread() {
+        let a = app.clone();
+        let _ = app.run_on_main_thread(move || show_main(&a));
+        return;
+    }
     if let Some(w) = main_window(app) {
         let _ = w.set_skip_taskbar(false);
         let _ = w.show();
