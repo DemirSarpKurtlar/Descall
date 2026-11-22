@@ -222,6 +222,10 @@ for (const layout of ["desktop", "phone"]) {
   assert.ok(!q1.includes("shop2.buy.buyN"), "complete set: no buy button");
   const q2 = m.render("setq", { ...c, balance: 100 }, { setKey: "gece-limani" });
   has(q2, "s2-short", "set panel: short-by when unaffordable");
+  const closed = { ...set, yourPrice: null, setRateClosed: true };
+  const qc = m.render("setq", { ...c, data: { ...c.data, setDetails: { "gece-limani": closed } } }, { setKey: "gece-limani" });
+  has(qc, "shop2.sets.notOnSale", "closed set: not on sale note");
+  assert.ok(!qc.includes("shop2.buy.buyN"), "closed set: no buy button");
   const q3 = m.render("setq", c, { setKey: "gece-limani" });
   has(q3, "shop2.buy.buyN", "set panel: buy button when affordable");
   // 4 suggested pieces p0 p1 p4 p5 = 2100 D singles; the whole set (2870 D) is 770 D more.

@@ -18,7 +18,7 @@ import {
   S2ProfileCard,
   S2VoiceTile,
 } from "./Shop2Preview.jsx";
-import { Check, CheckCircle2, Gift, Heart, Monitor, Shirt, Smartphone, Undo2, Users } from "./shop2Icons.jsx";
+import { Check, CheckCircle2, Clock, Gift, Heart, Monitor, Shirt, Smartphone, Undo2, Users } from "./shop2Icons.jsx";
 
 const CHAT_CATS = new Set(["chat_bubble", "typing_flare", "reaction_burst"]);
 const VOICE_CATS = new Set(["voice_tile", "join_sound", "call_overlay"]);
@@ -271,6 +271,10 @@ export function SetQuickPanel({ setKey, onClose }) {
       <div className="s2-detail-actions">
         {all.complete ? (
           <span className="s2-btn is-wide is-done" role="status"><CheckCircle2 size={16} />{t("shop2.kasa.complete")}</span>
+        ) : all.setRateClosed ? (
+          // Scheduled, sold out or ended (the server sent yourPrice: null): the set page shows the
+          // same note; a buy button here was refused by the server.
+          <p className="s2-note"><Clock size={14} />{t("shop2.sets.notOnSale")}</p>
         ) : !nothing && s2.balance < total ? (
           <ShortBy n={total - s2.balance} compact />
         ) : (
@@ -278,7 +282,7 @@ export function SetQuickPanel({ setKey, onClose }) {
             {t("shop2.buy.buyN", { n: formatNumber(total, locale) })}
           </button>
         )}
-        <button type="button" className="s2-ibtn" onClick={() => s2.openGift({ setKey })} aria-label={t("shop2.gifts.giftIt")}><Gift size={17} /></button>
+        <button type="button" className="s2-ibtn" disabled={all.setRateClosed} title={all.setRateClosed ? t("shop2.sets.giftOff") : undefined} onClick={() => s2.openGift({ setKey })} aria-label={all.setRateClosed ? t("shop2.sets.giftOff") : t("shop2.gifts.giftIt")}><Gift size={17} /></button>
       </div>
       {hist.points.length > 1 ? (
         <div className="s2-hist">
