@@ -363,6 +363,14 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(plat, /ShowWindow\(HWND\(h as \*mut core::ffi::c_void\), SW_SHOWMINNOACTIVE\)/);
 }
 
+// The paint watchdog never shows its "could not open" box over a window hidden in the tray
+// (login auto-start), like main.cjs (if (!win.isVisible()) return).
+{
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  const ask = bootRs.slice(bootRs.indexOf("PaintStep::Ask => {"));
+  assert.ok(ask.indexOf("if !win.is_visible().unwrap_or(false)") > -1 && ask.indexOf("if !win.is_visible().unwrap_or(false)") < ask.indexOf("ask_retry"), "hidden: no dialog");
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).

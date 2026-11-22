@@ -562,6 +562,12 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
                 }
                 PaintStep::Ask => {
                     crate::state::shell(&app).boot.lock().unwrap().asked = true;
+                    // Hidden in the tray (Windows login auto-start): no "could not open" box out
+                    // of nowhere at sign-in; main.cjs returned here too (!win.isVisible()).
+                    if !win.is_visible().unwrap_or(false) {
+                        log::warn!("[boot] no paint after {elapsed} ms while hidden: not asking");
+                        return;
+                    }
                     let title = crate::state::et(&app, "dialog.openFailed", &[]);
                     let detail = crate::state::et(&app, "dialog.openFailedDetail", &[]);
                     let retry = tauri::async_runtime::spawn_blocking(move || crate::webview::ask_retry(&title, &detail)).await.unwrap_or(false);
