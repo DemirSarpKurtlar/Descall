@@ -352,6 +352,17 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main")), /^[\s\S]{0,900}"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
 }
 
+// An updater relaunch that was minimized comes back minimized without activation
+// (main.cjs showInactive + minimize); show() is SW_SHOW and took the focus from a game.
+{
+  const mainSrc = readFileSync(join(here, "..", "src-tauri", "src", "main.rs"), "utf8");
+  const arm = mainSrc.slice(mainSrc.indexOf("StartAction::Minimize =>"), mainSrc.indexOf("StartAction::Hide =>"));
+  assert.match(arm, /platform::show_minimized_inactive\(&w\)/);
+  assert.doesNotMatch(arm, /w\.show\(\)/);
+  const plat = readFileSync(join(here, "..", "src-tauri", "src", "platform.rs"), "utf8");
+  assert.match(plat, /ShowWindow\(HWND\(h as \*mut core::ffi::c_void\), SW_SHOWMINNOACTIVE\)/);
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).

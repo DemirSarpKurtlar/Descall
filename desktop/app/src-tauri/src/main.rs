@@ -228,10 +228,7 @@ fn main() {
                         }
                     });
                 }
-                StartAction::Minimize => {
-                    let _ = w.show();
-                    let _ = w.minimize();
-                }
+                StartAction::Minimize => platform::show_minimized_inactive(&w),
                 StartAction::Hide => {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
                 }
