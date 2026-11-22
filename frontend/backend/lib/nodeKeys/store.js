@@ -7,6 +7,10 @@
  *                  PC GB-hours (saved-cost line)
  *   node_events    durable copy of the events table (owner actions, alerts)
  *
+ * 20261122b_node_bootstrap.sql adds node_keys.bootstrap_until / bootstrapped_at (the PC's
+ * enrollment window for POST /api/node/bootstrap). Until it is applied the window is
+ * created_at + 30 min and cannot be reopened (BOOTSTRAP_UNAVAILABLE); the rest is unchanged.
+ *
  * Until the migration is applied every table answers "missing": available() is false,
  * key management answers KEYS_UNAVAILABLE (the tab says so), settings stay in the
  * cluster / memory and events in the cluster ring. Rechecked every 60 s, so applying the
@@ -18,6 +22,10 @@ const M = require("./model");
 
 const TABLES = Object.freeze({ keys: "node_keys", settings: "node_settings", events: "node_events" });
 const KEY_COLS = "id, name, secret_hash, prefix, last4, created_at, created_by, last_used_at, last_used_node, last_used_ip, revoked_at, revoked_by, revoke_reason";
+/** 20261122b_node_bootstrap.sql */
+const BOOTSTRAP_COLS = "bootstrap_until, bootstrapped_at";
+/** A key may fetch the node environment this long after it was created or reopened. */
+const BOOTSTRAP_WINDOW_MS = 30 * 60 * 1000;
 const RECHECK_MS = 60 * 1000;
 const CACHE_MS = 5000;
 const TOUCH_MS = 60 * 1000;
@@ -26,7 +34,10 @@ let dbOverride = null;
 const db = () => dbOverride || require("../../db/supabase");
 
 let availability = { value: null, at: 0 };
+/** Are the bootstrap columns there? null unknown, false for RECHECK_MS after a miss. */
+let bootstrapCols = { value: null, at: 0 };
 let warned = false;
+let warnedCols = false;
 const byHash = new Map(); // hash -> { at, row }
 const touched = new Map(); // id -> ms
 let memLedger = { month: M.monthKey(), gbHours: 0, pcHours: 0 };
@@ -39,7 +50,14 @@ class StoreError extends Error {
   }
 }
 
+/** A missing bootstrap column (42703 select / PGRST204 write), not a missing table. */
+function isMissingColumn(err) {
+  const msg = String(err?.message || err?.details || "");
+  return err?.code === "42703" || err?.code === "PGRST204" || (/bootstrap(_until|ped_at)/.test(msg) && /does not exist|not find|schema cache/i.test(msg));
+}
+
 function isMissingTable(err) {
+  if (isMissingColumn(err)) return false;
   const msg = String(err?.message || err?.details || "");
   return err?.code === "42P01" || err?.code === "PGRST205" || (/node_(keys|settings|events)/.test(msg) && /does not exist|not find|schema cache/i.test(msg));
 }
@@ -98,11 +116,55 @@ function keyView(row) {
     lastUsedNode: row.last_used_node || null,
     revokedAt: row.revoked_at || null,
     revokeReason: row.revoke_reason || null,
+    bootstrapUntil: row.revoked_at ? null : new Date(bootstrapUntilMs(row)).toISOString(),
+    bootstrappedAt: row.bootstrapped_at || null,
   };
 }
 
+/* ---------------- bootstrap window ---------------- */
+
+/**
+ * End of the enrollment window (ms): the owner's explicit window (bootstrap_until, set by
+ * "Kurulum penceresini aç" / closed early) when there is one, else created_at + 30 min.
+ */
+function bootstrapUntilMs(row) {
+  if (!row) return 0;
+  const explicit = Date.parse(row.bootstrap_until || "");
+  if (Number.isFinite(explicit)) return explicit;
+  const created = Date.parse(row.created_at || "");
+  return Number.isFinite(created) ? created + BOOTSTRAP_WINDOW_MS : 0;
+}
+
+function colsAvailable(now = Date.now()) {
+  if (bootstrapCols.value === false && now - bootstrapCols.at >= RECHECK_MS) bootstrapCols = { value: null, at: 0 };
+  return bootstrapCols.value !== false;
+}
+
+function markColsMissing(err) {
+  bootstrapCols = { value: false, at: Date.now() };
+  if (!warnedCols) {
+    warnedCols = true;
+    console.warn("[node-keys] bootstrap columns missing; apply supabase/migrations/20261122b_node_bootstrap.sql to reopen the PC setup window", err?.code ? `(${err.code})` : "");
+  }
+}
+
+
+/** Select key rows with the bootstrap columns when they exist, without them otherwise. */
+async function selectKeys(build) {
+  if (colsAvailable()) {
+    const res = await build(`${KEY_COLS}, ${BOOTSTRAP_COLS}`);
+    if (!res?.error) {
+      bootstrapCols = { value: true, at: Date.now() };
+      return res;
+    }
+    if (!isMissingColumn(res.error)) return res;
+    markColsMissing(res.error);
+  }
+  return build(KEY_COLS);
+}
+
 async function listKeys() {
-  const res = check(await db().from(TABLES.keys).select(KEY_COLS).order("created_at", { ascending: false }).limit(100));
+  const res = check(await selectKeys((cols) => db().from(TABLES.keys).select(cols).order("created_at", { ascending: false }).limit(100)));
   availability = { value: true, at: Date.now() };
   return (res.data || []).map(keyView);
 }
@@ -124,12 +186,64 @@ async function createKey({ name, actorId }) {
       .select(KEY_COLS)
       .single()
   );
+  // A new key opens its enrollment window by itself (created_at + 30 min).
   return { key: keyView(res.data), secret };
 }
 
 async function getKey(id) {
-  const res = check(await db().from(TABLES.keys).select(KEY_COLS).eq("id", id).maybeSingle());
+  const res = check(await selectKeys((cols) => db().from(TABLES.keys).select(cols).eq("id", id).maybeSingle()));
   return res.data || null;
+}
+
+/**
+ * Bootstrap state of an active key: { open, until (ms), explicit, bootstrappedAt, name }.
+ * null when the key is unknown or revoked. Never throws.
+ */
+async function bootstrapWindow(id, { now = Date.now() } = {}) {
+  try {
+    const row = await getKey(id);
+    if (!row || row.revoked_at) return null;
+    const until = bootstrapUntilMs(row);
+    return { open: now < until, until, explicit: Boolean(row.bootstrap_until), bootstrappedAt: row.bootstrapped_at || null, name: row.name };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Owner action: open the window for 30 minutes from now (open: true) or close it now.
+ * Needs the bootstrap columns: BOOTSTRAP_UNAVAILABLE (503) before 20261122b is applied.
+ */
+async function setBootstrapWindow(id, { open, now = Date.now() } = {}) {
+  const row = await getKey(id);
+  if (!row) throw new StoreError("KEY_NOT_FOUND", "Node key not found.", 404);
+  if (row.revoked_at) throw new StoreError("KEY_REVOKED", "This node key is already revoked.", 409);
+  const until = new Date(open ? now + BOOTSTRAP_WINDOW_MS : now).toISOString();
+  if (!colsAvailable(now)) throw new StoreError("BOOTSTRAP_UNAVAILABLE", "The setup window needs a database update.", 503);
+  const res = await db().from(TABLES.keys).update({ bootstrap_until: until }).eq("id", id).select(`${KEY_COLS}, ${BOOTSTRAP_COLS}`).maybeSingle();
+  if (res?.error) {
+    if (isMissingColumn(res.error)) {
+      markColsMissing(res.error);
+      throw new StoreError("BOOTSTRAP_UNAVAILABLE", "The setup window needs a database update.", 503);
+    }
+    check(res);
+  }
+  return keyView(res?.data || { ...row, bootstrap_until: until });
+}
+
+/** A successful bootstrap: remember when (best effort; the event row is the record). */
+async function markBootstrapped(id, { now = Date.now() } = {}) {
+  if (!colsAvailable(now)) return false;
+  try {
+    const res = await db().from(TABLES.keys).update({ bootstrapped_at: new Date(now).toISOString() }).eq("id", id);
+    if (res?.error) {
+      if (isMissingColumn(res.error)) markColsMissing(res.error);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function revokeKey(id, { reason, actorId }) {
@@ -273,6 +387,7 @@ function __setDbForTests(fake) {
 
 function __resetForTests() {
   availability = { value: null, at: 0 };
+  bootstrapCols = { value: null, at: 0 };
   byHash.clear();
   touched.clear();
   memLedger = { month: M.monthKey(), gbHours: 0, pcHours: 0 };
@@ -287,6 +402,11 @@ module.exports = {
   getKey,
   revokeKey,
   verify,
+  bootstrapWindow,
+  setBootstrapWindow,
+  markBootstrapped,
+  bootstrapUntilMs,
+  BOOTSTRAP_WINDOW_MS,
   keySummary,
   loadCfg,
   saveCfg,
@@ -295,6 +415,7 @@ module.exports = {
   addEvent,
   listEvents,
   isMissingTable,
+  isMissingColumn,
   __setDbForTests,
   __resetForTests,
 };

@@ -124,6 +124,7 @@ module.exports = {
     nodesKvDown: "A memória compartilhada (Key Value) está inacessível; modo de servidor único.",
     nodesRender90: "A memória do Render está em {pct}%; aumente a parte do PC ou verifique a carga.",
     nodesTest: "Notificação de teste: os alertas da rede de servidores chegam a este dispositivo.",
+    nodesBootstrap: "Configuração do PC: as configurações secretas foram obtidas. Se não foi você, revogue a chave do nó agora.",
     voicePlain: "Mensagem de voz",
     attachmentPlain: "Enviou um anexo",
     incomingCall: "Chamada recebida",

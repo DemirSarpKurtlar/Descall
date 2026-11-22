@@ -260,6 +260,8 @@ export const API_ES = {
   "File is too large (max {max} MB).": "El archivo es demasiado grande (máx. {max} MB).",
   "Invalid node key": "Clave de nodo de servidor no válida",
   "Not the primary node": "Este no es el nodo de servidor principal",
+  "Use the primary's own address": "Usa la dirección propia del servidor principal",
+  "The setup window of this node key is closed": "La ventana de configuración de esta clave de nodo está cerrada",
   "Invalid node id": "ID de nodo de servidor no válido",
   "Invalid node url": "Dirección de nodo de servidor no válida",
   "Invalid node state": "Estado de nodo de servidor no válido",

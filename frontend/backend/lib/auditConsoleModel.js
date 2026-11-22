@@ -160,6 +160,10 @@ const CATALOG = {
   system_backup: ["system", "medium"],
   system_restart: ["system", "critical"],
   system_restart_exit: ["system", "high"],
+  // Hybrid server: the PC node fetched the shared environment (service role key included).
+  system_node_bootstrap: ["system", "critical"],
+  system_node_key_bootstrap_open: ["system", "high"],
+  system_node_key_bootstrap_close: ["system", "medium"],
   announcement_publish: ["content", "high"],
   credit_transfers_off: ["economy", "medium"],
   credit_transfers_on: ["economy", "medium"],
