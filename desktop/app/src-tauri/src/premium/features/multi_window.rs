@@ -75,11 +75,8 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         .on_new_window(|u, _| {
-            if u.scheme() == "https" {
-                if let Some(h) = crate::premium::host() {
-                    use tauri_plugin_opener::OpenerExt;
-                    let _ = h.app.opener().open_url(u.as_str(), None::<&str>);
-                }
+            if let Some(h) = crate::premium::host() {
+                crate::boot::open_external_window(&h.app, &u);
             }
             tauri::webview::NewWindowResponse::Deny
         })

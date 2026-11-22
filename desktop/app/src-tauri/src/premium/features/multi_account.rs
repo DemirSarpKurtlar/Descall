@@ -115,7 +115,13 @@ fn open(h: &Host, id: &str) -> Value {
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
-        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+        // Links that open a new window go to the default browser, as in the main window.
+        .on_new_window(|u, _| {
+            if let Some(h) = crate::premium::host() {
+                crate::boot::open_external_window(&h.app, &u);
+            }
+            tauri::webview::NewWindowResponse::Deny
+        })
         .build();
     match built {
         Ok(w) => {

@@ -399,6 +399,19 @@ pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool
     false
 }
 
+/// window.open / target=_blank from an app window (main, pop-outs, account windows, call and
+/// sidebar portals) that is not a portal or an admin route: web and mail links go to the
+/// default browser by the same rule everywhere (trust::main_window_open: http, https and
+/// mailto, never the app or shell origin, never file:, javascript: or other schemes). Nothing
+/// ever opens inside the app. Pop-outs and portals used to open any https URL (the app's own
+/// pages included) and no mail link; account windows opened nothing at all.
+pub fn open_external_window<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
+    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    }
+}
+
 // ---- window events ---------------------------------------------------------------------------
 
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {

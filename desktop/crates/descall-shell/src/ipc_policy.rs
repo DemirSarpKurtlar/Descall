@@ -473,6 +473,25 @@ mod capability_tests {
         }
     }
 
+    /// window.open from any app window follows one rule (boot::open_external_window, i.e.
+    /// trust::main_window_open): pop-outs and portals opened every https URL and no mail link,
+    /// account windows nothing.
+    #[test]
+    fn app_windows_open_links_by_one_rule() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("premium/wins.rs", include_str!("../../../app/src-tauri/src/premium/wins.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+        ] {
+            assert!(src.contains("boot::open_external_window(&"), "{file}: window.open without the shared external-link rule");
+            assert!(!src.contains("u.scheme() == \"https\""), "{file}: own scheme check instead of trust::main_window_open");
+        }
+        let boot = include_str!("../../../app/src-tauri/src/boot.rs");
+        let f = &boot[boot.find("pub fn open_external_window").expect("boot::open_external_window")..];
+        assert!(f[..f.find("\n}").unwrap()].contains("trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External"));
+    }
+
     /// Windows that take HTML5 drops (chat files, server reordering, the quick drop zone) keep
     /// WebView2's own drag and drop: Tauri's handler swallows every drop on Windows.
     #[test]

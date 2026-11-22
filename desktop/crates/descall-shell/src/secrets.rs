@@ -109,7 +109,7 @@ pub fn redact(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut bearer = false;
     let mut word = String::new();
-    let mut flush = |word: &mut String, out: &mut String, bearer: &mut bool| {
+    let flush = |word: &mut String, out: &mut String, bearer: &mut bool| {
         if word.is_empty() {
             return;
         }
