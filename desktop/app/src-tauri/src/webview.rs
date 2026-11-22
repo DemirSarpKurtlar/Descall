@@ -237,9 +237,28 @@ pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
     use std::sync::atomic::Ordering;
     let app = window.app_handle().clone();
     let (action, name) = renderer_gone_action(kind, CRASH_RELOADS.load(Ordering::Acquire));
+    if kind == 2 {
+        // Hung, not gone: WebView2 repeats this report every few seconds while the page stays
+        // hung. Reported once per hang; asked once, 10 s in, with the window on screen
+        // (main.cjs 'unresponsive'). A live call keeps counting as busy until the user reloads.
+        let (hang, new) = HANG.lock().map(|mut h| h.report(crate::state::now_ms())).unwrap_or((0, false));
+        if !new {
+            return;
+        }
+        crate::errors::report(descall_shell::main_errors::summary("render-process-gone", name, &format!("WebView2 process failed (kind {kind})")));
+        let win = window.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(descall_shell::watchdog::HANG_ASK_AFTER_MS)).await;
+            let visible = win.is_visible().unwrap_or(false) && !win.is_minimized().unwrap_or(false);
+            if HANG.lock().map(|mut h| h.due(hang, visible)).unwrap_or(false) {
+                ask(&win, kind);
+            }
+        });
+        return;
+    }
     if action != RendererGone::ReportOnly {
-        // The page is gone or hung: hold the report for the next document, and a live call
-        // cannot survive this (the update deferral treats it as "call ended").
+        // The page is gone: hold the report for the next document, and a live call cannot
+        // survive this (the update deferral treats it as "call ended").
         crate::errors::detach();
         crate::commands::updates::reset_voice(&app);
     }
@@ -251,37 +270,45 @@ pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
             log::warn!("[boot] {name}: reloading the page");
             reload(window);
         }
-        RendererGone::Ask => {
-            if ASKING.swap(true, Ordering::AcqRel) {
-                return;
-            }
-            let win = window.clone();
-            tauri::async_runtime::spawn(async move {
-                let hung = kind == 2;
-                let (title, detail) = if hung {
-                    (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
-                } else {
-                    (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
-                };
-                let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
-                ASKING.store(false, Ordering::Release);
-                match (kind, retry) {
-                    // Browser process gone: only a fresh start brings the WebView back.
-                    (0, true) => {
-                        crate::state::set_quitting(&app);
-                        app.restart();
-                    }
-                    (0, false) => {
-                        crate::state::set_quitting(&app);
-                        app.exit(0);
-                    }
-                    (_, true) => reload(&win),
-                    // Wait (hung) or keep the window as it is.
-                    (_, false) => {}
-                }
-            });
-        }
+        RendererGone::Ask => ask(window, kind),
     }
+}
+
+/// Hung renderer episodes of the main window (descall_shell::watchdog::HangWatch).
+static HANG: std::sync::Mutex<descall_shell::watchdog::HangWatch> = std::sync::Mutex::new(descall_shell::watchdog::HangWatch::new());
+
+/// Native Retry / Cancel for a gone (kind 0 / 1) or hung (kind 2) page, one at a time.
+fn ask<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
+    use std::sync::atomic::Ordering;
+    if ASKING.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    let app = window.app_handle().clone();
+    let win = window.clone();
+    tauri::async_runtime::spawn(async move {
+        let hung = kind == 2;
+        let (title, detail) = if hung {
+            (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
+        } else {
+            (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
+        };
+        let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
+        ASKING.store(false, Ordering::Release);
+        match (kind, retry) {
+            // Browser process gone: only a fresh start brings the WebView back.
+            (0, true) => {
+                crate::state::set_quitting(&app);
+                app.restart();
+            }
+            (0, false) => {
+                crate::state::set_quitting(&app);
+                app.exit(0);
+            }
+            (_, true) => reload(&win),
+            // Wait (hung) or keep the window as it is.
+            (_, false) => {}
+        }
+    });
 }
 
 /// Subscribe the main window to WebView2 ProcessFailed (see on_process_failed).

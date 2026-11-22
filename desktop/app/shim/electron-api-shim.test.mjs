@@ -279,6 +279,18 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.match(bootRs, /Imported \{ local_storage, id: import_id \}/, "extra-account windows too");
 }
 
+// A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
+// reported once and asked about once, 10 s in, with the window on screen (main.cjs
+// 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).
+{
+  const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  const hung = webviewRs.slice(webviewRs.indexOf("if kind == 2 {"), webviewRs.indexOf("if action != RendererGone::ReportOnly"));
+  assert.match(hung, /h\.report\(crate::state::now_ms\(\)\)[\s\S]*if !new \{\s*return;/, "repeats of the same hang return early");
+  assert.match(hung, /HANG_ASK_AFTER_MS[\s\S]*is_visible\(\)[\s\S]*h\.due\(hang, visible\)[\s\S]*ask\(&win, kind\)/, "asked once, later, only on screen");
+  assert.ok(hung.indexOf("errors::report") > hung.indexOf("if !new"), "reported once per hang");
+  assert.doesNotMatch(hung, /reset_voice/, "a hung call still counts as busy (no update install over it)");
+}
+
 // Values answered locally (sync in Electron) and return shapes.
 {
   const s = loadShim({ boot: { version: "4.0.0", token: "boot.tok.en", reducedTransparency: true } });
