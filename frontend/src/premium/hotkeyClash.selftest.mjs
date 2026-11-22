@@ -37,7 +37,14 @@ assert.equal(launcherCommandCenterClash({ ...base, custom: { bindings: { quick_l
 // The shell's answer store.
 setCommandCenterHotkeyResult("CommandOrControl+Shift+K", { ok: false, hotkey: "", conflict: "quick_launcher" });
 assert.deepEqual(commandCenterHotkeyResult(), { ok: false, accel: "CommandOrControl+Shift+K", conflict: "quick_launcher" });
+// A "locked" answer (feature not started yet, the bridge resends) is not a failure.
+setCommandCenterHotkeyResult("CommandOrControl+Alt+K", { ok: false, error: "locked" });
+assert.deepEqual(commandCenterHotkeyResult(), { ok: false, accel: "CommandOrControl+Shift+K", conflict: "quick_launcher" });
 setCommandCenterHotkeyResult("", { ok: true, hotkey: "" });
 assert.equal(commandCenterHotkeyResult(), null);
+setCommandCenterHotkeyResult("CommandOrControl+Shift+K", { ok: false, error: "locked" });
+assert.equal(commandCenterHotkeyResult(), null, "locked leaves the result unknown");
+setCommandCenterHotkeyResult("CommandOrControl+Shift+K", { ok: false, error: "Error invoking remote method 'premium:invoke': Error: No handler registered for 'premium:command_center:hotkey'" });
+assert.equal(commandCenterHotkeyResult(), null, "Electron's not-started answer is not a failure either");
 
 console.log("hotkeyClash.selftest ok");

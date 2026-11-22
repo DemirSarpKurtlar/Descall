@@ -12,7 +12,7 @@
  *
  *   ELECTRON_BUILD=1 npx vite build --outDir /tmp/descall-e2e-dist
  *   node e2e/tauriPremium/tauriPremiumDesktop.e2e.cjs --dist=/tmp/descall-e2e-dist
- *   ONLY=features|clash|taken|overlays limits the scenarios.
+ *   ONLY=features|clash|taken|overlays|slow limits the scenarios.
  */
 const { open, premiumCalls, pw } = require('./harness.cjs');
 
@@ -122,6 +122,19 @@ async function clash(browser) {
   await ctx.close();
 }
 
+async function slow(browser) {
+  console.log('scenario: the shell verifies late; the first "locked" answer is not a failed shortcut');
+  const { ctx, page } = await open(browser, { verifyDelayMs: 1500 });
+  await sleep(3000);
+  const calls = await premiumCalls(page);
+  const res = calls.filter(([ch]) => ch === 'premium:command_center:hotkey').map(([, , r]) => r);
+  check(res.some((r) => r && r.error === 'locked') && res[res.length - 1] && res[res.length - 1].ok === true, `command_center:hotkey locked first, registered on the resend (${res.length} calls)`);
+  await goCat(page, 'desktop_tools');
+  await openCard(page, 'command_center');
+  check(!(await page.locator('[data-s="command_center.clash"]').count()), 'no "could not be registered" hint after a late verify');
+  await ctx.close();
+}
+
 async function overlays(browser) {
   console.log('scenario: HUDs, quick drop and sidebar ask the shell to open their windows');
   const { ctx, page } = await open(browser, {});
@@ -183,6 +196,7 @@ async function taken(browser) {
     if (!only || only === 'clash') await clash(browser);
     if (!only || only === 'taken') await taken(browser);
     if (!only || only === 'overlays') await overlays(browser);
+    if (!only || only === 'slow') await slow(browser);
   } finally { await browser.close(); }
   if (fails.length) { console.log('FAIL\n' + fails.map((f) => ' - ' + f).join('\n')); process.exit(1); }
   console.log('desktop features e2e ok');

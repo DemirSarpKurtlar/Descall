@@ -54,6 +54,10 @@ const subs = new Set();
 
 /** PremiumGamingHost passes the answer here; `accel` is what it asked for. */
 export function setCommandCenterHotkeyResult(accel, r) {
+  // "locked": the shell has not started the feature yet (its own membership check is still
+  // running); the Tauri bridge sends the hotkey again once it runs. Not a registration answer.
+  // Electron answers the same case with "No handler registered" (a thrown invoke).
+  if (r && r.ok === false && /^(locked|web)$|no handler registered/i.test(String(r.error || ""))) return;
   const next = accel ? { ok: Boolean(r && r.ok), accel: String(accel), conflict: (r && typeof r.conflict === "string" && r.conflict) || "" } : null;
   if (JSON.stringify(next) === JSON.stringify(ccResult)) return;
   ccResult = next;
