@@ -40,6 +40,15 @@ codegen-units = 1
 panic = "abort"
 strip = "symbols"
 
+# The Descall+ PIN hash (scrypt) took over a minute per `cargo test` run unoptimised (three
+# hashes in the premium-logic tests, on both CI jobs) and seconds per PIN check in dev builds.
+[profile.dev.package.scrypt]
+opt-level = 3
+[profile.dev.package.salsa20]
+opt-level = 3
+[profile.dev.package.pbkdf2]
+opt-level = 3
+
 # The migrator and the setup bootstrapper are small one-shot tools: optimise them for size.
 [profile.release.package.descall-migrator]
 opt-level = "s"
