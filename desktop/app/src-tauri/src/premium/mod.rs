@@ -702,6 +702,9 @@ impl Host {
                     }
                 }
                 self.bus(Bus::App);
+                // A toast clicked while Descall was closed opens its chat once the page is up
+                // (whether or not quick_reply runs: the "toast" style is another feature).
+                features::quick_reply::flush_clicks();
                 ok(json!({}))
             }),
             _ => return None,
@@ -870,6 +873,8 @@ pub fn set_locale(locale: &str) {
     if let (Some(h), Some(l)) = (host(), logic::i18n::match_locale(locale)) {
         *lock(&h.locale) = Some(l.to_string());
         h.refresh_tray();
+        // Text drawn from the language outside the tray (taskbar thumbnail tooltips).
+        h.bus(Bus::App);
     }
 }
 

@@ -71,7 +71,9 @@ impl F {
         let c = lock(&h.call_state).clone();
         let flag = |k: &str| c.get(k).and_then(Value::as_bool).unwrap_or(false);
         let on = opt(h, "buttons") && flag("active");
-        let key = if on { format!("{}|{}", flag("muted"), flag("deafened")) } else { String::new() };
+        // The language is part of the key: the tooltips follow a language change live
+        // (Electron kept the old language until the next mute / deafen change).
+        let key = if on { format!("{}|{}|{}", flag("muted"), flag("deafened"), h.locale()) } else { String::new() };
         {
             let mut last = lock(&self.last_buttons);
             if !force && last.as_deref() == Some(key.as_str()) {
@@ -117,7 +119,10 @@ impl Feature for F {
     }
     fn on_bus(&self, h: &Host, ev: &Bus) {
         match ev {
-            Bus::App => self.set_badge(h),
+            Bus::App => {
+                self.set_badge(h);
+                self.set_buttons(h, false);
+            }
             Bus::Call => self.set_buttons(h, false),
             // Shown again from the tray: the window has a new taskbar button without the
             // overlay icon (the thumbnail buttons come back through TaskbarButtonCreated,

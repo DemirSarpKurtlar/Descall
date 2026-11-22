@@ -377,15 +377,55 @@ pub fn redact_locked(payload: &Value, locked_text: &str) -> Value {
     })
 }
 
-/// Arguments of a plain notification toast (no reply box): a click opens what it was about.
-pub fn toast_click_args(id: &str) -> String {
-    format!("descall-n|{id}")
+/// The routing fields of a notification click (App.jsx onNotifClick: which DM, group, server
+/// channel or request list to open). Only ids and the type, never a name or message text.
+pub const TOAST_CLICK_KEYS: [&str; 8] = ["type", "conversationId", "fromId", "groupId", "serverId", "channelId", "dmConversationId", "feedbackId"];
+
+fn click_value_ok(v: &str) -> bool {
+    (1..=64).contains(&v.len()) && v.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'))
 }
 
-pub fn parse_toast_click(args: &str) -> Option<String> {
-    let id = args.strip_prefix("descall-n|")?;
+/// Arguments of a plain notification toast (no reply box): a click opens what it was about.
+/// The routing ids of `data` ride along (`descall-n|<id>|type=dm|conversationId=..`): a click
+/// from the Action Center after Descall was closed starts it through the COM activator, where
+/// the toast's own click envelope is gone, and must still open that chat.
+pub fn toast_click_args(id: &str, data: &Value) -> String {
+    let mut out = format!("descall-n|{id}");
+    for k in TOAST_CLICK_KEYS {
+        let v = match data.get(k) {
+            Some(Value::String(x)) => x.clone(),
+            Some(Value::Number(n)) => n.to_string(),
+            _ => continue,
+        };
+        if click_value_ok(&v) {
+            out.push('|');
+            out.push_str(k);
+            out.push('=');
+            out.push_str(&v);
+        }
+    }
+    out
+}
+
+/// (toast id, routing data) of a plain toast click; None for anything else (a reply toast,
+/// a malformed or foreign argument string).
+pub fn parse_toast_click(args: &str) -> Option<(String, Value)> {
+    let rest = args.strip_prefix("descall-n|")?;
+    let mut parts = rest.split('|');
+    let id = parts.next()?;
     let ok = !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
-    ok.then(|| id.to_string())
+    if !ok {
+        return None;
+    }
+    let mut data = Map::new();
+    for part in parts {
+        let (k, v) = part.split_once('=')?;
+        if !TOAST_CLICK_KEYS.contains(&k) || !click_value_ok(v) || data.contains_key(k) {
+            return None;
+        }
+        data.insert(k.to_string(), Value::String(v.to_string()));
+    }
+    Some((id.to_string(), Value::Object(data)))
 }
 
 pub fn drop_targets(next: &Value) -> Vec<Value> {
@@ -455,6 +495,28 @@ pub fn looks_like_jwt(t: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn toast_click_carries_the_chat_for_a_cold_start() {
+        // A DM toast: the routing ids ride in the arguments, names and text do not.
+        let dm = json!({ "type": "dm", "conversationId": "6a1f-22", "fromId": "6a1f-22", "from": "Ayşe", "preview": "gizli" });
+        let args = toast_click_args("descall-n-1-2", &dm);
+        assert_eq!(args, "descall-n|descall-n-1-2|type=dm|conversationId=6a1f-22|fromId=6a1f-22");
+        assert!(!args.contains("Ayşe") && !args.contains("gizli"));
+        assert_eq!(parse_toast_click(&args), Some(("descall-n-1-2".to_string(), json!({ "type": "dm", "conversationId": "6a1f-22", "fromId": "6a1f-22" }))));
+        // A server mention keeps server and channel; numbers become strings.
+        let m = json!({ "type": "mention", "serverId": 42, "channelId": "c_9", "serverName": "Lab" });
+        let (_, d) = parse_toast_click(&toast_click_args("n1", &m)).unwrap();
+        assert_eq!(d, json!({ "type": "mention", "serverId": "42", "channelId": "c_9" }));
+        // A value that could break the argument string is left out, not passed on.
+        let bad = json!({ "type": "group", "groupId": "a|b=c", "fromId": "x".repeat(65) });
+        assert_eq!(toast_click_args("n2", &bad), "descall-n|n2|type=group");
+        // Foreign or malformed pairs: not ours.
+        assert_eq!(parse_toast_click("descall-n|n3|name=Ada"), None);
+        assert_eq!(parse_toast_click("descall-n|n3|type=dm|type=group"), None);
+        assert_eq!(parse_toast_click("descall-n|n3|type="), None);
+        assert_eq!(parse_toast_click("descall-n|n 3"), None);
+    }
 
     #[test]
     fn blob_store_has_a_total_cap() {
@@ -580,11 +642,11 @@ mod tests {
         assert_eq!(r["options"]["requireInteraction"], true);
         assert_eq!(r["options"]["data"], json!({ "type": "call", "callType": "video", "callId": "c1" }));
         assert_eq!(redact_locked(&json!(null), "x")["options"]["tag"], LOCKED_TAG);
-        assert_eq!(parse_toast_click(&toast_click_args("descall-n-1-2")).as_deref(), Some("descall-n-1-2"));
+        assert_eq!(parse_toast_click(&toast_click_args("descall-n-1-2", &json!({}))), Some(("descall-n-1-2".to_string(), json!({}))));
         assert_eq!(parse_toast_click("descall-n|"), None);
         assert_eq!(parse_toast_click("descall-n|a|b"), None);
         assert_eq!(parse_toast_click(&a), None, "a reply toast is not a plain one");
-        assert_eq!(parse_toast_args(&toast_click_args("x")), None);
+        assert_eq!(parse_toast_args(&toast_click_args("x", &json!({ "type": "dm", "conversationId": "u1" }))), None);
         assert_eq!(safe_file_name("my clip (1).webm"), "my_clip_1_.webm");
         assert_eq!(safe_file_name(""), "clip.webm");
         assert_eq!(drop_targets(&json!({"targets": [{"id": "dm:1", "label": "Ada"}, {"label": "x"}]})).len(), 1);

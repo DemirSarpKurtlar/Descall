@@ -16,6 +16,10 @@
 // 8. A Descall+ "toast" style notification opens the chat when clicked.
 // 9. Unread messages put a dot on the tray icon.
 // 10. While Descall+ app lock is locked, notifications show nothing personal.
+// 11. A toast clicked in the Action Center after Descall was closed still opens its chat.
+// 12. Taskbar thumbnail tooltips follow a language change live.
+// 13. The native tray menu (panel fallback) has Electron's order.
+// 14. Taskbar badge and tray dot count the same unread messages.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -242,9 +246,9 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.ok(branch.indexOf("show_toast(") >= 0 && branch.indexOf("show_toast(") < branch.indexOf(".notification()"), "native toast with click first, plugin fallback");
   assert.match(branch, /json!\(\{ "title": title, "body": body, "tag": tag, "data": data \}\)/, "same click envelope as Electron");
   const qr = codeOnly(read("desktop/app/src-tauri/src/premium/features/quick_reply.rs"));
-  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush"));
+  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush()"));
   assert.ok(act.indexOf("parse_toast_click") >= 0 && act.indexOf("parse_toast_click") < act.indexOf("parse_toast_args"), "plain toast clicks handled before reply toasts");
-  assert.match(act, /show_main\(\)[\s\S]*"notification:click"/, "click shows Descall and opens the chat");
+  assert.match(act, /show_main\(\)[\s\S]*deliver_click\(h, click\)/, "click shows Descall and opens the chat");
   const toast = codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs"));
   const plain = toast.slice(toast.indexOf("pub fn plain_toast_xml"), toast.indexOf("pub fn show("));
   assert.doesNotMatch(plain, /<input/, "no reply box on a plain toast");
@@ -308,6 +312,86 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   // What the logical position did: 1280 + 853 = 2133 logical read at 100 % is x 2133 px,
   // left of the second monitor's centre by more than a capsule width.
   assert.ok(3200 - (second.rect.x + second.rect.width / 2) > 400);
+}
+
+// ---- 11: cold start from a toast click opens the chat ---------------------------------------------
+{
+  // The click envelope of a live toast lives in memory (quick_reply.rs LIVE). A toast clicked in
+  // the Action Center after Descall was closed starts it through the COM activator: the envelope
+  // is gone and the page is not loaded yet. The routing ids ride in the toast arguments and the
+  // click waits until the page reported its state.
+  const rules = codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs"));
+  const keys = rules.match(/pub const TOAST_CLICK_KEYS: \[&str; (\d+)\] = \[([^\]]+)\];/);
+  assert.ok(keys, "routing keys listed");
+  const list = [...keys[2].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(list.length, Number(keys[1]));
+  // Every key App.jsx onNotifClick routes by (ids and the type), and no names or text.
+  const app = read("frontend/src/App.jsx");
+  const click = app.slice(app.indexOf("const onNotifClick"), app.indexOf("const onCallAction"));
+  for (const k of list.filter((k) => k !== "type")) assert.match(click, new RegExp(`data\\.${k}\\b`), `App.jsx routes by data.${k}`);
+  for (const k of ["conversationId", "fromId", "groupId", "serverId", "channelId"]) assert.ok(list.includes(k), `${k} carried`);
+  for (const k of ["from", "preview", "groupName", "serverName", "channelName", "username"]) assert.ok(!list.includes(k), `${k} (a name or text) stays out of the toast arguments`);
+  assert.match(rules, /fn toast_click_carries_the_chat_for_a_cold_start\(\)/, "argument rules unit-tested in Rust");
+  const qr = codeOnly(read("desktop/app/src-tauri/src/premium/features/quick_reply.rs"));
+  assert.match(qr, /toast_click_args\(&id, &route\)/, "the plain toast carries its click data");
+  const act = qr.slice(qr.indexOf("pub(crate) fn on_activation"), qr.indexOf("fn flush()"));
+  assert.match(act, /\.or_else\(\|\| route\.as_object\(\)/, "without the live envelope the ids from the arguments open the chat");
+  assert.doesNotMatch(act, /emit_to\(/, "every activation goes through deliver_click (queued until the page is up)");
+  const deliver = qr.slice(qr.indexOf("fn deliver_click"), qr.indexOf("pub(crate) fn flush_clicks"));
+  assert.match(deliver, /if page_ready\(h\) \{[\s\S]*emit_to\(&h\.app, "main", "notification:click", click\)[\s\S]*\} else \{[\s\S]*push\(\(click, Instant::now\(\)\)\)/);
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const appState = mod.slice(mod.indexOf('"premium:app-state" =>'), mod.indexOf("_ => return None", mod.indexOf('"premium:app-state" =>')));
+  assert.match(appState, /features::quick_reply::flush_clicks\(\)/, "the page's first state flushes waiting clicks, with or without quick_reply running");
+  // The page sends that state as soon as the Descall+ host mounts, for every desktop user.
+  const host = read("frontend/src/premium/desktop/PremiumDesktopHost.jsx");
+  assert.match(host, /b\.invoke\("premium:app-state"/);
+  assert.match(app, /const premiumDesktopHost = typeof window !== "undefined" && Boolean\(window\.descallPremium\) && !isPopoutWindow\(\);/);
+  // JS mirror of the Rust rules (same inputs as the Rust test) to show the shape end to end.
+  const ok = (v) => v.length >= 1 && v.length <= 64 && /^[A-Za-z0-9._:-]+$/.test(v);
+  const args = (id, data) => [`descall-n|${id}`, ...list.flatMap((k) => (typeof data[k] === "string" || typeof data[k] === "number") && ok(String(data[k])) ? [`${k}=${data[k]}`] : [])].join("|");
+  assert.equal(args("descall-n-1-2", { type: "dm", conversationId: "6a1f-22", fromId: "6a1f-22", from: "Ayşe", preview: "gizli" }), "descall-n|descall-n-1-2|type=dm|conversationId=6a1f-22|fromId=6a1f-22");
+  assert.match(rules, /assert_eq!\(args, "descall-n\|descall-n-1-2\|type=dm\|conversationId=6a1f-22\|fromId=6a1f-22"\);/, "Rust test expects the same string");
+}
+
+// ---- 12: thumbnail tooltips follow the language ----------------------------------------------------
+{
+  const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
+  assert.match(tb, /let key = if on \{ format!\("\{\}\|\{\}\|\{\}", flag\("muted"\), flag\("deafened"\), h\.locale\(\)\)/, "language in the button key");
+  assert.match(tb, /Bus::App => \{\s*self\.set_badge\(h\);\s*self\.set_buttons\(h, false\);/, "re-checked on Bus::App");
+  const mod = codeOnly(read("desktop/app/src-tauri/src/premium/mod.rs"));
+  const setLocale = mod.slice(mod.indexOf("pub fn set_locale"), mod.indexOf("pub fn set_tray_rebuilder"));
+  assert.match(setLocale, /h\.refresh_tray\(\);\s*h\.bus\(Bus::App\);/, "a language change reaches the taskbar");
+  const appRs = codeOnly(read("desktop/app/src-tauri/src/commands/app.rs"));
+  assert.match(appRs, /crate::premium::set_locale\(&locale\);/, "app_set_locale tells Descall+");
+}
+
+// ---- 13: native tray menu order (main.cjs buildMenu) -----------------------------------------------
+{
+  const tray = codeOnly(read("desktop/app/src-tauri/src/tray.rs"));
+  const build = tray.slice(tray.indexOf("fn build_menu"), tray.indexOf("pub fn quit"));
+  const at = (needle) => { const i = build.indexOf(needle); assert.ok(i >= 0, needle); return i; };
+  assert.ok(at("&[&open, &PredefinedMenuItem::separator(app)?]") < at("crate::premium::tray::append(a, m)"), "Open, then Descall+ items");
+  assert.ok(at("crate::premium::tray::append(a, m)") < at("menu.append(&autostart)"), "then Start with Windows");
+  assert.ok(at("menu.append(&autostart)") < at("menu.append(&quit)"), "then Quit");
+  const main = read("frontend/electron/main.cjs");
+  const em = main.slice(main.indexOf("const buildMenu = () => Menu.buildFromTemplate(["), main.indexOf("// Windows: right click opens the tray panel"));
+  const ei = (n) => em.indexOf(n);
+  assert.ok(ei("tray.open") < ei("premium.trayMenuItems()") && ei("premium.trayMenuItems()") < ei("tray.startWithWindows") && ei("tray.startWithWindows") < ei("tray.quit"), "Electron order");
+}
+
+// ---- 14: badge and tray dot agree ---------------------------------------------------------------------
+{
+  // Both count DM + group unread from the same App.jsx maps; both are off when signed out
+  // (the dot by signedIn, the badge because Descall+ stops on sign-out).
+  const snap = read("frontend/src/premium/desktop/usePremiumAppSnapshot.js");
+  assert.match(snap, /unread: sum\(dmUnread\) \+ sum\(groupUnread\)/);
+  const trayHook = read("frontend/src/hooks/useDesktopTray.js");
+  assert.match(trayHook, /total\(dmUnread\) \+ total\(groupUnread\)/);
+  const app = read("frontend/src/App.jsx");
+  assert.match(app, /usePremiumAppSnapshot\(\{ me, friends, onlineUsers, dmUnread, groupUnread,/);
+  assert.match(app, /useDesktopTray\(\{ me, myStatus, dmUnread, groupUnread,/);
+  const tm = codeOnly(read("desktop/app/src-tauri/src/tray_menu.rs"));
+  assert.match(tm, /let unread = next\.get\("signedIn"\)\.and_then\(Value::as_bool\) == Some\(true\) && next\.get\("unreadMessages"\)/);
 }
 
 console.log("shell-notif.test: ok");

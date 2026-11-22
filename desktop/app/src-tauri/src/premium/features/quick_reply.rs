@@ -98,7 +98,8 @@ pub(crate) fn show_plain(h: &Host, title: &str, body: &str, silent: bool, click:
     }
     prune();
     let id = format!("descall-n-{:x}-{:x}", crate::premium::now_ms(), h.next_id());
-    let xml = toast::plain_toast_xml(&toast_click_args(&id), &cut(title, 120), &cut(body, 300), silent);
+    let route = click.get("data").cloned().unwrap_or(Value::Null);
+    let xml = toast::plain_toast_xml(&toast_click_args(&id, &route), &cut(title, 120), &cut(body, 300), silent);
     match toast::show_xml(&xml, on_activation) {
         Ok(handle) => {
             lock(&LIVE).insert(id, Live { handle, at: Instant::now(), click });
@@ -111,14 +112,50 @@ pub(crate) fn show_plain(h: &Host, title: &str, body: &str, silent: bool, click:
     }
 }
 
+/// Clicks that arrived before the main page could hear them (a toast clicked in the Action
+/// Center after Descall was closed starts it through the COM activator): sent once the page
+/// reported its state (premium:app-state, [`flush_clicks`]), ten minutes at most.
+static PENDING_CLICKS: Mutex<Vec<(Value, Instant)>> = Mutex::new(Vec::new());
+
+fn page_ready(h: &Host) -> bool {
+    lock(&h.app_state).get("ready").and_then(Value::as_bool) == Some(true)
+}
+
+/// notification:click to the main page now, or as soon as it is up.
+fn deliver_click(h: &Host, click: Value) {
+    if page_ready(h) {
+        let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+    } else {
+        let mut q = lock(&PENDING_CLICKS);
+        q.retain(|(_, at)| at.elapsed() < KEEP);
+        q.truncate(4);
+        q.push((click, Instant::now()));
+    }
+}
+
+/// The main page is up (premium:app-state): clicks from a cold start open their chat now.
+pub(crate) fn flush_clicks() {
+    let Some(h) = host() else { return };
+    if !page_ready(h) {
+        return;
+    }
+    for (click, at) in std::mem::take(&mut *lock(&PENDING_CLICKS)) {
+        if at.elapsed() < KEEP {
+            let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+        }
+    }
+}
+
 /// Every toast activation (in-process event or COM activator, warm or cold start).
 pub(crate) fn on_activation(args: String, reply: Option<String>) {
-    if let Some(id) = parse_toast_click(&args) {
+    if let Some((id, route)) = parse_toast_click(&args) {
         let Some(h) = host() else { return };
         h.show_main();
+        // The live toast's own envelope; after a restart only the ids in its arguments.
         let click = lock(&LIVE).get(&id).map(|l| l.click.clone());
+        let click = click.or_else(|| route.as_object().is_some_and(|o| !o.is_empty()).then(|| json!({ "data": route })));
         if let Some(click) = click {
-            let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+            deliver_click(h, click);
         }
         return;
     }
@@ -145,7 +182,7 @@ pub(crate) fn on_activation(args: String, reply: Option<String>) {
                 let peer = conv.trim_start_matches("dm:");
                 json!({ "data": { "type": "dm", "conversationId": peer, "fromId": peer } })
             });
-            let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+            deliver_click(h, click);
         }
     }
 }
