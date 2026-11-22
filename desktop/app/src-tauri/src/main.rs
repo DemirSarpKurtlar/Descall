@@ -404,7 +404,8 @@ mod config_tests {
         // same way (an auto-started hidden app opened during boot stayed hidden), and taken
         // once, before the start mode is applied.
         assert!(state.contains("let Some(w) = main_window(app) else {\n        shell(app).show_requested.store(true"));
-        assert_eq!(main.matches("show_requested.swap(false").count(), 1);
+        let shipped = &main[..main.find("#[cfg(test)]").unwrap()];
+        assert_eq!(shipped.matches("show_requested.swap(false").count(), 1);
     }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
     /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,
