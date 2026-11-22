@@ -92,7 +92,7 @@ fn open(h: &Host, id: &str) -> Value {
     if let Some(w) = h.app.get_webview_window(&label) {
         let _ = w.unminimize();
         let _ = w.show();
-        let _ = w.set_focus();
+        crate::commands::window::focus_soon(&w);
         return ok(json!({ "id": id }));
     }
     let Some(url) = super::multi_window::app_url(h, "/") else { return json!({ "ok": false, "error": "no-main" }) };

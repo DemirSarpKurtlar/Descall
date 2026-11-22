@@ -39,6 +39,16 @@ pub async fn window_close<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.close();
 }
 
+/// Focus a window from any thread. tao queues show / unminimize from a thread other than the
+/// event loop's and its set_focus checks the visible / minimized flags at once: called on the
+/// Descall+ bus thread right after those, the focus was skipped. Queued behind them instead.
+pub fn focus_soon<R: Runtime>(window: &WebviewWindow<R>) {
+    let w = window.clone();
+    let _ = window.run_on_main_thread(move || {
+        let _ = w.set_focus();
+    });
+}
+
 /// window:maximized for a window other than main (main has boot::bind_window_events): the
 /// page's title bar shows Restore while maximized. Electron's multi_window.cjs sent it on
 /// maximize / unmaximize; the Descall+ pop-out and account windows here never got it, so their

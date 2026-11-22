@@ -201,6 +201,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   for (const f of ["multi_window.rs", "multi_account.rs"]) {
     const rs = readFileSync(join(src, "premium", "features", f), "utf8");
     assert.match(rs, /crate::commands::window::forward_maximized\(&w\);/, `${f}: maximized state reaches the window's title bar`);
+    assert.match(rs, /crate::commands::window::focus_soon\(&w\);/, `${f}: an existing window is really focused again`);
   }
   // containRestoredWindow: unmaximize and restore pull a window that hangs off its monitor back.
   assert.match(boot, /if !maximized \{\s*contain_restored\(&win\); \/\/ mainWindow 'unmaximize'/);

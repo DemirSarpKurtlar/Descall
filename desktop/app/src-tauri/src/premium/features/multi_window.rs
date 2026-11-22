@@ -41,7 +41,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         if let Some(w) = h.app.get_webview_window(&label) {
             let _ = w.unminimize();
             wins::show(h, &w, "popout");
-            let _ = w.set_focus();
+            crate::commands::window::focus_soon(&w);
         }
         return ok(json!({ "reused": true }));
     }
