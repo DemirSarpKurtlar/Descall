@@ -30,13 +30,15 @@ function inlineScriptHashes(html) {
   return [...new Set(out)];
 }
 
-const CONNECT = "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com https://api.descall.com wss://rt.descall.com https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://*.posthog.com https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; ";
-const IMG = "img-src 'self' https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.googleusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com data: blob:; ";
+// Hybrid server PC node (src/config/nodeOrigins.js PC_NODE_ORIGIN): https + wss in CONNECT,
+// https in IMG and MEDIA. Kept as literals: descall-shell/src/csp.rs parses these strings.
+const CONNECT = "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com https://pc.descall.com wss://pc.descall.com https://api.descall.com wss://rt.descall.com https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://*.posthog.com https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; ";
+const IMG = "img-src 'self' https://descall.com https://des-call.onrender.com https://pc.descall.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.googleusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com data: blob:; ";
 // Remote scripts the app loads on purpose: PostHog's own extensions (remote config, exception
 // autocapture, surveys) and Google Ads gtag.js, which only loads after cookie consent. Same
 // list as the website (public/security-policy.js).
 const SCRIPT_REMOTE = "https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com";
-const MEDIA = "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;";
+const MEDIA = "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://pc.descall.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;";
 
 // The Vite dev server is reachable only from a dev run (polish pass: a packaged build kept it in
 // connect-src). Same hardening as the website's policy (public/security-policy.js SITE_CSP):
