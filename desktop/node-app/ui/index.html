@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descall Node</title>
+<link rel="stylesheet" href="popover.css">
+</head>
+<body>
+<main id="card" class="glass pad" aria-live="polite">
+  <!-- Draft A "Tepsi paneli": rendered by popover.js from the app's view model. -->
+  <section id="view-main" class="view">
+    <div class="row sp">
+      <div class="row"><div class="tray-ic" id="trayIc">DN</div><div><b id="title">Descall Node</b><div class="xs mut" id="host"></div></div></div>
+      <span class="pill" id="pill"><span class="dot"></span><span id="pillText"></span></span>
+    </div>
+    <div class="banner" id="error" hidden></div>
+    <div class="grid g3" style="margin-top:14px">
+      <div><div class="xs mut" id="gRamLabel"></div><b id="gRam"></b><div class="bar" style="margin-top:4px"><i id="gRamBar" style="background:var(--pc)"></i></div></div>
+      <div><div class="xs mut" id="gCpuLabel"></div><b id="gCpu"></b><div class="bar" style="margin-top:4px"><i id="gCpuBar" style="background:var(--acc)"></i></div></div>
+      <div><div class="xs mut" id="gConnLabel"></div><b id="gConn"></b><div class="xs mut" id="gConnSub"></div></div>
+    </div>
+    <svg viewBox="0 0 340 60" width="100%" height="60" style="margin-top:10px" aria-hidden="true"><polyline id="spark" fill="none" stroke="#b47cff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points=""/></svg>
+    <div class="row sp small" style="margin-top:6px"><span id="sRamLabel"></span><b id="sRamValue"></b></div>
+    <input type="range" id="sRam" min="512" max="8192" step="512">
+    <div class="row sp small"><span id="sCpuLabel"></span><b id="sCpuValue"></b></div>
+    <input type="range" id="sCpu" min="1" max="8" step="1">
+    <div class="row sp xs mut"><span id="capacity"></span><span id="syncHint"></span></div>
+    <div class="grid g2" style="margin-top:10px">
+      <button class="glass pad tile" id="tGame" type="button" role="switch"><div class="row sp small"><span id="tGameLabel"></span><span class="sw" id="tGameSw"></span></div><div class="xs mut" id="tGameHint"></div></button>
+      <button class="glass pad tile" id="tSched" type="button" role="switch"><div class="row sp small"><span id="tSchedLabel"></span><span class="sw" id="tSchedSw"></span></div><div class="xs mut" id="tSchedHint"></div></button>
+    </div>
+    <div class="grid g3" id="buttons" style="margin-top:12px;gap:8px"></div>
+    <div class="xs mut" style="margin-top:10px" id="footer"><span id="footerText"></span> <span class="new" id="footerBadge"></span></div>
+    <div class="row sp xs mut netrow">
+      <span class="row" style="gap:12px"><span class="row" style="gap:5px"><span class="dot" id="nTunnelDot"></span><span id="nTunnel"></span></span><span class="row" style="gap:5px"><span class="dot" id="nKvDot"></span><span id="nKv"></span></span></span>
+      <span class="row" style="gap:10px"><a href="#" id="lLogs"></a><a href="#" id="lSetup"></a></span>
+    </div>
+  </section>
+
+  <!-- First-run setup in the same popover style. -->
+  <section id="view-setup" class="view" hidden>
+    <div class="row sp">
+      <div class="row"><div class="tray-ic">DN</div><div><b id="setupTitle"></b><div class="xs mut" id="setupMissing"></div></div></div>
+    </div>
+    <div class="banner" id="setupError" hidden></div>
+    <p class="xs mut intro" id="setupIntro"></p>
+    <form id="setupForm" autocomplete="off" spellcheck="false"></form>
+    <label class="row sp small autostart"><span id="autostartLabel"></span><button type="button" class="sw" id="autostartSw" role="switch"></button></label>
+    <div class="grid" style="margin-top:12px;gap:8px;grid-template-columns:1fr 1.5fr">
+      <button class="btn" type="button" id="setupCancel"></button>
+      <button class="btn p" type="button" id="setupSave"></button>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:10px"><button class="linkbtn" type="button" id="setupWipe"></button></div>
+  </section>
+
+  <!-- Small log viewer (lines are redacted before they reach the file). -->
+  <section id="view-logs" class="view" hidden>
+    <div class="row sp">
+      <div class="row"><div class="tray-ic">DN</div><div><b id="logsTitle"></b><div class="xs mut" id="logsHint"></div></div></div>
+    </div>
+    <pre class="log" id="logLines" tabindex="0"></pre>
+    <div class="grid g3" style="margin-top:12px;gap:8px">
+      <button class="btn" type="button" id="logsBack"></button>
+      <button class="btn" type="button" id="logsOpen"></button>
+      <button class="btn p" type="button" id="logsRefresh"></button>
+    </div>
+  </section>
+</main>
+<script src="popover.js"></script>
+</body>
+</html>

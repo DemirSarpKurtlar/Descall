@@ -1,0 +1,81 @@
+# Descall Node (desktop/node-app + desktop/crates/descall-node): the owner's PC as the second
+# backend node of the hybrid server. Tests the pure crate on Linux, cross-checks the Windows
+# code (mingw), and on Windows runs the app's tests and builds the unsigned per-user NSIS setup
+# with the bundled runtime (node.exe pinned by sha256, cloudflared checked against its release
+# digest, the backend with production dependencies). Nothing here publishes a release.
+name: Descall Node
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "desktop/node-app/**"
+      - "desktop/crates/descall-node/**"
+      - "desktop/Cargo.toml"
+      - "desktop/Cargo.lock"
+      - ".github/workflows/descall-node.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: descall-node-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Tests + Windows cross check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: { run: { working-directory: desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-gnu }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop }
+      - name: mingw-w64 for the gnu target
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: cargo test -p descall-node (supervisor, limits, schedule, game mode, redaction, view model)
+        run: cargo test -p descall-node
+      - name: Popover view model fixtures (the page's states come from the same code)
+        run: cargo run -q -p descall-node --example popover_states > /dev/null
+      - name: Runtime packager tests (offline)
+        run: python3 -m unittest discover -s node-app/tools
+      - name: cargo check -p descall-node-app (x86_64-pc-windows-gnu)
+        run: cargo check -p descall-node-app --target x86_64-pc-windows-gnu
+
+  windows:
+    name: Test and build Descall Node (windows-latest, unsigned)
+    needs: linux
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-msvc }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop }
+      - name: cargo test (descall-node on Windows, app contract tests, DPAPI store)
+        working-directory: desktop
+        run: |
+          cargo test -p descall-node
+          cargo test -p descall-node-app
+      - name: Bundle the runtime (node.exe, cloudflared.exe, backend, manifest)
+        working-directory: desktop
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python node-app/tools/package_runtime.py
+      - name: Tauri build (DescallNode.exe + NSIS setup, per-user)
+        working-directory: desktop/node-app
+        shell: pwsh
+        run: |
+          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis --config tauri.bundle.conf.json
+          if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: descall-node-setup
+          path: desktop/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
+          retention-days: 14
