@@ -152,6 +152,12 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
   const structs = new Map();
   const clock = createClock(now);
   let active = false;
+  // False from (re)activation until resync() has compared the KV with the local state.
+  // Delete tombstones must survive until then: a call deleted while the KV was away
+  // (persistDelete dropped) is still in the KV, and without its tombstone resync()
+  // brought it back with its old seats (feedback 2026-11-22, a member shown in two
+  // voice channels).
+  let synced = false;
   let suppress = 0;
   let watchTimer = null;
   const stats = { published: 0, applied: 0, stale: 0, watchFlushes: 0, persisted: 0 };
@@ -534,7 +540,8 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
         persistSet(S, k, { t, n: nodeId, v: enc });
       }
     }
-    // Tombstones only need to outlive in-flight messages.
+    // Tombstones only need to outlive in-flight messages, once the KV has been resynced.
+    if (!synced) return;
     const cutoff = now() - TOMBSTONE_MS;
     for (const S of structs.values()) {
       for (const [k, m] of S.meta) if (m.del && m.at < cutoff) S.meta.delete(k);
@@ -644,15 +651,18 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
   async function resync() {
     if (!active) return;
     const peers = await getPeers().catch(() => []);
+    let ok = true;
     for (const S of structs.values()) {
       if (!S.storage) continue;
       try {
         if (S.kind === "owned") await resyncOwned(S, peers);
         else await resyncShared(S);
       } catch (err) {
+        ok = false;
         log.warn?.(`[cluster] resync ${S.name} failed:`, err?.message || err);
       }
     }
+    if (ok && active) synced = true;
   }
 
   let unlisten = null;
@@ -665,7 +675,9 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
   }
 
   function setActive(on) {
-    active = Boolean(on);
+    const next = Boolean(on);
+    if (next !== active) synced = false;
+    active = next;
   }
 
   function stop() {
