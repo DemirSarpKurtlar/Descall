@@ -25,11 +25,14 @@
 //! | `ipc_policy`        | per-window preloads (notif, overlay...) | commands per window, capabilities     |
 //! | `window_keys`       | windowKeys.cjs devToolsAllowed          | (DevTools opt-in file)                |
 //! | `bridge`            | main.cjs per-sender IPC rules           | shim commands vs generate_handler!    |
+//! | `main_errors`       | mainErrors.cjs (+ crash file)           | mainErrors.selftest.mjs               |
+//! | `deep_link`         | (new: descall:// from argv)             | (new)                                 |
 
 pub mod bridge;
 pub mod clipboard;
 pub mod crash;
 pub mod csp;
+pub mod deep_link;
 pub mod deferral;
 pub mod dist_path;
 pub mod download;
@@ -37,6 +40,7 @@ pub mod i18n;
 pub mod ipc_policy;
 pub mod launch;
 pub mod logfile;
+pub mod main_errors;
 pub mod notif;
 pub mod occlusion;
 pub mod pages;

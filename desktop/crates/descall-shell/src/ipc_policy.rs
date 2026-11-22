@@ -176,6 +176,16 @@ mod tests {
         }
     }
 
+    /// descall:// links (T6) belong to the app windows only: the shim answers null in admin
+    /// windows and no shell page may take the link meant for the main page.
+    #[test]
+    fn deep_links_are_for_app_windows_only() {
+        assert!(allowed("main", "deep_link_take"));
+        for label in ["admin", "signup-stats", "notif-1", "overlay", "overlay-2", "hud-x", "widget-x", "launcher", "tray-menu"] {
+            assert!(!allowed(label, "deep_link_take"), "{label} must not take the deep link");
+        }
+    }
+
     #[test]
     fn app_windows_keep_every_command() {
         for cmd in registered() {
@@ -212,7 +222,7 @@ mod tests {
         // Admin mode of electron-api-shim.js: every command it can still reach is allowed.
         let shim = include_str!("../../../app/shim/electron-api-shim.js");
         for cmd in invoked(shim) {
-            if !["clipboard_read_image", "updates_check", "updates_restart", "download_file", "screen_sources", "processes_scan", "overlay_show", "overlay_hide", "overlay_update", "tray_set_state", "screen_share_stop"].contains(&cmd.as_str()) {
+            if !["clipboard_read_image", "updates_check", "updates_restart", "download_file", "screen_sources", "processes_scan", "overlay_show", "overlay_hide", "overlay_update", "tray_set_state", "screen_share_stop", "deep_link_take"].contains(&cmd.as_str()) {
                 assert!(allowed("admin", &cmd), "admin shim calls {cmd}");
             }
         }

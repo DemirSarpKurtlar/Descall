@@ -1,7 +1,7 @@
 //! WebView2 specifics of the main window: the boot-retry clean reload, page permissions
 //! without prompts (Electron's session permission handlers) and the Retry / Quit dialog.
 
-use tauri::{Runtime, WebviewWindow};
+use tauri::{Manager, Runtime, WebviewWindow};
 
 /// DevTools for every webview of the app (windowKeys.cjs canOpenDevTools): dev runs, or a
 /// release build with `<app data>/devtools-enabled` (support opt-in). The tauri `devtools`
@@ -210,6 +210,105 @@ pub fn on_download<R: Runtime>(webview: tauri::Webview<R>, event: tauri::webview
             true
         }
         _ => true,
+    }
+}
+
+static CRASH_RELOADS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static ASKING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Reload the main frame from any thread (WebView2 Reload; works while the renderer is hung).
+fn reload<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(|pw| unsafe {
+            if let Ok(core) = pw.controller().CoreWebView2() {
+                let _ = core.Reload();
+            }
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window.eval("location.reload()");
+    }
+}
+
+/// WebView2 ProcessFailed on the main window (Electron render-process-gone / unresponsive /
+/// child-process-gone). Before, a renderer crash left a dead page and was never reported.
+/// The summary goes to the page's error reporting once the reloaded page has mounted.
+pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
+    use descall_shell::watchdog::{renderer_gone_action, RendererGone};
+    use std::sync::atomic::Ordering;
+    let app = window.app_handle().clone();
+    let (action, name) = renderer_gone_action(kind, CRASH_RELOADS.load(Ordering::Acquire));
+    if action != RendererGone::ReportOnly {
+        // The page is gone or hung: hold the report for the next document, and a live call
+        // cannot survive this (the update deferral treats it as "call ended").
+        crate::errors::detach();
+        crate::commands::updates::reset_voice(&app);
+    }
+    crate::errors::report(descall_shell::main_errors::summary("render-process-gone", name, &format!("WebView2 process failed (kind {kind})")));
+    match action {
+        RendererGone::ReportOnly => {}
+        RendererGone::Reload => {
+            CRASH_RELOADS.fetch_add(1, Ordering::AcqRel);
+            log::warn!("[boot] {name}: reloading the page");
+            reload(window);
+        }
+        RendererGone::Ask => {
+            if ASKING.swap(true, Ordering::AcqRel) {
+                return;
+            }
+            let win = window.clone();
+            tauri::async_runtime::spawn(async move {
+                let hung = kind == 2;
+                let (title, detail) = if hung {
+                    (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
+                } else {
+                    (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
+                };
+                let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
+                ASKING.store(false, Ordering::Release);
+                match (kind, retry) {
+                    // Browser process gone: only a fresh start brings the WebView back.
+                    (0, true) => {
+                        crate::state::set_quitting(&app);
+                        app.restart();
+                    }
+                    (0, false) => {
+                        crate::state::set_quitting(&app);
+                        app.exit(0);
+                    }
+                    (_, true) => reload(&win),
+                    // Wait (hung) or keep the window as it is.
+                    (_, false) => {}
+                }
+            });
+        }
+    }
+}
+
+/// Subscribe the main window to WebView2 ProcessFailed (see on_process_failed).
+pub fn install_process_failed_handler<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let win = window.clone();
+        let _ = window.with_webview(move |pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_PROCESS_FAILED_KIND;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            let handler = webview2_com::ProcessFailedEventHandler::create(Box::new(move |_, args| {
+                let Some(args) = args else { return Ok(()) };
+                let mut kind = COREWEBVIEW2_PROCESS_FAILED_KIND::default();
+                args.ProcessFailedKind(&mut kind)?;
+                on_process_failed(&win, kind.0);
+                Ok(())
+            }));
+            let mut token = 0i64;
+            let _ = core.add_ProcessFailed(&handler, &mut token);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window;
     }
 }
 

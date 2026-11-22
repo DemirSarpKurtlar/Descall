@@ -6579,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Desktop-App",
+    "settings_hint": "Version und Updates",
+    "settings_version": "Version {version}",
+    "settings_check": "Nach Updates suchen",
+    "settings_checking": "Suche nach Updates…",
+    "settings_upToDate": "Descall ist auf dem neuesten Stand",
+    "settings_checkFailed": "Updates konnten nicht geprüft werden. Versuche es gleich noch einmal.",
+    "settings_downloading": "Descall {version} wird im Hintergrund heruntergeladen",
+    "settings_unavailable": "Automatische Updates sind in diesem Build aus",
+    "settings_lastChecked": "Zuletzt geprüft {time}",
     "confirmBody": "Du bist in einem Sprachchat. Ein Neustart beendet ihn. Descall {version} kann sich auch selbst installieren, nachdem du ihn verlassen hast.",
     "confirmLater": "Nicht jetzt",
     "confirmRestart": "Anruf beenden und neu starten",

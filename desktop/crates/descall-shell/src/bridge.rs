@@ -47,68 +47,9 @@ pub fn handler_commands(main_rs: &str) -> Vec<String> {
         .collect()
 }
 
-/// mainErrors.cjs scrubPaths: drive paths (`C:\Users\x\...\`) become `~\`, home folders `~`.
-pub fn scrub_paths(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let chars: Vec<char> = text.chars().collect();
-    let mut i = 0;
-    while i < chars.len() {
-        // C:\dir\dir\file -> ~\file (every directory part up to the last backslash)
-        if i + 2 < chars.len() && chars[i].is_ascii_alphabetic() && chars[i + 1] == ':' && chars[i + 2] == '\\' && (i == 0 || !chars[i - 1].is_ascii_alphanumeric()) {
-            let mut j = i + 3;
-            let mut last_sep = i + 2;
-            while j < chars.len() && !chars[j].is_whitespace() && chars[j] != ':' {
-                if chars[j] == '\\' {
-                    last_sep = j;
-                }
-                j += 1;
-            }
-            out.push_str("~\\");
-            i = last_sep + 1;
-            continue;
-        }
-        // /Users/name or /home/name -> ~
-        let rest: String = chars[i..chars.len().min(i + 7)].iter().collect();
-        if rest.starts_with("/Users/") || rest.starts_with("/home/") {
-            let skip = if rest.starts_with("/Users/") { 7 } else { 6 };
-            let mut j = i + skip;
-            while j < chars.len() && chars[j] != '/' && !chars[j].is_whitespace() {
-                j += 1;
-            }
-            out.push('~');
-            i = j;
-            continue;
-        }
-        out.push(chars[i]);
-        i += 1;
-    }
-    out
-}
-
-/// electronAPI.onMainError payload for a Rust panic: the same `{ kind, name, message, stack }`
-/// summary mainErrors.cjs sent (src/lib/sentry.js reportMainProcessError reads it), scrubbed of
-/// paths and capped like summarizeError.
-pub fn panic_summary(message: &str, location: Option<&str>) -> serde_json::Value {
-    let message: String = scrub_paths(message).chars().take(500).collect();
-    let stack = location.map(scrub_paths).unwrap_or_default();
-    serde_json::json!({ "kind": "panic", "name": "RustPanic", "message": message, "stack": stack })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn panic_summary_is_scrubbed() {
-        let v = panic_summary(r"open C:\Users\Ayşe\AppData\Roaming\com.descall.app\x.json failed", Some(r"C:\Users\runner\.cargo\registry\src\tauri-2.12.7\src\lib.rs:10:5"));
-        assert_eq!(v["kind"], "panic");
-        assert_eq!(v["name"], "RustPanic");
-        assert_eq!(v["message"], r"open ~\x.json failed");
-        assert_eq!(v["stack"], r"~\lib.rs:10:5");
-        assert_eq!(scrub_paths("at /home/demir/app/x.js and /Users/ali/y"), "at ~/app/x.js and ~/y");
-        assert_eq!(scrub_paths("src\\premium\\mod.rs:12:5"), "src\\premium\\mod.rs:12:5", "relative paths stay");
-        assert!(panic_summary(&"x".repeat(900), None)["message"].as_str().unwrap().len() == 500);
-    }
 
     const MAIN_RS: &str = include_str!("../../../app/src-tauri/src/main.rs");
     /// Every page bridge the shell injects (app/shim/*.js).

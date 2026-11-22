@@ -6579,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Application de bureau",
+    "settings_hint": "Version et mises à jour",
+    "settings_version": "Version {version}",
+    "settings_check": "Rechercher des mises à jour",
+    "settings_checking": "Recherche de mises à jour…",
+    "settings_upToDate": "Descall est à jour",
+    "settings_checkFailed": "Impossible de rechercher des mises à jour. Réessaie dans un instant.",
+    "settings_downloading": "Descall {version} se télécharge en arrière-plan",
+    "settings_unavailable": "Les mises à jour automatiques sont désactivées dans cette version",
+    "settings_lastChecked": "Dernière vérification {time}",
     "confirmBody": "Tu es dans un chat vocal. Redémarrer maintenant y mettra fin. Descall {version} peut aussi s'installer tout seul une fois que tu l'auras quitté.",
     "confirmLater": "Pas maintenant",
     "confirmRestart": "Raccrocher et redémarrer",

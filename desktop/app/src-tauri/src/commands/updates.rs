@@ -215,38 +215,30 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
                 let i = u.inner.lock().unwrap();
                 (i.deferral.update_ready, i.version.clone())
             };
-            Ok(check_result(version, ready, v))
+            // main.cjs: `available` tells the update card whether anything newer exists
+            // (ElectronUpdateToast.jsx drops the card when it is false); a staged one counts.
+            let available = version.is_some() || ready;
+            Ok(json!({ "success": true, "updateInfo": version.map(|v| json!({ "version": v })), "available": available, "updateReady": ready, "updateVersion": v }))
         }
-        Err((e, phase)) => {
-            to_main(&app, "update:error", error_payload(&e, phase));
-            Err(e)
+        Err((phase, e)) => {
+            let message = error_message(&e);
+            log::warn!("[updater] {phase} failed ({reason}): {message}");
+            // Same payload as main.cjs: 'download' = a visible download failed (the card offers
+            // retry); 'check' = a quiet background check, which the page does not surface.
+            to_main(&app, "update:error", json!({ "message": message, "phase": phase }));
+            Err(message)
         }
     }
 }
 
-/// check-for-updates answer, as main.cjs: `available` tells the update card whether anything
-/// newer exists (ElectronUpdateToast.jsx drops the card when it is false).
-fn check_result(version: Option<String>, ready: bool, ready_version: Option<String>) -> Value {
-    json!({
-        "success": true,
-        "available": version.is_some() || ready,
-        "updateInfo": version.map(|v| json!({ "version": v })),
-        "updateReady": ready,
-        "updateVersion": ready_version,
-    })
+/// update:error text: no local paths or user names (temp file errors), at most 200 chars.
+pub fn error_message(e: &str) -> String {
+    descall_shell::main_errors::scrub_paths(e).chars().take(200).collect()
 }
 
-/// update:error, as main.cjs: the message capped at 200 characters and the phase, so the page
-/// shows the error card only for a download it was showing ("download"), never for a quiet
-/// background check that failed ("check").
-fn error_payload(message: &str, phase: &'static str) -> Value {
-    json!({ "message": message.chars().take(200).collect::<String>(), "phase": phase })
-}
-
-async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (String, &'static str)> {
-    let check = |e: String| (e, "check");
-    let updater = app.updater().map_err(|e| check(e.to_string()))?;
-    let Some(update) = updater.check().await.map_err(|e| check(e.to_string()))? else { return Ok(None) };
+async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (&'static str, String)> {
+    let updater = app.updater().map_err(|e| ("check", e.to_string()))?;
+    let Some(update) = updater.check().await.map_err(|e| ("check", e.to_string()))? else { return Ok(None) };
     let version = update.version.clone();
     to_main(app, "update:downloading", json!({ "version": version }));
     let app_p = app.clone();
@@ -268,7 +260,7 @@ async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String
             || {},
         )
         .await
-        .map_err(|e| (e.to_string(), "download"))?;
+        .map_err(|e| ("download", e.to_string()))?;
     let busy = live_busy(app);
     {
         let u = app.state::<Updates>();
@@ -325,6 +317,16 @@ pub fn request_explicit_install<R: Runtime>(app: &AppHandle<R>, reason: &str) ->
 pub fn install_on_quit<R: Runtime>(app: &AppHandle<R>) {
     if is_ready(app) {
         let _ = install(app, "quit", true);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn update_errors_carry_no_user_paths() {
+        let m = super::error_message(r"failed to write C:\Users\demir\AppData\Local\Temp\Descall_4.1.0_x64-setup.exe: disk full");
+        assert!(!m.contains("demir") && m.contains("disk full"), "{m}");
+        assert!(super::error_message(&"x".repeat(500)).chars().count() == 200);
     }
 }
 

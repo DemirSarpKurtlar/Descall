@@ -314,6 +314,10 @@
   // Shell-only extras the Electron preload did not have (the page probes them optionally).
   const extras = {
     isTauri: true,
+    // descall:// links opened from Windows (src/lib/desktopDeepLinks.js): the shell keeps the
+    // link until the page takes it, and announces new ones while the page runs.
+    takeDeepLink: ADMIN ? () => Promise.resolve(null) : () => invoke("deep_link_take").then((u) => (typeof u === "string" && u ? u : null), () => null),
+    onDeepLink: ADMIN ? () => noop : (cb) => on("app:deep-link", cb, () => undefined),
   };
   for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
 

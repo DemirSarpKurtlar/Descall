@@ -132,6 +132,58 @@ for (const [label, shim, ref] of [["main", mainShim, electronMain], ["admin", ad
 assert.ok(mainShim.premium && typeof mainShim.premium.invoke === "function", "descallPremium in the main window");
 assert.equal(Boolean(adminShim.premium), Boolean(electronAdmin.premium), "no descallPremium in admin windows, as Electron");
 assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable flag");
+// descall:// links (src/lib/desktopDeepLinks.js): extras, so the Electron key set stays equal.
+{
+  const s = loadShim({ responses: { deep_link_take: "descall://dm/ayse" } });
+  assert.equal(await s.api.takeDeepLink(), "descall://dm/ayse");
+  deq(s.invokes.at(-1), ["deep_link_take", undefined], "takeDeepLink -> deep_link_take");
+  const got = [];
+  const off = s.api.onDeepLink((...a) => got.push(a));
+  await tick();
+  s.emit("app:deep-link", null);
+  deq(got, [[undefined]], "onDeepLink is a bare signal: the page takes the link");
+  off();
+  assert.ok(s.unlistened.includes("app:deep-link"));
+  const none = loadShim({ responses: { deep_link_take: null } });
+  assert.equal(await none.api.takeDeepLink(), null);
+  const failing = loadShim({ fail: ["deep_link_take"] });
+  assert.equal(await failing.api.takeDeepLink(), null, "a failing command answers null");
+  const admin = loadShim({ boot: { mode: "admin" } });
+  assert.equal(await admin.api.takeDeepLink(), null);
+  assert.equal(typeof admin.api.onDeepLink(() => {}), "function");
+  await tick();
+  deq(admin.invokes, [], "admin windows never take links");
+}
+// Installer hooks: the Start Menu shortcut gets the toast activator CLSID (installer.nsh
+// Descall_SetToastClsid), the same CLSID as src/premium/toast.rs and the Electron installer.
+{
+  const hooks = readFileSync(join(here, "..", "src-tauri", "nsis", "hooks.nsh"), "utf8");
+  const toastRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "toast.rs"), "utf8");
+  const electronNsh = readFileSync(join(here, "..", "..", "..", "frontend", "electron", "installer.nsh"), "utf8");
+  const clsid = (src, re) => (src.match(re) || [])[1];
+  const ours = clsid(hooks, /!define DESCALL_TOAST_CLSID "(\{[0-9A-F-]+\})"/i);
+  assert.equal(ours, clsid(toastRs, /TOAST_CLSID: &str = "(\{[0-9A-F-]+\})"/i), "hooks.nsh and toast.rs share the CLSID");
+  assert.equal(ours, clsid(electronNsh, /!define DESCALL_TOAST_CLSID "(\{[0-9A-F-]+\})"/i), "same CLSID as the Electron installer");
+  const post = hooks.slice(hooks.indexOf("!macro NSIS_HOOK_POSTINSTALL"), hooks.indexOf("!macroend", hooks.indexOf("!macro NSIS_HOOK_POSTINSTALL")));
+  assert.match(post, /!insertmacro DESCALL_SET_TOAST_CLSID "\$SMPROGRAMS\\Descall\.lnk"/, "post-install stamps the Start Menu shortcut");
+  const macro = hooks.slice(hooks.indexOf("!macro DESCALL_SET_TOAST_CLSID"), hooks.indexOf("!macroend", hooks.indexOf("!macro DESCALL_SET_TOAST_CLSID")));
+  // PKEY_AppUserModel_ToastActivatorCLSID = {9F4C2855-...}, 26 as VT_CLSID (72), then Commit and Save.
+  assert.match(macro, /\{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3\}", i 26/);
+  assert.match(macro, /&i2 72/);
+  assert.match(macro, /\$3->7\(\)/);
+  assert.match(macro, /\$2->6\(p 0, i 1\)/);
+  const pushes = (macro.match(/^\s*Push \$\d/gm) || []).length;
+  const pops = (macro.match(/^\s*Pop \$\d/gm) || []).length;
+  assert.equal(pushes, pops, "registers restored");
+}
+// Update errors carry main.cjs's phase ('check' stays quiet in ElectronUpdateToast, 'download'
+// shows the retry card) and check-for-updates answers `available` like Electron.
+{
+  const updatesRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "updates.rs"), "utf8");
+  assert.match(updatesRs, /"update:error", json!\(\{ "message": message, "phase": phase \}\)/);
+  assert.match(updatesRs, /map_err\(\|e\| \("download", e\.to_string\(\)\)\)/);
+  assert.match(updatesRs, /"available": available/);
+}
 const memberCount = Object.keys(electronMain.api).length - 2 + 2 + 3; // -zoom -secureToken objects, +2 zoom, +3 token
 console.log(`electronAPI members checked: ${memberCount}`);
 
@@ -894,9 +946,9 @@ for (const label of ["popout-1", "acct-42"]) {
   assert.match(bootRs, /WindowEvent::Moved\(_\) => \{\s*publish_content_box\(&win\);\s*save_window_state_soon\(&win\);/, "a drag saves the window state debounced");
   assert.ok(!/WindowEvent::Moved\(_\) => \{[^}]*save_window_state\(&win\)/.test(bootRs), "not on every Moved event");
   const updatesRs = readFileSync(join(src, "commands", "updates.rs"), "utf8");
-  assert.match(updatesRs, /"available": version\.is_some\(\) \|\| ready/, "check-for-updates answers available");
+  assert.match(updatesRs, /let available = version\.is_some\(\) \|\| ready;[\s\S]{0,200}"available": available/, "check-for-updates answers available");
   assert.match(updatesRs, /"phase": phase/, "update:error carries the phase");
-  assert.match(updatesRs, /map_err\(\|e\| \(e\.to_string\(\), "download"\)\)/, "a failed download is phase download");
+  assert.match(updatesRs, /map_err\(\|e\| \("download", e\.to_string\(\)\)\)/, "a failed download is phase download");
   const appRs = readFileSync(join(src, "commands", "app.rs"), "utf8");
   assert.match(appRs, /descall_shell::bridge::sets_ui_locale\(window\.label\(\)\)/, "admin windows may set the language (main.cjs app:locale)");
   const adminRs = readFileSync(join(src, "admin.rs"), "utf8");
@@ -908,7 +960,13 @@ for (const label of ["popout-1", "acct-42"]) {
     assert.ok(at > 0 && /if !from_main\(&window\) \{\s*return;/.test(overlayRs.slice(at, at + 300)), `${cmd}: only the main window drives the voice overlay`);
   }
   const mainRsSrc = readFileSync(join(src, "main.rs"), "utf8");
-  assert.match(mainRsSrc, /"app:main-error", descall_shell::bridge::panic_summary\(/, "panics reach onMainError as a mainErrors.cjs summary");
+  // One panic pipeline (T6 errors.rs): the hook hands the panic to errors::on_panic, which
+  // builds a mainErrors.cjs summary (main_errors::panic_summary, paths scrubbed) and emits it
+  // as app:main-error (or writes the crash file when the release build aborts).
+  assert.match(mainRsSrc, /set_hook\(Box::new\(move \|info\| \{[\s\S]{0,120}errors::on_panic\(info\);/, "panics reach onMainError as a mainErrors.cjs summary");
+  const errorsRs = readFileSync(join(src, "errors.rs"), "utf8");
+  assert.match(errorsRs, /main_errors::panic_summary\(/);
+  assert.match(errorsRs, /to_main\(&h, "app:main-error", s\.clone\(\)\)/);
   // will-navigate (main.cjs): a non-app URL is cancelled and a web or mail link goes to the browser.
   assert.match(mainRsSrc, /\.on_navigation\(\{\s*let app = handle\.clone\(\);\s*move \|url\| boot::main_navigation\(&app, url\)/, "main window navigation goes through main_navigation");
   const navAt = bootRs.indexOf("pub fn main_navigation");

@@ -79,6 +79,33 @@ pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<Backgroun
     ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
 }
 
+/// Marker file (app data folder) once the first start has decided on auto-start. Same name
+/// as Electron's (launchVisibility.cjs AUTOSTART_MARKER_FILE), which lives in
+/// `%APPDATA%\Descall`; an Electron marker counts too: that user already decided there and the
+/// migrator carried their Run value (or its absence) over unchanged.
+pub const AUTOSTART_MARKER_FILE: &str = "autostart-initialized";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutostartAction {
+    /// First start ever: turn login auto-start on (Electron's first packaged run did).
+    Enable,
+    /// The Run value exists but would start the window visible: add the hidden args.
+    RewriteArgs,
+    None,
+}
+
+/// autostartLaunchAction: decided once, never re-enabled after the user turned it off.
+/// `run_value` is the current `HKCU\...\Run\com.descall.app` data, if any.
+pub fn autostart_launch_action(marker_exists: bool, electron_marker_exists: bool, run_value: Option<&str>) -> AutostartAction {
+    if !marker_exists && !electron_marker_exists {
+        return AutostartAction::Enable;
+    }
+    match run_value {
+        Some(cmd) if !cmd.trim().is_empty() && !AUTOSTART_ARGS.iter().all(|f| cmd.split_whitespace().any(|p| p == *f)) => AutostartAction::RewriteArgs,
+        _ => AutostartAction::None,
+    }
+}
+
 /// Run value data for an enabled auto-start: the quoted exe plus the hidden args.
 pub fn run_command(exe: &str) -> String {
     format!("\"{exe}\" {}", AUTOSTART_ARGS.join(" "))
@@ -96,6 +123,24 @@ mod tests {
         assert!(!is_autostart_launch(&[EXE, "https://x.example/ --hidden"]));
         assert!(is_autostart_launch(&[EXE, "--autostart --hidden"]), "a joined flag string still counts");
         assert_eq!(decide_cold_start(&[EXE, "descall://x --hidden"], None, false).action, StartAction::Show);
+    }
+
+    #[test]
+    fn autostart_is_decided_once() {
+        let ok = run_command(EXE);
+        // Fresh install, no Electron before: on, once.
+        assert_eq!(autostart_launch_action(false, false, None), AutostartAction::Enable);
+        // Turned off later (no Run value): stays off on every later start.
+        assert_eq!(autostart_launch_action(true, false, None), AutostartAction::None);
+        // Migrated from Electron with auto-start off: the Electron marker keeps it off.
+        assert_eq!(autostart_launch_action(false, true, None), AutostartAction::None);
+        // On with the hidden args: nothing to do.
+        assert_eq!(autostart_launch_action(true, false, Some(&ok)), AutostartAction::None);
+        assert_eq!(autostart_launch_action(false, true, Some(&ok)), AutostartAction::None);
+        // On, but the value would open the window at login: rewrite with the args.
+        assert_eq!(autostart_launch_action(true, false, Some(&format!("\"{EXE}\""))), AutostartAction::RewriteArgs);
+        assert_eq!(autostart_launch_action(false, true, Some(&format!("\"{EXE}\" --autostart"))), AutostartAction::RewriteArgs);
+        assert_eq!(autostart_launch_action(true, false, Some("  ")), AutostartAction::None);
     }
 
     #[test]
