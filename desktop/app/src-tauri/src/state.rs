@@ -149,6 +149,28 @@ pub fn set_quitting<R: Runtime>(app: &AppHandle<R>) {
     shell(app).quitting.store(true, Ordering::Release);
 }
 
+/// Time the page gets for its pagehide / beforeunload work (a socket emit to leave voice,
+/// the app-time flush) before the process goes.
+pub const QUIT_UNLOAD_GRACE_MS: u64 = 400;
+
+/// Quit like Electron's app.quit(): that closed the window, so the page ran its pagehide /
+/// beforeunload handlers (unsent draft saved, voice channel left at once instead of after the
+/// server's reconnect grace, app time flushed). app.exit() tears WebView2 down without them:
+/// tell the page (app:will-quit, the shim runs those handlers), wait a moment, then exit.
+pub fn exit_after_unload<R: Runtime>(app: &AppHandle<R>) {
+    set_quitting(app);
+    if main_window(app).is_none() {
+        app.exit(0);
+        return;
+    }
+    to_main(app, "app:will-quit", ());
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(QUIT_UNLOAD_GRACE_MS)).await;
+        app.exit(0);
+    });
+}
+
 pub fn is_dev() -> bool {
     cfg!(debug_assertions)
 }

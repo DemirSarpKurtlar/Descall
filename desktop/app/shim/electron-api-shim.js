@@ -172,6 +172,22 @@
   on("native-theme:reduced-transparency-changed", setReducedTransparency);
   invoke("app_reduced_transparency").then((v) => { if (typeof v === "boolean") setReducedTransparency(v); }, noop);
 
+  // Quit (tray Quit): Electron's app.quit() closed the window, so the page ran its pagehide /
+  // beforeunload handlers (unsent draft saved, voice channel left at once, app time flushed).
+  // app.exit() tears WebView2 down without them; the shell sends app:will-quit to the main
+  // window and waits a moment before it exits (state::exit_after_unload).
+  let willQuit = false;
+  if (LABEL === "main") {
+    on("app:will-quit", () => {
+      if (willQuit) return;
+      willQuit = true;
+      let hide;
+      try { hide = new PageTransitionEvent("pagehide", { persisted: false }); } catch (_) { hide = new Event("pagehide"); }
+      try { window.dispatchEvent(hide); } catch (err) { console.error(err); }
+      try { window.dispatchEvent(new Event("beforeunload")); } catch (err) { console.error(err); }
+    });
+  }
+
   const nativeShare = () => window.__descallNativeShare || null;
   const toElectronSource = (s) => ({
     id: s.id,

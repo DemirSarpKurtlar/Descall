@@ -306,6 +306,29 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(popout.ctx.localStorage.getItem("descall_token"), null, "only the main window keeps a copy");
 }
 
+// Quit from the tray: the page runs its pagehide / beforeunload handlers first (Electron's
+// app.quit closed the window: draft saved, voice left at once, app time flushed).
+{
+  const s = loadShim();
+  const seen = [];
+  s.ctx.Event = class { constructor(type, init) { this.type = type; Object.assign(this, init || {}); } };
+  s.ctx.PageTransitionEvent = class extends s.ctx.Event {};
+  s.window.dispatchEvent = (ev) => { seen.push([ev.type, ev.persisted]); return true; };
+  s.emit("app:will-quit", null, "popout-1");
+  deq(seen, [], "another window's quit is not this page's");
+  s.emit("app:will-quit", null);
+  deq(seen, [["pagehide", false], ["beforeunload", undefined]], "pagehide (not persisted, so voice is left) then beforeunload");
+  s.emit("app:will-quit", null);
+  assert.equal(seen.length, 2, "once");
+  const pop = loadShim({ label: "popout-1" });
+  assert.equal((pop.listeners.get("app:will-quit") || []).length, 0, "pop-outs close with the app, no extra handlers");
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  const trayRs = readFileSync(join(here, "..", "src-tauri", "src", "tray.rs"), "utf8");
+  assert.match(stateRs, /to_main\(app, "app:will-quit", \(\)\);[\s\S]{0,200}QUIT_UNLOAD_GRACE_MS[\s\S]{0,80}app\.exit\(0\)/, "the shell waits before it exits");
+  assert.match(trayRs, /pub fn quit[\s\S]*?state::exit_after_unload\(app\);\s*\}/, "tray Quit goes through it");
+  assert.doesNotMatch(trayRs.slice(trayRs.indexOf("pub fn quit")), /^\s*app\.exit\(0\);/m);
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).
