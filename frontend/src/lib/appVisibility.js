@@ -118,9 +118,9 @@ export function installAppVisibility(win = typeof window !== "undefined" ? windo
   if (!api || typeof api.onAppVisibility !== "function") return () => {};
   const root = win.document?.documentElement;
   const off = api.onAppVisibility((payload) => applyAppVisibility(root, payload));
-  const onSeen = () => {
-    if (root?.classList?.contains(BACKGROUNDED_CLASS)) applyAppVisibility(root, { backgrounded: false });
-  };
+  // One cleanup rule for both entry points (clearStalePause, also run by installIdlePause on
+  // a press or key): the shell's own events add wheel and window focus here.
+  const onSeen = () => clearStalePause(root);
   const canListen = typeof win.addEventListener === "function";
   if (canListen) for (const ev of VISIBLE_PROOF_EVENTS) win.addEventListener(ev, onSeen, { passive: true, capture: true });
   return () => {
