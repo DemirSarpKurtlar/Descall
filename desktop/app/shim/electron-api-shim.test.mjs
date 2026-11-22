@@ -48,7 +48,7 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null, local = null } = {}) {
   const invokes = [];
   const winListeners = new Map();
   const listeners = new Map();
@@ -83,7 +83,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const ctx = {
     window,
     document: { addEventListener: () => {}, documentElement: { classList: { _s: new Set(), add(c) { this._s.add(c); } } } },
-    localStorage: store(),
+    localStorage: local || store(),
     sessionStorage: session || store(),
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
     navigator: {},
@@ -238,6 +238,149 @@ for (const [path, args, cmd, expected] of CASES) {
   deq(s.invokes.map((c) => c[0]), [cmd], `${path} -> ${cmd}`);
   deq(s.invokes[0][1], expected, `${path} args`);
   called.add(cmd);
+}
+
+// One-time Electron localStorage import (boot.rs import_from_electron_once): applied once per
+// import, never again on a reload of the same window, and again for a later migration (the
+// user went back to Electron after a rollback, changed settings, then migrated again).
+{
+  const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
+  const local = mem();
+  const first = { importLocalStorage: { theme: "dark", "descall-sound": "on" }, importId: "mig-1@100" };
+  const a = loadShim({ boot: first, local });
+  assert.equal(local.getItem("theme"), "dark");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-1@100");
+  assert.equal(a.window.__DESCALL_BOOT__.importLocalStorage, undefined, "the import is not left on window");
+  assert.equal(a.window.__DESCALL_BOOT__.importId, undefined);
+  local.setItem("theme", "light"); // changed by the user in this run
+  loadShim({ boot: first, local }); // a reload: the window keeps the same init script
+  assert.equal(local.getItem("theme"), "light", "a reload never applies the same import again");
+  loadShim({ boot: { importLocalStorage: { theme: "midnight" }, importId: "mig-2@900" }, local });
+  assert.equal(local.getItem("theme"), "midnight", "a later migration's import is applied");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // A profile marked by an earlier shell (timestamp marker) still takes a new import.
+  const old = mem();
+  old.setItem("__descall_import_v1", "1763700000000");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" }, importId: "mig-3@5" }, local: old });
+  assert.equal(old.getItem("theme"), "dark");
+  // Without an id (older shell): applied once, as before.
+  const legacy = mem();
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  legacy.setItem("theme", "light");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  assert.equal(legacy.getItem("theme"), "light");
+  // No import on a normal start: the marker is left alone.
+  loadShim({ boot: { version: "4.1.0" }, local });
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // The shell sends the id (boot.rs Boot.import_id, ImportMarker::import_id).
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  assert.match(bootRs, /import_id: imported\.map\(\|i\| i\.id\.as_str\(\)\)/);
+  assert.match(bootRs, /Imported \{ local_storage: h\.local_storage\.clone\(\), id: record\.import_id\(\) \}/);
+  assert.match(bootRs, /Imported \{ local_storage, id: import_id \}/, "extra-account windows too");
+}
+
+// The secure store refused the token (DPAPI / disk error; token_set answered false): like
+// Electron's false answer, the page's localStorage copy keeps the session for the next start.
+{
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const refused = loadShim({ responses: { token_set: false } });
+  assert.equal(refused.api.secureToken.set("a.b.c"), true);
+  await tick(); await tick();
+  assert.equal(refused.ctx.localStorage.getItem("descall_token"), "a.b.c", "refused: kept in localStorage like storage.js did on Electron");
+  const broken = loadShim({ fail: ["token_set"] });
+  broken.api.secureToken.set("d.e.f");
+  await tick(); await tick();
+  assert.equal(broken.ctx.localStorage.getItem("descall_token"), "d.e.f", "a failed command too");
+  const stored = loadShim({ responses: { token_set: true } });
+  stored.api.secureToken.set("g.h.i");
+  await tick(); await tick();
+  assert.equal(stored.ctx.localStorage.getItem("descall_token"), null, "stored: never in localStorage");
+  const late = loadShim({ responses: { token_set: false } });
+  late.api.secureToken.set("j.k.l");
+  late.api.secureToken.clear(); // signed out before the answer came
+  await tick(); await tick();
+  assert.equal(late.ctx.localStorage.getItem("descall_token"), null, "a token signed out meanwhile is not kept");
+  const popout = loadShim({ responses: { token_set: false }, label: "popout-1" });
+  popout.api.secureToken.set("m.n.o");
+  await tick(); await tick();
+  assert.equal(popout.ctx.localStorage.getItem("descall_token"), null, "only the main window keeps a copy");
+}
+
+// Quit from the tray: the page runs its pagehide / beforeunload handlers first (Electron's
+// app.quit closed the window: draft saved, voice left at once, app time flushed).
+{
+  const s = loadShim();
+  const seen = [];
+  s.ctx.Event = class { constructor(type, init) { this.type = type; Object.assign(this, init || {}); } };
+  s.ctx.PageTransitionEvent = class extends s.ctx.Event {};
+  s.window.dispatchEvent = (ev) => { seen.push([ev.type, ev.persisted]); return true; };
+  s.emit("app:will-quit", null, "popout-1");
+  deq(seen, [], "another window's quit is not this page's");
+  s.emit("app:will-quit", null);
+  deq(seen, [["pagehide", false], ["beforeunload", undefined]], "pagehide (not persisted, so voice is left) then beforeunload");
+  s.emit("app:will-quit", null);
+  assert.equal(seen.length, 2, "once");
+  const pop = loadShim({ label: "popout-1" });
+  assert.equal((pop.listeners.get("app:will-quit") || []).length, 0, "pop-outs close with the app, no extra handlers");
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  const trayRs = readFileSync(join(here, "..", "src-tauri", "src", "tray.rs"), "utf8");
+  assert.match(stateRs, /to_main\(app, "app:will-quit", \(\)\);[\s\S]{0,200}QUIT_UNLOAD_GRACE_MS[\s\S]{0,80}app\.exit\(0\)/, "the shell waits before it exits");
+  assert.match(trayRs, /pub fn quit[\s\S]*?state::exit_after_unload\(app\);\s*\}/, "tray Quit goes through it");
+  assert.doesNotMatch(trayRs.slice(trayRs.indexOf("pub fn quit")), /^\s*app\.exit\(0\);/m);
+}
+
+// Every restart records how the window was left first: app.restart() reuses this run's
+// arguments, and a login session's --autostart --hidden brought the window back hidden.
+{
+  const src = (f) => readFileSync(join(here, "..", "src-tauri", "src", ...f.split("/")), "utf8");
+  for (const f of ["commands/updates.rs", "webview.rs", "main.rs", "tray.rs", "boot.rs", "commands/app.rs", "commands/window.rs"]) {
+    assert.doesNotMatch(src(f), /app\.restart\(\)/, `${f}: restarts go through state::restart`);
+  }
+  assert.match(src("state.rs"), /pub fn restart<R: Runtime>\(app: &AppHandle<R>\) -> ! \{\s*set_quitting\(app\);\s*crate::boot::write_relaunch_marker\(app\);\s*app\.restart\(\)/);
+  const launchRs = readFileSync(join(repo, "desktop", "crates", "descall-shell", "src", "launch.rs"), "utf8");
+  const rule = launchRs.slice(launchRs.indexOf("pub fn decide_cold_start"));
+  assert.ok(rule.indexOf("if updater_relaunch") < rule.indexOf("if is_autostart_launch(argv)"), "the fresh marker decides before the login flags");
+}
+
+// Descall+ raises the main window (toast click, quick launcher, command center, account
+// switch) through the shell's show_main, which also sends app:visibility { backgrounded: false }.
+{
+  const premiumRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "mod.rs"), "utf8");
+  const body = premiumRs.slice(premiumRs.indexOf("pub fn show_main(&self)"));
+  assert.match(body.slice(0, 120), /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/);
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main")), /^[\s\S]{0,900}"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
+}
+
+// An updater relaunch that was minimized comes back minimized without activation
+// (main.cjs showInactive + minimize); show() is SW_SHOW and took the focus from a game.
+{
+  const mainSrc = readFileSync(join(here, "..", "src-tauri", "src", "main.rs"), "utf8");
+  const arm = mainSrc.slice(mainSrc.indexOf("StartAction::Minimize =>"), mainSrc.indexOf("StartAction::Hide =>"));
+  assert.match(arm, /platform::show_minimized_inactive\(&w\)/);
+  assert.doesNotMatch(arm, /w\.show\(\)/);
+  const plat = readFileSync(join(here, "..", "src-tauri", "src", "platform.rs"), "utf8");
+  assert.match(plat, /ShowWindow\(HWND\(h as \*mut core::ffi::c_void\), SW_SHOWMINNOACTIVE\)/);
+}
+
+// The paint watchdog never shows its "could not open" box over a window hidden in the tray
+// (login auto-start), like main.cjs (if (!win.isVisible()) return).
+{
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  const ask = bootRs.slice(bootRs.indexOf("PaintStep::Ask => {"));
+  assert.ok(ask.indexOf("if !win.is_visible().unwrap_or(false)") > -1 && ask.indexOf("if !win.is_visible().unwrap_or(false)") < ask.indexOf("ask_retry"), "hidden: no dialog");
+}
+
+// A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
+// reported once and asked about once, 10 s in, with the window on screen (main.cjs
+// 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).
+{
+  const webviewRs = readFileSync(join(here, "..", "src-tauri", "src", "webview.rs"), "utf8");
+  const hung = webviewRs.slice(webviewRs.indexOf("if kind == 2 {"), webviewRs.indexOf("if action != RendererGone::ReportOnly"));
+  assert.match(hung, /h\.report\(crate::state::now_ms\(\)\)[\s\S]*if !new \{\s*return;/, "repeats of the same hang return early");
+  assert.match(hung, /HANG_ASK_AFTER_MS[\s\S]*is_visible\(\)[\s\S]*h\.due\(hang, visible\)[\s\S]*ask\(&win, kind\)/, "asked once, later, only on screen");
+  assert.ok(hung.indexOf("errors::report") > hung.indexOf("if !new"), "reported once per hang");
+  assert.doesNotMatch(hung, /reset_voice/, "a hung call still counts as busy (no update install over it)");
 }
 
 // Values answered locally (sync in Electron) and return shapes.

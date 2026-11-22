@@ -96,7 +96,14 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         let _ = app.run_on_main_thread(move || show_main(&a));
         return;
     }
-    if let Some(w) = main_window(app) {
+    // Not built yet (WebView2 creation pumps messages during setup, so a second launch, a
+    // descall:// link or a toast click can arrive first): kept, and setup shows the window
+    // once it exists, whatever the start mode (main.cjs userRequestedShow).
+    let Some(w) = main_window(app) else {
+        shell(app).show_requested.store(true, Ordering::Release);
+        return;
+    };
+    {
         let _ = w.set_skip_taskbar(false);
         let _ = w.show();
         let _ = w.unminimize();
@@ -182,6 +189,39 @@ pub fn set_ui_locale<R: Runtime>(app: &AppHandle<R>, value: &str) -> bool {
 
 pub fn set_quitting<R: Runtime>(app: &AppHandle<R>) {
     shell(app).quitting.store(true, Ordering::Release);
+}
+
+/// Restart (Settings > Desktop app "Restart", Retry after the WebView2 browser process died).
+/// app.restart() starts the new process with this run's arguments, and a session that began at
+/// Windows login carries --autostart --hidden: the window the user was looking at came back
+/// hidden in the tray. The one-shot relaunch marker (boot::write_relaunch_marker) records how
+/// the window was left, and the cold-start rule follows it first (launch::decide_cold_start).
+pub fn restart<R: Runtime>(app: &AppHandle<R>) -> ! {
+    set_quitting(app);
+    crate::boot::write_relaunch_marker(app);
+    app.restart()
+}
+
+/// Time the page gets for its pagehide / beforeunload work (a socket emit to leave voice,
+/// the app-time flush) before the process goes.
+pub const QUIT_UNLOAD_GRACE_MS: u64 = 400;
+
+/// Quit like Electron's app.quit(): that closed the window, so the page ran its pagehide /
+/// beforeunload handlers (unsent draft saved, voice channel left at once instead of after the
+/// server's reconnect grace, app time flushed). app.exit() tears WebView2 down without them:
+/// tell the page (app:will-quit, the shim runs those handlers), wait a moment, then exit.
+pub fn exit_after_unload<R: Runtime>(app: &AppHandle<R>) {
+    set_quitting(app);
+    if main_window(app).is_none() {
+        app.exit(0);
+        return;
+    }
+    to_main(app, "app:will-quit", ());
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(QUIT_UNLOAD_GRACE_MS)).await;
+        app.exit(0);
+    });
 }
 
 pub fn is_dev() -> bool {

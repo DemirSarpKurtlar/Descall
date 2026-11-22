@@ -394,7 +394,7 @@ impl Host {
     /// runs on its own thread), back on the taskbar, and the page told it is in front again
     /// (app:visibility). A toast click, a Descall+ hotkey or tray entry after a hide to the
     /// tray used to leave html.app-backgrounded on, so the page kept its animations paused
-    /// and held DM read receipts back.
+    /// and held DM read receipts back. A request made before the window exists is kept.
     pub fn show_main(&self) {
         crate::state::show_main(&self.app);
     }

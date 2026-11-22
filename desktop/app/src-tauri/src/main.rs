@@ -249,10 +249,7 @@ fn main() {
                         }
                     });
                 }
-                StartAction::Minimize => {
-                    let _ = w.show();
-                    let _ = w.minimize();
-                }
+                StartAction::Minimize => platform::show_minimized_inactive(&w),
                 StartAction::Hide => {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
                     // Start in the tray (Windows sign-in): no hide event ever comes, so the
@@ -403,6 +400,11 @@ mod config_tests {
         assert!(req[..400].contains("show_requested.store(true"));
         assert!(main.contains("show_requested.swap(false") && main.contains("with_show_request(launch, requested)"));
         assert!(main.contains("commands::app::deep_link_take,"));
+        // Any other show (descall:// link, toast click) before the window exists is kept the
+        // same way (an auto-started hidden app opened during boot stayed hidden), and taken
+        // once, before the start mode is applied.
+        assert!(state.contains("let Some(w) = main_window(app) else {\n        shell(app).show_requested.store(true"));
+        assert_eq!(main.matches("show_requested.swap(false").count(), 1);
     }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
     /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,

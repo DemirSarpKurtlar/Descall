@@ -192,6 +192,24 @@ pub fn ensure_autostart(app_data: &std::path::Path, electron_user_data: Option<&
     }
 }
 
+/// Updater relaunch of a window that was minimized: on the taskbar, minimized, without taking
+/// the focus (SW_SHOWMINNOACTIVE; main.cjs showInactive() then minimize()). show() is
+/// SW_SHOW: it activated Descall over the game or app the user was in, for a moment.
+pub fn show_minimized_inactive<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        if let Some(h) = w.hwnd().ok().map(|h| h.0 as isize) {
+            use windows::Win32::Foundation::HWND;
+            use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_SHOWMINNOACTIVE};
+            unsafe {
+                let _ = ShowWindow(HWND(h as *mut core::ffi::c_void), SW_SHOWMINNOACTIVE);
+            }
+            return;
+        }
+    }
+    let _ = w.minimize();
+}
+
 /// app.setLoginItemSettings({ openAtLogin, args: ['--autostart', '--hidden'] }). Turning it on
 /// from the tray also clears a Task Manager "disabled" mark, as Electron did.
 pub fn set_autostart(enabled: bool) -> bool {

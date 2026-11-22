@@ -53,8 +53,7 @@ pub fn quit<R: Runtime>(app: &AppHandle<R>) {
             return;
         }
     }
-    state::set_quitting(app);
-    app.exit(0);
+    state::exit_after_unload(app);
 }
 
 fn on_menu<R: Runtime>(app: &AppHandle<R>, e: MenuEvent) {

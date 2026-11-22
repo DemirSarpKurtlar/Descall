@@ -389,11 +389,7 @@ fn prune_old_installers(temp: &std::path::Path, app_name: &str) -> usize {
 /// requestExplicitInstall: tray "Update and quit", the page's Restart button.
 pub fn request_explicit_install<R: Runtime>(app: &AppHandle<R>, reason: &str) -> Value {
     if !is_ready(app) {
-        // app.restart() keeps argv: without the marker a login start (`--autostart --hidden`)
-        // would come back hidden after the user pressed Restart.
-        crate::boot::write_relaunch_marker(app);
-        state::set_quitting(app);
-        app.restart();
+        state::restart(app);
     }
     if live_busy(app) {
         state::show_main(app);
@@ -426,9 +422,7 @@ pub fn updates_restart<R: Runtime>(app: AppHandle<R>, confirmed: bool) -> Value 
         return request_explicit_install(&app, "ipc");
     }
     if !is_ready(&app) {
-        crate::boot::write_relaunch_marker(&app);
-        state::set_quitting(&app);
-        app.restart();
+        state::restart(&app);
     }
     // The user explicitly chose to end the call and restart.
     let ok = {
