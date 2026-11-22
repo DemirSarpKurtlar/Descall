@@ -347,7 +347,7 @@ for (const [k, channel] of Object.entries(LISTENERS)) {
   if (k === "onUpdateAvailable" || k === "onUpdateDownloaded") {
     deq(got[0][1], { v: 1 }, `${k} keeps Electron's (event, info) callback shape`);
   } else if (k === "onMaximizedChange" || k === "onReducedTransparencyChange") {
-    deq(got[0], [true], `${k} passes a boolean`);
+    deq(got[got.length - 1], [true], `${k} passes a boolean`);
   } else {
     deq(got[0], [{ v: 1 }], `${k} passes the payload`);
   }

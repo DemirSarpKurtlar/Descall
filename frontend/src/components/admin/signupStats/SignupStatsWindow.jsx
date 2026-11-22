@@ -41,6 +41,7 @@ import {
   tipLabel,
 } from "./statsModel.js";
 import "../../../styles/admin-signup-stats.css";
+import { titleBarDoubleClick } from "../../../lib/windowDrag.js";
 
 export const STATS_PATH = "/admin/signup-stats";
 const WIN_W = 1240;
@@ -104,6 +105,10 @@ export function openSignupStatsWindow(layout) {
   if (!isElectron() || layout !== "desktop") return false;
   try {
     const w = window.open(STATS_PATH, "descall-signup-stats");
+    // Tauri: the shell opens the stats window natively (src-tauri/src/admin.rs) and denies the
+    // page's window.open, which returns null although the window did open (adminNav.js does
+    // the same); false here also opened the in-app copy over the main window.
+    if (!w && window.electronAPI?.isTauri) return true;
     return Boolean(w);
   } catch {
     return false;
@@ -786,7 +791,7 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
       {standalone ? null : <div className="st3-dim" onClick={chrome === "desktop" ? undefined : close} />}
       <div ref={winRef} className={`st-win${max ? " max" : ""}`} style={style}>
         {chrome === "desktop" || electron ? (
-          <div className="st-tb" onPointerDown={startDrag} onDoubleClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
+          <div className="st-tb" {...(electron ? { "data-tauri-drag-region": "deep" } : {})} onPointerDown={startDrag} onDoubleClick={electron ? titleBarDoubleClick(() => window.electronAPI.maximizeWindow?.()) : () => setMax((v) => !v)}>
             <img src={logoIcon} alt="" />
             <span>{windowTitle}</span>
             <span className="sp" />

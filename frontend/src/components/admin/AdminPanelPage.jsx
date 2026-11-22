@@ -74,7 +74,7 @@ export default function AdminPanelPage() {
 
   if (me === "error") {
     return (
-      <div className="adm adm-desktop is-standalone adm-state" role="alert">
+      <div className="adm adm-desktop is-standalone adm-state" data-tauri-drag-region="deep" role="alert">
         <p>{t("admin.windowOffline")}</p>
         <button type="button" className="adm-state-btn" onClick={() => { setMe(undefined); setBootTry((n) => n + 1); }}>{t("Try again")}</button>
         <button type="button" className="adm-state-btn" onClick={closeWindow}>{t("Close")}</button>
@@ -82,11 +82,11 @@ export default function AdminPanelPage() {
     );
   }
   if (me === undefined) {
-    return <div className="adm adm-desktop is-standalone adm-state" role="status">{t("Loading...")}</div>;
+    return <div className="adm adm-desktop is-standalone adm-state" data-tauri-drag-region="deep" role="status">{t("Loading...")}</div>;
   }
   if (!isFullAdmin) {
     return (
-      <div className="adm adm-desktop is-standalone adm-state" role="alert">
+      <div className="adm adm-desktop is-standalone adm-state" data-tauri-drag-region="deep" role="alert">
         <p>{me ? t("admin.windowForbidden") : t("admin.windowSignIn")}</p>
         <button type="button" className="adm-state-btn" onClick={closeWindow}>{t("Close")}</button>
       </div>

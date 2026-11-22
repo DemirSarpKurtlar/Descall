@@ -68,6 +68,9 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        // main.cjs 'show': the page leaves its backgrounded state (paused animations) even when
+        // Windows keeps the focus elsewhere and no Focused event follows.
+        to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
     }
 }
 

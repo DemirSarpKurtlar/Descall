@@ -180,7 +180,9 @@ fn main() {
                     }
                 })
                 .build()?;
-            if let (Some(x), Some(y)) = (ws.x, ws.y) {
+            if let Some((x, y)) = ws.physical {
+                let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
+            } else if let (Some(x), Some(y)) = (ws.x, ws.y) {
                 let _ = w.set_position(tauri::LogicalPosition::new(x, y));
             }
             if ws.maximized {
@@ -234,6 +236,7 @@ fn main() {
             commands::window::window_is_focused,
             commands::window::window_focus,
             commands::window::window_set_zoom,
+            commands::window::window_system_menu,
             commands::updates::updates_check,
             commands::updates::updates_restart,
             commands::updates::updates_status,

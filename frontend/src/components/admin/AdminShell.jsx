@@ -16,6 +16,7 @@ import AdminVersionBadge from "./AdminVersionBadge.jsx";
 import { AdminSectionBoundary } from "./AdminErrorCard.jsx";
 import { groupAdminTabs } from "./adminNav.js";
 import { isElectronShell } from "../../lib/entryShell.js";
+import { titleBarDoubleClick } from "../../lib/windowDrag.js";
 import logoIcon from "../../assets/admin-logo-icon.png";
 import "../../styles/admin-shell.css";
 
@@ -110,7 +111,7 @@ function TitleBar({ t }) {
     return () => { if (typeof off === "function") off(); };
   }, [api]);
   return (
-    <div className="adm-titlebar" onDoubleClick={() => api?.maximizeWindow?.()}>
+    <div className="adm-titlebar" data-tauri-drag-region="deep" onDoubleClick={titleBarDoubleClick(() => api?.maximizeWindow?.())}>
       <img src={logoIcon} alt="" />
       <span className="adm-titlebar-name">descall</span>
       <span className="adm-titlebar-sub">{t("admin.windowTitle")}</span>
