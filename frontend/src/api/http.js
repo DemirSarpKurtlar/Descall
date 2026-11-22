@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { apiBase, failoverOnTransportError } from "../lib/nodeRouting";
 import { deviceHeaders } from "../lib/deviceId";
 import { t } from "../i18n/runtime.js";
 import { serverMessage } from "../i18n/serverText.js";
@@ -6,23 +6,23 @@ import { isTransientHttpStatus, isTransportError, transientFailureError, withRea
 
 export async function httpRequest(path, options = {}) {
   // Empty string is valid: browser SPA same-origin via Vercel → Render rewrite.
-  if (API_BASE_URL == null) {
+  if (apiBase() == null) {
     throw new Error(t("core.http.apiNotConfigured"));
   }
 
-  const url = `${API_BASE_URL}${path}`;
   const method = options.method || "GET";
 
   try {
+    // The base is read per try: a failed try on the PC node moves the next one to Render.
     const response = await withReadRetry(
-      () => fetch(url, {
+      () => fetch(`${apiBase()}${path}`, {
         ...options,
         headers: {
           "Content-Type": "application/json",
           ...deviceHeaders(),
           ...(options.headers || {}),
         },
-      }),
+      }).catch(failoverOnTransportError),
       { method, signal: options.signal },
     );
 

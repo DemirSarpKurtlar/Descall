@@ -16,7 +16,7 @@ import PullToRefresh from "../ui/PullToRefresh";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import AnnouncementsSheet, { useAnnouncements } from "../announcements/AnnouncementsSheet.jsx";
 import { renameGroup as renameGroupApi, setGroupAvatar } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
@@ -227,7 +227,7 @@ export default function ServerSidebar({
     setAddSuccess("");
     try {
       const token = getToken();
-      const url = `${API_BASE_URL}/groups/create`;
+      const url = `${apiBase()}/groups/create`;
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1499,7 +1499,7 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
 
   const handleLeave = async (group) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/groups/${group.id}/leave`, {
+      const res = await fetch(`${apiBase()}/groups/${group.id}/leave`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getToken()}` },
       });

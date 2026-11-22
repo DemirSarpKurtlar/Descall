@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
-import { API_BASE_URL } from "../../../config/api";
+import { apiBase } from "../../../lib/nodeRouting";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatNumber } from "../../../i18n/format.js";
 import { BUILD_VERSION } from "../../../lib/appVersion";
@@ -257,7 +257,7 @@ export default function AdminSystem({ socket, onGoto }) {
   /** Memory backup as a file. Returns its size (bytes). */
   const downloadBackup = useCallback(
     async ({ reason = "" } = {}) => {
-      const res = await adminRawFetch(`${API_BASE_URL}/admin/system/backup`, {
+      const res = await adminRawFetch(`${apiBase()}/admin/system/backup`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),

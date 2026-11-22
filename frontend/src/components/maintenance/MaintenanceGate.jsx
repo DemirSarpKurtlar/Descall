@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { useLocale } from "../../context/LocaleContext";
 import { detectPlatform, shouldBlock, shouldShowBanner, localStatus } from "../../lib/maintenance";
 import { MaintenanceScreen, MaintenanceBanner, MaintenanceDetails, MaintenanceEndedToast } from "./MaintenanceUi";
@@ -44,7 +44,7 @@ export default function MaintenanceGate({ socket, isAdmin = false }) {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/maintenance/status`, { cache: "no-store" });
+      const res = await fetch(`${apiBase()}/maintenance/status`, { cache: "no-store" });
       if (res.ok) apply(await res.json());
     } catch {
       /* offline: keep the last state */

@@ -53,7 +53,7 @@ assert.equal(m.isAdminApiPath("/api/auth/2fa/status"), false);
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 assert.match(read("../api/adminHttp.js"), /return runWithStepUp\(\(extra\) => adminFetchOnce\(/);
 assert.match(read("../api/authedHttp.js"), /if \(isAdminApiPath\(path\)\) return runWithStepUp/);
-assert.doesNotMatch(read("../components/admin/AdminPanel.jsx"), /await fetch\(`\$\{API_BASE_URL\}\/api\/admin/);
+assert.doesNotMatch(read("../components/admin/AdminPanel.jsx"), /await fetch\(`\$\{(?:API_BASE_URL|apiBase\(\))\}\/api\/admin/);
 assert.match(read("../components/admin/AdminPanel.jsx"), /<AdminStepUpHost \/>/);
 assert.match(read("../components/admin/AdminPanel.jsx"), /admin2faRequired \? \(\s*<Admin2faGate/);
 console.log("adminStepUp.selftest ok");

@@ -3,7 +3,7 @@
  * Third-party PostHog / Google Ads stay in site/analytics.js.
  */
 
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "./nodeRouting";
 import { getVisitorKey, peekAttribution } from "./attribution";
 import { getToken } from "./storage";
 
@@ -22,7 +22,7 @@ function postCollect(event, extra = {}) {
       attribution: peekAttribution() || undefined,
       props: extra.props && typeof extra.props === "object" ? extra.props : {},
     });
-    const url = `${API_BASE_URL}/api/analytics/collect`;
+    const url = `${apiBase()}/api/analytics/collect`;
     const token = extra.token || getToken();
     const headers = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;

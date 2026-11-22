@@ -10,7 +10,7 @@
  */
 import { adminFetch } from "../../../api/adminHttp";
 import { authedRequest } from "../../../api/authedHttp";
-import { API_BASE_URL } from "../../../config/api";
+import { primaryApiBase } from "../../../lib/nodeRouting";
 import { RARITIES, SET_SLOTS, addDays, istDay, istMidnight, normalizeWeights, nextReset, round10, setPricing } from "./shop2Model.js";
 
 const BASE = "/shop2";
@@ -44,10 +44,11 @@ export function setApiLocale(l) {
   LOCALE = l || "tr";
 }
 
-const API_ORIGIN = String(API_BASE_URL || "").replace(/\/api\/?$/, "");
+// Asset URLs stay on the primary (lib/nodeRouting.js), read per call.
+const apiOrigin = () => String(primaryApiBase() || "").replace(/\/api\/?$/, "");
 function absUrl(u) {
   if (!u || typeof u !== "string") return u || null;
-  return u.startsWith("/api/") ? `${API_ORIGIN}${u}` : u;
+  return u.startsWith("/api/") ? `${apiOrigin()}${u}` : u;
 }
 function pickName(n) {
   if (n && typeof n === "object") return n[LOCALE] || n.en || n.tr || Object.values(n)[0] || "";

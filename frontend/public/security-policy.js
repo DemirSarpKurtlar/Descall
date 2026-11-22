@@ -8,6 +8,12 @@ export const HSTS = "max-age=63072000; includeSubDomains; preload";
 export const PERMISSIONS_POLICY = "camera=(self), microphone=(self), display-capture=(self), autoplay=(self)";
 export const CSP_HEADER = "content-security-policy";
 /**
+ * Hybrid server: the owner's PC node (Cloudflare Tunnel). Same value as
+ * src/config/nodeOrigins.js PC_NODE_ORIGIN (src/config/nodeOrigins.selftest.mjs checks).
+ */
+export const PC_NODE_ORIGIN = "https://pc.descall.com";
+export const PC_NODE_WS_ORIGIN = "wss://pc.descall.com";
+/**
  * sha256 of every inline <script> in index.html (the prerendered pages reuse the same
  * head). No 'unsafe-inline' for scripts: a new or edited inline script must be hashed.
  * Regenerate with `node scripts/csp-sync.mjs` (rewrites this list, _headers and vercel.json);
@@ -37,9 +43,9 @@ export const SITE_CSP = [
   `script-src 'self' ${INLINE_SCRIPT_HASHES.map((h) => `'${h}'`).join(" ")} https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://accounts.google.com https://www.clarity.ms https://*.clarity.ms https://static.cloudflareinsights.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com https://*.googleusercontent.com https://*.clarity.ms",
-  "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.giphy.com https://*.tenor.com",
-  "connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com https://api.descall.com wss://rt.descall.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://eu.posthog.com https://*.posthog.com https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://accounts.google.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud https://*.clarity.ms https://cloudflareinsights.com",
+  `img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com ${PC_NODE_ORIGIN} https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com https://*.googleusercontent.com https://*.clarity.ms`,
+  `media-src 'self' blob: data: https://descall.com https://des-call.onrender.com ${PC_NODE_ORIGIN} https://api.descall.com https://*.supabase.co https://*.giphy.com https://*.tenor.com`,
+  `connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com ${PC_NODE_ORIGIN} ${PC_NODE_WS_ORIGIN} https://api.descall.com wss://rt.descall.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://eu.posthog.com https://*.posthog.com https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://accounts.google.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud https://*.clarity.ms https://cloudflareinsights.com`,
   "frame-src 'self' https://www.googletagmanager.com https://accounts.google.com",
   "worker-src 'self' blob:",
 ].join("; ");

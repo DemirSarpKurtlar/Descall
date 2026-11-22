@@ -17,6 +17,8 @@ const RENDER_HOSTS = new Set([
   "des-call-staging.onrender.com",
   "api.descall.com",
   "api-staging.descall.com",
+  // Hybrid server: the owner's PC node behind its Cloudflare Tunnel.
+  "pc.descall.com",
 ]);
 
 const API_PREFIXES = [

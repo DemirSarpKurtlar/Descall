@@ -248,6 +248,9 @@ app.get("/api/status", (_req, res) => {
 app.use("/api/features", publicFeatureRoutes);
 app.use("/api/maintenance", require("./routes/maintenanceStatus"));
 app.use("/maintenance", require("./routes/maintenanceStatus"));
+// Hybrid server (Render + PC node): /api/node/assign, /health, /register, /drain-done.
+// Single-node mode (no REDIS_URL) answers this node, so nothing changes without the env.
+require("./routes/node").attachNodeRouting({ app, io });
 // 2.11.7 (scale S3): public ES256 keys for the Cloudflare edge. Empty until
 // JWT_ES256_PRIVATE_KEY is set. Public by design; shared cache 1 h.
 app.get("/api/jwks.json", (_req, res) => {

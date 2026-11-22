@@ -3,7 +3,7 @@ import { TYPE_PRIORITY } from '../lib/activityTypePriority';
 // Descall+ game_status: extra game list for members only (null for everyone else).
 import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
-import { API_BASE_URL } from '../config/api';
+import { apiBase } from '../lib/nodeRouting';
 import { fetchFriendPresence, createPresenceHydrator } from '../lib/friendPresenceBatch';
 import { mergePresenceSnapshot, prunePresence } from '../lib/presenceMerge';
 import {
@@ -216,8 +216,8 @@ export function useActivity({ socket, me, friends = [] }) {
     if (!token) { setHistoryLoaded(true); return; }
 
     Promise.all([
-      fetch(`${API_BASE_URL}/api/activity/history`,  { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${API_BASE_URL}/api/activity/settings`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${apiBase()}/api/activity/history`,  { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${apiBase()}/api/activity/settings`, { headers: { Authorization: `Bearer ${token}` } }),
     ]).then(async ([histRes, setRes]) => {
       if (histRes.ok) {
         const { history: h } = await histRes.json();
@@ -250,7 +250,7 @@ export function useActivity({ socket, me, friends = [] }) {
       if (!token) return false;
       const since = Date.now();
 
-      const byId = await fetchFriendPresence(currentFriends.map((f) => f.id), { base: API_BASE_URL, token });
+      const byId = await fetchFriendPresence(currentFriends.map((f) => f.id), { base: apiBase(), token });
 
       const snapshot = {};
       for (const f of currentFriends) {
@@ -404,7 +404,7 @@ export function useActivity({ socket, me, friends = [] }) {
 
     const entry = Object.values(currentProcessDb()).find(e => e.name === appName);
 
-    await fetch(`${API_BASE_URL}/api/activity/session`, {
+    await fetch(`${apiBase()}/api/activity/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -419,7 +419,7 @@ export function useActivity({ socket, me, friends = [] }) {
     }).catch(() => {});
 
     // Refresh history
-    const res = await fetch(`${API_BASE_URL}/api/activity/history`, {
+    const res = await fetch(`${apiBase()}/api/activity/history`, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => null);
     if (res?.ok) {
@@ -438,7 +438,7 @@ export function useActivity({ socket, me, friends = [] }) {
     if (!token) return;
     const { appName, startedAt, endedAt, durationSec, meta } = closed.log;
     const entry = Object.values(currentProcessDb()).find(e => e.name === appName);
-    fetch(`${API_BASE_URL}/api/activity/session`, {
+    fetch(`${apiBase()}/api/activity/session`, {
       method: 'POST',
       keepalive: !!keepalive,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -471,7 +471,7 @@ export function useActivity({ socket, me, friends = [] }) {
 
       // fetch with keepalive is reliable on unload AND supports Authorization headers
       // (sendBeacon cannot send auth headers, intentionally avoided)
-      fetch(`${API_BASE_URL}/api/activity/session`, {
+      fetch(`${apiBase()}/api/activity/session`, {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -596,7 +596,7 @@ export function useActivity({ socket, me, friends = [] }) {
 
     const token = getToken();
     if (!token) return;
-    await fetch(`${API_BASE_URL}/api/activity/settings`, {
+    await fetch(`${apiBase()}/api/activity/settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ privacy }),
@@ -611,7 +611,7 @@ export function useActivity({ socket, me, friends = [] }) {
     });
     const token = getToken();
     if (!token) return;
-    await fetch(`${API_BASE_URL}/api/activity/settings`, {
+    await fetch(`${apiBase()}/api/activity/settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(patch),

@@ -22,7 +22,7 @@ import {
   writeLocalMute,
   writeParticipantGain,
 } from "../lib/voiceProfile";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
@@ -489,7 +489,7 @@ export function useServerVoice(socket) {
   const getMediaConfig = useCallback(async () => {
     if (liveKitConfigRef.current) return liveKitConfigRef.current;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/webrtc/media-config`, {
+      const res = await fetch(`${apiBase()}/api/webrtc/media-config`, {
         credentials: "omit",
         cache: "no-store",
       });
@@ -515,7 +515,7 @@ export function useServerVoice(socket) {
     const token = getToken();
     if (!token || !channelId) return { enabled: false };
     const res = await fetch(
-      `${API_BASE_URL}/api/webrtc/livekit-token?channelId=${encodeURIComponent(channelId)}`,
+      `${apiBase()}/api/webrtc/livekit-token?channelId=${encodeURIComponent(channelId)}`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
@@ -539,7 +539,7 @@ export function useServerVoice(socket) {
       throw err;
     }
     const res = await fetch(
-      `${API_BASE_URL}/api/webrtc/livekit-screen-token?channelId=${encodeURIComponent(channelId)}`,
+      `${apiBase()}/api/webrtc/livekit-screen-token?channelId=${encodeURIComponent(channelId)}`,
       { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
     );
     const body = await res.json().catch(() => ({}));

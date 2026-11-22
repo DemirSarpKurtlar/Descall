@@ -1,4 +1,5 @@
-import { API_BASE_URL } from "../../config/api";
+// Asset URLs stay on the primary: rendered images must not break when a node drains.
+import { primaryApiBase } from "../../lib/nodeRouting";
 import { useLocale } from "../../context/LocaleContext";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { artUrl } from "../../lib/stillArt.js";
@@ -21,7 +22,7 @@ export function shop2AssetSrc(item) {
   if (!isShop2Cosmetic(item)) return null;
   const url = String(item.asset_url);
   if (/^(data:|https?:)/i.test(url)) return url;
-  if (url.startsWith("/")) return `${String(API_BASE_URL || "").replace(/\/+$/, "")}${url}`;
+  if (url.startsWith("/")) return `${String(primaryApiBase() || "").replace(/\/+$/, "")}${url}`;
   return null;
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { useT } from "../../context/localeContextInstance";
 import { SITE_OPERATOR } from "../siteIdentity";
 
@@ -34,7 +34,7 @@ export default function ContactPage() {
     setError("");
     setInvalidField("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/marketing/contact`, {
+      const res = await fetch(`${apiBase()}/api/marketing/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "../../context/localeContextInstance";
 import { formatDate } from "../../i18n/format";
-import { API_BASE_URL } from "../../config/api";
+import { apiBase } from "../../lib/nodeRouting";
 import { SITE_OPERATOR } from "../siteIdentity";
 import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
 
@@ -22,7 +22,7 @@ export default function StatusPage() {
     const timer = setTimeout(() => ctrl.abort(), 8000);
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/status`, { signal: ctrl.signal });
+        const res = await fetch(`${apiBase()}/api/status`, { signal: ctrl.signal });
         const body = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (res.ok) {

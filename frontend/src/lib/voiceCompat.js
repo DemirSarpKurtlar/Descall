@@ -1,7 +1,7 @@
 // Voice-note playback fallback (2.13.2). New notes are stored as AAC/M4A by the server, but
 // notes recorded on Chromium/Electron before that are WebM/Opus, which iOS / Safari cannot
 // decode. For those, POST /api/media/voice-compat returns a signed URL to an M4A copy.
-import { API_BASE_URL } from "../config/api.js";
+import { apiBase } from "./nodeRouting.js";
 import { getToken } from "./storage.js";
 
 const cache = new Map();
@@ -29,7 +29,7 @@ export function fetchVoiceCompatUrl(url, { fetchImpl = globalThis.fetch } = {}) 
   if (cache.has(key)) return cache.get(key);
   const job = (async () => {
     try {
-      const res = await fetchImpl(`${API_BASE_URL}/api/media/voice-compat`, {
+      const res = await fetchImpl(`${apiBase()}/api/media/voice-compat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ url }),

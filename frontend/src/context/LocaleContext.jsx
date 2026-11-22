@@ -10,7 +10,7 @@ import {
 } from "../i18n/index.js";
 import { setRuntimeLocale } from "../i18n/runtime.js";
 import { FALLBACK_LOCALE } from "../i18n/registry.js";
-import { API_BASE_URL } from "../config/api";
+import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { shareUiLocaleWithNative } from "../lib/notifyActionToken.js";
 import { LocaleContext, useLocale, useT } from "./localeContextInstance";
@@ -83,7 +83,7 @@ export function LocaleProvider({ children, meLanguage = null }) {
     try {
       const token = getToken();
       if (token) {
-        fetch(`${API_BASE_URL}/api/user/regional`, {
+        fetch(`${apiBase()}/api/user/regional`, {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
