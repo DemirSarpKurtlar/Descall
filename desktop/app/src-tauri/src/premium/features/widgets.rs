@@ -12,7 +12,7 @@ use super::Gen;
 use crate::premium::logic::geom::Rect;
 use crate::premium::logic::rules::{norm_widgets, s, WIDGET_KINDS};
 use crate::premium::overlay::{self, OpenOpts};
-use crate::premium::{arg, lock, ok, wins, Bus, Caller, Feature, From, Host};
+use crate::premium::{arg, lock, ok, platform, wins, Bus, Caller, Feature, From, Host};
 
 #[derive(Default)]
 pub struct F {
@@ -107,6 +107,11 @@ impl Feature for F {
                 h.tick("widgets", "moved", g, 250);
             }
             Bus::Tick { key: "widgets", tag: "moved", gen } if self.moved.is(*gen) => {
+                // Electron reported a move once the drag ended; Tauri reports moves during it.
+                if platform::mouse_button_down() {
+                    h.tick("widgets", "moved", *gen, 250);
+                    return;
+                }
                 if let Some(l) = lock(&self.moved_label).take() {
                     overlay::on_moved(h, &l);
                 }

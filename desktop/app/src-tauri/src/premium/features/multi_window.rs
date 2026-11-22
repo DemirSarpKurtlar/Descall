@@ -40,7 +40,7 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     if let Some((label, _)) = popouts(h).into_iter().find(|(_, e)| e.meta.get("route").and_then(Value::as_str) == Some(r.as_str())) {
         if let Some(w) = h.app.get_webview_window(&label) {
             let _ = w.unminimize();
-            let _ = w.show();
+            wins::show(h, &w, "popout");
             let _ = w.set_focus();
         }
         return ok(json!({ "reused": true }));
@@ -67,6 +67,9 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
         .visible(false)
         .always_on_top(wins::on_top_for(h, "popout"))
         .use_https_scheme(true)
+        // Same WebView2 browser arguments as the main window (shared user data folder; other
+        // arguments make the WebView2 environment fail with ERROR_INVALID_STATE).
+        .additional_browser_args(crate::BROWSER_ARGS)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
         .initialization_script(&script)
@@ -93,9 +96,12 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
     if let Some(b) = b {
         wins::set_bounds(&w, b);
     }
+    // No browser menu / shortcuts, media without prompts: as in the main window.
+    crate::webview::install_permission_handler(&w);
+    crate::webview::install_browser_guards(&w);
     wins::track(h, &label, "popout", "multi_window", json!({ "route": r }));
     wins::apply_behaviour(h, &label, "popout");
-    let _ = w.show();
+    wins::show(h, &w, "popout");
     ok(json!({}))
 }
 

@@ -72,6 +72,9 @@ impl F {
                     .visible_on_all_workspaces(true)
                     .visible(false)
                     .use_https_scheme(true)
+                    // Same WebView2 browser arguments as the main window (shared user data
+                    // folder; other arguments fail with ERROR_INVALID_STATE).
+                    .additional_browser_args(crate::BROWSER_ARGS)
                     .initialization_script(SHIM)
                     .on_navigation(move |u| u.origin() == origin)
                     .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
