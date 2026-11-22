@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -31,6 +32,65 @@ REPO = NODE_APP.parent.parent
 EXCLUDE_DIRS = {"node_modules", "test", "tests", "__tests__", ".cache", "coverage"}
 EXCLUDE_FILES = {".env", ".env.local", ".env.production", ".env.development"}
 
+
+
+# Files of the repository the backend loads from outside frontend/backend (lib/locales.js reads
+# frontend/src/i18n/locales.json, the sitemap route imports frontend/src/site/*, version from
+# frontend/package.json, the AASA file ...). Found by scanning the backend's runtime sources for
+# relative require()/import()/path.join(__dirname, ...) literals, then following the relative
+# imports of what they reach. Tests, selftests, frontend/dist and env files are never included.
+_REF_RE = re.compile(r"""(?:require|import)\(\s*["'`](\.\.?/[^"'`]+)["'`]|from\s+["'](\.\.?/[^"']+)["']""")
+_JOIN_RE = re.compile(r"path\.(?:join|resolve)\(\s*__dirname\s*,([^)]*)\)")
+_STR_RE = re.compile(r"""["'`]([^"'`]*)["'`]""")
+_TEST_NAME = re.compile(r"\.(?:selftest|test|spec|unit\.test|integration\.test|e2e)\.[cm]?js$")
+
+
+def _resolve(base: Path, rel: str):
+    target = (base / rel).resolve()
+    for cand in (target, Path(str(target) + ".js"), Path(str(target) + ".json"), target / "index.js"):
+        if cand.is_file():
+            return cand
+    return None
+
+
+def outside_backend_files(repo: Path = REPO) -> list:
+    frontend = (repo / "frontend").resolve()
+    backend = (frontend / "backend").resolve()
+    found, queue = set(), []
+
+    def consider(base: Path, rel: str):
+        f = _resolve(base, rel)
+        if f is None:
+            return
+        if backend in f.parents or frontend not in f.parents:
+            return
+        relp = f.relative_to(frontend)
+        if relp.parts[0] in ("dist", "node_modules") or relp.name.startswith(".env") or _TEST_NAME.search(relp.name):
+            return
+        if f not in found:
+            found.add(f)
+            queue.append(f)
+
+    for root, dirs, files in os.walk(backend):
+        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+        for name in files:
+            if not re.search(r"\.[cm]?js$", name) or _TEST_NAME.search(name):
+                continue
+            path = Path(root) / name
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for m in _REF_RE.finditer(text):
+                consider(path.parent, m.group(1) or m.group(2))
+            for m in _JOIN_RE.finditer(text):
+                parts = _STR_RE.findall(m.group(1))
+                if parts:
+                    consider(path.parent, os.path.join(*parts))
+    while queue:
+        f = queue.pop()
+        if f.suffix not in (".js", ".mjs", ".cjs"):
+            continue
+        for m in _REF_RE.finditer(f.read_text(encoding="utf-8", errors="ignore")):
+            consider(f.parent, m.group(1) or m.group(2))
+    return sorted(str(f.relative_to(repo)).replace("\\", "/") for f in found)
 
 def sha256_file(p: Path) -> str:
     h = hashlib.sha256()
@@ -123,6 +183,10 @@ def main(argv=None) -> int:
             shutil.rmtree(be)
         n = copy_tree(REPO / "frontend" / "backend", be / "frontend" / "backend")
         n += copy_tree(REPO / "frontend" / "src" / "i18n" / "locales", be / "frontend" / "src" / "i18n" / "locales")
+        for rel in outside_backend_files(REPO):
+            (be / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO / rel, be / rel)
+            n += 1
         edge = REPO / "infra" / "cloudflare" / "edge-config.json"
         if edge.exists():
             (be / "infra" / "cloudflare").mkdir(parents=True, exist_ok=True)

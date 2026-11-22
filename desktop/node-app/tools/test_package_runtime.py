@@ -29,6 +29,30 @@ class PackageRuntimeTest(unittest.TestCase):
             got = sorted(str(p.relative_to(dst)).replace("\\", "/") for p in dst.rglob("*") if p.is_file())
             self.assertEqual(got, ["lib/a.js", "routes/node.js", "server.js"])
 
+    def test_backend_files_outside_its_folder_are_bundled(self):
+        # The PC node crashed at boot: lib/locales.js requires frontend/src/i18n/locales.json,
+        # which the bundle did not carry. Every runtime reference the backend makes outside
+        # frontend/backend must be in the list, and the list must hold no tests, dist or env files.
+        files = pr.outside_backend_files(pr.REPO)
+        for must in ("frontend/src/i18n/locales.json", "frontend/package.json",
+                     "frontend/src/site/sitemapCatalog.js", "frontend/src/i18n/registry.js"):
+            self.assertIn(must, files)
+        for f in files:
+            self.assertFalse(f.startswith("frontend/backend/"), f)
+            self.assertFalse(f.startswith("frontend/dist/"), f)
+            self.assertNotRegex(f, r"\.(selftest|test|spec)\.[cm]?js$")
+            self.assertNotIn(".env", Path(f).name)
+        # Copy them like main() does and check that nothing the backend points at is missing.
+        import shutil
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            pr.copy_tree(pr.REPO / "frontend" / "backend", root / "frontend" / "backend")
+            pr.copy_tree(pr.REPO / "frontend" / "src" / "i18n" / "locales", root / "frontend" / "src" / "i18n" / "locales")
+            for rel in files:
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(pr.REPO / rel, root / rel)
+            self.assertEqual(sorted(pr.outside_backend_files(root)), sorted(files))
+
     def test_lock_pins_node(self):
         lock = json.loads((pr.NODE_APP / "runtime.lock.json").read_text())
         self.assertTrue(lock["node"]["version"].startswith("v24."))
