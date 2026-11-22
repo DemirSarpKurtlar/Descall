@@ -120,8 +120,12 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
     };
     log::info!("[updater] install ({reason}) -> v{}", version.clone().unwrap_or_default());
     to_main(app, "update:installing", json!({ "version": version }));
-    crate::boot::write_relaunch_marker(app);
+    let relaunch = relaunch_after_install(reason);
+    if relaunch {
+        crate::boot::write_relaunch_marker(app);
+    }
     state::set_quitting(app);
+    let update = update.restart_after_install(relaunch);
     match update.install(&bytes) {
         Ok(()) => {
             app.exit(0);
@@ -133,12 +137,20 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
             let u = app.state::<Updates>();
             let mut i = u.inner.lock().unwrap();
             i.install_started = false;
-            i.staged = Some((update, bytes));
+            i.staged = Some((update.restart_after_install(true), bytes));
             shell(app).quitting.store(false, Ordering::Release);
             to_main(app, "update:error", error_payload(&e.to_string(), "install"));
             false
         }
     }
+}
+
+/// The user quit Descall (tray Quit, ExitRequested) with an update staged: install it but do
+/// not start the app again, as electron main.cjs before-quit (startUpdateInstall forceRun
+/// false). The plugin's default (/R) brought the app back right after the user quit it.
+/// Every other install (quiet moment, Restart now, confirmed restart) relaunches.
+fn relaunch_after_install(reason: &str) -> bool {
+    reason != "quit"
 }
 
 /// evaluatePendingUpdate: decide, re-check right before installing.
@@ -397,6 +409,16 @@ pub fn updates_status<R: Runtime>(app: AppHandle<R>) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quitting_installs_without_relaunch() {
+        assert!(!relaunch_after_install("quit"));
+        for reason in ["ipc", "user-confirmed", "idle", "background", "locked", "post-call-grace"] {
+            assert!(relaunch_after_install(reason), "{reason}");
+        }
+        let src = include_str!("updates.rs");
+        assert!(src.contains("install(app, \"quit\", true)"), "install_on_quit passes the quit reason");
+    }
 
     /// A stalled endpoint must fail the check (and free check_in_flight), not hang it.
     #[test]
