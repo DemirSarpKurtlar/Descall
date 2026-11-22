@@ -60,6 +60,8 @@ const ADMIN: &[&str] = &[
     // Right-click on the title bar: the Windows window menu (T5); F12 with the support
     // opt-in only (T8, the command checks webview::devtools_allowed).
     "window_system_menu",
+    // Windows 11 Snap layouts on the bar's maximize button (round 2, src-tauri/src/snap.rs).
+    "window_snap_button",
     "window_toggle_devtools",
     "window_close",
     "window_content_box",

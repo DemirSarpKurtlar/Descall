@@ -20,6 +20,7 @@ mod premium_hooks;
 #[cfg(windows)]
 mod screenshare;
 mod secure_store;
+mod snap;
 mod state;
 mod tray;
 mod tray_menu;
@@ -281,6 +282,7 @@ fn main() {
             commands::window::window_focus,
             commands::window::window_set_zoom,
             commands::window::window_system_menu,
+            snap::window_snap_button,
             commands::updates::updates_check,
             commands::updates::updates_restart,
             commands::updates::updates_status,

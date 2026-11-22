@@ -119,6 +119,8 @@ export default function TitleBar() {
         <button
           type="button"
           className="win-btn maximize"
+          // Windows 11 Snap layouts: the Tauri shell lays its native input sink over this button.
+          data-snap-layout=""
           onClick={() => window.electronAPI?.maximizeWindow?.()}
           title={isMaximized ? t("Restore") : t("Maximize")}
           aria-label={isMaximized ? t("Restore") : t("Maximize")}

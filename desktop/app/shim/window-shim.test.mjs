@@ -15,7 +15,7 @@ const memoryStore = () => {
 };
 
 /** The shim in a vm with a fake Tauri bridge. `responses[cmd]` may be a value or a function returning a promise. */
-function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } = {}) {
+function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore(), document: docExtra = {}, extra = {} } = {}) {
   const invokes = [];
   const listeners = new Map();
   const winListeners = new Map();
@@ -42,7 +42,7 @@ function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } 
   window.top = window;
   const ctx = {
     window,
-    document: { addEventListener: () => {}, documentElement: { classList: { add() {} } } },
+    document: { addEventListener: () => {}, documentElement: { classList: { add() {} } }, ...docExtra },
     localStorage: memoryStore(),
     sessionStorage,
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost" },
@@ -51,6 +51,7 @@ function loadShim({ boot = {}, responses = {}, sessionStorage = memoryStore() } 
     Promise,
     Uint8Array,
     ArrayBuffer,
+    ...extra,
   };
   vm.createContext(ctx);
   vm.runInContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
@@ -192,6 +193,66 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(admin, /crate::webview::install_browser_guards\(&win\);/, "admin windows have no browser menu / reload keys");
   assert.match(admin, /is_safe_external_url\(next\.as_str\(\)\)[\s\S]{0,120}open_url\(next\.as_str\(\)/, "admin links open in the default browser");
   assert.match(admin, /let place = placement\(app, w, h\);/);
+}
+
+// 5. Windows 11 Snap layouts: the page reports its visible maximize button to the shell (the
+//    native input sink goes over it) and mirrors the sink's hover / press onto the button.
+{
+  const mkBtn = (rect) => {
+    const attrs = {};
+    return {
+      rect,
+      getBoundingClientRect() { return this.rect; },
+      contains(o) { return o === this; },
+      setAttribute: (n, v) => { attrs[n] = String(v); },
+      removeAttribute: (n) => { delete attrs[n]; },
+      attrs,
+    };
+  };
+  const main = mkBtn({ left: 1308, top: 0, width: 46, height: 32 });
+  const lock = mkBtn({ left: 1300, top: 0, width: 44, height: 40 });
+  let buttons = [main];
+  let covering = null; // element on top at the button centre
+  const frames = [];
+  const s = loadShim({
+    document: {
+      querySelectorAll: (sel) => (sel === "[data-snap-layout]" ? buttons : []),
+      elementFromPoint: (x, y) => covering || buttons.slice().reverse().find((b) => x >= b.rect.left && x < b.rect.left + b.rect.width && y >= b.rect.top && y < b.rect.top + b.rect.height) || null,
+    },
+    extra: { requestAnimationFrame: (f) => { frames.push(f); return frames.length; } },
+  });
+  const flush = () => { while (frames.length) frames.shift()(); };
+  // JSON round trip: the rects come from the vm realm.
+  const sent = () => JSON.parse(JSON.stringify(s.invokes.filter(([c]) => c === "window_snap_button").map(([, a]) => a.rect)));
+  const resize = () => { for (const fn of s.winListeners.get("resize") || []) fn({}); flush(); };
+  resize();
+  assert.deepEqual(sent(), [{ x: 1308, y: 0, width: 46, height: 32, dpr: 1 }], "the title bar's maximize button is reported with the page scale");
+  resize();
+  assert.equal(sent().length, 1, "unchanged: not sent again");
+  // The app lock bar comes up over the title bar: its button is the one on top.
+  buttons = [main, lock];
+  resize();
+  assert.deepEqual(sent().at(-1), { x: 1300, y: 0, width: 44, height: 40, dpr: 1 });
+  // Hover / press from the sink light the button the page sees.
+  s.emit("window:snap-state", "hover");
+  assert.equal(lock.attrs["data-snap-state"], "hover");
+  s.emit("window:snap-state", "press");
+  assert.equal(lock.attrs["data-snap-state"], "press");
+  s.emit("window:snap-state", "none");
+  assert.equal(lock.attrs["data-snap-state"], undefined);
+  assert.equal(main.attrs["data-snap-state"], undefined, "the covered button is left alone");
+  // Something covers the button (or the bar is gone): the sink is withdrawn.
+  s.emit("window:snap-state", "hover");
+  covering = { nodeType: 1 };
+  resize();
+  assert.equal(sent().at(-1), null, "no visible button: no sink");
+  assert.equal(lock.attrs["data-snap-state"], undefined, "a stale hover is cleared");
+  covering = null;
+  buttons = [];
+  resize();
+  assert.equal(sent().filter((r) => r === null).length, 1, "still none: not sent again");
+  // The interval check exists, so bars that come and go are picked up without a resize.
+  assert.match(shimSrc, /setInterval\(snapSoon, 1000\)/);
 }
 
 console.log("window-shim.test: ok");

@@ -167,7 +167,7 @@ export default function AppLockScreen({ me = null }) {
           <div className="pgl-bar-brand" aria-hidden="true"><DescallBrand /></div>
           <div className="pgl-bar-controls">
             <button type="button" className="pgl-winbtn" onClick={() => winApi.minimizeWindow?.()} title={t("Minimize")} aria-label={t("Minimize")}><Minus size={16} strokeWidth={2} /></button>
-            <button type="button" className="pgl-winbtn" onClick={() => winApi.maximizeWindow?.()} title={maximized ? t("Restore") : t("Maximize")} aria-label={maximized ? t("Restore") : t("Maximize")}>
+            <button type="button" className="pgl-winbtn" data-snap-layout="" onClick={() => winApi.maximizeWindow?.()} title={maximized ? t("Restore") : t("Maximize")} aria-label={maximized ? t("Restore") : t("Maximize")}>
               {maximized ? (
                 <svg className="win-restore-glyph" width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
                   <rect x="1.75" y="4.25" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />

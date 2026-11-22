@@ -96,7 +96,7 @@ pub async fn window_system_menu<R: Runtime>(window: WebviewWindow<R>) {
 }
 
 #[cfg(windows)]
-fn show_system_menu(h: isize) {
+pub(crate) fn show_system_menu(h: isize) {
     use windows::Win32::Foundation::{HWND, LPARAM, POINT, WPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
         EnableMenuItem, GetCursorPos, GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, MENU_ITEM_FLAGS, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE,
