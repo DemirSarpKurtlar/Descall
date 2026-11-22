@@ -111,6 +111,27 @@ pub fn permission_allowed(kind: PermissionKind, url: &str, is_dev: bool) -> bool
     }
 }
 
+/// Permissions the shell stores as granted for the app origin at startup (WebView2
+/// ICoreWebView2Profile4::SetPermissionState), the counterpart of Electron's
+/// setPermissionCheckHandler, which answered true for media on every check. Without it a fresh
+/// WebView2 profile (every user right after the move from Electron) had no camera grant until
+/// the first video call: enumerateDevices gave one unnamed camera, so Settings > Voice & Video
+/// showed an empty camera choice, and navigator.permissions said "prompt". Only kinds that
+/// permission_allowed already grants on request; nothing new is allowed.
+pub fn pregranted(is_dev: bool) -> Vec<(PermissionKind, &'static str)> {
+    let mut origins = vec![crate::trust::APP_ORIGIN];
+    if is_dev {
+        origins.push(crate::trust::DEV_ORIGIN);
+    }
+    let mut out = Vec::new();
+    for o in origins {
+        for k in [PermissionKind::Microphone, PermissionKind::Camera] {
+            out.push((k, o));
+        }
+    }
+    out
+}
+
 /// The PermissionRequested answer: `Some(true)` allow, `Some(false)` deny without WebView2's
 /// prompt, `None` leave WebView2's default. Electron's permission handler refused everything
 /// outside the media list silently, so the Tauri app never shows a browser prompt either
@@ -219,5 +240,16 @@ mod tests {
         // WebView2's own default.
         assert_eq!(permission_decision(PermissionKind::Autoplay, "https://www.youtube.com/", false), None);
         assert_eq!(permission_decision(PermissionKind::Other, "https://tauri.localhost/", false), None);
+    }
+
+    #[test]
+    fn pregranted_media_is_only_what_a_request_would_get() {
+        let release = pregranted(false);
+        assert_eq!(release, vec![(PermissionKind::Microphone, "https://tauri.localhost"), (PermissionKind::Camera, "https://tauri.localhost")]);
+        for (k, origin) in pregranted(true) {
+            assert_eq!(permission_decision(k, &format!("{origin}/"), true), Some(true), "{k:?} {origin}");
+        }
+        assert!(pregranted(true).iter().any(|(_, o)| *o == "http://localhost:5173"));
+        assert!(!release.iter().any(|(k, _)| matches!(k, PermissionKind::Notifications | PermissionKind::ClipboardRead | PermissionKind::Geolocation)));
     }
 }

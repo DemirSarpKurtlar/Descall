@@ -38,7 +38,7 @@ var root=document.getElementById('root');
 var state={};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function initial(n){n=String(n||'?').trim();return esc(n.charAt(0).toUpperCase()||'?');}
-function av(m){var st=m.avatar&&/^(https:|data:image\/)/.test(m.avatar)?' style="background-image:url(\''+esc(m.avatar)+'\')"':'';return '<span class="av'+(m.speaking?' speaking':'')+'"'+st+' data-id="'+esc(m.id)+'">'+(st?'':initial(m.name))+'</span>';}
+function av(m){var st=m.avatar&&/^(https:|data:image\/)[^'"()\\\s]*$/.test(m.avatar)?' style="background-image:url(\''+esc(m.avatar)+'\')"':'';return '<span class="av'+(m.speaking?' speaking':'')+'"'+st+' data-id="'+esc(m.id)+'">'+(st?'':initial(m.name))+'</span>';}
 function dur(since){if(!since)return '';var s=Math.max(0,Math.floor((Date.now()-since)/1000));var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;function p(n){return (n<10?'0':'')+n;}return (h?h+':'+p(m):m)+':'+p(x);}
 function pingCls(ms){return ms==null?'':ms<80?'good':ms<160?'warn':'bad';}
 function pingTxt(ms,l){return ms==null?'--':Math.round(ms)+' '+esc(l.ms||'ms');}
@@ -54,7 +54,7 @@ function renderGaming(){var l=state.labels||{};var p=state.ping||{};var show=sta
   if(p.livekit!=null)h+='<span class="k">'+esc(l.livekit||'')+'</span><span class="v '+pingCls(p.livekit)+'">'+pingTxt(p.livekit,l)+'</span>';}
  h+='</div>';
  if(show.call!==false){h+='<div class="sep"></div>';var c=state.call;
-  h+=c?'<div class="row"><span class="name">'+esc(c.title)+'<span class="sub">'+esc(c.countLabel||'')+'</span></span><span class="v" id="cdur" data-since="'+(c.since||0)+'">'+dur(c.since)+'</span></div>':'<div class="empty">'+esc(l.noCall||'')+'</div>';}
+  h+=c?'<div class="row"><span class="name">'+esc(c.title)+'<span class="sub">'+esc(c.countLabel||'')+'</span></span><span class="v" id="cdur" data-since="'+(Number(c.since)||0)+'">'+dur(c.since)+'</span></div>':'<div class="empty">'+esc(l.noCall||'')+'</div>';}
  if(show.friends!==false){h+='<div class="sep"></div><div class="k" style="margin-bottom:4px">'+esc(l.friends||'')+'</div>';var f=state.friends||[];
   if(!f.length)h+='<div class="empty">'+esc(l.noFriends||'')+'</div>';
   for(var i=0;i<f.length&&i<6;i++)h+='<div class="row"><span class="dot '+esc(f[i].status||'online')+'"></span><span class="name">'+esc(f[i].name)+(f[i].sub?'<span class="sub">'+esc(f[i].sub)+'</span>':'')+'</span></div>';}
@@ -62,7 +62,7 @@ function renderGaming(){var l=state.labels||{};var p=state.ping||{};var show=sta
 function renderWidget(){var l=state.labels||{};var it=state.items||[];
  var h='<div class="card"><div class="head drag">'+esc(state.title||'')+'</div><div class="nodrag">';
  if(!it.length)h+='<div class="empty">'+esc(state.empty||'')+'</div>';
- for(var i=0;i<it.length&&i<12;i++){var x=it[i];h+='<div class="row">'+(x.status?'<span class="dot '+esc(x.status)+'"></span>':av(x))+'<span class="name">'+esc(x.name)+(x.sub?'<span class="sub">'+esc(x.sub)+'</span>':'')+'</span>'+(x.since?'<span class="v" data-since="'+x.since+'">'+dur(x.since)+'</span>':'')+'</div>';}
+ for(var i=0;i<it.length&&i<12;i++){var x=it[i];h+='<div class="row">'+(x.status?'<span class="dot '+esc(x.status)+'"></span>':av(x))+'<span class="name">'+esc(x.name)+(x.sub?'<span class="sub">'+esc(x.sub)+'</span>':'')+'</span>'+(x.since?'<span class="v" data-since="'+(Number(x.since)||0)+'">'+dur(x.since)+'</span>':'')+'</div>';}
  root.innerHTML=h+'</div></div>';}
 var dropStatus='';
 function renderDrop(){var l=state.labels||{};var t=state.targets||[];var sel=state.target||'';

@@ -54,7 +54,7 @@ pub fn serve(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let kind = if KINDS.contains(&kind) { kind } else { "widget" };
     Response::builder()
         .header("Content-Type", "text/html; charset=utf-8")
-        .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:; connect-src ipc: http://ipc.localhost https://ipc.localhost")
+        .header("Content-Security-Policy", descall_shell::pages::HUD_CSP)
         .body(HTML.replace("__KIND__", kind).into_bytes())
         .unwrap_or_default()
 }
@@ -120,7 +120,9 @@ pub fn open(h: &Host, o: OpenOpts<'_>) {
                 // Tauri's own file-drop handler would swallow.
                 .disable_drag_drop_handler()
                 .initialization_script(HUD_SHIM)
-                .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
+                // Exact page (scheme, host, no port): Tauri's local-origin check ignores the
+                // port, so http://descallhud.localhost:<port> would be a local server with IPC.
+                .on_navigation(|u| descall_shell::ipc_policy::is_hud_page(u.as_str()))
                 .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
                 .build();
             match built {

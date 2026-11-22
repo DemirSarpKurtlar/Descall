@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { hasDesktopBridge } from "../lib/desktopShell.js";
 import { bindInputTracking, getActivityBusy, subscribeActivityBusy } from "../lib/updateTiming";
 import { deriveVoiceBusy, publishVoiceBusy } from "../lib/voiceBusy";
 
@@ -18,7 +19,7 @@ export function useElectronVoiceBusy({ call, groupCall, serverVoice } = {}) {
 
   useEffect(() => {
     publishVoiceBusy(busy);
-    if (typeof window === "undefined" || !window.electronAPI?.isElectron) return undefined;
+    if (typeof window === "undefined" || !hasDesktopBridge()) return undefined;
     try {
       window.electronAPI.setVoiceBusy?.(busy);
     } catch {
@@ -31,7 +32,7 @@ export function useElectronVoiceBusy({ call, groupCall, serverVoice } = {}) {
   // without starting the post-call grace.
   useEffect(() => {
     bindInputTracking();
-    if (typeof window === "undefined" || !window.electronAPI?.isElectron) return undefined;
+    if (typeof window === "undefined" || !hasDesktopBridge()) return undefined;
     const send = (b) => {
       try {
         window.electronAPI.setActivityBusy?.(b);
@@ -48,7 +49,7 @@ export function useElectronVoiceBusy({ call, groupCall, serverVoice } = {}) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.electronAPI?.isElectron) return undefined;
+    if (typeof window === "undefined" || !hasDesktopBridge()) return undefined;
     const clear = () => {
       publishVoiceBusy(false);
       try {

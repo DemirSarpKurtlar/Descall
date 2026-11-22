@@ -243,12 +243,14 @@ impl Host {
         let _ = lock(&self.bus_tx).send(ev);
     }
 
-    /// Deliver `ev` on the bus after `ms`. Cheap thread per timer; features ignore stale
-    /// ticks with their own generation counter.
+    /// Deliver `ev` on the bus after `ms`; features ignore stale ticks with their own
+    /// generation counter. A timer task on the async runtime: it was an OS thread per timer,
+    /// and the debounces (widget / sidebar moves, window snaps, settings flush) start one per
+    /// event, so a drag created and tore down a thread for every Moved event.
     pub fn after(&self, ms: u64, ev: Bus) {
         let tx = lock(&self.bus_tx).clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(ms));
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(ms)).await;
             let _ = tx.send(ev);
         });
     }
@@ -387,12 +389,14 @@ impl Host {
         lock(&self.hooks).boot_script.as_ref().and_then(|f| f(&self.app, label))
     }
 
+    /// The shell's single "bring Descall back" path (state::show_main, Electron premium
+    /// ctx.showMainWindow): on the event loop thread, so the focus really lands (this bus
+    /// runs on its own thread), back on the taskbar, and the page told it is in front again
+    /// (app:visibility). A toast click, a Descall+ hotkey or tray entry after a hide to the
+    /// tray used to leave html.app-backgrounded on, so the page kept its animations paused
+    /// and held DM read receipts back. A request made before the window exists is kept.
     pub fn show_main(&self) {
-        if let Some(w) = self.app.get_webview_window("main") {
-            let _ = w.unminimize();
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
+        crate::state::show_main(&self.app);
     }
 
     // -- blobs (ArrayBuffers across IPC) --
@@ -408,6 +412,11 @@ impl Host {
         }
         b.insert(id, Blob { bytes, at: Instant::now() });
         json!({ "__blob": id, "size": size })
+    }
+
+    /// Is the `{ __blob }` placeholder still held (not evicted by the 300 MB cap)?
+    pub fn has_blob(&self, v: &Value) -> bool {
+        v.get("__blob").and_then(Value::as_u64).is_some_and(|id| lock(&self.blobs).contains_key(&id))
     }
 
     pub fn take_blob(&self, v: &Value) -> Option<Vec<u8>> {
@@ -702,6 +711,9 @@ impl Host {
                     }
                 }
                 self.bus(Bus::App);
+                // A toast clicked while Descall was closed opens its chat once the page is up
+                // (whether or not quick_reply runs: the "toast" style is another feature).
+                features::quick_reply::flush_clicks();
                 ok(json!({}))
             }),
             _ => return None,
@@ -721,8 +733,10 @@ pub async fn premium_invoke(webview: Webview, channel: String, args: Vec<Value>)
 }
 
 /// Raw bytes in (an ArrayBuffer argument); returns a `{ __blob }` placeholder for the next call.
+/// Async, so the copy of up to 100 MB (a file dropped on the drop zone) happens off the UI
+/// thread, which runs every Descall window: a sync command froze them all while it copied.
 #[tauri::command]
-pub fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
+pub async fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
     let h = host().ok_or("premium host not ready")?;
     let label = webview.label();
     if h.caller_for(label).is_none() && !overlay::is_overlay(label) {
@@ -745,12 +759,25 @@ pub fn premium_blob_take(webview: Webview, id: u64) -> Result<tauri::ipc::Respon
     h.take_blob(&json!({ "__blob": id })).map(tauri::ipc::Response::new).ok_or_else(|| "gone".into())
 }
 
-/// `window.descallHud.action(type, payload)` from a HUD / widget / drop window.
+/// `window.descallHud.action(type, payload)` from a HUD / widget / drop window. Handled off
+/// the UI thread, on one worker in arrival order: a thread per action let two quick `size`
+/// reports finish out of order, and the HUD kept the older (wrong) height. One worker also
+/// keeps a page that floods actions from starting a thread per call.
 #[tauri::command]
 pub fn premium_hud_action(webview: Webview, kind: String, payload: Value) -> Result<(), String> {
+    type Action = (String, String, Value);
+    static WORKER: OnceLock<Mutex<Sender<Action>>> = OnceLock::new();
     let h = host().cloned().ok_or("premium host not ready")?;
-    let label = webview.label().to_string();
-    std::thread::spawn(move || overlay::on_action(&h, &label, &kind, payload));
+    let tx = WORKER.get_or_init(|| {
+        let (tx, rx) = channel::<Action>();
+        let _ = std::thread::Builder::new().name("premium-hud-actions".into()).spawn(move || {
+            while let Ok((label, kind, payload)) = rx.recv() {
+                overlay::on_action(&h, &label, &kind, payload);
+            }
+        });
+        Mutex::new(tx)
+    });
+    let _ = lock(tx).send((webview.label().to_string(), kind, payload));
     Ok(())
 }
 
@@ -806,8 +833,13 @@ pub fn init() -> TauriPlugin<Wry> {
                     _ => {}
                 },
                 RunEvent::ExitRequested { .. } => {
-                    h.bus(Bus::BeforeQuit);
-                    h.flush();
+                    // Right here on the event loop thread, while every window still exists, like
+                    // Electron's synchronous before-quit. Posted to the bus thread, the session
+                    // snapshot (session_restore) raced the windows being torn down: their bounds
+                    // read failed and the pop-outs were saved as none, or the process was gone
+                    // before the bus got to it. Window getters on this thread are answered
+                    // directly (tauri-runtime-wry send_user_message), so this cannot block.
+                    h.run_bus(Bus::BeforeQuit);
                 }
                 RunEvent::Exit => h.flush(),
                 _ => {}
@@ -870,6 +902,8 @@ pub fn set_locale(locale: &str) {
     if let (Some(h), Some(l)) = (host(), logic::i18n::match_locale(locale)) {
         *lock(&h.locale) = Some(l.to_string());
         h.refresh_tray();
+        // Text drawn from the language outside the tray (taskbar thumbnail tooltips).
+        h.bus(Bus::App);
     }
 }
 

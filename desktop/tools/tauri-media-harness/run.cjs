@@ -69,9 +69,9 @@ const fakeTauri = `(() => {
       let ts = 0;
       const timer = setInterval(() => { ts += 16667; const s = ring.video(w, h, 128, ts); send('descall-share:' + id + ':v:' + s); ring.audio(0.1, ts); send('descall-share:' + id + ':a:0'); }, 16);
       window.__share = { id, ring, end: (reason) => { clearInterval(timer); ring.end(); send('descall-share:' + id + ':end:' + reason); } , stop: () => clearInterval(timer) };
-      return { id, bytes: ring.buf.byteLength, width: w, height: h, fps: Math.min(r.fps || 30, 60), displaySurface: r.sourceId.startsWith('window') ? 'window' : 'monitor', hdr: false, cursor: true, audio: Boolean(r.audio), audioError: null, echoRisk: false, lane: 'L1' };
+      return { id, bytes: ring.buf.byteLength, width: w, height: h, fps: Math.min(r.fps || 30, 60), displaySurface: r.sourceId.startsWith('window') ? 'window' : 'monitor', hdr: false, cursor: true, audio: Boolean(r.audio) && !window.__noLoopback, audioError: window.__noLoopback ? 'loopback unavailable' : null, echoRisk: false, lane: 'L1' };
     }
-    if (cmd === 'screen_share_stop') { if (window.__share) window.__share.stop(); return null; }
+    if (cmd === 'screen_share_stop') { if (window.__share && (!args || args.id == null || args.id === window.__share.id)) window.__share.stop(); return null; }
     if (cmd === 'screen_share_stats') return { blackStreak: 0 };
     return null;
   }
@@ -182,6 +182,20 @@ const HTML = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>
     s.getTracks().forEach((t) => t.stop());
     await new Promise((r) => setTimeout(r, 50));
     return { surface: st.displaySurface, w: st.width, fps: st.frameRate, stopCalls: window.__calls.filter((c) => c[0] === "screen_share_stop").length - before, lane: window.__descallNativeShare.lane };
+  });
+  // Round 2: no process loopback on this PC (L2) on a German page: video-only share and the
+  // notice in German (the shim's notices were Turkish or English only).
+  await step("videoOnlyNoticeDe", async () => {
+    document.documentElement.lang = "de";
+    window.__noLoopback = true;
+    const s = await window.__h.ss.captureScreenShareStream({ width: 1920, height: 1080, fps: 30, pickSource: async (list) => list[0].id });
+    await new Promise((r) => setTimeout(r, 100));
+    const note = [...document.querySelectorAll('[role="status"]')].map((n) => n.textContent).find((t) => /Systemton/.test(t)) || null;
+    const res = { audioTracks: s.getAudioTracks().length, videoTracks: s.getVideoTracks().length, lane: window.__descallNativeShare.lane, note };
+    s.getTracks().forEach((t) => t.stop());
+    window.__noLoopback = false;
+    document.documentElement.lang = "tr";
+    return res;
   });
   await step("wakeLock", async () => {
     window.__h.wl.acquireCallWakeLock({ title: "t", skipNative: true });

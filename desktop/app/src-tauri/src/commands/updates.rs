@@ -27,6 +27,8 @@ struct Inner {
     version: Option<String>,
     staged: Option<(tauri_plugin_updater::Update, Vec<u8>)>,
     check_in_flight: bool,
+    /// Version being downloaded right now (a check that finds one in flight reports it).
+    downloading: Option<String>,
     install_started: bool,
     poll_running: bool,
     last_hold: Option<&'static str>,
@@ -120,8 +122,12 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
     };
     log::info!("[updater] install ({reason}) -> v{}", version.clone().unwrap_or_default());
     to_main(app, "update:installing", json!({ "version": version }));
-    crate::boot::write_relaunch_marker(app);
+    let relaunch = relaunch_after_install(reason);
+    if relaunch {
+        crate::boot::write_relaunch_marker(app);
+    }
     state::set_quitting(app);
+    let update = update.restart_after_install(relaunch);
     match update.install(&bytes) {
         Ok(()) => {
             app.exit(0);
@@ -129,15 +135,24 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
         }
         Err(e) => {
             log::error!("[updater] install failed: {e}");
+            crate::boot::clear_relaunch_marker(app);
             let u = app.state::<Updates>();
             let mut i = u.inner.lock().unwrap();
             i.install_started = false;
-            i.staged = Some((update, bytes));
+            i.staged = Some((update.restart_after_install(true), bytes));
             shell(app).quitting.store(false, Ordering::Release);
             to_main(app, "update:error", error_payload(&e.to_string(), "install"));
             false
         }
     }
+}
+
+/// The user quit Descall (tray Quit, ExitRequested) with an update staged: install it but do
+/// not start the app again, as electron main.cjs before-quit (startUpdateInstall forceRun
+/// false). The plugin's default (/R) brought the app back right after the user quit it.
+/// Every other install (quiet moment, Restart now, confirmed restart) relaunches.
+fn relaunch_after_install(reason: &str) -> bool {
+    reason != "quit"
 }
 
 /// evaluatePendingUpdate: decide, re-check right before installing.
@@ -201,13 +216,19 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
         let u = app.state::<Updates>();
         let mut i = u.inner.lock().unwrap();
         if i.deferral.update_ready || i.check_in_flight {
-            return Ok(json!({ "success": true, "updateInfo": null, "available": i.deferral.update_ready, "updateReady": i.deferral.update_ready, "updateVersion": i.version }));
+            // Settings > Desktop app "Check" during a download used to read "up to date".
+            return Ok(in_flight_result(i.deferral.update_ready, i.version.clone(), i.downloading.clone()));
         }
         i.check_in_flight = true;
     }
     log::info!("[updater] checking ({reason}), current {}", app.package_info().version);
     let result = check_and_stage(&app).await;
-    app.state::<Updates>().inner.lock().unwrap().check_in_flight = false;
+    {
+        let u = app.state::<Updates>();
+        let mut i = u.inner.lock().unwrap();
+        i.check_in_flight = false;
+        i.downloading = None;
+    }
     match result {
         Ok(version) => {
             let (ready, v) = {
@@ -238,6 +259,17 @@ fn check_result(version: Option<String>, ready: bool, ready_version: Option<Stri
     })
 }
 
+/// check-for-updates while a check / download already runs or an update is staged.
+fn in_flight_result(ready: bool, ready_version: Option<String>, downloading: Option<String>) -> Value {
+    json!({
+        "success": true,
+        "available": ready || downloading.is_some(),
+        "updateInfo": downloading.map(|v| json!({ "version": v })),
+        "updateReady": ready,
+        "updateVersion": ready_version,
+    })
+}
+
 /// update:error text: no local paths or user names (temp file errors), at most 200 chars.
 pub fn error_message(e: &str) -> String {
     descall_shell::main_errors::scrub_paths(e).chars().take(200).collect()
@@ -250,10 +282,33 @@ fn error_payload(message: &str, phase: &'static str) -> Value {
     json!({ "message": error_message(message), "phase": phase })
 }
 
+/// No request may hang: reqwest has no timeout by default, so one stalled connection to the
+/// first endpoint (or a half-open download) kept `check_in_flight` set forever and the app never
+/// checked again until restarted. Connect / read-gap limits, not a total limit, so a slow but
+/// moving download of the installer still finishes.
+pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+pub const READ_TIMEOUT: Duration = Duration::from_secs(45);
+
+fn updater_for<R: Runtime>(app: &AppHandle<R>) -> tauri_plugin_updater::Result<tauri_plugin_updater::Updater> {
+    let handle = app.clone();
+    app.updater_builder()
+        .configure_client(|b| b.connect_timeout(CONNECT_TIMEOUT).read_timeout(READ_TIMEOUT))
+        // install() ends the process with std::process::exit right after starting the
+        // installer, so RunEvent::Exit never runs: drop the tray icon (no ghost icon in the
+        // notification area until hovered), hide the windows and flush the log first.
+        .on_before_exit(move || {
+            log::info!("[updater] installer starting, app exits");
+            log::logger().flush();
+            handle.cleanup_before_exit();
+        })
+        .build()
+}
+
 async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (&'static str, String)> {
-    let updater = app.updater().map_err(|e| ("check", e.to_string()))?;
+    let updater = updater_for(app).map_err(|e| ("check", e.to_string()))?;
     let Some(update) = updater.check().await.map_err(|e| ("check", e.to_string()))? else { return Ok(None) };
     let version = update.version.clone();
+    app.state::<Updates>().inner.lock().unwrap().downloading = Some(version.clone());
     to_main(app, "update:downloading", json!({ "version": version }));
     let app_p = app.clone();
     let (mut got, mut last_emit, started) = (0u64, 0u64, now_ms());
@@ -305,6 +360,9 @@ pub fn schedule_background_checks<R: Runtime>(app: &AppHandle<R>) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(Duration::from_secs(45)).await;
+        // By now the installer that relaunched us has finished.
+        let name = app.package_info().name.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || prune_old_installers(&std::env::temp_dir(), &name)).await;
         loop {
             let _ = check(app.clone(), "interval").await;
             tokio::time::sleep(Duration::from_millis(deferral::UPDATE_CHECK_INTERVAL_MS)).await;
@@ -312,11 +370,26 @@ pub fn schedule_background_checks<R: Runtime>(app: &AppHandle<R>) {
     });
 }
 
+/// Deletes the installers earlier updates left in %TEMP% (deferral::is_stale_updater_dir).
+fn prune_old_installers(temp: &std::path::Path, app_name: &str) -> usize {
+    let Ok(entries) = std::fs::read_dir(temp) else { return 0 };
+    let mut removed = 0;
+    for e in entries.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if e.file_type().is_ok_and(|t| t.is_dir()) && deferral::is_stale_updater_dir(&name, app_name) && std::fs::remove_dir_all(e.path()).is_ok() {
+            removed += 1;
+        }
+    }
+    if removed > 0 {
+        log::info!("[updater] removed {removed} old installer folder(s) from %TEMP%");
+    }
+    removed
+}
+
 /// requestExplicitInstall: tray "Update and quit", the page's Restart button.
 pub fn request_explicit_install<R: Runtime>(app: &AppHandle<R>, reason: &str) -> Value {
     if !is_ready(app) {
-        state::set_quitting(app);
-        app.restart();
+        state::restart(app);
     }
     if live_busy(app) {
         state::show_main(app);
@@ -349,8 +422,7 @@ pub fn updates_restart<R: Runtime>(app: AppHandle<R>, confirmed: bool) -> Value 
         return request_explicit_install(&app, "ipc");
     }
     if !is_ready(&app) {
-        state::set_quitting(&app);
-        app.restart();
+        state::restart(&app);
     }
     // The user explicitly chose to end the call and restart.
     let ok = {
@@ -372,6 +444,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn quitting_installs_without_relaunch() {
+        assert!(!relaunch_after_install("quit"));
+        for reason in ["ipc", "user-confirmed", "idle", "background", "locked", "post-call-grace"] {
+            assert!(relaunch_after_install(reason), "{reason}");
+        }
+        let src = include_str!("updates.rs");
+        assert!(src.contains("install(app, \"quit\", true)"), "install_on_quit passes the quit reason");
+    }
+
+    #[test]
+    fn old_installers_are_pruned() {
+        let t = std::env::temp_dir().join(format!("descall-prune-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&t);
+        std::fs::create_dir_all(t.join("Descall-4.1.1-updater-Ab12")).unwrap();
+        std::fs::write(t.join("Descall-4.1.1-updater-Ab12").join("Descall-4.1.1-installer.exe"), b"MZ").unwrap();
+        std::fs::create_dir_all(t.join("Descall-Setup")).unwrap();
+        std::fs::write(t.join("Descall-4.1.1-updater-file"), b"x").unwrap();
+        assert_eq!(prune_old_installers(&t, "Descall"), 1);
+        assert!(t.join("Descall-Setup").is_dir() && t.join("Descall-4.1.1-updater-file").is_file());
+        let _ = std::fs::remove_dir_all(&t);
+    }
+
+    /// A stalled endpoint must fail the check (and free check_in_flight), not hang it.
+    #[test]
+    fn update_requests_have_timeouts() {
+        let src = include_str!("updates.rs");
+        let check = &src[src.find("async fn check_and_stage").unwrap()..];
+        assert!(check[..300].contains("updater_for(app)"), "checks use the configured updater");
+        assert!(src.contains(".connect_timeout(CONNECT_TIMEOUT).read_timeout(READ_TIMEOUT)"));
+        assert!(CONNECT_TIMEOUT.as_secs() <= 30 && READ_TIMEOUT.as_secs() <= 60);
+        assert!(src.contains("handle.cleanup_before_exit()"), "tray icon removed before the process exits");
+    }
+
+    #[test]
     fn update_errors_carry_no_user_paths() {
         let m = super::error_message(r"failed to write C:\Users\demir\AppData\Local\Temp\Descall_4.1.0_x64-setup.exe: disk full");
         assert!(!m.contains("demir") && m.contains("disk full"), "{m}");
@@ -389,6 +495,12 @@ mod tests {
         assert_eq!(found["available"], json!(true));
         assert_eq!(found["updateInfo"]["version"], json!("4.2.0"));
         assert_eq!(found["updateReady"], json!(true));
+        // A second Check while 4.2.0 downloads: available, not "up to date".
+        let busy = in_flight_result(false, None, Some("4.2.0".into()));
+        assert_eq!(busy["available"], json!(true));
+        assert_eq!(busy["updateInfo"]["version"], json!("4.2.0"));
+        assert_eq!(in_flight_result(false, None, None)["available"], json!(false));
+        assert_eq!(in_flight_result(true, Some("4.2.0".into()), None)["updateReady"], json!(true));
         let long = "x".repeat(500);
         let e = error_payload(&long, "download");
         assert_eq!(e["phase"], json!("download"));

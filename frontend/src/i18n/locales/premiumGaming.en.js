@@ -274,6 +274,8 @@ export const PREMIUM_GAMING_EN = {
     },
   },
   commandCenter: {
+    hotkeyClash: "The quick launcher and the command center use the same shortcut ({accel}). A shortcut works for only one of them; change one of the shortcuts.",
+    hotkeyFailed: "The command center shortcut ({accel}) could not be registered: another app may be using it. Pick a different shortcut.",
     title: "Command center",
     desc: "Messages, friends, calls and notifications in one panel.",
     open: "Open command center",

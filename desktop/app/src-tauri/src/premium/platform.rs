@@ -40,6 +40,7 @@ mod other {
         pub glyph: &'static str,
     }
     pub fn set_thumb_buttons(_hwnd: isize, _buttons: &[ThumbButton], _on_click: fn(u32)) {}
+    pub fn on_taskbar_button_created(_f: fn()) {}
 }
 
 #[cfg(windows)]
@@ -275,6 +276,13 @@ mod win {
     static THUMB: Mutex<Option<ThumbState>> = Mutex::new(None);
     static THUMB_CLICK: OnceLock<fn(u32)> = OnceLock::new();
     static TASKBAR_CREATED: OnceLock<u32> = OnceLock::new();
+    /// Also run when the taskbar button is recreated (taskbar_plus: the overlay badge is gone
+    /// with the old button, as the thumbnail toolbar is).
+    static ON_BUTTON_CREATED: OnceLock<fn()> = OnceLock::new();
+
+    pub fn on_taskbar_button_created(f: fn()) {
+        let _ = ON_BUTTON_CREATED.set(f);
+    }
     const THBN_CLICKED: usize = 0x1800;
     const SUBCLASS_ID: usize = 0xD5C1;
 
@@ -302,6 +310,9 @@ mod win {
                 if !last.is_empty() {
                     set_thumb_buttons(h.0 as isize, &last, *f);
                 }
+            }
+            if let Some(f) = ON_BUTTON_CREATED.get().copied() {
+                std::thread::spawn(f);
             }
         }
         DefSubclassProc(h, msg, wp, lp)

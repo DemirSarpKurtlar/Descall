@@ -22,6 +22,11 @@ fn is_invisible(c: char) -> bool {
 
 fn is_windows_device_name(s: &str) -> bool {
     let stem = s.split('.').next().unwrap_or("").to_lowercase();
+    // Console and clock devices (CreateFile opens the console for "CONIN$" in any folder on
+    // older Windows builds); safeDownload.cjs did not list them.
+    if matches!(stem.trim_end(), "conin$" | "conout$" | "clock$") {
+        return true;
+    }
     let mut chars = stem.chars();
     let head: String = chars.by_ref().take(3).collect();
     let rest: Vec<char> = chars.collect();
@@ -110,6 +115,33 @@ pub fn unique_path(dir: &Path, name: &str, exists: impl Fn(&Path) -> bool) -> Pa
     first
 }
 
+/// Alternate data stream that marks a file as downloaded from the internet (Mark of the
+/// Web): `<file>:Zone.Identifier`.
+pub const ZONE_STREAM: &str = ":Zone.Identifier";
+
+/// Mark of the Web for a file `download_file` fetched from `url` (a chat attachment another
+/// user sent, a setup download): Zone 3 (Internet), so SmartScreen checks a program and Office
+/// opens a document in Protected View, as for any browser download. WebView2's own downloads
+/// get it from Chromium; the shell's fetch wrote plain files (Electron's net.fetch path did
+/// too). The URL is recorded without query, fragment or credentials, so a signed URL's token
+/// is never written next to the file.
+pub fn zone_identifier(url: &str) -> String {
+    let host = url::Url::parse(url)
+        .ok()
+        .filter(|u| matches!(u.scheme(), "http" | "https"))
+        .map(|mut u| {
+            u.set_query(None);
+            u.set_fragment(None);
+            let _ = u.set_username("");
+            let _ = u.set_password(None);
+            u.to_string()
+        });
+    match host {
+        Some(h) => format!("[ZoneTransfer]\r\nZoneId=3\r\nHostUrl={h}\r\n"),
+        None => "[ZoneTransfer]\r\nZoneId=3\r\n".to_string(),
+    }
+}
+
 /// The temporary file of a download in progress: the whole target name plus a suffix, so
 /// "a.zip" and "a.pdf" downloading at once never share one part file (with_extension
 /// gave both "a.descall-part").
@@ -163,6 +195,10 @@ mod tests {
         for n in ["CON", "con", "PRN.txt", "aux.tar.gz", "NUL", "COM1", "com9.log", "LPT1", "lpt3.txt", "COM¹"] {
             assert!(sanitize_filename(n).starts_with('_'), "{n} is prefixed");
         }
+        for n in ["CONIN$", "conout$.txt", "CLOCK$"] {
+            assert!(sanitize_filename(n).starts_with('_'), "{n} is prefixed");
+        }
+        assert_eq!(sanitize_filename("conin.txt"), "conin.txt");
         assert_eq!(sanitize_filename("console.log"), "console.log");
         assert_eq!(sanitize_filename("COM10"), "COM10");
     }
@@ -196,6 +232,17 @@ mod tests {
         for u in ["file:///C:/Windows/win.ini", "descall://app/index.html", "javascript:alert(1)", "data:text/plain,x", "https://user:pw@example.com/a", "", "not a url"] {
             assert!(!is_downloadable_url(u), "{u} refused");
         }
+    }
+
+    #[test]
+    fn downloads_carry_the_mark_of_the_web() {
+        let z = zone_identifier("https://abc.supabase.co/storage/v1/object/sign/att/a.exe?token=SeCrEt#x");
+        assert_eq!(z, "[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=https://abc.supabase.co/storage/v1/object/sign/att/a.exe\r\n");
+        assert!(!z.contains("SeCrEt"));
+        assert_eq!(zone_identifier("not a url"), "[ZoneTransfer]\r\nZoneId=3\r\n");
+        // download_file writes it next to every finished file (commands/system.rs).
+        let sys = include_str!("../../../app/src-tauri/src/commands/system.rs");
+        assert!(sys.contains("download::zone_identifier(url)") && sys.contains("download::ZONE_STREAM"), "download_file marks its files");
     }
 
     #[test]

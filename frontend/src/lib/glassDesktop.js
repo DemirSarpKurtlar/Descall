@@ -41,6 +41,7 @@
  */
 
 import { isPublicMarketingPath } from "../site/marketingPaths.js";
+import { isDesktopShell } from "./desktopShell.js";
 
 export const GLASS_DESKTOP_CLASS = "glass-desktop";
 export const GLASS_DESKTOP_LITE_CLASS = "gd-lite";
@@ -293,7 +294,7 @@ function snapshotInputs(w, remoteOverride, prev) {
     };
   }
   const platform = nativeShellPlatform(w);
-  const isElectron = Boolean(w?.electronAPI?.isElectron);
+  const isElectron = Boolean(w) && isDesktopShell(w);
   const width = Number(w?.innerWidth) || 0;
   const cachedRemote = readStorage(w, GLASS_DESKTOP_REMOTE_KEY);
   let remoteFlag = null;
@@ -401,7 +402,7 @@ function readLiteInputs(w) {
       return false;
     }
   };
-  const isElectron = Boolean(w?.electronAPI?.isElectron);
+  const isElectron = Boolean(w) && isDesktopShell(w);
   return {
     reducedTransparency:
       resolveReducedTransparency({

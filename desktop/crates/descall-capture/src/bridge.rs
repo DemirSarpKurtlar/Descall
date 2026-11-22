@@ -9,7 +9,7 @@
 //! | `screen_share_caps`         | -                             | `caps::Caps`       |
 //! | `screen_share_start`        | `{ req: StartRequest }`       | `StartInfo`        |
 //! | `screen_share_update`       | `{ req: UpdateRequest }`      | `bool`             |
-//! | `screen_share_stop`         | -                             | -                  |
+//! | `screen_share_stop`         | `id?` (that session only)     | -                  |
 //! | `screen_share_stats`        | -                             | `StatsSnapshot?`   |
 //!
 //! Source ids keep the Electron shape (`screen:<n>:0`, `window:<hwnd>:0`) so

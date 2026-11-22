@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
+import { isDesktopShell } from "../../lib/desktopShell.js";
 import { conversationKey, shouldCloseDrawerForConversation } from "../../lib/mobileDrawer.js";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X } from "../ui/Icon.jsx";
@@ -393,7 +394,7 @@ export default function AppLayout({
   ]);
 
 
-  const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
+  const isElectron = isDesktopShell();
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
   // body.app-in-conversation mirrors .app-root.in-conversation for glass/shell.css. It used

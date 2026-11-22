@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "./analyticsGate";
@@ -45,7 +46,7 @@ export default function CookieConsentBanner({ variant = "marketing", onOpenPriva
     setVisible(false);
   };
 
-  const desktop = app && typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  const desktop = app && isDesktopShell();
   const className = [
     "dc-consent",
     app ? "is-app" : "is-site",

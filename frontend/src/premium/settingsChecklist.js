@@ -31,10 +31,10 @@ export const SETTINGS_CHECKLIST = Object.freeze({
   global_ptt: ["enabled", "hint", "binding", "releaseDelay", "forceToggle", "?toggleTimeout", "?mode", "elevated"],
   custom_hotkeys: [
     "enabled", "hint", "toggle_mute", "toggle_deafen", "push_to_talk", "quick_launcher", "volume_up", "volume_down",
-    "save", "?saveAnyway", "cancel", "reset", "?failures", "?saved",
+    "save", "?saveAnyway", "cancel", "reset", "?failures", "?clash", "?saved",
   ],
   media_keys: ["enabled", "hint", "playPause", "next", "previous", "stop", "?taken"],
-  quick_launcher: ["enabled", "hint", "hotkey", "open"],
+  quick_launcher: ["enabled", "hint", "hotkey", "open", "?clash"],
   quick_reply: ["enabled", "hint", "?mode"],
   per_user_volume_hotkeys: ["enabled", "hint", "up", "down", "step", "pinNote"],
   // notifications
@@ -65,7 +65,7 @@ export const SETTINGS_CHECKLIST = Object.freeze({
   // desktop tools
   desktop_sidebar: ["enabled", "edge", "autoHide", "open"],
   widgets: ["enabled", "desc", "on", "add", "list", "help"],
-  command_center: ["enabled", "desc", "open", "?hotkey", "help"],
+  command_center: ["enabled", "desc", "open", "?hotkey", "?clash", "help"],
   // automation
   workspace_profiles: ["enabled", "desc", "profiles", "switch", "status", "notifications", "audio", "layout", "hotkey", "help"],
   desktop_automations: ["enabled", "desc", "on", "when", "?gameFilter", "?between", "?afterMinutes", "then", "?thenArg", "add", "rules", "help"],

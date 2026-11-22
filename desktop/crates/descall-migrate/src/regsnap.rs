@@ -99,9 +99,9 @@ pub fn rewrite_command(cmd: &str, old_exe: &Path, new_exe: &Path) -> Option<Stri
         let end = stripped.find('"')?;
         (&stripped[..end], &stripped[end + 1..])
     } else {
-        // Unquoted: the exe ends at ".exe".
-        let lower = t.to_lowercase();
-        let end = lower.find(".exe")? + 4;
+        // Unquoted: the exe ends at ".exe" (any case). Searched in the original bytes: a
+        // lowercased copy has other offsets once the path holds letters like "İ".
+        let end = t.as_bytes().windows(4).position(|w| w.eq_ignore_ascii_case(b".exe"))? + 4;
         (&t[..end], &t[end..])
     };
     if !paths::same_path(Path::new(exe), old_exe) {
@@ -169,6 +169,24 @@ mod tests {
         );
         assert_eq!(rewrite_command(r#""C:\Other\Descall.exe""#, &old, &new), None);
         assert_eq!(rewrite_command(r#""unterminated"#, &old, &new), None);
+    }
+
+    /// Unquoted commands under a profile with non-ASCII letters (Turkish user names): the
+    /// ".exe" end was found in a lowercased copy, whose byte offsets differ from the original
+    /// ("İ" is 2 bytes, its lowercase 3), so the exe was cut in the wrong place (not
+    /// rewritten, or a panic on a char boundary that aborted the migrator).
+    #[test]
+    fn rewrites_unquoted_commands_with_non_ascii_paths() {
+        let new = PathBuf::from(r"C:\Users\D\AppData\Local\Programs\Descall\Descall.exe");
+        let old = PathBuf::from(r"C:\Users\İsmail\AppData\Local\Programs\Descall\Descall.exe");
+        assert_eq!(
+            rewrite_command(r"C:\Users\İsmail\AppData\Local\Programs\Descall\Descall.exe --autostart", &old, &new).as_deref(),
+            Some(r#""C:\Users\D\AppData\Local\Programs\Descall\Descall.exe" --autostart"#)
+        );
+        let old = PathBuf::from(r"C:\Users\İİ\Descall.exe");
+        assert_eq!(rewrite_command(r"C:\Users\İİ\Descall.exe -x", &old, &new).as_deref(), Some(r#""C:\Users\D\AppData\Local\Programs\Descall\Descall.exe" -x"#));
+        // No ".exe" at all, or only inside a multi-byte name: never a panic.
+        assert_eq!(rewrite_command("C:\\İİİ\\Descall --x", &old, &new), None);
     }
 
     #[test]

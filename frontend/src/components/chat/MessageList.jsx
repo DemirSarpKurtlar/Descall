@@ -1833,6 +1833,10 @@ function MessageBubbleView({
   };
   const onBubbleKeyDown = (e) => {
     if (editing) return;
+    // React bubbles keys from portals (the image viewer, a profile card) through this bubble.
+    // With the hover bar up (the pointer was on the message when its image was clicked), the
+    // Escape below swallowed the viewer's Escape: the viewer never closed from the keyboard.
+    if (!e.currentTarget.contains(e.target)) return;
     if (e.key === "Escape" && (menuOpen || pickerOpen || moreOpen) && !glass) {
       e.preventDefault();
       e.stopPropagation();

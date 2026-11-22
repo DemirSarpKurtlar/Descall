@@ -123,9 +123,13 @@ impl Feature for F {
         match ev {
             Bus::WindowOpened { .. } | Bus::WindowClosed { .. } if !self.quitting.load(Ordering::Relaxed) => snapshot(h),
             Bus::BeforeQuit => {
+                // Runs on the event loop thread (mod.rs, ExitRequested). Quitting first: the
+                // windows closing from now on must not overwrite this snapshot with fewer.
+                if self.quitting.swap(true, Ordering::Relaxed) {
+                    return;
+                }
                 snapshot(h);
                 save_main(h);
-                self.quitting.store(true, Ordering::Relaxed);
             }
             Bus::Moved(l) | Bus::Resized(l) if l == "main" => {
                 let g = self.save_main.bump();
@@ -135,5 +139,19 @@ impl Feature for F {
             Bus::Tick { key: "session_restore", tag: "restore", gen } if self.restore.is(*gen) => self.restore(h),
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The quit snapshot runs synchronously while the windows exist (not posted to the bus
+    /// thread, where it raced the teardown and could save no pop-outs).
+    #[test]
+    fn quit_snapshot_is_synchronous() {
+        let host = include_str!("../mod.rs");
+        let at = host.find("RunEvent::ExitRequested { .. } =>").expect("exit arm");
+        let arm = &host[at..at + host[at..].find("RunEvent::Exit =>").expect("next arm")];
+        assert!(arm.contains("h.run_bus(Bus::BeforeQuit)"), "ExitRequested must run BeforeQuit synchronously");
+        assert!(!arm.contains("h.bus(Bus::BeforeQuit)"), "BeforeQuit must not be queued on the bus thread");
     }
 }

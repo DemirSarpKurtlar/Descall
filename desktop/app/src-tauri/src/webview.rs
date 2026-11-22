@@ -102,6 +102,24 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
             }));
             let mut token = 0i64;
             let _ = core.add_PermissionRequested(&handler, &mut token);
+            // Stored grants for the app origin (descall_shell::clipboard::pregranted): Electron's
+            // setPermissionCheckHandler said yes to media on every check, so device names were
+            // there before any call. A fresh WebView2 profile had no camera grant: Settings
+            // listed one unnamed camera until the first video call.
+            use windows_core::Interface;
+            if let Ok(profile) = core.cast::<ICoreWebView2_13>().and_then(|c| c.Profile()) {
+                if let Ok(p4) = profile.cast::<ICoreWebView2Profile4>() {
+                    for (k, origin) in descall_shell::clipboard::pregranted(cfg!(debug_assertions)) {
+                        let kind = match k {
+                            PermissionKind::Microphone => COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+                            PermissionKind::Camera => COREWEBVIEW2_PERMISSION_KIND_CAMERA,
+                            _ => continue,
+                        };
+                        let done = webview2_com::SetPermissionStateCompletedHandler::create(Box::new(|_| Ok(())));
+                        let _ = p4.SetPermissionState(kind, &windows_core::HSTRING::from(origin), COREWEBVIEW2_PERMISSION_STATE_ALLOW, &done);
+                    }
+                }
+            }
         });
     }
     #[cfg(not(windows))]
@@ -237,9 +255,28 @@ pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
     use std::sync::atomic::Ordering;
     let app = window.app_handle().clone();
     let (action, name) = renderer_gone_action(kind, CRASH_RELOADS.load(Ordering::Acquire));
+    if kind == 2 {
+        // Hung, not gone: WebView2 repeats this report every few seconds while the page stays
+        // hung. Reported once per hang; asked once, 10 s in, with the window on screen
+        // (main.cjs 'unresponsive'). A live call keeps counting as busy until the user reloads.
+        let (hang, new) = HANG.lock().map(|mut h| h.report(crate::state::now_ms())).unwrap_or((0, false));
+        if !new {
+            return;
+        }
+        crate::errors::report(descall_shell::main_errors::summary("render-process-gone", name, &format!("WebView2 process failed (kind {kind})")));
+        let win = window.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(descall_shell::watchdog::HANG_ASK_AFTER_MS)).await;
+            let visible = win.is_visible().unwrap_or(false) && !win.is_minimized().unwrap_or(false);
+            if HANG.lock().map(|mut h| h.due(hang, visible)).unwrap_or(false) {
+                ask(&win, kind);
+            }
+        });
+        return;
+    }
     if action != RendererGone::ReportOnly {
-        // The page is gone or hung: hold the report for the next document, and a live call
-        // cannot survive this (the update deferral treats it as "call ended").
+        // The page is gone: hold the report for the next document, and a live call cannot
+        // survive this (the update deferral treats it as "call ended").
         crate::errors::detach();
         crate::commands::updates::reset_voice(&app);
     }
@@ -251,37 +288,44 @@ pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
             log::warn!("[boot] {name}: reloading the page");
             reload(window);
         }
-        RendererGone::Ask => {
-            if ASKING.swap(true, Ordering::AcqRel) {
-                return;
-            }
-            let win = window.clone();
-            tauri::async_runtime::spawn(async move {
-                let hung = kind == 2;
-                let (title, detail) = if hung {
-                    (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
-                } else {
-                    (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
-                };
-                let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
-                ASKING.store(false, Ordering::Release);
-                match (kind, retry) {
-                    // Browser process gone: only a fresh start brings the WebView back.
-                    (0, true) => {
-                        crate::state::set_quitting(&app);
-                        app.restart();
-                    }
-                    (0, false) => {
-                        crate::state::set_quitting(&app);
-                        app.exit(0);
-                    }
-                    (_, true) => reload(&win),
-                    // Wait (hung) or keep the window as it is.
-                    (_, false) => {}
-                }
-            });
-        }
+        RendererGone::Ask => ask(window, kind),
     }
+}
+
+/// Hung renderer episodes of the main window (descall_shell::watchdog::HangWatch).
+static HANG: std::sync::Mutex<descall_shell::watchdog::HangWatch> = std::sync::Mutex::new(descall_shell::watchdog::HangWatch::new());
+
+/// Native Retry / Cancel for a gone (kind 0 / 1) or hung (kind 2) page, one at a time.
+fn ask<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
+    use std::sync::atomic::Ordering;
+    if ASKING.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    let app = window.app_handle().clone();
+    let win = window.clone();
+    tauri::async_runtime::spawn(async move {
+        let hung = kind == 2;
+        let (title, detail) = if hung {
+            (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
+        } else {
+            (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
+        };
+        let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
+        ASKING.store(false, Ordering::Release);
+        match (kind, retry) {
+            // Browser process gone: only a fresh start brings the WebView back.
+            (0, true) => {
+                crate::state::restart(&app);
+            }
+            (0, false) => {
+                crate::state::set_quitting(&app);
+                app.exit(0);
+            }
+            (_, true) => reload(&win),
+            // Wait (hung) or keep the window as it is.
+            (_, false) => {}
+        }
+    });
 }
 
 /// Subscribe the main window to WebView2 ProcessFailed (see on_process_failed).
@@ -322,4 +366,64 @@ pub fn ask_retry(title: &str, detail: &str) -> bool {
         let _ = (title, detail);
         true
     }
+}
+
+/// WebView2 MemoryUsageTargetLevel (ICoreWebView2_19, Runtime 114+; older runtimes ignore it).
+/// The page keeps running either way (no TrySuspend).
+pub fn set_memory_low<R: Runtime>(window: &WebviewWindow<R>, low: bool) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(move |pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::{
+                ICoreWebView2_19, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
+            };
+            use windows_core::Interface;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            let Ok(core19) = core.cast::<ICoreWebView2_19>() else { return };
+            let level = if low { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW } else { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL };
+            let _ = core19.SetMemoryUsageTargetLevel(level);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, low);
+    }
+}
+
+/// The main window went to the background or came back, or a call started / ended:
+/// re-evaluate its memory target (descall_shell::memory_target). Low only after the window
+/// stayed hidden / minimized for LOW_AFTER_MS without a call; Normal again at once.
+pub fn update_main_memory<R: Runtime>(app: &tauri::AppHandle<R>) {
+    use descall_shell::memory_target::{Level, Step};
+    let Some(w) = crate::state::main_window(app) else { return };
+    // Read the window first: is_visible / is_minimized can wait for the event loop, never
+    // with the lock held.
+    let level = main_memory_level(app, &w);
+    let step = crate::state::shell(app).memory.lock().unwrap().want(level);
+    match step {
+        Step::Keep => {}
+        Step::NormalNow => {
+            log::info!("[memory] main window target normal");
+            set_memory_low(&w, false);
+        }
+        Step::LowLater { gen, ms } => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+                let Some(w) = crate::state::main_window(&app) else { return };
+                let still = main_memory_level(&app, &w);
+                let due = crate::state::shell(&app).memory.lock().unwrap().due(gen, still);
+                if due && still == Level::Low {
+                    log::info!("[memory] main window in the background: target low");
+                    set_memory_low(&w, true);
+                }
+            });
+        }
+    }
+}
+
+fn main_memory_level<R: Runtime>(app: &tauri::AppHandle<R>, w: &WebviewWindow<R>) -> descall_shell::memory_target::Level {
+    let backgrounded = !w.is_visible().unwrap_or(true) || w.is_minimized().unwrap_or(false);
+    let busy = crate::state::shell(app).voice_busy.load(std::sync::atomic::Ordering::Acquire) || crate::commands::overlay::is_visible(app);
+    descall_shell::memory_target::wanted(backgrounded, busy)
 }

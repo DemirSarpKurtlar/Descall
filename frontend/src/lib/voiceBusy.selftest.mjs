@@ -52,7 +52,7 @@ assert.deepEqual(seen, [true]);
 resetVoiceBusyForTests();
 
 const hook = readFileSync(join(root, "../hooks/useElectronVoiceBusy.js"), "utf8");
-assert.match(hook, /electronAPI\?\.isElectron/, "voice-busy IPC must be Electron-only");
+assert.match(hook, /!hasDesktopBridge\(\)\) return undefined/, "voice-busy IPC must be desktop-only (bridge loaded)");
 assert.match(hook, /setVoiceBusy/, "hook must report busy through the preload bridge");
 assert.match(hook, /beforeunload/, "reload/quit must clear busy");
 assert.doesNotMatch(hook, /require\(['"]electron['"]\)/, "renderer hook must not import electron");

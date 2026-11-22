@@ -285,6 +285,8 @@ export const nested = {
     "subInstalling": "Birkaç saniye içinde yeniden açılır",
     "titleError": "Güncelleme indirilemedi",
     "subError": "Bağlantını kontrol edip tekrar dene",
+    "titleInstallError": "Güncelleme kurulamadı",
+    "subInstallError": "Tekrar dene ya da kurulum dosyasını indir",
     "retry": "Tekrar dene",
     "downloadPage": "İndirme sayfası",
     "kicker": "Masaüstü güncelleme",

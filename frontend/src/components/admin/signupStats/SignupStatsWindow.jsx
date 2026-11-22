@@ -9,6 +9,7 @@
  * Data: GET /api/admin/signup-stats (admin only on the server; moderators get 403).
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { hasDesktopBridge, isTauriShell } from "../../../lib/desktopShell.js";
 import useModalFocus from "../../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { adminFetch } from "../../../api/adminHttp";
@@ -98,7 +99,7 @@ function failLabel(key, t) {
   return t(`sgx.admin.fail.${FAIL_KEYS.has(key) ? key : "unknown"}`);
 }
 
-const isElectron = () => typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+const isElectron = () => hasDesktopBridge();
 
 /** Electron desktop: open the real window. Returns false when the caller should show the in-app one. */
 export function openSignupStatsWindow(layout) {
@@ -108,7 +109,7 @@ export function openSignupStatsWindow(layout) {
     // Tauri: the shell opens the stats window natively (src-tauri/src/admin.rs) and denies the
     // page's window.open, which returns null although the window did open (adminNav.js does
     // the same); false here also opened the in-app copy over the main window.
-    if (!w && window.electronAPI?.isTauri) return true;
+    if (!w && isTauriShell()) return true;
     return Boolean(w);
   } catch {
     return false;
@@ -656,6 +657,14 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
   const [dragY, setDragY] = useState(0);
   const chrome = standalone ? "page" : layout === "desktop" ? "desktop" : layout;
   const electron = standalone && isElectron();
+  // Its own desktop window: the maximize button follows the window (restore glyph and label
+  // while maximized), like the main and admin title bars.
+  const [winMax, setWinMax] = useState(false);
+  useEffect(() => {
+    if (!electron || typeof window.electronAPI?.onMaximizedChange !== "function") return undefined;
+    const off = window.electronAPI.onMaximizedChange((v) => setWinMax(Boolean(v)));
+    return () => { if (typeof off === "function") off(); };
+  }, [electron]);
 
   const close = useCallback(() => {
     if (standalone) {
@@ -798,10 +807,14 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
             <button type="button" className="wc" aria-label={t("adminx.sst.minimize")} onClick={() => (electron ? window.electronAPI.minimizeWindow?.() : close())}>
               <I n="minus" s={15} w={1.6} />
             </button>
-            <button type="button" className="wc" aria-label={t("adminx.sst.maximize")} onClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
-              <svg width="12" height="12" aria-hidden="true">
-                <rect x="1" y="1" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
-              </svg>
+            <button type="button" className="wc" {...(electron ? { "data-snap-layout": "" } : {})} aria-label={electron && winMax ? t("Restore") : t("adminx.sst.maximize")} title={electron && winMax ? t("Restore") : undefined} onClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
+              {electron && winMax ? (
+                <svg width="12" height="12" aria-hidden="true"><rect x="1.5" y="3.5" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M3.5 3.5V2.7c0-.66.54-1.2 1.2-1.2h4.6c.66 0 1.2.54 1.2 1.2v4.6c0 .66-.54 1.2-1.2 1.2h-.8" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
+              ) : (
+                <svg width="12" height="12" aria-hidden="true">
+                  <rect x="1" y="1" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                </svg>
+              )}
             </button>
             <button type="button" className="wc x" aria-label={t("adminx.sst.close")} onClick={close}>
               <I n="x" s={15} w={1.6} />

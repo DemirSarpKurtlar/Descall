@@ -14,6 +14,8 @@ use descall_migrate::handoff::Handoff;
 
 pub struct Imported {
     pub local_storage: BTreeMap<String, String>,
+    /// ImportMarker::import_id of the import this came from (`__DESCALL_BOOT__.importId`).
+    pub id: String,
 }
 
 pub struct InitialWindow {
@@ -86,7 +88,7 @@ fn import_from_electron_once(app: &AppHandle) -> Option<Imported> {
                 record.has_session = h.has_session();
                 record.session_key = session_key(&h);
                 note_import(Import::Imported { session_key: record.session_key.clone() });
-                result = Some(Imported { local_storage: h.local_storage.clone() });
+                result = Some(Imported { local_storage: h.local_storage.clone(), id: record.import_id() });
             }
             Some(Ok(None)) | None => note_import(Import::Missing),
             Some(Err(e)) => {
@@ -151,7 +153,13 @@ fn apply_handoff(app: &AppHandle, h: &Handoff) {
             }
         }
         // Each extra account's own saved settings, in that account's folder until its window
-        // first opens (boot_script_for_premium_window); removed with the account.
+        // first opens (boot_script_for_premium_window); removed with the account. A file left
+        // by an earlier migration goes first: an account without settings now writes none.
+        for a in &h.accounts {
+            if let Some(rel) = descall_migrate::app::account_local_storage_target(&a.id) {
+                let _ = std::fs::remove_file(dir.join(rel));
+            }
+        }
         for (rel, body) in descall_migrate::app::account_local_storage_files(h) {
             let path = dir.join(rel);
             if let Some(parent) = path.parent() {
@@ -180,6 +188,7 @@ struct Boot<'a> {
     locale: String,
     mode: &'static str,
     import_local_storage: Option<&'a BTreeMap<String, String>>,
+    import_id: Option<&'a str>,
 }
 
 /// window.__DESCALL_BOOT__: the values the Electron preload answered synchronously.
@@ -207,8 +216,13 @@ pub fn boot_script_for_premium_window<R: Runtime>(app: &AppHandle<R>, label: &st
 /// The Electron settings of extra account `id` (written by the one-time import), if any.
 fn account_import<R: Runtime>(app: &AppHandle<R>, id: &str) -> Option<Imported> {
     let rel = descall_migrate::app::account_local_storage_target(id)?;
-    let bytes = std::fs::read(crate::state::data_dir(app)?.join(rel)).ok()?;
-    descall_migrate::app::read_account_local_storage(&bytes).map(|local_storage| Imported { local_storage })
+    let dir = crate::state::data_dir(app)?;
+    let bytes = std::fs::read(dir.join(rel)).ok()?;
+    // Named after the import that wrote the file, so the account window applies a later
+    // migration's settings too (the shim keeps one marker per import id).
+    let marker = std::fs::read(dir.join("migration").join("imported")).ok();
+    let import_id = ImportMarker::parse(marker.as_deref().unwrap_or_default()).import_id();
+    descall_migrate::app::read_account_local_storage(&bytes).map(|local_storage| Imported { local_storage, id: import_id })
 }
 
 fn boot_script_with<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>, mode: &'static str) -> String {
@@ -224,6 +238,7 @@ fn boot_script_token<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>
         reduced_transparency: crate::platform::reduced_transparency(),
         locale: crate::state::locale(app),
         import_local_storage: imported.map(|i| &i.local_storage),
+        import_id: imported.map(|i| i.id.as_str()),
     };
     format!("window.__DESCALL_BOOT__ = Object.freeze({});", serde_json::to_string(&boot).unwrap_or_else(|_| "{}".into()))
 }
@@ -359,6 +374,13 @@ pub fn write_relaunch_marker<R: Runtime>(app: &AppHandle<R>) {
     let _ = std::fs::write(dir.join(RELAUNCH_MARKER), json!({ "mode": mode, "at": crate::state::now_ms() }).to_string());
 }
 
+/// The install did not start after all: a manual launch must not read the marker.
+pub fn clear_relaunch_marker<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(dir) = crate::state::data_dir(app) {
+        let _ = std::fs::remove_file(dir.join(RELAUNCH_MARKER));
+    }
+}
+
 pub fn cold_start<R: Runtime>(app: &AppHandle<R>, argv: &[String]) -> descall_shell::launch::ColdStart {
     use descall_shell::launch::{decide_cold_start, is_fresh_relaunch_marker, BackgroundMode};
     let (mut mode, mut fresh) = (None, false);
@@ -394,12 +416,67 @@ pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool
         use tauri_plugin_opener::OpenerExt;
         let _ = app.opener().open_url(url.as_str(), None::<&str>);
     } else {
-        log::warn!("[nav] not opening will-navigate: {}", url.as_str().chars().take(120).collect::<String>());
+        // Redact before cutting: a token cut in half no longer looks like one.
+        log::warn!("[nav] not opening will-navigate: {}", descall_shell::secrets::redact(url.as_str()).chars().take(120).collect::<String>());
     }
     false
 }
 
+/// window.open / target=_blank from an app window (main, pop-outs, account windows, call and
+/// sidebar portals) that is not a portal or an admin route: web and mail links go to the
+/// default browser by the same rule everywhere (trust::main_window_open: http, https and
+/// mailto, never the app or shell origin, never file:, javascript: or other schemes). Nothing
+/// ever opens inside the app. Pop-outs and portals used to open any https URL (the app's own
+/// pages included) and no mail link; account windows opened nothing at all.
+pub fn open_external_window<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
+    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    }
+}
+
 // ---- window events ---------------------------------------------------------------------------
+
+/// main.cjs containRestoredWindow (on 'unmaximize' and 'restore'): a restored window that hangs
+/// past the work area of its monitor (resolution or scaling changed while it was maximized or
+/// minimized, a monitor went away) is pulled back inside it, smaller if it must be.
+fn contain_restored<R: Runtime>(w: &WebviewWindow<R>) {
+    use descall_shell::occlusion::{fit_bounds_to_work_area, overflows, Rect};
+    if w.is_maximized().unwrap_or(false) || w.is_fullscreen().unwrap_or(false) || w.is_minimized().unwrap_or(false) || in_move_size_loop() {
+        return;
+    }
+    let Some(m) = w.current_monitor().ok().flatten() else { return };
+    let s = m.scale_factor();
+    let wa = m.work_area();
+    let work = Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s };
+    let (Ok(p), Ok(sz)) = (w.outer_position(), w.outer_size()) else { return };
+    let b = Rect { x: p.x as f64 / s, y: p.y as f64 / s, width: sz.width as f64 / s, height: sz.height as f64 / s };
+    if !overflows(b, work) {
+        return;
+    }
+    let f = fit_bounds_to_work_area(Some(b.x), Some(b.y), Some(b.width), Some(b.height), Some(work), MIN_W, MIN_H);
+    log::info!("[window] restored past the work area: fitted to {}x{}", f.width, f.height);
+    let _ = w.set_min_size(Some(tauri::LogicalSize::new(f.min_width, f.min_height)));
+    let _ = w.set_size(tauri::LogicalSize::new(f.width, f.height));
+    if let (Some(x), Some(y)) = (f.x, f.y) {
+        let _ = w.set_position(tauri::LogicalPosition::new(x, y));
+    }
+}
+
+/// The user is dragging or sizing the window (a maximized window dragged off its title bar is
+/// restored inside that loop): moving it then would fight the drag; the drag ends where the
+/// user puts it.
+fn in_move_size_loop() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::Threading::GetCurrentThreadId;
+        use windows::Win32::UI::WindowsAndMessaging::{GetGUIThreadInfo, GUITHREADINFO, GUI_INMOVESIZE};
+        let mut info = GUITHREADINFO { cbSize: std::mem::size_of::<GUITHREADINFO>() as u32, ..Default::default() };
+        GetGUIThreadInfo(GetCurrentThreadId(), &mut info).is_ok() && (info.flags.0 & GUI_INMOVESIZE.0) != 0
+    }
+    #[cfg(not(windows))]
+    false
+}
 
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
     crate::state::to_main(w.app_handle(), "window:content-box", crate::commands::window::content_box(w));
@@ -407,6 +484,28 @@ fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
 
 fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
+    // Tray / minimized for a while without a call: WebView2 memory target low (webview.rs).
+    crate::webview::update_main_memory(w.app_handle());
+}
+
+/// The page loaded while the window is in the tray or minimized (sign-in autostart with
+/// --hidden, a reload while hidden): no hide / minimize event follows for it, so the page took
+/// itself for on screen (Electron the same): its animations ran in the tray and a DM in an open
+/// chat was marked read while nobody looked. Told twice, once the page had time to listen; a
+/// window shown meanwhile is left alone (show_main sends backgrounded:false).
+pub fn tell_page_if_away<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        for wait_ms in [2_000u64, 6_000] {
+            tokio::time::sleep(std::time::Duration::from_millis(wait_ms)).await;
+            let Some(w) = crate::state::main_window(&app) else { return };
+            let away = !w.is_visible().unwrap_or(true) || w.is_minimized().unwrap_or(false);
+            if !away {
+                return;
+            }
+            visibility(&w, true);
+        }
+    });
 }
 
 /// Same file name as main.cjs (userData/background-notice-shown).
@@ -428,7 +527,9 @@ pub fn background_notice_due(dir: &std::path::Path) -> bool {
 /// the capsule is a new window.
 fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
     let Some(dir) = crate::state::data_dir(app) else { return };
-    if !background_notice_due(&dir) {
+    // A user moved over from Electron already saw it there (same marker in %APPDATA%\Descall).
+    let seen_in_electron = app.path().data_dir().ok().is_some_and(|d| d.join(descall_migrate::paths::ELECTRON_USER_DATA).join(BACKGROUND_NOTICE).exists());
+    if !background_notice_due(&dir) || seen_in_electron {
         return;
     }
     let app = app.clone();
@@ -473,6 +574,9 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 };
                 if changed {
                     crate::state::to_main(app, "window:maximized", maximized);
+                    if !maximized {
+                        contain_restored(&win); // mainWindow 'unmaximize'
+                    }
                 }
                 let minimized = win.is_minimized().unwrap_or(false);
                 let was_minimized = crate::state::shell(app).minimized.swap(minimized, std::sync::atomic::Ordering::AcqRel);
@@ -486,6 +590,9 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                     // paused. Not for a window restored while hidden to the tray.
                     if was_minimized && win.is_visible().unwrap_or(false) {
                         visibility(&win, false);
+                    }
+                    if was_minimized {
+                        contain_restored(&win); // mainWindow 'restore'
                     }
                     publish_content_box(&win);
                     save_window_state_soon(&win);
@@ -545,6 +652,12 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
                 }
                 PaintStep::Ask => {
                     crate::state::shell(&app).boot.lock().unwrap().asked = true;
+                    // Hidden in the tray (Windows login auto-start): no "could not open" box out
+                    // of nowhere at sign-in; main.cjs returned here too (!win.isVisible()).
+                    if !win.is_visible().unwrap_or(false) {
+                        log::warn!("[boot] no paint after {elapsed} ms while hidden: not asking");
+                        return;
+                    }
                     let title = crate::state::et(&app, "dialog.openFailed", &[]);
                     let detail = crate::state::et(&app, "dialog.openFailedDetail", &[]);
                     let retry = tauri::async_runtime::spawn_blocking(move || crate::webview::ask_retry(&title, &detail)).await.unwrap_or(false);
@@ -621,6 +734,14 @@ mod window_state_tests {
         let top = Screen { x: 0, y: -2100, width: 3840, height: 2100, scale: 1.5 };
         let (_, corner) = restore_physical(-12, -2112, Some(1400.0), Some(900.0), &[LAPTOP, top]).expect("slack on the upper screen");
         assert_eq!(corner, (0, -2100));
+    }
+
+    #[test]
+    fn the_background_notice_is_not_repeated_after_the_move() {
+        let src = include_str!("boot.rs");
+        let f = &src[src.find("fn background_notice_once").unwrap()..];
+        let f = &f[..f.find("show_capsule").unwrap()];
+        assert!(f.contains("ELECTRON_USER_DATA).join(BACKGROUND_NOTICE).exists()") && f.contains("|| seen_in_electron"));
     }
 
     #[test]

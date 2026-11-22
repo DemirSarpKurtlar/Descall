@@ -30,6 +30,14 @@ pub struct Shell {
     pub minimized: AtomicBool,
     /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
     pub deep_link: Mutex<Option<String>>,
+    /// A second launch asked for the window before the main window existed (Electron
+    /// userRequestedShow); setup shows it once the window is built.
+    pub show_requested: AtomicBool,
+    /// A normal start (StartAction::Show): the main window shows once its boot splash is up
+    /// (app_boot_state "splash") or the page finished loading, whichever comes first.
+    pub show_on_load: AtomicBool,
+    /// WebView2 memory target of the main window (webview::update_main_memory).
+    pub memory: Mutex<descall_shell::memory_target::Target>,
 }
 
 #[derive(Default)]
@@ -65,9 +73,37 @@ pub fn app_in_background<R: Runtime>(app: &AppHandle<R>) -> bool {
     !main_in_front(app)
 }
 
+/// The thread that runs the event loop (set first thing in main()).
+static MAIN_THREAD: std::sync::OnceLock<std::thread::ThreadId> = std::sync::OnceLock::new();
+
+pub fn mark_main_thread() {
+    let _ = MAIN_THREAD.set(std::thread::current().id());
+}
+
+fn on_main_thread() -> bool {
+    MAIN_THREAD.get().is_some_and(|id| *id == std::thread::current().id())
+}
+
 /// Bring the main window up (tray click, second launch, notification click).
+///
+/// On the event loop thread: tao queues show / unminimize from any other thread, and its
+/// set_focus checks the visible / minimized flags at once, so from the ready fallback, a
+/// toast click, an update prompt or a Descall+ action (all off that thread) a window coming
+/// out of the tray was shown but never focused (Electron's showMainWindow always raised it).
 pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(w) = main_window(app) {
+    if MAIN_THREAD.get().is_some() && !on_main_thread() {
+        let a = app.clone();
+        let _ = app.run_on_main_thread(move || show_main(&a));
+        return;
+    }
+    // Not built yet (WebView2 creation pumps messages during setup, so a second launch, a
+    // descall:// link or a toast click can arrive first): kept, and setup shows the window
+    // once it exists, whatever the start mode (main.cjs userRequestedShow).
+    let Some(w) = main_window(app) else {
+        shell(app).show_requested.store(true, Ordering::Release);
+        return;
+    };
+    {
         let _ = w.set_skip_taskbar(false);
         let _ = w.show();
         let _ = w.unminimize();
@@ -78,6 +114,20 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
         // main.cjs mainWindow.on('show', publishBox).
         to_main(app, "window:content-box", crate::commands::window::content_box(&w));
+        crate::webview::update_main_memory(app);
+    }
+}
+
+/// Second launch (shortcut, taskbar): show the main window. Early in the boot it does not exist
+/// yet (WebView2 creation pumps messages, so the single-instance message is handled inside
+/// the window build): the request is kept and setup honours it (descall_shell::launch::
+/// with_show_request). Dropping it left the second click without any window.
+pub fn request_show<R: Runtime>(app: &AppHandle<R>) {
+    if main_window(app).is_some() {
+        show_main(app);
+    } else {
+        log::info!("[boot] second launch before the main window exists: shown when ready");
+        shell(app).show_requested.store(true, Ordering::Release);
     }
 }
 
@@ -139,6 +189,39 @@ pub fn set_ui_locale<R: Runtime>(app: &AppHandle<R>, value: &str) -> bool {
 
 pub fn set_quitting<R: Runtime>(app: &AppHandle<R>) {
     shell(app).quitting.store(true, Ordering::Release);
+}
+
+/// Restart (Settings > Desktop app "Restart", Retry after the WebView2 browser process died).
+/// app.restart() starts the new process with this run's arguments, and a session that began at
+/// Windows login carries --autostart --hidden: the window the user was looking at came back
+/// hidden in the tray. The one-shot relaunch marker (boot::write_relaunch_marker) records how
+/// the window was left, and the cold-start rule follows it first (launch::decide_cold_start).
+pub fn restart<R: Runtime>(app: &AppHandle<R>) -> ! {
+    set_quitting(app);
+    crate::boot::write_relaunch_marker(app);
+    app.restart()
+}
+
+/// Time the page gets for its pagehide / beforeunload work (a socket emit to leave voice,
+/// the app-time flush) before the process goes.
+pub const QUIT_UNLOAD_GRACE_MS: u64 = 400;
+
+/// Quit like Electron's app.quit(): that closed the window, so the page ran its pagehide /
+/// beforeunload handlers (unsent draft saved, voice channel left at once instead of after the
+/// server's reconnect grace, app time flushed). app.exit() tears WebView2 down without them:
+/// tell the page (app:will-quit, the shim runs those handlers), wait a moment, then exit.
+pub fn exit_after_unload<R: Runtime>(app: &AppHandle<R>) {
+    set_quitting(app);
+    if main_window(app).is_none() {
+        app.exit(0);
+        return;
+    }
+    to_main(app, "app:will-quit", ());
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(QUIT_UNLOAD_GRACE_MS)).await;
+        app.exit(0);
+    });
 }
 
 pub fn is_dev() -> bool {

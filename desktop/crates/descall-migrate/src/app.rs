@@ -114,6 +114,14 @@ impl ImportMarker {
     pub fn parse(bytes: &[u8]) -> ImportMarker {
         serde_json::from_slice(bytes).unwrap_or_default()
     }
+
+    /// Names this import for the page (`__DESCALL_BOOT__.importId`). The shim applies the
+    /// imported localStorage once per import id, so the import of a later migration (the user
+    /// went back to Electron after a rollback, then migrated again) is applied too, while a
+    /// reload of the same window never applies the same import twice.
+    pub fn import_id(&self) -> String {
+        format!("{}@{}", self.migration_id, self.at_unix)
+    }
 }
 
 /// Run the import? Once per app install, and again only for a migration the marker does
@@ -387,6 +395,16 @@ mod tests {
         assert!(should_import(Some(&m), Some("mig-other-9")));
         assert!(should_import(Some(b"1"), Some(ID)), "a manual install migrated over later");
         assert_eq!(ImportMarker::parse(&m).session_key.as_deref(), Some("auth-token"));
+    }
+
+    #[test]
+    fn each_import_has_its_own_page_id() {
+        let first = ImportMarker { migration_id: ID.into(), at_unix: 5, ..Default::default() };
+        let again = ImportMarker { migration_id: "mig-other-9".into(), at_unix: 900, ..Default::default() };
+        assert_ne!(first.import_id(), again.import_id(), "a second migration is applied by the shim again");
+        assert_eq!(first.import_id(), ImportMarker::parse(&serde_json::to_vec(&first).unwrap()).import_id(), "stable across reads of the marker");
+        let manual = ImportMarker { at_unix: 7, ..Default::default() };
+        assert!(!manual.import_id().is_empty(), "a manual-install import is named too");
     }
 
     #[test]

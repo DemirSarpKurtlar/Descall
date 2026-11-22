@@ -29,11 +29,27 @@ pub fn get<R: Runtime>(app: &AppHandle<R>, name: &str) -> Option<String> {
 pub fn set<R: Runtime>(app: &AppHandle<R>, name: &str, value: &str) -> bool {
     let Some(p) = path(app, name) else { return false };
     if value.is_empty() {
-        return std::fs::remove_file(p).is_ok();
+        // Nothing stored is the same as removed (token_clear after a sign-out without token
+        // answered false and never told the other windows).
+        return match std::fs::remove_file(&p) {
+            Ok(()) => true,
+            Err(e) => e.kind() == std::io::ErrorKind::NotFound,
+        };
     }
     let entropy = format!("{ENTROPY_PREFIX}{name}");
     match descall_migrate::win::dpapi::protect(value.as_bytes(), Some(entropy.as_bytes())) {
-        Ok(sealed) => std::fs::write(p, sealed).is_ok(),
+        // Temp file + rename (MoveFileEx REPLACE_EXISTING): a crash or power loss while
+        // writing never leaves a half-written token behind (DPAPI refuses it, so the user
+        // would be signed out).
+        Ok(sealed) => {
+            let tmp = p.with_extension("bin.tmp");
+            if std::fs::write(&tmp, sealed).is_ok() && std::fs::rename(&tmp, &p).is_ok() {
+                true
+            } else {
+                let _ = std::fs::remove_file(&tmp);
+                false
+            }
+        }
         Err(_) => false,
     }
 }

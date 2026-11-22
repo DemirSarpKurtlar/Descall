@@ -14,7 +14,8 @@ use tauri::{AppHandle, Runtime};
 static RELAY: LazyLock<Mutex<Relay>> = LazyLock::new(|| Mutex::new(Relay::default()));
 static CRASH_PATH: OnceLock<PathBuf> = OnceLock::new();
 /// Set once the app handle exists: the hook can emit to a page that is already attached.
-static EMIT: OnceLock<Box<dyn Fn(&Summary) + Send + Sync>> = OnceLock::new();
+type EmitHook = Box<dyn Fn(&Summary) + Send + Sync>;
+static EMIT: OnceLock<EmitHook> = OnceLock::new();
 
 /// First thing in main(): panics during plugin setup (before `init`) still reach the crash
 /// file. Same folder as Tauri's app_data_dir: `%APPDATA%\<identifier>`.

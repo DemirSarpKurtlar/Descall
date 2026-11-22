@@ -109,7 +109,12 @@ impl HotkeyManager {
                 if ok {
                     st.owned.insert(plugin, (action, accel));
                 } else {
-                    st.failures.push(Issue { action, accel, reason: "taken", other: None });
+                    // Held by another Descall feature (the command center's default Ctrl+Shift+K
+                    // is also the quick launcher's): say which, not "another app".
+                    // (Only owners the settings page has a label for: premiumAudio.hotkeys.actions.)
+                    let holder = extra_holder(&st.extras, &plugin).filter(|o| o == "command_center");
+                    let reason = if holder.is_some() { "duplicate" } else { "taken" };
+                    st.failures.push(Issue { action, accel, reason, other: holder });
                 }
             }
             if !st.failures.is_empty() {
@@ -211,6 +216,14 @@ impl HotkeyManager {
         ok
     }
 
+    /// Which Descall hotkey holds `accel` (Electron accelerator): an action of this manager
+    /// ("quick_launcher" ...) or a register_extra owner ("command_center" ...).
+    pub fn holder_of(&self, accel: &str) -> Option<String> {
+        let p = to_plugin_accel(accel)?;
+        let st = lock(&self.st);
+        st.owned.get(&p).map(|(action, _)| action.clone()).or_else(|| extra_holder(&st.extras, &p))
+    }
+
     pub fn unregister_owner(&self, owner: &str) {
         let list = lock(&self.st).extras.remove(owner).unwrap_or_default();
         for p in list {
@@ -220,5 +233,29 @@ impl HotkeyManager {
 
     pub fn reserved() -> Value {
         json!(RESERVED)
+    }
+}
+
+/// The register_extra owner that holds plugin accelerator `p`, if any.
+fn extra_holder(extras: &HashMap<String, Vec<String>>, p: &str) -> Option<String> {
+    let mut owners: Vec<&String> = extras.iter().filter(|(_, l)| l.iter().any(|x| x == p)).map(|(o, _)| o).collect();
+    owners.sort();
+    owners.first().map(|o| o.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::extra_holder;
+    use std::collections::HashMap;
+
+    #[test]
+    fn extra_holder_names_the_owner() {
+        let mut extras: HashMap<String, Vec<String>> = HashMap::new();
+        assert_eq!(extra_holder(&extras, "control+shift+KeyK"), None);
+        extras.insert("command_center".into(), vec!["control+shift+KeyK".into()]);
+        extras.insert("instant_clip".into(), vec!["control+shift+F9".into()]);
+        assert_eq!(extra_holder(&extras, "control+shift+KeyK").as_deref(), Some("command_center"));
+        assert_eq!(extra_holder(&extras, "control+shift+F9").as_deref(), Some("instant_clip"));
+        assert_eq!(extra_holder(&extras, "control+alt+KeyM"), None);
     }
 }

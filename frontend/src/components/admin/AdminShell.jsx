@@ -119,7 +119,7 @@ function TitleBar({ t }) {
       <button type="button" className="adm-wc" aria-label={t("Minimize")} onClick={() => api?.minimizeWindow?.()}>
         <svg width="12" height="12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.3" /></svg>
       </button>
-      <button type="button" className="adm-wc" aria-label={maximized ? t("Restore") : t("Maximize")} title={maximized ? t("Restore") : t("Maximize")} onClick={() => api?.maximizeWindow?.()}>
+      <button type="button" className="adm-wc" data-snap-layout="" aria-label={maximized ? t("Restore") : t("Maximize")} title={maximized ? t("Restore") : t("Maximize")} onClick={() => api?.maximizeWindow?.()}>
         {maximized ? (
           <svg width="12" height="12" aria-hidden="true"><rect x="1.5" y="3.5" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M3.5 3.5V2.7c0-.66.54-1.2 1.2-1.2h4.6c.66 0 1.2.54 1.2 1.2v4.6c0 .66-.54 1.2-1.2 1.2h-.8" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
         ) : (

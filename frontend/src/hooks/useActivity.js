@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { hasDesktopBridge } from "../lib/desktopShell.js";
 import { TYPE_PRIORITY } from '../lib/activityTypePriority';
 // Descall+ game_status: extra game list for members only (null for everyone else).
 import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
@@ -19,7 +20,7 @@ const SCAN_INTERVAL_MS    = 30_000;
 const DESCALL_APP_NAME    = 'Descall';
 const SETTINGS_STORAGE_KEY  = 'descall_activity_settings';
 const MANUAL_STORAGE_KEY    = 'descall_manual_status';
-const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
+const isElectron = hasDesktopBridge();
 
 // The process database (~128 KB) is only needed by the Electron scan: load it on demand
 // so web and iOS never download it. Session logging only runs after a scan, by which

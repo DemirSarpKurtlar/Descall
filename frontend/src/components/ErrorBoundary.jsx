@@ -1,4 +1,5 @@
 import React from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { clientErrorReportUrl } from "../config/api";
 import { boundaryAccount, canSeeErrorDetails, makeSupportCode } from "../lib/errorScreen";
 import "../styles/error-boundary.css";
@@ -318,7 +319,7 @@ export default class ErrorBoundary extends React.Component {
 
   handleHome = () => {
     // Electron file:// must not navigate to "/" (blank white screen).
-    if (typeof window !== "undefined" && window.electronAPI?.isElectron && window.location.protocol === "file:") {
+    if (typeof window !== "undefined" && isDesktopShell() && window.location.protocol === "file:") {
       window.location.hash = "#/";
       window.location.reload();
       return;

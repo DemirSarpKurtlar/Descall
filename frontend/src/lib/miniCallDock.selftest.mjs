@@ -81,7 +81,7 @@ D.writeDockAnchor("top-left", st); assert.equal(D.readDockAnchor(st), "top-left"
 D.writeDockAnchor("nope", st); assert.equal(D.readDockAnchor(st), "top-left");
 
 const comp = readFileSync(new URL("../components/call/MiniCallCard.jsx", import.meta.url), "utf8");
-for (const n of ["setPointerCapture", "nearestAnchor", "springStep", "bandAxis", "writeDockAnchor", "prefers-reduced-motion", "onReturn", "onToggleMute", "onToggleDeafen", "onHangUp", "safeInsets", "clampDockPosition", ".titlebar", "--electron-titlebar-h", "electronAPI"]) assert.ok(comp.includes(n), n);
+for (const n of ["setPointerCapture", "nearestAnchor", "springStep", "bandAxis", "writeDockAnchor", "prefers-reduced-motion", "onReturn", "onToggleMute", "onToggleDeafen", "onHangUp", "safeInsets", "clampDockPosition", ".titlebar", "--electron-titlebar-h", "desktopBridge()"]) assert.ok(comp.includes(n), n);
 const css = readFileSync(new URL("../styles/mini-call-card.css", import.meta.url), "utf8");
 assert.match(css, /backdrop-filter:\s*blur\(4\d?px/);
 assert.match(css, /prefers-reduced-transparency/);
