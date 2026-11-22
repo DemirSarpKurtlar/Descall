@@ -4,6 +4,7 @@ import { isDesktopApp } from "../ui/PremiumAudioKit.jsx";
 import { DEFAULT_BINDINGS } from "../ui/hotkeyCommon.jsx";
 import { Btn, DesktopOnlyHint, Group, KeyRow, Note, SetRow } from "../story/kit.jsx";
 import { usePublish } from "../story/bus.js";
+import LauncherClashHint from "../ui/LauncherClashHint.jsx";
 
 export const key = "quick_launcher";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
@@ -25,6 +26,7 @@ export function Panel() {
       <SetRow icon="play" label={t("premiumAudio.launcher.tryIt")}>
         <Btn kind="primary" ds={ds("open")} onClick={open} disabled={!s.enabled}>{t("premiumAudio.launcher.openNow")}</Btn>
       </SetRow>
+      <LauncherClashHint ds={ds("clash")} />
     </Group>
   );
 }

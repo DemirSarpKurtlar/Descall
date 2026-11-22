@@ -136,7 +136,8 @@ export const nested = {
         "push_to_talk": "Push-to-Talk",
         "quick_launcher": "Schnellstarter",
         "volume_up": "Angehefteten lauter",
-        "volume_down": "Angehefteten leiser"
+        "volume_down": "Angehefteten leiser",
+        "command_center": "Kommandozentrale"
       },
       "reason": {
         "invalid": "{action}: {accel} ist kein gültiges Kürzel.",
@@ -1600,6 +1601,8 @@ export const nested = {
       }
     },
     "commandCenter": {
+      "hotkeyClash": "Schnellstarter und Kommandozentrale verwenden dieselbe Tastenkombination ({accel}). Sie funktioniert nur für eines davon; ändere eine der beiden.",
+      "hotkeyFailed": "Die Tastenkombination der Kommandozentrale ({accel}) konnte nicht registriert werden: Eine andere App verwendet sie möglicherweise. Wähle eine andere.",
       "title": "Kommandozentrale",
       "desc": "Nachrichten, Freunde, Anrufe und Benachrichtigungen in einem Feld.",
       "open": "Kommandozentrale öffnen",

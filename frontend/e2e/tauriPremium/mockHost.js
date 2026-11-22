@@ -9,7 +9,10 @@
   let nextId = 1;
   const OFF = ["global_mute", "global_ptt", "media_keys", "per_user_volume_hotkeys", "quick_launcher", "screen_edge_actions"];
   const DEF = { toggle_mute: "CommandOrControl+Alt+M", toggle_deafen: "CommandOrControl+Alt+D", push_to_talk: "Mouse4", quick_launcher: "CommandOrControl+Shift+K", volume_up: "CommandOrControl+Alt+Up", volume_down: "CommandOrControl+Alt+Down" };
-  const H = { store: {}, running: new Set(), keys: [], plan: null, verifiedAt: 0, call: { active: false }, reconcileDelayMs: cfg.reconcileDelayMs || 0 };
+  // cfg.persist: the settings file survives a reload (sessionStorage stands in for
+  // <app data>/premium-settings.json).
+  const saved = (() => { try { return cfg.persist ? JSON.parse(sessionStorage.getItem("__mockPremiumStore") || "{}") : {}; } catch (_) { return {}; } })();
+  const H = { store: saved, running: new Set(), keys: [], plan: null, verifiedAt: 0, call: { active: false }, reconcileDelayMs: cfg.reconcileDelayMs || 0 };
   window.__mockHost = H;
   const enabled = (k) => (typeof (H.store[k] || {}).enabled === "boolean" ? H.store[k].enabled : !OFF.includes(k));
   const reconcile = () => {
@@ -48,6 +51,7 @@
         const next = { ...(H.store[k] || {}) };
         for (const [x, v] of Object.entries(a[1] || {})) { if (v === null) delete next[x]; else next[x] = v; }
         H.store[k] = next;
+        if (cfg.persist) { try { sessionStorage.setItem("__mockPremiumStore", JSON.stringify(H.store)); } catch (_) { /* ignore */ } }
         // Rust: reconcile on the bus thread (async); cfg.reconcileDelayMs widens that window.
         if (H.reconcileDelayMs) setTimeout(reconcile, H.reconcileDelayMs); else reconcile();
         setTimeout(() => emit("premium:settings-changed", { key: k, settings: next }), 0);
@@ -76,7 +80,14 @@
         return ok({ status: { bindings: bindings(), failures: [] }, issues: [] });
       }
       case "premium:hotkeys:reset": H.store.custom_hotkeys = { ...(H.store.custom_hotkeys || {}), bindings: {} }; return ok({ status: { bindings: bindings(), failures: [] } });
-      case "premium:command_center:hotkey": return { ok: true, hotkey: a[0] || "" };
+      case "premium:command_center:hotkey": {
+        // Rust hotkeys.rs register_extra: refused while another owner holds the keys.
+        const accel = a[0] || "";
+        if (!accel) return { ok: true, hotkey: "" };
+        if (cfg.ccTaken) return { ok: false, hotkey: "", conflict: null };
+        if (H.running.has("quick_launcher") && b.quick_launcher === accel) return { ok: false, hotkey: "", conflict: "quick_launcher" };
+        return { ok: true, hotkey: accel };
+      }
       case "premium:workspace_profiles:bind": return ok({ bound: [] });
       default: return ok();
     }
@@ -92,7 +103,7 @@
       calls[calls.length - 1].push(JSON.parse(JSON.stringify(res)));
       return Promise.resolve(res);
     }
-    if (cmd === "scan_processes" || cmd === "screen_sources") return Promise.resolve([]);
+    if (cmd === "processes_scan" || cmd === "scan_processes" || cmd === "screen_sources") return Promise.resolve(cfg.processes || []);
     return Promise.resolve(null);
   }
   if (cfg.noTauri) return;
