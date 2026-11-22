@@ -1241,6 +1241,34 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   down(el(true, true));
   down(el(false, false));
   assert.equal(t.dragged(), 1, "a press on '.drag' (not on its buttons / list) moves the window");
+  // Quick drop: a file the shell refuses (too large, store full) is counted, not lost silently,
+  // and a drop where every upload failed still reaches the shell so the zone can say so.
+  const d = loadHud();
+  const big = new ArrayBuffer(4);
+  d.hud.action("drop", { target: "dm:1", files: [{ name: "a.txt", type: "text/plain", size: 1, data: new ArrayBuffer(1) }, { name: "b.bin", size: 4, data: big }] });
+  await flush(); await flush(); await flush();
+  const drops = d.invokes.filter(([c, a]) => c === "premium_hud_action" && a.kind === "drop").map(([, a]) => a.payload);
+  assert.equal(drops.length, 1, "one drop action");
+  assert.equal(drops[0].files.length, 2);
+  assert.equal(drops[0].skipped, 0, "nothing skipped when every upload worked");
+}
+{
+  const hudSrc = readFileSync(join(here, "premium-hud-shim.js"), "utf8");
+  const invokes = [];
+  const T = {
+    core: { invoke: (cmd, args) => { invokes.push([cmd, args]); return cmd === "premium_blob_put" ? Promise.reject(new Error("too-large")) : Promise.resolve(null); } },
+    event: { listen: () => Promise.resolve(() => {}) },
+  };
+  const window = { __TAURI__: T };
+  window.top = window;
+  const doc = { documentElement: { appendChild() {} }, createElement: () => ({}), getElementById: () => null, addEventListener() {} };
+  const ctx = { window, document: doc, Promise, Set, String, Array, Object, console };
+  vm.createContext(ctx);
+  vm.runInContext(hudSrc, ctx, { filename: "premium-hud-shim.js" });
+  window.descallHud.action("drop", { target: "dm:1", files: [{ name: "huge.iso", size: 1, data: new ArrayBuffer(1) }] });
+  for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0));
+  const drops = invokes.filter(([c, a]) => c === "premium_hud_action" && a.kind === "drop").map(([, a]) => a.payload);
+  deq(drops.map((p) => [p.files.length, p.skipped]), [[0, 1]], "a refused upload is reported as skipped");
 }
 
 // 7. Every shell / Descall+ window the Rust side builds (static check of the builder chains).

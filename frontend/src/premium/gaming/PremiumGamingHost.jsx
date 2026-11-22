@@ -22,6 +22,7 @@ import { configureClip, saveClip, stopClip, useClipState } from "./clipControlle
 import { acceleratorLabel, publishTray, setTrayHandler } from "../../lib/desktopTray.js";
 import { captureClipboard } from "./clipboardHistory.js";
 import { widgetsAfterMove } from "./widgetMoves.js";
+import { setCommandCenterHotkeyResult } from "../hotkeyClash.js";
 import { recentTargets, sendFileTo } from "./sendMedia.js";
 import AppLockScreen from "./AppLockScreen.jsx";
 import "./gaming.css";
@@ -321,7 +322,9 @@ export default function PremiumGamingHost({
           ok += 1;
         } catch { /* reported below */ }
       }
-      const status = ok === (m?.files || []).length ? t("premiumGaming.quickDrop.sent", { count: ok }) : t("premiumGaming.quickDrop.failed");
+      // skipped: files the desktop shell could not hand over (Tauri: blob store full).
+      const skipped = Math.max(0, Number(m?.skipped) || 0);
+      const status = ok === (m?.files || []).length && !skipped ? t("premiumGaming.quickDrop.sent", { count: ok }) : t("premiumGaming.quickDrop.failed");
       pinvoke("premium:quick_file_drop:state", { targets: dropTargets, labels: dropLabels, dropStatus: status, brandRgb: brandRgb() });
     });
   }, [dropAllowed, socket, dropTargets, dropLabels, t]);
@@ -347,7 +350,11 @@ export default function PremiumGamingHost({
   const ccAllowed = has("command_center");
   useEffect(() => {
     if (!ccAllowed) return undefined;
-    if (desktop) pinvoke("premium:command_center:hotkey", cc.hotkey || "");
+    if (desktop) {
+      const accel = cc.hotkey || "";
+      // The answer says whether the global shortcut is held (Settings shows a clash otherwise).
+      pinvoke("premium:command_center:hotkey", accel).then((r) => setCommandCenterHotkeyResult(accel, r));
+    }
     const offMain = pon("premium:command_center:toggle", () => setCcOpen((v) => !v));
     const onEvt = () => setCcOpen(true);
     window.addEventListener("descall:premium:command-center", onEvt);

@@ -59,27 +59,29 @@ pub(crate) fn on_action(h: &Host, kind: &str, payload: &Value) {
                 }
                 return;
             }
-            let files: Vec<Value> = payload
-                .get("files")
-                .and_then(Value::as_array)
-                .cloned()
-                .unwrap_or_default()
+            let dropped: Vec<Value> = payload.get("files").and_then(Value::as_array).cloned().unwrap_or_default().into_iter().take(10).collect();
+            // + the files the drop window could not upload (premium-hud-shim.js).
+            let total = dropped.len() + payload.get("skipped").and_then(Value::as_u64).unwrap_or(0).min(10) as usize;
+            // A big drop can outgrow the 300 MB blob store, which evicts the oldest bytes:
+            // those files are left out and counted, so the drop zone reports a failure instead
+            // of the whole drop vanishing (the page could not fetch a gone blob).
+            let files: Vec<Value> = dropped
                 .into_iter()
-                .take(10)
-                .filter(|f| f["data"].get("__blob").is_some() && f["data"]["size"].as_u64().is_some_and(|n| n > 0 && n as usize <= DROP_MAX_BYTES))
+                .filter(|f| f["data"].get("__blob").is_some() && f["data"]["size"].as_u64().is_some_and(|n| n > 0 && n as usize <= DROP_MAX_BYTES) && h.has_blob(&f["data"]))
                 .map(|f| {
                     let t = s(&f, "type");
                     let n = s(&f, "name");
                     json!({ "name": cut(if n.is_empty() { "file" } else { &n }, 180), "type": cut(if t.is_empty() { "application/octet-stream" } else { &t }, 120), "data": f["data"] })
                 })
                 .collect();
-            if files.is_empty() {
+            let skipped = total - files.len();
+            if files.is_empty() && skipped == 0 {
                 return;
             }
             let mut next = st;
             next["target"] = json!(target);
             *lock(&STATE) = Some(next);
-            h.send("premium:quick_file_drop:files", json!({ "target": target, "files": files }));
+            h.send("premium:quick_file_drop:files", json!({ "target": target, "files": files, "skipped": skipped }));
         }
         _ => {}
     }

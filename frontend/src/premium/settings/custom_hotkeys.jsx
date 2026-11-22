@@ -5,6 +5,7 @@ import { KeyRecorder, isDesktopApp } from "../ui/PremiumAudioKit.jsx";
 import { DEFAULT_BINDINGS, HOTKEY_ACTIONS } from "../ui/hotkeyCommon.jsx";
 import { Actions, Btn, DesktopOnlyHint, Group, Hint, HotkeyFailureHint, Note, SetRow } from "../story/kit.jsx";
 import { usePublish } from "../story/bus.js";
+import LauncherClashHint from "../ui/LauncherClashHint.jsx";
 
 export const key = "custom_hotkeys";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
@@ -95,6 +96,7 @@ export function Panel() {
         </Actions>
       </Group>
       <HotkeyFailureHint failures={issues.length ? issues : failures} t={t} ds={ds("failures")} />
+      <LauncherClashHint ds={ds("clash")} />
       {saved && !failures.length ? <Hint tone="ok" live ds={ds("saved")}>{t("premiumAudio.hotkeys.saved")}</Hint> : null}
     </>
   );

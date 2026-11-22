@@ -274,6 +274,8 @@ export const PREMIUM_GAMING_TR = {
     },
   },
   commandCenter: {
+    hotkeyClash: "Hızlı başlatıcı ve komuta merkezi aynı kısayolu kullanıyor ({accel}). Bir kısayol yalnızca birinde çalışır; birinin kısayolunu değiştir.",
+    hotkeyFailed: "Komuta merkezi kısayolu ({accel}) kaydedilemedi: başka bir uygulama kullanıyor olabilir. Başka bir kısayol seç.",
     title: "Komuta merkezi",
     desc: "Mesajlar, arkadaşlar, aramalar ve bildirimler tek panelde.",
     open: "Komuta merkezini aç",

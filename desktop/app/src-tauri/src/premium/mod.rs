@@ -409,6 +409,11 @@ impl Host {
         json!({ "__blob": id, "size": size })
     }
 
+    /// Is the `{ __blob }` placeholder still held (not evicted by the 300 MB cap)?
+    pub fn has_blob(&self, v: &Value) -> bool {
+        v.get("__blob").and_then(Value::as_u64).is_some_and(|id| lock(&self.blobs).contains_key(&id))
+    }
+
     pub fn take_blob(&self, v: &Value) -> Option<Vec<u8>> {
         let id = v.get("__blob")?.as_u64()?;
         lock(&self.blobs).remove(&id).map(|b| b.bytes)
@@ -805,8 +810,13 @@ pub fn init() -> TauriPlugin<Wry> {
                     _ => {}
                 },
                 RunEvent::ExitRequested { .. } => {
-                    h.bus(Bus::BeforeQuit);
-                    h.flush();
+                    // Right here on the event loop thread, while every window still exists, like
+                    // Electron's synchronous before-quit. Posted to the bus thread, the session
+                    // snapshot (session_restore) raced the windows being torn down: their bounds
+                    // read failed and the pop-outs were saved as none, or the process was gone
+                    // before the bus got to it. Window getters on this thread are answered
+                    // directly (tauri-runtime-wry send_user_message), so this cannot block.
+                    h.run_bus(Bus::BeforeQuit);
                 }
                 RunEvent::Exit => h.flush(),
                 _ => {}

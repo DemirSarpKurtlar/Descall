@@ -136,7 +136,8 @@ export const nested = {
         "push_to_talk": "Apertar para falar",
         "quick_launcher": "Inicializador rápido",
         "volume_up": "Aumentar o fixado",
-        "volume_down": "Diminuir o fixado"
+        "volume_down": "Diminuir o fixado",
+        "command_center": "Central de comando"
       },
       "reason": {
         "invalid": "{action}: {accel} não é um atalho válido.",
@@ -1600,6 +1601,8 @@ export const nested = {
       }
     },
     "commandCenter": {
+      "hotkeyClash": "O inicializador rápido e a central de comando usam o mesmo atalho ({accel}). Um atalho só funciona para um deles; altere um dos dois.",
+      "hotkeyFailed": "Não foi possível registrar o atalho da central de comando ({accel}): outro aplicativo pode estar usando. Escolha outro atalho.",
       "title": "Central de comando",
       "desc": "Mensagens, amigos, chamadas e notificações em um só painel.",
       "open": "Abrir a central de comando",

@@ -136,7 +136,8 @@ export const nested = {
         "push_to_talk": "Pulsar para hablar",
         "quick_launcher": "Lanzador rápido",
         "volume_up": "Subir al fijado",
-        "volume_down": "Bajar al fijado"
+        "volume_down": "Bajar al fijado",
+        "command_center": "Centro de mando"
       },
       "reason": {
         "invalid": "{action}: {accel} no es un atajo válido.",
@@ -1600,6 +1601,8 @@ export const nested = {
       }
     },
     "commandCenter": {
+      "hotkeyClash": "El lanzador rápido y el centro de mando usan el mismo atajo ({accel}). Un atajo solo funciona para uno de ellos; cambia uno de los dos.",
+      "hotkeyFailed": "No se pudo registrar el atajo del centro de mando ({accel}): puede que otra aplicación lo esté usando. Elige otro atajo.",
       "title": "Centro de mando",
       "desc": "Mensajes, amigos, llamadas y notificaciones en un solo panel.",
       "open": "Abrir el centro de mando",
