@@ -269,6 +269,8 @@ pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
                     // Browser process gone: only a fresh start brings the WebView back.
                     (0, true) => {
                         crate::state::set_quitting(&app);
+                        // Same argv comes back (`--autostart --hidden` after a login start).
+                        crate::boot::write_relaunch_marker(&app);
                         app.restart();
                     }
                     (0, false) => {

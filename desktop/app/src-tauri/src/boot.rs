@@ -359,6 +359,13 @@ pub fn write_relaunch_marker<R: Runtime>(app: &AppHandle<R>) {
     let _ = std::fs::write(dir.join(RELAUNCH_MARKER), json!({ "mode": mode, "at": crate::state::now_ms() }).to_string());
 }
 
+/// The install did not start after all: a manual launch must not read the marker.
+pub fn clear_relaunch_marker<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(dir) = crate::state::data_dir(app) {
+        let _ = std::fs::remove_file(dir.join(RELAUNCH_MARKER));
+    }
+}
+
 pub fn cold_start<R: Runtime>(app: &AppHandle<R>, argv: &[String]) -> descall_shell::launch::ColdStart {
     use descall_shell::launch::{decide_cold_start, is_fresh_relaunch_marker, BackgroundMode};
     let (mut mode, mut fresh) = (None, false);

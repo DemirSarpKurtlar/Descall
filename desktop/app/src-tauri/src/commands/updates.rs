@@ -129,6 +129,7 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
         }
         Err(e) => {
             log::error!("[updater] install failed: {e}");
+            crate::boot::clear_relaunch_marker(app);
             let u = app.state::<Updates>();
             let mut i = u.inner.lock().unwrap();
             i.install_started = false;
@@ -250,8 +251,30 @@ fn error_payload(message: &str, phase: &'static str) -> Value {
     json!({ "message": error_message(message), "phase": phase })
 }
 
+/// No request may hang: reqwest has no timeout by default, so one stalled connection to the
+/// first endpoint (or a half-open download) kept `check_in_flight` set forever and the app never
+/// checked again until restarted. Connect / read-gap limits, not a total limit, so a slow but
+/// moving download of the installer still finishes.
+pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+pub const READ_TIMEOUT: Duration = Duration::from_secs(45);
+
+fn updater_for<R: Runtime>(app: &AppHandle<R>) -> tauri_plugin_updater::Result<tauri_plugin_updater::Updater> {
+    let handle = app.clone();
+    app.updater_builder()
+        .configure_client(|b| b.connect_timeout(CONNECT_TIMEOUT).read_timeout(READ_TIMEOUT))
+        // install() ends the process with std::process::exit right after starting the
+        // installer, so RunEvent::Exit never runs: drop the tray icon (no ghost icon in the
+        // notification area until hovered), hide the windows and flush the log first.
+        .on_before_exit(move || {
+            log::info!("[updater] installer starting, app exits");
+            log::logger().flush();
+            handle.cleanup_before_exit();
+        })
+        .build()
+}
+
 async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (&'static str, String)> {
-    let updater = app.updater().map_err(|e| ("check", e.to_string()))?;
+    let updater = updater_for(app).map_err(|e| ("check", e.to_string()))?;
     let Some(update) = updater.check().await.map_err(|e| ("check", e.to_string()))? else { return Ok(None) };
     let version = update.version.clone();
     to_main(app, "update:downloading", json!({ "version": version }));
@@ -315,6 +338,9 @@ pub fn schedule_background_checks<R: Runtime>(app: &AppHandle<R>) {
 /// requestExplicitInstall: tray "Update and quit", the page's Restart button.
 pub fn request_explicit_install<R: Runtime>(app: &AppHandle<R>, reason: &str) -> Value {
     if !is_ready(app) {
+        // app.restart() keeps argv: without the marker a login start (`--autostart --hidden`)
+        // would come back hidden after the user pressed Restart.
+        crate::boot::write_relaunch_marker(app);
         state::set_quitting(app);
         app.restart();
     }
@@ -349,6 +375,7 @@ pub fn updates_restart<R: Runtime>(app: AppHandle<R>, confirmed: bool) -> Value 
         return request_explicit_install(&app, "ipc");
     }
     if !is_ready(&app) {
+        crate::boot::write_relaunch_marker(&app);
         state::set_quitting(&app);
         app.restart();
     }
@@ -370,6 +397,17 @@ pub fn updates_status<R: Runtime>(app: AppHandle<R>) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A stalled endpoint must fail the check (and free check_in_flight), not hang it.
+    #[test]
+    fn update_requests_have_timeouts() {
+        let src = include_str!("updates.rs");
+        let check = &src[src.find("async fn check_and_stage").unwrap()..];
+        assert!(check[..300].contains("updater_for(app)"), "checks use the configured updater");
+        assert!(src.contains(".connect_timeout(CONNECT_TIMEOUT).read_timeout(READ_TIMEOUT)"));
+        assert!(CONNECT_TIMEOUT.as_secs() <= 30 && READ_TIMEOUT.as_secs() <= 60);
+        assert!(src.contains("handle.cleanup_before_exit()"), "tray icon removed before the process exits");
+    }
 
     #[test]
     fn update_errors_carry_no_user_paths() {
