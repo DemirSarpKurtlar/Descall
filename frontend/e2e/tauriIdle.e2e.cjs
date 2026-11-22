@@ -18,7 +18,9 @@
  *     window, none faster than every 5 s);
  *   - backgrounded: no requestAnimationFrame loop keeps running (under 2 frames per second),
  *     no CSS / Web animation is running, no shell command is polled;
- *   - the shims themselves start no repeating timer while idle.
+ *   - the shims themselves start no repeating timer while idle;
+ *   - start-up: the shim reports the boot splash (app_boot_state "splash") once, before
+ *     app-mounted, so the shell can show the window before the main bundle ran.
  *
  * Run from frontend/:
  *   ELECTRON_BUILD=1 npx vite build --outDir dist-tauri-e2e
@@ -94,7 +96,7 @@ function fakeTauri(token) {
   let cbId = 1;
   const answers = { app_version: '4.1.0', updates_status: { status: 'idle' }, window_content_box: { top: 0, right: 0, bottom: 0, left: 0 }, window_is_focused: true, screen_sources: [], processes_scan: [] };
   const invoke = async (cmd, args) => {
-    const ch = cmd === 'premium_invoke' && args && args.channel ? `premium_invoke ${args.channel}` : cmd;
+    const ch = cmd === 'premium_invoke' && args && args.channel ? `premium_invoke ${args.channel}` : cmd === 'app_boot_state' && args ? `app_boot_state ${args.phase}` : cmd;
     window.__tauriCalls.push([ch, performance.now()]);
     if (cmd === 'plugin:event|listen') return cbId++;
     if (cmd === 'premium_invoke') return { ok: false, error: 'locked' };
@@ -235,6 +237,12 @@ async function main() {
       await sleep(200);
     }
     check(await page.evaluate(() => document.documentElement.classList.contains('tauri-app')), 'shims ran (html.tauri-app)');
+    // Start-up: the shim tells the shell when the boot splash is up (the window shows then).
+    const boot = await page.evaluate(() => window.__tauriCalls.filter(([c]) => /^app_boot_state /.test(c)).map(([c, t]) => `${c.slice(15)}@${Math.round(t)}`));
+    const nav = await page.evaluate(() => { const n = performance.getEntriesByType('navigation')[0]; return n ? { domContentLoaded: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) } : null; });
+    log(`boot reports: ${boot.join(', ')}; page load (PageLoadEvent::Finished) ${JSON.stringify(nav)}`);
+    check(boot.filter((b) => b.startsWith('splash@')).length === 1, 'the boot splash is reported to the shell once, before the app mounted');
+    check(boot.findIndex((b) => b.startsWith('splash@')) < boot.findIndex((b) => b.startsWith('app-mounted@')) || !boot.some((b) => b.startsWith('app-mounted@')), 'splash report comes first');
     await sleep(6000); // let start-up work (chunk prefetch, first fetches) finish
     const shown = await measure('visible');
     const polled = (r) => Object.entries(r.calls).filter(([c, n]) => !/^plugin:event\|(un)?listen$/.test(c) && n > Math.max(2, IDLE_MS / 5000));

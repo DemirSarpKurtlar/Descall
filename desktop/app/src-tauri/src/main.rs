@@ -137,6 +137,9 @@ fn main() {
             let boot_js = boot::boot_script(&handle, imported.as_ref());
             let script = format!("{boot_js}\n{SHIM}\n{NATIVE_SHARE}");
             let launch = boot::cold_start(&handle, &argv);
+            if launch.action == descall_shell::launch::StartAction::Show {
+                state::shell(&handle).show_on_load.store(true, std::sync::atomic::Ordering::Release);
+            }
             let ws = boot::initial_window_state(&handle);
 
             let nav_app = handle.clone();

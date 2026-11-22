@@ -46,6 +46,8 @@ jobs:
         run: node app/shim/media-calls.test.mjs
       - name: Idle CPU / RAM (timer inventory, tray memory target, no OS thread per tick)
         run: node app/shim/idle-perf.test.mjs
+      - name: Start-up (main window shown once the boot splash is up)
+        run: node app/shim/startup.test.mjs
       - name: Release helpers (key checks, Tauri updater signature, setup manifest signing)
         run: |
           python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install --quiet cryptography

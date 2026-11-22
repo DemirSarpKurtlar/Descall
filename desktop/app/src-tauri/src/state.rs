@@ -30,6 +30,9 @@ pub struct Shell {
     pub minimized: AtomicBool,
     /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
     pub deep_link: Mutex<Option<String>>,
+    /// A normal start (StartAction::Show): the main window shows once its boot splash is up
+    /// (app_boot_state "splash") or the page finished loading, whichever comes first.
+    pub show_on_load: AtomicBool,
     /// WebView2 memory target of the main window (webview::update_main_memory).
     pub memory: Mutex<descall_shell::memory_target::Target>,
 }
