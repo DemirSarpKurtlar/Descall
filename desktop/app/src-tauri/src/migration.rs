@@ -175,12 +175,20 @@ fn http_client() -> Option<reqwest::Client> {
 
 async fn check_session<R: Runtime>(app: AppHandle<R>, key: String) {
     let Some(client) = http_client() else { return };
+    let mut seen = false;
     for _ in 0..AUTH_MAX_TRIES {
         // Read the sealed token each time: the page may have refreshed it meanwhile.
         let Some(token) = crate::secure_store::get(&app, &key) else {
+            // Gone after it was there: the user signed out in the new app (the page cleared
+            // the store), which proves it runs. Rolling back to Electron for that would undo
+            // a working move; missing from the start, the import did not land: fail.
+            if seen {
+                return ready(&app, true);
+            }
             fail(codes::AUTH_REJECTED);
             return;
         };
+        seen = true;
         let status = client.get(AUTH_ME_URL).bearer_auth(token).send().await.map(|r| r.status().as_u16()).unwrap_or(0);
         match descall_migrate::app::auth_check(status) {
             AuthCheck::Ok => return ready(&app, false),
@@ -392,6 +400,18 @@ mod tests {
         let com = [exe.clone(), "-Embedding".to_string()];
         assert_eq!(decide_cold_start(&com, None, false).action, StartAction::Show);
         assert_eq!(descall_migrate::app::migration_id_from_args(&com), None);
+    }
+
+    /// A sign-out in the new app while the health check runs is not a failed move (it rolled
+    /// back a working migration to Electron); a session that never landed still fails.
+    #[test]
+    fn sign_out_during_the_check_is_ready_signed_out() {
+        let src = include_str!("migration.rs");
+        let body = &src[src.find("async fn check_session").unwrap()..src.find("// ---- outcome reports").unwrap()];
+        let missing = &body[body.find("secure_store::get(&app, &key) else {").unwrap()..];
+        let missing = &missing[..missing.find("seen = true;").unwrap()];
+        assert!(missing.find("if seen {").unwrap() < missing.find("return ready(&app, true);").unwrap());
+        assert!(missing.contains("fail(codes::AUTH_REJECTED);"), "never there: the import failed");
     }
 
     #[test]
