@@ -281,6 +281,9 @@ async function run(browser, base, boot0, r, problems) {
       check(hd.xOk && (!insets || hd.top >= 47), `"Hediyeler" title and close stay on top while scrolled (top ${Math.round(hd.top)})`);
       const note = await page.evaluate(() => document.querySelector('.s2-gifts .s2-gfoot-note')?.textContent || '');
       check(/arkadaş seç/.test(note), `"Gonder" off without a friend says why (${note})`);
+      await page.evaluate(() => { const p = document.querySelector('.s2-layer.is-full .s2-layer-panel'); p.scrollTop = p.scrollHeight; });
+      await sleep(300);
+      await shot(page, `${r.name}-gifts-bottom`);
       await page.evaluate(() => document.querySelector('.s2-layer.is-full .s2-fullhead .s2-x').click());
       await sleep(700);
     }
@@ -330,6 +333,12 @@ async function run(browser, base, boot0, r, problems) {
       check(!insets || !gd.overClock, 'gift composer rows never draw over the status bar');
       check(gd.footBottom <= gd.h + 0.5 && (!insets || gd.footPad >= 34), `"Gonder" foot inside the screen, clear of the home indicator (pad ${gd.footPad})`);
       check(gd.scrolls, 'gift composer body scrolls');
+      const row = await page.evaluate(() => {
+        const a = document.querySelector('.s2-gdrawer .s2-gfoot-draft').getBoundingClientRect();
+        const b = document.querySelector('.s2-gdrawer .s2-gfoot-send').getBoundingClientRect();
+        return Math.abs(a.top - b.top) < 2 && b.right <= innerWidth;
+      });
+      check(row, '"Taslaga kaydet" and "Gonder" share one row on iPhone');
       if (SHOTS) await (await page.$('.s2-gdrawer .s2-gprev'))?.screenshot({ path: path.join(SHOTS, `${r.name}-gift-drawer-preview.jpg`), type: 'jpeg', quality: 70 });
       await page.keyboard.press('Escape');
       await sleep(800);

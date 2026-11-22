@@ -451,9 +451,9 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
       ) : (
         <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
       )}
-      {onClose ? <button type="button" className="s2-btn" onClick={onClose}>{t("shop2.common.cancel")}</button> : null}
-      <button type="button" className="s2-btn" onClick={saveDraft} disabled={!draftKey}>{t("shop2.gifts.saveDraft")}</button>
-      <button type="button" className="s2-btn is-primary" disabled={!canSend} onClick={send}>
+      {onClose ? <button type="button" className="s2-btn s2-gfoot-cancel" onClick={onClose}>{t("shop2.common.cancel")}</button> : null}
+      <button type="button" className="s2-btn s2-gfoot-draft" onClick={saveDraft} disabled={!draftKey}>{t("shop2.gifts.saveDraft")}</button>
+      <button type="button" className="s2-btn is-primary s2-gfoot-send" disabled={!canSend} onClick={send}>
         <Send size={15} />
         {sendAt ? t("shop2.gifts.schedule") : t("shop2.gifts.send")}
       </button>

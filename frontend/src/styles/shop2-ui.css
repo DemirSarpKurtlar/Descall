@@ -4926,6 +4926,41 @@ button.s2-strip:hover {
 .s2-gfoot-note.is-step {
   color: var(--s2-dim);
 }
+/* Phone foot: total and balance on top (a long balance such as 1.000.011.687 has the
+   whole width), the hint under it, then one row of buttons with "Gonder" widest. The
+   composer's X already closes it, so "Vazgec" is not repeated here. */
+.s2-gdrawer.is-phone .s2-gfoot,
+.s2-gifts.is-phone .s2-gfoot {
+  gap: 8px 10px;
+  padding: 12px 16px;
+}
+.s2-gdrawer.is-phone .s2-gtotal,
+.s2-gifts.is-phone .s2-gtotal {
+  flex: 1 1 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+}
+.s2-gdrawer.is-phone .s2-gtotal small,
+.s2-gifts.is-phone .s2-gtotal small {
+  flex: 1 1 100%;
+  overflow-wrap: anywhere;
+}
+.s2-gdrawer.is-phone .s2-gfoot-note,
+.s2-gifts.is-phone .s2-gfoot-note {
+  flex: 1 1 100%;
+  min-width: 0;
+  font-size: var(--fs-11);
+}
+.s2-gdrawer.is-phone .s2-gfoot-cancel {
+  display: none;
+}
+.s2-gdrawer.is-phone .s2-gfoot-send,
+.s2-gifts.is-phone .s2-gfoot-send {
+  flex: 1 1 0;
+  justify-content: center;
+}
 /* iPhone "Hediyeler" full screen: the title and its close button stay on top while the
    friend list, form and preview scroll under them. */
 .s2-layer.is-full .s2-gifts > .s2-fullhead {
