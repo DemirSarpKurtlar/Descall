@@ -113,6 +113,9 @@ fn open(h: &Host, id: &str) -> Value {
         .additional_browser_args(crate::BROWSER_ARGS)
         .disable_drag_drop_handler() // HTML5 file drops into chats, as in the main window
         .general_autofill_enabled(false) // no browser autofill dropdown, as in Electron
+        // <a download> / blob: exports: Downloads + Explorer under a safe free name, as in the
+        // main window (no Edge download bubble over the app).
+        .on_download(crate::webview::on_download)
         .initialization_script(&script)
         .on_navigation(move |u| u.origin() == origin)
         // Links that open a new window go to the default browser, as in the main window.

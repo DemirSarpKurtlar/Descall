@@ -522,6 +522,20 @@ mod capability_tests {
         assert!(f[..f.find("\n}").unwrap()].contains("trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External"));
     }
 
+    /// Page downloads in every app window go through webview::on_download (a sanitized free
+    /// name in Downloads); pop-outs and account windows had WebView2's own download bubble.
+    #[test]
+    fn app_windows_route_downloads() {
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+        ] {
+            assert!(src.contains("on_download(webview::on_download)") || src.contains("on_download(crate::webview::on_download)"), "{file}: downloads without the shell's handler");
+        }
+    }
+
     /// Windows that take HTML5 drops (chat files, server reordering, the quick drop zone) keep
     /// WebView2's own drag and drop: Tauri's handler swallows every drop on Windows.
     #[test]
