@@ -235,4 +235,14 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.ok(/connect-src[^;]*https?:\/\/ipc\.localhost/.test(shellCsp), "shell pages (mini call card, capsules): IPC allowed");
 }
 
+// ---- black-screen hint: screen_share_stats is polled until the hint was shown, not for the
+// whole share (every 2 s for hours, T10 report).
+{
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  const at = ns.indexOf("s.hintTimer = setInterval(");
+  assert.ok(at > 0, "the black-screen hint polls screen_share_stats");
+  const body = ns.slice(at, ns.indexOf("}, 2000);", at));
+  assert.match(body, /hinted = true;\s*(?:\/\/[^\n]*\n\s*)*clearInterval\(s\.hintTimer\);\s*s\.hintTimer = null;/, "polling stops once the hint was shown");
+}
+
 console.log("media-calls.test: ok");

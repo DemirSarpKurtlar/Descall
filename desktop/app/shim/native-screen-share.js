@@ -466,6 +466,9 @@
         invoke("screen_share_stats").then((st) => {
           if (!hinted && st && st.blackStreak > 2 * (info.fps || 30)) {
             hinted = true;
+            // Nothing more to learn: no stats call every 2 s for the rest of the share.
+            clearInterval(s.hintTimer);
+            s.hintTimer = null;
             notice("Paylaşılan görüntü siyah. Oyunu pencereli tam ekran (borderless) yapın ya da ekranın tamamını paylaşın.",
               "The shared picture is black. Switch the game to borderless windowed, or share the whole screen.");
           }
