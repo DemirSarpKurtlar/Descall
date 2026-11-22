@@ -31,6 +31,13 @@ import { getMe } from "../../api/auth";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import useModalFocus from "../../hooks/useModalFocus";
 import {
+  hasLiveVoiceCapture,
+  isNativeIosShell,
+  liveVoiceCaptureTrack,
+  micTestPlan,
+  shouldProbeMicForLabels,
+} from "../../lib/voiceCaptureRegistry";
+import {
   setEmail as apiSetEmail,
   requestEmailReauth,
   getTwoFactorStatus,
@@ -1085,6 +1092,7 @@ const UserPanel = forwardRef(function UserPanel({
   const [hearYourself, setHearYourself] = useState(false);
   const micAnalyserRef = useRef(null);
   const micStreamRef = useRef(null);
+  const micTestOwnsSessionRef = useRef(false);
   const micRafRef = useRef(null);
   const micCtxRef = useRef(null);
   const electronApp = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
@@ -1166,16 +1174,26 @@ const UserPanel = forwardRef(function UserPanel({
 
   const refreshDevices = useCallback(async () => {
     try {
-      // Unlock device labels when possible; ignore if no mic/camera is available.
-      if (navigator.mediaDevices?.getUserMedia) {
+      let devices = await navigator.mediaDevices.enumerateDevices();
+      // Unlock device labels with a throwaway capture only when nothing else is
+      // using the microphone: during a call (and always in the iOS app) a
+      // second capture interrupts the call's mic and the others stop hearing you.
+      if (
+        navigator.mediaDevices?.getUserMedia &&
+        shouldProbeMicForLabels({
+          devices,
+          nativeIos: isNativeIosShell(),
+          liveCapture: hasLiveVoiceCapture(),
+        })
+      ) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           stream.getTracks().forEach((t) => t.stop());
+          devices = await navigator.mediaDevices.enumerateDevices();
         } catch {
-          /* permission denied or no input device, still enumerate */
+          /* permission denied or no input device, keep the list we have */
         }
       }
-      const devices = await navigator.mediaDevices.enumerateDevices();
       setAudioInputs(devices.filter((d) => d.kind === "audioinput"));
       setAudioOutputs(devices.filter((d) => d.kind === "audiooutput"));
       setVideoInputs(devices.filter((d) => d.kind === "videoinput"));
@@ -1187,12 +1205,26 @@ const UserPanel = forwardRef(function UserPanel({
   const startMicTest = useCallback(async () => {
     if (micStreamRef.current) return;
     try {
-      const { acquireVoiceMicStream } = await import("../../lib/noiseSuppression");
-      const stream = await acquireVoiceMicStream({
-        ...(selectedAudioIn ? { audio: { deviceId: { exact: selectedAudioIn } } } : {}),
-        video: false,
-        applyStoredMute: false,
-      });
+      const { acquireVoiceMicStream, getNoiseSuppressionOutputTrack } = await import(
+        "../../lib/noiseSuppression"
+      );
+      const callTrack = getNoiseSuppressionOutputTrack() || liveVoiceCaptureTrack();
+      const plan = micTestPlan({ callTrack });
+      let stream;
+      if (plan.mode === "clone") {
+        // In a call: meter a copy of the call's own track. Opening a new
+        // capture would replace the call's noise suppression session (and on
+        // iOS interrupt the call's microphone).
+        stream = new MediaStream([callTrack.clone()]);
+      } else {
+        stream = await acquireVoiceMicStream({
+          ...(selectedAudioIn ? { audio: { deviceId: { exact: selectedAudioIn } } } : {}),
+          video: false,
+          applyStoredMute: false,
+          voiceCapture: false,
+        });
+      }
+      micTestOwnsSessionRef.current = plan.ownsSession;
       micStreamRef.current = stream;
       setMicTesting(true);
       setNoiseEngine(getNoiseSuppressionEngine());
@@ -1219,6 +1251,9 @@ const UserPanel = forwardRef(function UserPanel({
 
   const stopMicTest = useCallback(() => {
     if (micRafRef.current) cancelAnimationFrame(micRafRef.current);
+    const hadTest = Boolean(micStreamRef.current);
+    const ownsSession = micTestOwnsSessionRef.current;
+    micTestOwnsSessionRef.current = false;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
     micAnalyserRef.current = null;
@@ -1226,6 +1261,10 @@ const UserPanel = forwardRef(function UserPanel({
     micCtxRef.current = null;
     setMicTestLevel(0);
     setMicTesting(false);
+    // Only tear down the noise suppression session the test itself opened.
+    // Closing Settings or leaving the voice tab used to dispose the call's
+    // session too, and the call went silent.
+    if (!hadTest || !ownsSession) return;
     import("../../lib/noiseSuppression")
       .then(({ disposeNoiseSuppressionSession }) => {
         disposeNoiseSuppressionSession({ stopRaw: true });

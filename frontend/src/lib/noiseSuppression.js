@@ -12,6 +12,7 @@
  * is disabled when a neural/Speex stage is active to avoid muddy double-NS.
  */
 
+import { registerVoiceCapture } from "./voiceCaptureRegistry.js";
 import {
   GtcrnWorkletNode,
   RnnoiseWorkletNode,
@@ -709,6 +710,7 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   };
 
   const raw = await navigator.mediaDevices.getUserMedia(constraints);
+  if (extraConstraints.voiceCapture !== false) registerVoiceCapture(raw);
   // Capture can suspend the context (CallKit / route change). Try again now
   // that the mic exists; didActivate retries if this one is ignored.
   primeVoiceActivity();

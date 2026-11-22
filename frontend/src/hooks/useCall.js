@@ -1,3 +1,4 @@
+import { registerVoiceCapture } from "../lib/voiceCaptureRegistry";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import audioManager from "../lib/audioManager";
@@ -460,7 +461,11 @@ export function useCall(socket, callOccupancyRef = null) {
         mode: modeRef.current || "",
         visibility: typeof document !== "undefined" ? document.visibilityState : "",
       }),
-      getUserMedia: (constraints) => navigator.mediaDevices.getUserMedia(constraints),
+      getUserMedia: async (constraints) => {
+        const fresh = await navigator.mediaDevices.getUserMedia(constraints);
+        registerVoiceCapture(fresh);
+        return fresh;
+      },
       audioConstraints: () => getVoiceAudioConstraints().audio,
       reactivateCapture: reactivateIosCapture,
       getDiagnostics: getIosAudioDiagnostics,

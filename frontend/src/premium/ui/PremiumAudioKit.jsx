@@ -4,6 +4,7 @@
  * us-row, us-toggle) so panels look native inside Settings, plus a few
  * pa-* classes in premiumAudio.css for meters, key caps and lists.
  */
+import { liveVoiceCaptureTrack } from "../../lib/voiceCaptureRegistry";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../../context/localeContextInstance";
 import { linearToDb, meterPercent, rms, smoothLevel } from "../audio/noiseGateMath.js";
@@ -272,6 +273,18 @@ export function useMicTestStream(active, deviceId = "") {
     if (!active || !navigator?.mediaDevices?.getUserMedia) return undefined;
     let live = true;
     let s = null;
+    // During a call (and above all in the iOS app) a second capture cuts the
+    // call's microphone: meter a copy of the call's own track instead.
+    const callTrack = liveVoiceCaptureTrack();
+    if (callTrack) {
+      s = new MediaStream([callTrack.clone()]);
+      setStream(s);
+      return () => {
+        live = false;
+        s?.getTracks().forEach((tr) => tr.stop());
+        setStream(null);
+      };
+    }
     navigator.mediaDevices
       .getUserMedia({ audio: { deviceId: deviceId ? { exact: deviceId } : undefined, echoCancellation: true, noiseSuppression: false, autoGainControl: true }, video: false })
       .then((st) => {
