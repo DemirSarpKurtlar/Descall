@@ -124,11 +124,15 @@ mod win {
         }
     }
 
-    fn hide(sink: HWND) {
+    /// Off the button. `forget`: the page has no button now; otherwise (minimized, does not fit
+    /// for the moment) the next resize puts it back where the page last saw its button.
+    fn hide(sink: HWND, forget: bool) {
         unsafe {
             let _ = ShowWindow(sink, SW_HIDE);
             if let Some(d) = sink_data(sink) {
-                d.rect = None;
+                if forget {
+                    d.rect = None;
+                }
                 set_visual(d, Visual::None);
             }
         }
@@ -186,7 +190,7 @@ mod win {
             let (cw, ch) = client_size(parent);
             let moved = PxRect { x: cw - d.right, ..r };
             if IsIconic(parent).as_bool() || moved.x < 0 || moved.y + moved.height > ch {
-                hide(sink);
+                hide(sink, false);
                 return;
             }
             d.rect = Some(moved);
@@ -196,13 +200,20 @@ mod win {
 
     pub fn update(window: &WebviewWindow, parent: isize, rect: Option<CssRect>, scale: f64) {
         let parent = hwnd(parent);
-        let Some(sink) = sink_for(window, parent) else { return };
         let (cw, ch) = client_size(parent);
+        if cw <= 0 || ch <= 0 || unsafe { IsIconic(parent) }.as_bool() {
+            // Minimized: keep what the sink knows; the restore puts it back (follow_resize).
+            return;
+        }
         let px = rect.and_then(|r| snap::to_physical(&r, cw, ch));
         let Some(px) = px else {
-            hide(sink);
+            // No button (or none that fits): an existing sink steps aside, none is created.
+            if let Ok(sink) = unsafe { FindWindowExW(Some(parent), None, CLASS, PCWSTR::null()) } {
+                hide(sink, true);
+            }
             return;
         };
+        let Some(sink) = sink_for(window, parent) else { return };
         unsafe {
             if let Some(d) = sink_data(sink) {
                 d.rect = Some(px);
