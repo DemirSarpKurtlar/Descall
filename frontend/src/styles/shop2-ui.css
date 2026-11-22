@@ -1915,7 +1915,32 @@ button.s2-tile:hover:not(:disabled) {
   align-items: center;
   gap: 5px;
 }
+/* Featured set banner: swipe surface (vertical page scroll stays native), prev / next, dots. */
+.s2-banner {
+  touch-action: pan-y;
+}
+.s2-banner.is-back .s2-banner-text {
+  animation-name: s2-slidein-back;
+}
+.s2-banner-nav {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  background: rgba(10, 10, 20, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.s2-banner-nav .s2-dots {
+  margin-left: 0;
+  gap: 0;
+}
+.s2-banner-step {
+  color: #fff;
+}
 .s2-dots button {
+  position: relative;
   width: 6px;
   height: 6px;
   padding: 0;
@@ -1924,9 +1949,57 @@ button.s2-tile:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.3);
   transition: width 240ms ease, background 240ms ease;
 }
+.s2-banner-nav .s2-dots button {
+  width: 8px;
+  height: 8px;
+  margin: 0 5px;
+  border-radius: 4px;
+}
+/* 18 x 30 px hit area around each 8 px dot (the areas of neighbours touch, never overlap) */
+.s2-banner-nav .s2-dots button::after {
+  content: "";
+  position: absolute;
+  inset: -11px -5px;
+}
 .s2-dots button.is-on {
   width: 18px;
   background: #fff;
+}
+.s2-banner-nav .s2-dots button.is-on {
+  width: 22px;
+}
+.s2-banner-next {
+  max-width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  background: rgba(10, 10, 20, 0.5);
+  color: rgba(235, 238, 255, 0.88);
+  transition: background 160ms ease, color 160ms ease;
+}
+.s2-banner-next:hover,
+.s2-banner-next:focus-visible {
+  background: rgba(88, 122, 245, 0.32);
+  color: #fff;
+}
+.s2-banner-next-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes s2-slidein-back {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s2-banner.is-back .s2-banner-text {
+    animation: none;
+  }
 }
 .s2-ladder {
   display: grid;
@@ -3674,6 +3747,32 @@ button.s2-strip:hover {
   isolation: isolate;
   background: var(--set-art, none) center / cover no-repeat, var(--set-bg);
   touch-action: pan-y;
+}
+/* prev / next set on the phone hero (the dots above are small; swipe works too) */
+.s2-pset-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  color: #fff;
+  background: rgba(10, 10, 20, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.s2-pset-nav:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.94);
+}
+.s2-pset-nav.is-prev {
+  left: 8px;
+}
+.s2-pset-nav.is-next {
+  right: 8px;
+}
+.s2-pset-hero:has(.s2-pset-nav) {
+  padding-left: 52px;
+  padding-right: 52px;
 }
 .s2-pset-hero::after {
   content: "";
@@ -6185,6 +6284,16 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
 }
 .s2-root.is-phone .s2-banner-slots .s2-slot {
   aspect-ratio: 1;
+}
+/* Phone: the set switcher gets its own full-width row with 36 px prev / next targets. */
+.s2-root.is-phone .s2-banner-nav {
+  flex: 1 0 100%;
+  justify-content: space-between;
+  margin-left: 0;
+}
+.s2-root.is-phone .s2-banner-step {
+  width: 36px;
+  height: 36px;
 }
 .s2-root.is-phone .s2-banner h2 {
   font-size: var(--fs-20);
