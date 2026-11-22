@@ -388,8 +388,12 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
 }
 
 /// electronAPI.showNotification(title, options) -> notification:show.
+///
+/// async on purpose: every capsule is a new window, and building a WebView2 from a sync
+/// command (inside WebView2's IPC callback on the UI thread) deadlocks on Windows
+/// (WebviewWindowBuilder::build docs), e.g. on an incoming call's ring capsule.
 #[tauri::command]
-pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: ShowPayload) {
+pub async fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: ShowPayload) {
     // Descall+ pop-outs and admin windows never notify; the main window does.
     if window.label() != state::MAIN {
         return;
@@ -442,9 +446,11 @@ fn flash_taskbar<R: Runtime>(app: &AppHandle<R>, data_type: &str) {
 }
 
 /// electronAPI.closeNotification({ tag } | { tags }): incoming-call capsules close when the
-/// ring ends (accept, decline, cancel, miss, answered elsewhere).
+/// ring ends (accept, decline, cancel, miss, answered elsewhere). async: it destroys
+/// capsule windows, which stays off the UI thread's WebView2 callbacks (Tauri's own window
+/// destroy / close commands are async for the same reason).
 #[tauri::command]
-pub fn notification_close<R: Runtime>(app: AppHandle<R>, payload: Value) {
+pub async fn notification_close<R: Runtime>(app: AppHandle<R>, payload: Value) {
     let tags: Vec<String> = match payload.get("tags").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(|t| t.as_str().map(str::to_string)).collect(),
         None => payload.get("tag").and_then(Value::as_str).map(|t| vec![t.to_string()]).unwrap_or_default(),
@@ -457,9 +463,11 @@ pub fn notification_close<R: Runtime>(app: AppHandle<R>, payload: Value) {
     }
 }
 
-/// window.notifAPI.* from a capsule page (notifPreload.cjs channels notif:*).
+/// window.notifAPI.* from a capsule page (notifPreload.cjs channels notif:*). async: Accept /
+/// Decline / close destroy this very capsule, which must not happen inside its own WebView2
+/// IPC callback on the UI thread.
 #[tauri::command]
-pub fn notif_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, action: String, remaining: Option<f64>) {
+pub async fn notif_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, action: String, remaining: Option<f64>) {
     let label = window.label().to_string();
     let id = app.state::<Notifications>().list.lock().unwrap().iter().find(|c| c.label == label).map(|c| c.id);
     let Some(id) = id else { return };

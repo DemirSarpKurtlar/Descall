@@ -261,15 +261,19 @@
     onCallAccept: (cb) => on("notification:call-accept", cb),
     onCallDecline: (cb) => on("notification:call-decline", cb),
 
-    // Screen share: the native lane (native-screen-share.js) owns these two.
+    // Screen share: the native lane (native-screen-share.js) owns these two. Without a usable
+    // native lane (no WebView2 shared buffers) the list is empty, so webrtcScreenShare.js goes
+    // straight to getDisplayMedia: one picker (WebView2's), not ours and then WebView2's with
+    // the first choice ignored.
     getScreenSources: ADMIN
       ? () => Promise.resolve([])
       : async () => {
-        // main.cjs answers [] on any capture error; the picker never sees a rejection.
+        // main.cjs answers [] on any capture error; the picker never sees a rejection. Without
+        // the native lane the page uses getDisplayMedia's own picker (one picker, T7 L4).
         try {
           const ns = nativeShare();
-          // Electron always sent thumbnails (desktopCapturer thumbnailSize 320x240).
-          const list = ns ? await ns.getSources() : await invoke("screen_sources", { thumbnails: true });
+          if (!ns || ns.supported === false) return [];
+          const list = await ns.getSources();
           return (Array.isArray(list) ? list : []).filter((s) => s && typeof s.id === "string").map(toElectronSource);
         } catch (_) {
           return [];

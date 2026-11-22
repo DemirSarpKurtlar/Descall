@@ -173,7 +173,7 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
 // ---- 4: notification_show order --------------------------------------------------------------------
 {
   const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
-  const body = notify.slice(notify.indexOf("pub fn notification_show"), notify.indexOf("fn flash_taskbar"));
+  const body = notify.slice(notify.search(/pub (?:async )?fn notification_show\b/), notify.indexOf("fn flash_taskbar"));
   const iSnooze = body.indexOf("suppress_notification");
   const iFront = body.indexOf("skip_in_front");
   const iReply = body.indexOf("show_quick_reply");
@@ -274,7 +274,7 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(lockRs, /fn notify_filter\(&self, h: &Host, payload: Value\) -> Option<Value> \{\s*if !self\.locked\.load/, "only while locked");
   assert.match(lockRs, /redact_locked\(&payload, &crate::state::et\(&h\.app, "notif\.locked"/, "Electron's text (shell catalogs)");
   const notify = codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs"));
-  const show = notify.slice(notify.indexOf("pub fn notification_show"), notify.indexOf("fn flash_taskbar"));
+  const show = notify.slice(notify.search(/pub (?:async )?fn notification_show\b/), notify.indexOf("fn flash_taskbar"));
   assert.match(show, /let title = filtered\.get\("title"\)/, "the capsule uses the filtered title");
   assert.doesNotMatch(show.slice(show.indexOf("let title = filtered")), /payload\.title\b(?!\.as_str\(\)\))/, "never the raw sender after filtering");
   // The Rust port keeps Electron's rules (appLockRedact.cjs), checked side by side here.

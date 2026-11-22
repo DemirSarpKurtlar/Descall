@@ -91,8 +91,6 @@ fn open(h: &Host, route: &Value, bounds: Option<Rect>) -> Value {
             return json!({ "ok": false, "error": "failed" });
         }
     };
-    // No browser menu or browser shortcuts (Back, Reload, Print...), as in the main window.
-    crate::webview::install_browser_guards(&w);
     if let Some(b) = b {
         wins::set_bounds(&w, b);
     }

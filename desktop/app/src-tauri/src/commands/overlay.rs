@@ -135,6 +135,10 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) {
             .visible_on_all_workspaces(true)
             // Shown without activation (SW_SHOWNOACTIVATE); the page is transparent until drawn.
             .focused(false)
+            // tao drops the "don't focus" marker after creation, so the card could still be
+            // activated later and take the keyboard (or a game's foreground) away. Not
+            // activatable (WS_EX_NOACTIVATE); clicks still work, as on the capsules (T7).
+            .focusable(false)
             .visible(true)
             .use_https_scheme(true)
             .additional_browser_args(crate::BROWSER_ARGS)
@@ -181,9 +185,11 @@ fn from_main<R: Runtime>(window: &WebviewWindow<R>) -> bool {
     window.label() == state::MAIN
 }
 
-/// electronAPI.overlayShow(payload) -> descall:overlay:show.
+/// electronAPI.overlayShow(payload) -> descall:overlay:show. The overlay commands are async
+/// (T7): a sync command runs inside WebView2's IPC callback on the UI thread, where building
+/// (ensure) or destroying (overlay_hide) a webview deadlocks on Windows.
 #[tauri::command]
-pub fn overlay_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
+pub async fn overlay_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
     if !from_main(&window) {
         return;
     }
@@ -194,7 +200,7 @@ pub fn overlay_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, pay
 
 /// electronAPI.overlayUpdate(payload) -> descall:overlay:update (only while shown).
 #[tauri::command]
-pub fn overlay_update<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
+pub async fn overlay_update<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, payload: Value) {
     if !from_main(&window) {
         return;
     }
@@ -205,7 +211,7 @@ pub fn overlay_update<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
 /// electronAPI.overlayHide() -> descall:overlay:hide. The window goes away (see the module
 /// comment); where it was is remembered for the next one.
 #[tauri::command]
-pub fn overlay_hide<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) {
+pub async fn overlay_hide<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) {
     if !from_main(&window) {
         return;
     }
