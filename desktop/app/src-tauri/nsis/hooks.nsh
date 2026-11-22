@@ -21,9 +21,10 @@
 ; install-location value. When the Tauri updater then runs this installer with /UPDATE, the
 ; template's .onInit falls back to $LOCALAPPDATA\Descall: a second copy was installed and
 ; started, while the Start menu, desktop and login entries kept starting the old folder (which
-; downloaded and installed the update again on every start). Only in /UPDATE mode (the old
-; uninstaller has finished by now; a manual reinstall may still be removing it), only for that
-; exact DescallSetup entry: install over its folder, which from then on is a template install.
+; downloaded and installed the update again on every start). Only in /UPDATE mode (there the
+; template never starts the old uninstaller, PageLeaveReinstall `reinst_done`, so the folder is
+; intact; a manual reinstall may be removing it), only for that exact DescallSetup entry:
+; install over its folder, which from then on is a template install.
 !macro DESCALL_ADOPT_SETUP_FOLDER
   ${If} $UpdateMode = 1
     Push $0
@@ -118,10 +119,9 @@
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
-  ; An update (the updater runs the new installer with /UPDATE, which runs this uninstaller
-  ; with /UPDATE first) must keep the user's "Start with Windows" choice and the toast
-  ; activator: before, every update silently turned auto-start off. Only a real uninstall
-  ; removes them. $UpdateMode is the template's own variable (tauri-bundler 2.10 installer.nsi:
+  ; An uninstall that is part of an update (/UPDATE: tauri-bundler 2.10 only passes it on the
+  ; WiX migration path, older templates on every update) must keep the user's "Start with
+  ; Windows" choice and the toast activator. Only a real uninstall removes them. $UpdateMode is the template's own variable (tauri-bundler 2.10 installer.nsi:
   ; `Var UpdateMode`, set from /UPDATE in un.onInit; the template guards its own Run value and
   ; shortcut removal the same way).
   ${If} $UpdateMode <> 1

@@ -320,9 +320,9 @@ fn main() {
 
 #[cfg(test)]
 mod config_tests {
-    /// Tauri updates run the old uninstaller with /UPDATE before installing: the uninstall
-    /// hook must not delete the login auto-start (Run value) or the toast activator then,
-    /// or every update turns "Start with Windows" off.
+    /// An uninstall run with /UPDATE (WiX migration path in tauri-bundler 2.10, every update in
+    /// older templates) must not delete the login auto-start (Run value) or the toast activator,
+    /// or the update turns "Start with Windows" off. $UpdateMode is the template's variable.
     #[test]
     fn update_keeps_autostart_and_toast_activator() {
         let hooks = include_str!("../nsis/hooks.nsh");
