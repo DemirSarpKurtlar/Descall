@@ -95,9 +95,9 @@ fn default_position<R: Runtime>(app: &AppHandle<R>) -> (f64, f64) {
 }
 
 /// Create the overlay window when there is none (or one is being built). Born visible: see
-/// the module comment. Built off the UI thread: overlay_show is a synchronous command (UI
-/// thread, inside WebView2's IPC callback) and building a webview window there deadlocks on
-/// Windows (Tauri's documented WebView2 issue), so joining a call froze the app. The label is
+/// the module comment. Built on a blocking task, never on the UI thread: inside WebView2's IPC
+/// callback (a synchronous command) building a webview window deadlocks on Windows (Tauri's
+/// documented WebView2 issue), so joining a call froze the app. The label is
 /// claimed here, in command order; a window whose label was dropped while it was being built
 /// (the call ended) is destroyed as soon as it exists.
 fn ensure<R: Runtime>(app: &AppHandle<R>) {

@@ -317,10 +317,11 @@ pub fn show_capsule<R: Runtime>(app: &AppHandle<R>, title: &str, options: &Value
     });
     n.by_tag.lock().unwrap().insert(tag, id);
 
-    // The window is built off the UI thread: notification_show is a synchronous command (it
-    // runs on the UI thread, inside WebView2's IPC callback), and building a webview window
-    // there deadlocks on Windows (Tauri's documented WebView2 issue): the first capsule froze
-    // the app. The bookkeeping above already ran in order; a capsule dismissed while its
+    // The window is built on a blocking task, never on the UI thread: a synchronous command
+    // runs there, inside WebView2's IPC callback, and building a webview window there
+    // deadlocks on Windows (Tauri's documented WebView2 issue): the first capsule froze the
+    // app. show_capsule is also called from the shell itself (background notice, tray), so it
+    // does not rely on its caller being an async command. The bookkeeping above already ran in order; a capsule dismissed while its
     // window was still being built is destroyed as soon as the window exists.
     let app_build = app.clone();
     let app_load = app.clone();
