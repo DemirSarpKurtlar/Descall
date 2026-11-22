@@ -389,6 +389,14 @@
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
     }
+    // Alt+Space: the window menu, as on a captioned window (Electron's frameless window got it
+    // from Windows). WebView2 has the keyboard focus, so the key never reached the window's
+    // default handling. Not AltGr (Ctrl+Alt); the shell skips it when Windows already opened
+    // the menu itself.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.code === "Space" || e.key === " ")) {
+      e.preventDefault();
+      fire("window_system_menu", { keyboard: true });
+    }
     // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
     // browser accelerator keys; the shell opens them only in a dev run or with the support
     // opt-in file (webview::devtools_allowed), otherwise the command does nothing.

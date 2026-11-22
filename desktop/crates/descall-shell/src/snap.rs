@@ -86,6 +86,15 @@ pub fn parse_build(s: &str) -> Option<u32> {
     s.trim().parse().ok()
 }
 
+/// Height of the page's title bars in CSS px (electronViewport.js ELECTRON_TITLEBAR_H).
+pub const TITLE_BAR_CSS_PX: f64 = 40.0;
+
+/// Alt+Space: where the window menu opens, in screen pixels. A captioned window opens it under
+/// its caption at the left edge; here the caption is the page's title bar.
+pub fn keyboard_menu_point(window_top_left: (i32, i32), title_bar_px: i32) -> (i32, i32) {
+    (window_top_left.0, window_top_left.1 + title_bar_px.max(0))
+}
+
 /// What the pointer did on the sink (non-client mouse messages).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pointer {
@@ -198,6 +207,13 @@ mod tests {
         assert!(!sink_enabled(Some(26100), true), "support kill switch");
         assert_eq!(parse_build(" 26100 "), Some(26100));
         assert_eq!(parse_build("x"), None);
+    }
+
+    #[test]
+    fn alt_space_opens_the_menu_under_the_title_bar() {
+        assert_eq!(keyboard_menu_point((100, 50), 48), (100, 98));
+        assert_eq!(keyboard_menu_point((-1920, 0), 32), (-1920, 32), "left monitor");
+        assert_eq!(keyboard_menu_point((0, 0), -5), (0, 0));
     }
 
     #[test]

@@ -255,4 +255,17 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   assert.match(shimSrc, /setInterval\(snapSoon, 1000\)/);
 }
 
+// 6. Alt+Space opens the window menu (keyboard position); AltGr+Space and Space do not.
+{
+  const s = loadShim();
+  const menus = () => s.invokes.filter(([c]) => c === "window_system_menu");
+  const ev = s.key(" ", { code: "Space", altKey: true });
+  assert.equal(ev.defaultPrevented, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(menus())), [["window_system_menu", { keyboard: true }]]);
+  s.key(" ", { code: "Space", altKey: true, ctrlKey: true });
+  s.key(" ", { code: "Space" });
+  s.key(" ", { code: "Space", altKey: true, repeat: true });
+  assert.equal(menus().length, 1, "AltGr, plain Space and auto-repeat leave it alone");
+}
+
 console.log("window-shim.test: ok");

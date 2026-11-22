@@ -82,28 +82,78 @@ pub fn window_focus<R: Runtime>(window: WebviewWindow<R>) {
 /// window menu (Restore, Move, Size, Minimize, Maximize, Close) at the cursor. Electron's
 /// app-region caption gave it natively; Tauri's drag regions are page script. The menu runs
 /// its own modal loop, so it goes to the event loop instead of running inside the IPC call.
+///
+/// `keyboard`: Alt+Space (electron-api-shim.js). Focus is in WebView2's own window there, so
+/// the key never reached the window's default handling; the menu opens under the title bar at
+/// the window's left edge, as a captioned window's does, unless Windows already opened it.
 #[tauri::command]
-pub async fn window_system_menu<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_system_menu<R: Runtime>(window: WebviewWindow<R>, keyboard: Option<bool>) {
     #[cfg(windows)]
     {
         let Some(h) = window.hwnd().ok().map(|h| h.0 as isize) else { return };
-        let _ = window.run_on_main_thread(move || show_system_menu(h));
+        let keyboard = keyboard.unwrap_or(false);
+        let title_bar = (descall_shell::snap::TITLE_BAR_CSS_PX * window.scale_factor().unwrap_or(1.0)).round() as i32;
+        let _ = window.run_on_main_thread(move || {
+            if keyboard {
+                show_system_menu_for_keyboard(h, title_bar);
+            } else {
+                show_system_menu(h);
+            }
+        });
     }
     #[cfg(not(windows))]
     {
-        let _ = window;
+        let _ = (window, keyboard);
+    }
+}
+
+#[cfg(windows)]
+fn show_system_menu_for_keyboard(h: isize, title_bar: i32) {
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::System::Threading::GetCurrentThreadId;
+    use windows::Win32::UI::WindowsAndMessaging::{GetGUIThreadInfo, GetWindowRect, IsIconic, GUITHREADINFO, GUI_INMENUMODE, GUI_SYSTEMMENUMODE};
+    unsafe {
+        let hwnd = HWND(h as *mut core::ffi::c_void);
+        // Windows (or WebView2) may have opened the menu for the key already: never a second one.
+        let mut info = GUITHREADINFO { cbSize: std::mem::size_of::<GUITHREADINFO>() as u32, ..Default::default() };
+        if GetGUIThreadInfo(GetCurrentThreadId(), &mut info).is_ok() && (info.flags.0 & (GUI_INMENUMODE.0 | GUI_SYSTEMMENUMODE.0)) != 0 {
+            return;
+        }
+        if IsIconic(hwnd).as_bool() {
+            return;
+        }
+        let mut rc = RECT::default();
+        if GetWindowRect(hwnd, &mut rc).is_err() {
+            return;
+        }
+        let (x, y) = descall_shell::snap::keyboard_menu_point((rc.left, rc.top), title_bar);
+        track_system_menu(hwnd, x, y);
     }
 }
 
 #[cfg(windows)]
 pub(crate) fn show_system_menu(h: isize) {
-    use windows::Win32::Foundation::{HWND, LPARAM, POINT, WPARAM};
+    use windows::Win32::Foundation::{HWND, POINT};
+    use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+    unsafe {
+        let mut pt = POINT::default();
+        if GetCursorPos(&mut pt).is_err() {
+            return;
+        }
+        track_system_menu(HWND(h as *mut core::ffi::c_void), pt.x, pt.y);
+    }
+}
+
+/// The window menu at a screen point, with the items a captioned window enables in its state;
+/// the chosen command goes to the window as WM_SYSCOMMAND.
+#[cfg(windows)]
+fn track_system_menu(hwnd: windows::Win32::Foundation::HWND, x: i32, y: i32) {
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
-        EnableMenuItem, GetCursorPos, GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, MENU_ITEM_FLAGS, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE,
-        SC_RESTORE, SC_SIZE, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_SYSCOMMAND,
+        EnableMenuItem, GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, MENU_ITEM_FLAGS, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE, SC_RESTORE, SC_SIZE,
+        TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_SYSCOMMAND,
     };
     unsafe {
-        let hwnd = HWND(h as *mut core::ffi::c_void);
         let menu = GetSystemMenu(hwnd, false);
         if menu.is_invalid() {
             return;
@@ -115,12 +165,8 @@ pub(crate) fn show_system_menu(h: isize) {
         let _ = EnableMenuItem(menu, SC_MAXIMIZE, state(!maximized));
         let _ = EnableMenuItem(menu, SC_MOVE, state(!maximized));
         let _ = EnableMenuItem(menu, SC_SIZE, state(!maximized));
-        let mut pt = POINT::default();
-        if GetCursorPos(&mut pt).is_err() {
-            return;
-        }
         let _ = SetForegroundWindow(hwnd);
-        let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, None, hwnd, None);
+        let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, x, y, None, hwnd, None);
         if cmd.0 != 0 {
             // SC_CLOSE becomes WM_CLOSE: the main window still hides to the tray.
             let _ = PostMessageW(Some(hwnd), WM_SYSCOMMAND, WPARAM(cmd.0 as usize), LPARAM(0));
