@@ -443,7 +443,9 @@ pub fn background_notice_due(dir: &std::path::Path) -> bool {
 /// the capsule is a new window.
 fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
     let Some(dir) = crate::state::data_dir(app) else { return };
-    if !background_notice_due(&dir) {
+    // A user moved over from Electron already saw it there (same marker in %APPDATA%\Descall).
+    let seen_in_electron = app.path().data_dir().ok().is_some_and(|d| d.join(descall_migrate::paths::ELECTRON_USER_DATA).join(BACKGROUND_NOTICE).exists());
+    if !background_notice_due(&dir) || seen_in_electron {
         return;
     }
     let app = app.clone();
@@ -636,6 +638,14 @@ mod window_state_tests {
         let top = Screen { x: 0, y: -2100, width: 3840, height: 2100, scale: 1.5 };
         let (_, corner) = restore_physical(-12, -2112, Some(1400.0), Some(900.0), &[LAPTOP, top]).expect("slack on the upper screen");
         assert_eq!(corner, (0, -2100));
+    }
+
+    #[test]
+    fn the_background_notice_is_not_repeated_after_the_move() {
+        let src = include_str!("boot.rs");
+        let f = &src[src.find("fn background_notice_once").unwrap()..];
+        let f = &f[..f.find("show_capsule").unwrap()];
+        assert!(f.contains("ELECTRON_USER_DATA).join(BACKGROUND_NOTICE).exists()") && f.contains("|| seen_in_electron"));
     }
 
     #[test]
