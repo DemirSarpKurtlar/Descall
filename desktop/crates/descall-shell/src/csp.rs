@@ -87,7 +87,7 @@ mod tests {
         }
         assert!(conf["app"]["security"].get("dangerousRemoteDomainIpcAccess").is_none());
         assert!(conf["app"]["security"].get("assetProtocol").is_none_or(|a| a["enable"] != true), "no asset protocol file access");
-        for (name, header) in [("shell pages", crate::pages::CSP), ("HUD", include_str!("../../../app/src-tauri/src/premium/overlay.rs"))] {
+        for (name, header) in [("shell pages", crate::pages::CSP), ("HUD", crate::pages::HUD_CSP)] {
             assert!(header.contains("default-src 'none'"), "{name}");
         }
         let main = include_str!("../../../app/src-tauri/src/main.rs");
