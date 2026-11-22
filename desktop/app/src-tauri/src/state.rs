@@ -30,6 +30,10 @@ pub struct Shell {
     pub minimized: AtomicBool,
     /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
     pub deep_link: Mutex<Option<String>>,
+    /// A second launch asked for the window before it existed (WebView2 creation pumps
+    /// messages during setup): setup shows it once built, also on a hidden auto-start
+    /// (main.cjs second-instance set userRequestedShow for the same case).
+    pub show_requested: AtomicBool,
 }
 
 #[derive(Default)]
@@ -67,7 +71,11 @@ pub fn app_in_background<R: Runtime>(app: &AppHandle<R>) -> bool {
 
 /// Bring the main window up (tray click, second launch, notification click).
 pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(w) = main_window(app) {
+    let Some(w) = main_window(app) else {
+        shell(app).show_requested.store(true, Ordering::Release);
+        return;
+    };
+    {
         let _ = w.set_skip_taskbar(false);
         let _ = w.show();
         let _ = w.unminimize();

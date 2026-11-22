@@ -236,6 +236,11 @@ fn main() {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
                 }
             }
+            // A second launch (shortcut, taskbar, descall:// link) during the window's creation
+            // found no window to raise: honour it now, whatever the start mode.
+            if state::shell(&handle).show_requested.swap(false, std::sync::atomic::Ordering::AcqRel) && launch.action != StartAction::Show {
+                state::show_main(&handle);
+            }
 
             if !state::is_dev() {
                 // descall:// opens this exe (HKCU\Software\Classes\descall), also after a
@@ -347,6 +352,12 @@ mod config_tests {
         let cb = &builder[first_plugin..first_plugin + 400];
         assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::show_main(app)"));
         assert!(main.contains("commands::app::deep_link_take,"));
+        // A second launch before the main window exists is kept and honoured after setup
+        // (an auto-started hidden app opened from its shortcut during boot stayed hidden).
+        let state = include_str!("state.rs");
+        assert!(state.contains("let Some(w) = main_window(app) else {\n        shell(app).show_requested.store(true"));
+        let after_build = &main[main.find("StartAction::Hide => {").unwrap()..];
+        assert!(after_build.contains("show_requested.swap(false"));
     }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
     /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,
