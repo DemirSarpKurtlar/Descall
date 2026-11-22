@@ -27,6 +27,8 @@ struct Inner {
     version: Option<String>,
     staged: Option<(tauri_plugin_updater::Update, Vec<u8>)>,
     check_in_flight: bool,
+    /// Version being downloaded right now (a check that finds one in flight reports it).
+    downloading: Option<String>,
     install_started: bool,
     poll_running: bool,
     last_hold: Option<&'static str>,
@@ -214,13 +216,19 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
         let u = app.state::<Updates>();
         let mut i = u.inner.lock().unwrap();
         if i.deferral.update_ready || i.check_in_flight {
-            return Ok(json!({ "success": true, "updateInfo": null, "available": i.deferral.update_ready, "updateReady": i.deferral.update_ready, "updateVersion": i.version }));
+            // Settings > Desktop app "Check" during a download used to read "up to date".
+            return Ok(in_flight_result(i.deferral.update_ready, i.version.clone(), i.downloading.clone()));
         }
         i.check_in_flight = true;
     }
     log::info!("[updater] checking ({reason}), current {}", app.package_info().version);
     let result = check_and_stage(&app).await;
-    app.state::<Updates>().inner.lock().unwrap().check_in_flight = false;
+    {
+        let u = app.state::<Updates>();
+        let mut i = u.inner.lock().unwrap();
+        i.check_in_flight = false;
+        i.downloading = None;
+    }
     match result {
         Ok(version) => {
             let (ready, v) = {
@@ -246,6 +254,17 @@ fn check_result(version: Option<String>, ready: bool, ready_version: Option<Stri
         "success": true,
         "available": version.is_some() || ready,
         "updateInfo": version.map(|v| json!({ "version": v })),
+        "updateReady": ready,
+        "updateVersion": ready_version,
+    })
+}
+
+/// check-for-updates while a check / download already runs or an update is staged.
+fn in_flight_result(ready: bool, ready_version: Option<String>, downloading: Option<String>) -> Value {
+    json!({
+        "success": true,
+        "available": ready || downloading.is_some(),
+        "updateInfo": downloading.map(|v| json!({ "version": v })),
         "updateReady": ready,
         "updateVersion": ready_version,
     })
@@ -289,6 +308,7 @@ async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String
     let updater = updater_for(app).map_err(|e| ("check", e.to_string()))?;
     let Some(update) = updater.check().await.map_err(|e| ("check", e.to_string()))? else { return Ok(None) };
     let version = update.version.clone();
+    app.state::<Updates>().inner.lock().unwrap().downloading = Some(version.clone());
     to_main(app, "update:downloading", json!({ "version": version }));
     let app_p = app.clone();
     let (mut got, mut last_emit, started) = (0u64, 0u64, now_ms());
@@ -449,6 +469,12 @@ mod tests {
         assert_eq!(found["available"], json!(true));
         assert_eq!(found["updateInfo"]["version"], json!("4.2.0"));
         assert_eq!(found["updateReady"], json!(true));
+        // A second Check while 4.2.0 downloads: available, not "up to date".
+        let busy = in_flight_result(false, None, Some("4.2.0".into()));
+        assert_eq!(busy["available"], json!(true));
+        assert_eq!(busy["updateInfo"]["version"], json!("4.2.0"));
+        assert_eq!(in_flight_result(false, None, None)["available"], json!(false));
+        assert_eq!(in_flight_result(true, Some("4.2.0".into()), None)["updateReady"], json!(true));
         let long = "x".repeat(500);
         let e = error_payload(&long, "download");
         assert_eq!(e["phase"], json!("download"));
