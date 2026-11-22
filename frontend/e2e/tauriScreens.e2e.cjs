@@ -536,6 +536,9 @@ async function main() {
     await screen('pinned', { open: (click) => click('.icon-btn[aria-label="Sabitlenmiş mesajlar"]'), marker: 'text:Sabitlenmiş mesajlar' });
     await screen('profile-card', { open: (click) => click('.header-avatar'), marker: '[role="dialog"]' });
     await screen('conv-more-menu', { open: async (click) => { await page.locator('.conv-group-wrap.is-active-row').first().hover(); await sleep(200); await click('.conv-group-wrap.is-active-row .conv-more-btn'); }, marker: '[role="menu"], [role="menuitem"]' });
+    // Right-click menus (the shell's own contextmenu listener must not eat the app's menus).
+    const rightClick = (sel) => async () => { await page.locator(sel).first().click({ button: 'right', timeout: 8000 }); };
+    await screen('dm-row-context-menu', { open: rightClick('.conv-group-wrap.is-active-row .dm-item'), marker: '[role="menu"], [role="menuitem"]', modes: [null] });
     await screen('status-menu', { open: (click) => click('.uvp-avatar'), marker: '.status-picker-item' });
     await screen('announcements', { open: (click) => click('.icon-btn[aria-label="Duyurular"]'), marker: '[role="dialog"], [class*="ann-"]' });
     await screen('feedback', { open: (click) => click('.icon-btn[aria-label="Geri Bildirim Gönder"]'), marker: '[role="dialog"]' });
@@ -643,6 +646,7 @@ async function main() {
         modes: [null, 'backgrounded'],
       });
     }
+    await screen('channel-context-menu', { open: rightClick(textEl('genel')), marker: '[role="menu"], [role="menuitem"]', modes: [null] });
     await screen('members', { open: (click) => click('.icon-btn[aria-label="Üyeler"]'), marker: 'text:Arkadaş 3', close: async () => { await realClick('.icon-btn[aria-label="Üyeler"]').catch(() => {}); } , modes: [null] });
     await screen('voice-channel', { open: (click) => click(textEl('Sesli Sohbet')), marker: 'text:Sesli Sohbet', close: async () => {}, modes: [null, 'backgrounded'] });
     await screen('voice-join', {
