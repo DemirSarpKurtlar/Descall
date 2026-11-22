@@ -1,4 +1,6 @@
 import { useLivePreviewTick } from "./useLivePreviewTick.js";
+import { useLocale } from "../../context/LocaleContext";
+import { localText } from "../../lib/shop2Logic.js";
 
 /**
  * Live preview of a call overlay on a shop card: a mini call screen wearing
@@ -10,7 +12,9 @@ import { useLivePreviewTick } from "./useLivePreviewTick.js";
 export default function CallOverlayPreview({ effectKey, name = "", compact = false }) {
   const { ref, still, tick } = useLivePreviewTick();
   const speaker = tick % 2;
-  const me = Array.from(String(name || "D").trim())[0] || "D";
+  const { locale } = useLocale();
+  // Market 2.0 items carry { tr, en, ... } names: String() of that object drew "[" as the letter.
+  const me = Array.from(String(localText(name, locale) || "D").trim())[0] || "D";
   return (
     <div
       ref={ref}

@@ -290,14 +290,32 @@ for (const f of uiFiles) {
 }
 
 // ---------- type scale: only --fs-11/12/13/15/17/20/28 ----------
+// Exception: container units (cqw). The gift preview phone (.s2-gphone) is a scaled
+// picture of a phone screen, not app text; its sizes follow the phone's width.
 const css = readFileSync(join(src, "styles/shop2-ui.css"), "utf8");
 for (const m of css.matchAll(/font(?:-size)?\s*:\s*([^;]+);/g)) {
   const v = m[1];
+  if (/\dcqw/.test(v) && !/px/.test(v)) continue;
   assert.equal(/\d+(\.\d+)?px/.test(v.replace(/\/\s*[\d.]+/, "")) && !/var\(--fs-/.test(v), false, `literal px font size: ${v}`);
   for (const t of v.matchAll(/--fs-(\d+)/g)) assert.ok(["11", "12", "13", "15", "17", "20", "28"].includes(t[1]), `off-scale token --fs-${t[1]}`);
 }
-assert.equal(/font-size:\s*\d/.test(css), false, "no literal font-size");
+assert.equal(/font-size:\s*\d(?![\d.]*cqw)/.test(css), false, "no literal font-size");
+assert.equal([...css.matchAll(/^([^{}\n]+)\{[^}]*font(?:-size)?\s*:[^;]*\dcqw/gm)].every((m) => /\.s2-gphone|\.s2-gopened/.test(m[1])), true, "cqw font sizes only inside the gift preview phone");
 assert.equal(EMOJI.test(css), false, "no emoji in the styles");
+// iPhone landscape: sheets and full-screen windows keep their content out of the notch side,
+// the item drawer out of the status bar and above the home indicator.
+{
+  const rule = (sel) => {
+    const i = css.indexOf(`${sel} {`);
+    return i < 0 ? "" : css.slice(i, css.indexOf("}", i));
+  };
+  const sheetSafe = rule(".s2-layer.is-sheet .s2-layer-panel,\n.s2-layer.is-full .s2-layer-panel");
+  assert.match(sheetSafe, /padding-left:\s*max\(16px, env\(safe-area-inset-left/, "sheet / full: left safe area");
+  assert.match(sheetSafe, /padding-right:\s*max\(16px, env\(safe-area-inset-right/, "sheet / full: right safe area");
+  const side = rule(".s2-layer.is-drawer .s2-layer-panel.s2-side");
+  assert.match(side, /safe-area-inset-top/, "item drawer: status bar");
+  assert.match(side, /safe-area-inset-bottom/, "item drawer: home indicator");
+}
 
 console.log(`shop2Logic.selftest ok (${enKeys.length} strings x ${LOCALES.length} languages, ${uiFiles.length} UI files)`);
 

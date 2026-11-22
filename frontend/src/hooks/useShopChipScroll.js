@@ -25,8 +25,21 @@ function prefersReducedMotion() {
  * from the on-screen offset.
  */
 export function useShopChipScroll({ activeId, onActivate, ready = true }) {
-  const viewportRef = useRef(null);
-  const trackRef = useRef(null);
+  // Callback refs: the strip can mount long after `ready` turns true (Market 2.0 shows it
+  // only on the "Tumu" tab). With plain refs the listener effect ran once against null
+  // nodes and never again, so the chips could not be dragged, wheeled or paged at all.
+  const viewportNode = useRef(null);
+  const trackNode = useRef(null);
+  const [viewportEl, setViewportEl] = useState(null);
+  const [trackEl, setTrackEl] = useState(null);
+  const viewportRef = useCallback((node) => {
+    viewportNode.current = node;
+    setViewportEl(node);
+  }, []);
+  const trackRef = useCallback((node) => {
+    trackNode.current = node;
+    setTrackEl(node);
+  }, []);
   const xRef = useRef(0);
   const maxRef = useRef(0);
   const animRef = useRef(0);
@@ -39,15 +52,15 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
     const max = maxRef.current;
     const next = Number.isFinite(x) ? x : 0;
     xRef.current = next;
-    const track = trackRef.current;
+    const track = trackNode.current;
     if (track) track.style.transform = `translate3d(${(-next).toFixed(2)}px,0,0)`;
     const edge = overflowEdges(next, max);
     setEdges((prev) => (prev.left === edge.left && prev.right === edge.right ? prev : edge));
   }, []);
 
   const measure = useCallback(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
+    const viewport = viewportNode.current;
+    const track = trackNode.current;
     if (!viewport || !track) return 0;
     const max = Math.max(0, track.scrollWidth - viewport.clientWidth);
     maxRef.current = max;
@@ -91,8 +104,8 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
 
   useEffect(() => {
     reducedRef.current = prefersReducedMotion();
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
+    const viewport = viewportNode.current;
+    const track = trackNode.current;
     if (!ready || !viewport || !track) return undefined;
 
     let pointerId = null;
@@ -149,6 +162,11 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
       viewport.classList.remove("is-dragging");
       if (!dragging) return;
       dragging = false;
+      // Touch pans usually end with no click at all: clear the flag after this tick, or the
+      // next real tap on a chip (the one picking a category) would be swallowed.
+      setTimeout(() => {
+        suppressClick = false;
+      }, 0);
       const velocity = computeVelocity(samples);
       const offset = xRef.current;
       const max = maxRef.current;
@@ -210,11 +228,11 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
       window.removeEventListener("resize", onResize);
       observer?.disconnect();
     };
-  }, [animateTo, measure, publish, ready, stop]);
+  }, [animateTo, measure, publish, ready, stop, viewportEl, trackEl]);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
+    const viewport = viewportNode.current;
+    const track = trackNode.current;
     if (!ready || !viewport || !track || activeId == null) return undefined;
     const tab = track.querySelector(`[data-tab-id="${CSS.escape(String(activeId))}"]`);
     if (!tab) return undefined;
@@ -228,11 +246,11 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
     );
     if (Math.abs(next - xRef.current) > 1) animateTo(next, 0, { dampingRatio: 1 });
     return undefined;
-  }, [activeId, animateTo, measure, ready]);
+  }, [activeId, animateTo, measure, ready, viewportEl, trackEl]);
 
   const scrollByPage = useCallback((direction) => {
     reducedRef.current = prefersReducedMotion();
-    const viewport = viewportRef.current;
+    const viewport = viewportNode.current;
     measure();
     const dest = pageOffset(xRef.current, maxRef.current, viewport?.clientWidth || 0, direction);
     animateTo(dest, 0, { dampingRatio: 1 });
@@ -240,7 +258,7 @@ export function useShopChipScroll({ activeId, onActivate, ready = true }) {
 
   const onKeyDown = useCallback((event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    const track = trackRef.current;
+    const track = trackNode.current;
     if (!track) return;
     const tabs = [...track.querySelectorAll("[data-tab-id]")];
     if (!tabs.length) return;

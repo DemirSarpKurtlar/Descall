@@ -492,6 +492,8 @@ export const SHOP2_TR = {
     "saveDraft": "Taslağa kaydet",
     "draftSaved": "Taslak kaydedildi",
     "send": "Gönder",
+    "pickFriendFirst": "Önce bir arkadaş seç",
+    "pickFutureTime": "Gelecekte bir zaman seç",
     "schedule": "Hediyeyi zamanla",
     "sent": "Gönderildi: {name}",
     "scheduled": "Zamanlandı: {name}",
@@ -585,7 +587,8 @@ export const SHOP2_TR = {
     "undo": "Geri alınamadı.",
     "share": "Şu an paylaşılamadı.",
     "open": "Paket açılamadı.",
-    "thank": "Teşekkür gönderilemedi."
+    "thank": "Teşekkür gönderilemedi.",
+    "equip": "Kuşanma değiştirilemedi. Tekrar dene."
   },
   "look": {
     "newSet": "Yeni görünüm · set",
@@ -599,6 +602,7 @@ export const SHOP2_TR = {
     "body": "Yeni görünümün seçtiğin arkadaşlara sohbette kart olarak gider.",
     "note": "Not",
     "notePh": "Bir not ekle (isteğe bağlı)",
+    "loading": "Arkadaşların yükleniyor…",
     "send": "Gönder",
     "chosen": "{n} / {max} seçili",
     "sent": "{n} / {total} kişiye gönderildi",

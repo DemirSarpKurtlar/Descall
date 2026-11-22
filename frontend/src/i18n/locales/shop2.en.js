@@ -492,6 +492,8 @@ export const SHOP2_EN = {
     "saveDraft": "Save draft",
     "draftSaved": "Draft saved",
     "send": "Send",
+    "pickFriendFirst": "Pick a friend first",
+    "pickFutureTime": "Pick a time in the future",
     "schedule": "Schedule gift",
     "sent": "Sent to {name}",
     "scheduled": "Scheduled for {name}",
@@ -585,7 +587,8 @@ export const SHOP2_EN = {
     "undo": "Couldn't undo that.",
     "share": "Couldn't share it right now.",
     "open": "Couldn't open the package.",
-    "thank": "Couldn't send the thank-you."
+    "thank": "Couldn't send the thank-you.",
+    "equip": "Couldn't change what you're wearing. Try again."
   },
   "look": {
     "newSet": "New look · set",
@@ -599,6 +602,7 @@ export const SHOP2_EN = {
     "body": "Your new look goes to the friends you pick as a card in chat.",
     "note": "Note",
     "notePh": "Add a note (optional)",
+    "loading": "Loading your friends…",
     "send": "Send",
     "chosen": "{n} / {max} picked",
     "sent": "Sent to {n} of {total}",

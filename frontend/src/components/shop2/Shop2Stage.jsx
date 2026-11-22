@@ -14,6 +14,14 @@ const nameOfMember = (m) => m?.displayName || m?.display_name || m?.nickname || 
 const textOf = (msg) => String(msg?.content ?? msg?.text ?? msg?.body ?? "").trim();
 const authorOf = (msg) => msg?.author?.displayName || msg?.author?.display_name || msg?.author?.username || msg?.user?.displayName || msg?.user?.username || msg?.senderName || msg?.username || "";
 
+/** The first 5 channels, plus the chosen voice channel when it sits further down the list
+ *  (the user's own row lives under it: with 6+ channels it used to vanish from the stage). */
+export function firstChannels(channels, voice, max = 5) {
+  const list = (channels || []).slice(0, max);
+  if (voice && !list.some((c) => String(c.id) === String(voice.id))) list.push(voice);
+  return list;
+}
+
 /** Loads the user's servers and, for the chosen one, its channels, members and messages. */
 export function useStage() {
   const s2 = useS2();
@@ -35,6 +43,11 @@ export function useStage() {
   useEffect(() => {
     if (!serverId) return undefined;
     let off = false;
+    // Another server picked: drop the previous one's channels, members and messages first, or a
+    // server without a text channel (or a failed load) kept showing the old server's chat.
+    setServer(null);
+    setMembers([]);
+    setMessages([]);
     shop2Api.server(serverId).then((res) => {
       if (off) return;
       const sv = res?.server || res;
@@ -144,7 +157,7 @@ export default function Shop2Stage({ user, stage, compact = false, joinName }) {
     <div className="s2-stage">
       <nav className="s2-stage-channels" aria-label={t("shop2.stage.channels")}>
         <b className="s2-stage-server">{stage.server?.name || t("shop2.stage.sampleServer")}</b>
-        {(stage.channels.length ? stage.channels.slice(0, 5) : [
+        {(stage.channels.length ? firstChannels(stage.channels, stage.voice) : [
           { id: "a", name: t("shop2.stage.general"), type: "text" },
           { id: "b", name: t("shop2.stage.clips"), type: "text" },
           { id: "c", name: t("shop2.stage.gameNight"), type: "voice" },

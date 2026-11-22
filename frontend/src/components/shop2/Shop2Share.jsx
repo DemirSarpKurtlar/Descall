@@ -16,7 +16,9 @@ const nameOf = (f) => f?.displayName || f?.display_name || f?.username || "";
 export default function Shop2Share({ target, onClose }) {
   const { t } = useLocale();
   const s2 = useS2();
-  const [friends, setFriends] = useState([]);
+  // null while loading: "Henüz arkadaşın yok" flashed before the list arrived.
+  const [friends, setFriends] = useState(null);
+  const loading = friends == null;
   const [chosen, setChosen] = useState(() => new Set());
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
@@ -25,13 +27,13 @@ export default function Shop2Share({ target, onClose }) {
   const [err, setErr] = useState("");
   useEffect(() => {
     let off = false;
-    shop2Api.friends().then((r) => !off && setFriends(Array.isArray(r?.friends) ? r.friends : [])).catch(() => {});
+    shop2Api.friends().then((r) => !off && setFriends(Array.isArray(r?.friends) ? r.friends : [])).catch(() => !off && setFriends([]));
     return () => {
       off = true;
     };
   }, []);
-  const shown = useMemo(() => filterRecipients(friends, "all", query), [friends, query]);
-  const byId = useMemo(() => new Map(friends.map((f) => [String(f.id), f])), [friends]);
+  const shown = useMemo(() => filterRecipients(friends || [], "all", query), [friends, query]);
+  const byId = useMemo(() => new Map((friends || []).map((f) => [String(f.id), f])), [friends]);
   const toggle = (id) => {
     const next = new Set(chosen);
     if (next.has(id)) next.delete(id);
@@ -73,7 +75,7 @@ export default function Shop2Share({ target, onClose }) {
       <p className="s2-muted">{t("shop2.share.body")}</p>
       <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       <div className="s2-share-list" role="group" aria-label={t("shop2.share.title")}>
-        {shown.length ? shown.map((f, i) => {
+        {loading ? <div className="s2-skeleton is-rows"><i /><i /><i /></div> : shown.length ? shown.map((f, i) => {
           const on = chosen.has(String(f.id));
           return (
             <button key={f.id} type="button" className={`s2-friend${on ? " is-on" : ""}`} aria-pressed={on} disabled={!on && chosen.size >= MAX} onClick={() => toggle(String(f.id))}>
@@ -82,7 +84,7 @@ export default function Shop2Share({ target, onClose }) {
               <span className={`s2-tick${on ? " is-on" : ""}`}><Check size={12} weight="bold" /></span>
             </button>
           );
-        }) : <p className="s2-muted">{t("shop2.gifts.noFriends")}</p>}
+        }) : <p className="s2-muted" aria-busy={friends == null || undefined}>{t(friends == null ? "shop2.share.loading" : "shop2.gifts.noFriends")}</p>}
       </div>
       <div className="s2-textarea">
         <textarea value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} rows={2} placeholder={t("shop2.share.notePh")} aria-label={t("shop2.share.note")} />

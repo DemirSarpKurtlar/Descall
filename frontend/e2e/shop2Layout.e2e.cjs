@@ -45,6 +45,7 @@ const DAY = 86400000;
 const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const iso = (t) => new Date(t).toISOString();
 let requests = [];
+const CLASSIC_CATS = ['banner', 'avatar_effect', 'profile_color', 'theme', 'countries', 'name_effect', 'chat_bubble', 'presence_flare', 'profile_aura', 'typing_flare', 'reaction_burst', 'call_overlay'];
 
 function boot() {
   const now = Date.now();
@@ -92,6 +93,8 @@ function boot() {
       if (/\/auth\/me$/.test(url.pathname)) return res.json({ user: me });
       if (/\/friends(\/list)?$/.test(url.pathname)) return res.json({ friends });
       if (/\/promo\//.test(url.pathname)) return res.json({ popup: null, codes: [], items: [], unseen: 0, count: 0 });
+      // Classic catalogue ("Tum urunler"): two items in every category, so the chip strip overflows.
+      if (/^\/api\/shop\/catalog$/.test(url.pathname)) return res.json({ items: CLASSIC_CATS.flatMap((c, i) => [0, 1].map((k) => ({ id: `c-${c}-${k}`, name: `${c} ${k + 1}`, category: c, price_descoin: 300 + i * 50 + k * 10, rarity: 'common' }))) });
       const last = url.pathname.split('/').filter(Boolean).pop() || 'items';
       const out = { items: [], friends: [], requests: [], servers: [], groups: [], conversations: [], messages: [], notifications: [], prefs: {}, inventory: [] };
       out[last] = Array.isArray(out[last]) ? out[last] : [];
@@ -160,6 +163,12 @@ async function run(browser, base, boot0, r, problems) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
   const phone = r.name === 'iphone';
+  // iPhone: a 47 px status bar and a 34 px home indicator, as env(safe-area-inset-*).
+  let insets = false;
+  if (phone) {
+    const cdp = await ctx.newCDPSession(page);
+    insets = await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, bottom: 34, left: 0, right: 0 } }).then(() => true, () => false);
+  }
   try {
     await page.goto(`${base}/settings/shop`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitFor(page, `${r.name} market`, () => !!document.querySelector('.s2-root .s2-body .s2-card') && !document.getElementById('boot-splash'));
@@ -173,6 +182,68 @@ async function run(browser, base, boot0, r, problems) {
 
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     check((await overflow()) <= 0, 'no horizontal page overflow (Vitrin)');
+
+    // Featured set banner: prev / next, the "Siradaki" chip, dots, swipe (touch), arrow keys.
+    {
+      await waitFor(page, `${r.name} banner`, () => !!document.querySelector('.s2-banner .s2-banner-nav'));
+      const title = () => page.evaluate(() => document.querySelector('.s2-banner h2')?.textContent || '');
+      const t0 = await title();
+      await page.click('.s2-banner .s2-banner-step.is-next');
+      await sleep(300);
+      const t1 = await title();
+      check(t1 && t1 !== t0, `banner next button switches the set (${t0} -> ${t1})`);
+      await page.click('.s2-banner .s2-banner-step.is-prev');
+      await sleep(300);
+      check((await title()) === t0, 'banner prev button goes back');
+      await page.click('.s2-banner .s2-banner-next');
+      await sleep(300);
+      check((await title()) === t1, '"Siradaki" chip opens the next set');
+      await page.evaluate(() => document.querySelector('.s2-banner-nav').scrollIntoView({ block: 'center' }));
+      await sleep(200);
+      const dots = await page.evaluate(() => [...document.querySelectorAll('.s2-banner-nav .s2-dots button')].map((b) => {
+        const r0 = b.getBoundingClientRect();
+        const cx = r0.left + r0.width / 2; const cy = r0.top + r0.height / 2;
+        const miss = [[cx, cy - 10], [cx - 7, cy], [cx + 7, cy]].map(([x, y]) => document.elementFromPoint(x, y)).filter((h) => !b.contains(h));
+        return miss.length ? `miss:${miss.map((h) => h?.className).join('/')}` : true;
+      }));
+      check(dots.length >= 2 && dots.every((d) => d === true), `banner dots have a large tap area (${dots.join(',')})`);
+      const steps = await page.evaluate(() => [...document.querySelectorAll('.s2-banner-step')].map((b) => Math.round(b.getBoundingClientRect().width)));
+      check(steps.every((w) => w >= (phone ? 36 : 30)), `banner prev / next are big enough (${steps.join(',')})`);
+      if (phone) {
+        const swiped = await page.evaluate(async () => {
+          const el = document.querySelector('.s2-banner');
+          const b = el.getBoundingClientRect();
+          const before = el.querySelector('h2').textContent;
+          const ev = (type, x) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: b.top + 40 }));
+          ev('pointerdown', b.left + b.width * 0.8); ev('pointermove', b.left + b.width * 0.5); ev('pointerup', b.left + b.width * 0.2);
+          await new Promise((res) => setTimeout(res, 300));
+          return { before, after: document.querySelector('.s2-banner h2').textContent, ta: getComputedStyle(el).touchAction };
+        });
+        check(swiped.after !== swiped.before && /pan-y/.test(swiped.ta), `swipe left on the banner shows the next set (${swiped.before} -> ${swiped.after}, ${swiped.ta})`);
+        const navFits = await page.evaluate(() => { const n = document.querySelector('.s2-banner-nav').getBoundingClientRect(); const b = document.querySelector('.s2-banner').getBoundingClientRect(); return n.left >= b.left && n.right <= b.right + 0.5; });
+        check(navFits, 'banner set switcher stays inside the banner');
+      } else {
+        await page.focus('.s2-banner .s2-banner-step.is-next');
+        const k0 = await title();
+        await page.keyboard.press('ArrowRight');
+        await sleep(300);
+        check((await title()) !== k0, 'ArrowRight in the banner shows the next set');
+        await page.evaluate(() => document.activeElement?.blur?.());
+      }
+      await shot(page, `${r.name}-banner`);
+    }
+
+    // Top tabs (Vitrin ... Tumu) reach the last tab.
+    {
+      const tabs = await page.evaluate(() => {
+        const bar = [...document.querySelectorAll('.s2-tabs, .s2-ptabs')].find((n) => n.getBoundingClientRect().width > 0);
+        const all = bar.querySelectorAll('[role="tab"]');
+        const last = all[all.length - 1];
+        const cs = getComputedStyle(bar);
+        return { scrolls: bar.scrollWidth <= bar.clientWidth + 1 || /auto|scroll/.test(cs.overflowX), lastW: last.getBoundingClientRect().width };
+      });
+      check(tabs.scrolls && tabs.lastW > 0, 'top tabs fit or scroll sideways');
+    }
 
     // A tab opened from the middle of Vitrin starts at its top.
     await page.evaluate(() => {
@@ -215,6 +286,14 @@ async function run(browser, base, boot0, r, problems) {
       await sleep(1500);
       const s1 = await strip();
       check(s1.max - s1.sl < 2, 'picking the last set brings it into view');
+      await page.focus('.s2-switch > button.is-on');
+      await page.keyboard.press('Home');
+      await sleep(900);
+      const first = await page.evaluate(() => { const b = document.querySelectorAll('.s2-switch > button'); return { on: b[0].classList.contains('is-on'), focus: document.activeElement === b[0] }; });
+      check(first.on && first.focus, `Home in the set switcher picks and focuses the first set (${JSON.stringify(first)})`);
+      await page.keyboard.press('ArrowRight');
+      await sleep(600);
+      check(await page.evaluate(() => document.querySelectorAll('.s2-switch > button')[1].classList.contains('is-on')), 'ArrowRight in the set switcher picks the next set');
     } else {
       const dots = await page.evaluate(() => {
         const small = document.querySelector('.s2-pdots small');
@@ -226,6 +305,62 @@ async function run(browser, base, boot0, r, problems) {
     }
     check((await overflow()) <= 0, 'no horizontal page overflow (Setler)');
 
+    // Tumu: the classic catalogue category chips (mount only on this tab) drag, wheel and page.
+    {
+      await clickTab(page, 6);
+      await waitFor(page, `${r.name} chips`, () => document.querySelectorAll('.shop-chip-track .shop-category-tab').length > 2);
+      await sleep(600);
+      const chip = () => page.evaluate(() => {
+        const vp = document.querySelector('.shop-chip-viewport');
+        const tr = vp.querySelector('.shop-chip-track');
+        const m = /translate3d\((-?[\d.]+)px/.exec(tr.style.transform || '');
+        const next = document.querySelector('.shop-chip-arrow.is-next');
+        return { x: m ? -Number(m[1]) : 0, max: tr.scrollWidth - vp.clientWidth, next: !!next && !next.hidden, fadeR: vp.classList.contains('is-fade-right'), w: vp.clientWidth };
+      });
+      const c0 = await chip();
+      if (c0.max > 4) {
+        check(c0.fadeR, `chip strip shows the right fade when more chips are hidden (${c0.max}px more)`);
+        if (phone) {
+          const moved = await page.evaluate(async () => {
+            const vp = document.querySelector('.shop-chip-viewport');
+            const b = vp.getBoundingClientRect();
+            const y = b.top + b.height / 2;
+            const fire = (target, type, x) => target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 9, pointerType: 'touch', isPrimary: true, button: 0, clientX: x, clientY: y }));
+            fire(vp, 'pointerdown', b.right - 20);
+            for (let i = 1; i <= 8; i += 1) { fire(window, 'pointermove', b.right - 20 - i * 30); await new Promise((r0) => setTimeout(r0, 16)); }
+            fire(window, 'pointerup', b.right - 260);
+            await new Promise((r0) => setTimeout(r0, 900));
+            return true;
+          });
+          const c1 = await chip();
+          check(moved && c1.x > 60, `touch drag scrolls the category chips (${Math.round(c1.x)}px)`);
+        } else {
+          check(c0.next, 'chip strip next arrow shows on desktop');
+          const box = await (await page.$('.shop-chip-viewport')).boundingBox();
+          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+          for (let i = 0; i < 3; i += 1) { await page.mouse.wheel(0, 120); await sleep(50); }
+          await sleep(300);
+          check((await chip()).x > 60, 'mouse wheel scrolls the category chips');
+        }
+        await page.evaluate(() => { const b = [...document.querySelectorAll('.shop-chip-track .shop-category-tab')]; b[b.length - 1].click(); });
+        await sleep(1200);
+        const c2 = await chip();
+        check(c2.max - c2.x < 2, `picking the last category brings it into view (${Math.round(c2.x)} / ${Math.round(c2.max)})`);
+        const picked = await page.evaluate(() => { const b = [...document.querySelectorAll('.shop-chip-track .shop-category-tab')]; return b[b.length - 1].getAttribute('aria-selected'); });
+        check(picked === 'true', `the first tap after a drag picks the category (aria-selected ${picked})`);
+        if (phone) {
+          const arrows = await page.evaluate(() => [...document.querySelectorAll('.shop-chip-arrow')].filter((a) => a.getBoundingClientRect().width > 0).length);
+          check(arrows === 0, `no chip arrows cover the chips on a touch screen (${arrows})`);
+        }
+      } else {
+        log(`${r.name}: chips fit (${c0.max}px)`);
+      }
+      await shot(page, `${r.name}-chips`);
+      check((await overflow()) <= 0, 'no horizontal page overflow (Tumu)');
+      await clickTab(page, 1);
+      await sleep(400);
+    }
+
     if (r.theme === 'light') {
       const lum = await page.evaluate(() => {
         const h = document.querySelector('.s2-hero h1, .s2-pset-title b');
@@ -236,6 +371,52 @@ async function run(browser, base, boot0, r, problems) {
       await ctx.close();
       return;
     }
+
+    // Hediyeler: the phone preview is a real phone shape with nothing clipped; on iPhone the
+    // full screen scrolls below the status bar (rows never draw over the clock).
+    await clickTab(page, 4);
+    await waitFor(page, `${r.name} gifts`, () => !!document.querySelector('.s2-gphone-screen .s2-gopen') && !!document.querySelector('.s2-friend'));
+    await sleep(900);
+    await shot(page, `${r.name}-gifts`);
+    if (SHOTS) await (await page.$('.s2-gprev'))?.screenshot({ path: path.join(SHOTS, `${r.name}-gifts-preview.jpg`), type: 'jpeg', quality: 70 });
+    const gp = await page.evaluate(() => [...document.querySelectorAll('.s2-gphone-screen')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => {
+      const b = el.getBoundingClientRect();
+      const inner = [...el.querySelectorAll('.s2-gopen, .s2-gopened, .s2-gphone-home, .s2-gphone-time b')].map((n) => n.getBoundingClientRect());
+      return { ratio: b.height / b.width, w: b.width, inside: inner.every((x) => x.top >= b.top - 0.5 && x.bottom <= b.bottom + 0.5 && x.left >= b.left - 0.5 && x.right <= b.right + 0.5) };
+    }));
+    check(gp.length > 0 && gp.every((x) => Math.abs(x.ratio - 19.5 / 9) < 0.08), `gift phone preview has a phone aspect ratio (${gp.map((x) => x.ratio.toFixed(2)).join(', ')})`);
+    check(gp.every((x) => x.inside), 'gift card, clock and home indicator stay inside the phone screen');
+    if (phone) {
+      const sb = await page.evaluate(() => {
+        const panel = document.querySelector('.s2-layer.is-full .s2-layer-panel');
+        panel.scrollTop = 220;
+        const top = panel.getBoundingClientRect().top;
+        const hit = document.elementFromPoint(120, 20);
+        // Just under the status bar: the sticky title's own background, not a scrolled row.
+        const below = document.elementFromPoint(120, top + 4);
+        return { top, overClock: !!hit && !!hit.closest('.s2-layer-panel'), gap: !!below && !below.closest('.s2-fullhead') };
+      });
+      await sleep(200);
+      await shot(page, `${r.name}-gifts-scrolled`);
+      check(!insets || sb.top >= 47, `gifts scroll box starts below the status bar (top ${Math.round(sb.top)}, insets ${insets})`);
+      check(!insets || !sb.overClock, 'scrolled gift rows do not draw over the status bar');
+      check(!sb.gap, 'no strip of scrolled rows between the status bar and the title');
+      const hd = await page.evaluate(() => {
+        const h = document.querySelector('.s2-layer.is-full .s2-fullhead');
+        const x = h.querySelector('.s2-x').getBoundingClientRect();
+        const hit = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2);
+        return { top: h.getBoundingClientRect().top, xOk: !!hit && !!hit.closest('.s2-x') };
+      });
+      check(hd.xOk && (!insets || hd.top >= 47), `"Hediyeler" title and close stay on top while scrolled (top ${Math.round(hd.top)})`);
+      const note = await page.evaluate(() => document.querySelector('.s2-gifts .s2-gfoot-note')?.textContent || '');
+      check(/arkadaş seç/.test(note), `"Gonder" off without a friend says why (${note})`);
+      await page.evaluate(() => { const p = document.querySelector('.s2-layer.is-full .s2-layer-panel'); p.scrollTop = p.scrollHeight; });
+      await sleep(300);
+      await shot(page, `${r.name}-gifts-bottom`);
+      await page.evaluate(() => document.querySelector('.s2-layer.is-full .s2-fullhead .s2-x').click());
+      await sleep(700);
+    }
+    check((await overflow()) <= 0, 'no horizontal page overflow (Hediyeler)');
 
     // Drawer / sheet from a Vitrin card.
     await clickTab(page, 0);
@@ -251,11 +432,59 @@ async function run(browser, base, boot0, r, problems) {
       }
       check(out === 0, `Tab stays inside the drawer (${out} escapes)`);
     }
+    if (phone) {
+      // Item sheet on the iPhone: head row and buy row inside the screen, nothing clipped.
+      const sheet = await page.evaluate(() => {
+        const p = document.querySelector('.s2-layer-panel');
+        const x = p.querySelector('.s2-x').getBoundingClientRect();
+        p.scrollTop = p.scrollHeight;
+        const buy = p.querySelector('.s2-detail-actions').getBoundingClientRect();
+        const pr = p.getBoundingClientRect();
+        return { top: pr.top, x: x.right <= innerWidth && x.top >= pr.top, buy: buy.bottom <= innerHeight && buy.top >= pr.top && buy.right <= innerWidth, w: pr.width };
+      });
+      check(sheet.top >= 0 && sheet.x, `item sheet head row inside the screen (top ${Math.round(sheet.top)})`);
+      check(sheet.buy, 'item sheet buy row reachable inside the screen');
+    }
     await page.evaluate(() => document.activeElement?.blur?.());
     await page.keyboard.press('Escape');
     await sleep(900);
     const after = await page.evaluate(() => ({ layer: !!document.querySelector('.s2-layer'), settings: !!document.querySelector('.user-settings .s2-root') }));
     check(!after.layer && after.settings, `Escape closes only the layer (layer ${after.layer}, settings ${after.settings})`);
+
+    if (phone) {
+      // Gift composer from the detail sheet (full screen on iPhone): its head sits below the
+      // status bar, only its body scrolls, the "Gonder" foot clears the home indicator.
+      await page.click('.s2-card .s2-card-art');
+      await waitFor(page, 'detail gift button', () => !!document.querySelector('.s2-layer button[aria-label="Hediye et"]'));
+      await sleep(500);
+      await page.evaluate(() => document.querySelector('.s2-layer button[aria-label="Hediye et"]').click());
+      await waitFor(page, 'gift composer', () => !!document.querySelector('.s2-layer.is-full .s2-gdrawer .s2-friend'));
+      await sleep(700);
+      const gd = await page.evaluate(() => {
+        const body = document.querySelector('.s2-gdrawer-body');
+        body.scrollTop = 300;
+        const head = document.querySelector('.s2-gdrawer-head').getBoundingClientRect();
+        const foot = document.querySelector('.s2-gdrawer .s2-gfoot');
+        const fb = foot.getBoundingClientRect();
+        const hit = document.elementFromPoint(120, 20);
+        return { head: head.top, footBottom: fb.bottom, footPad: parseFloat(getComputedStyle(foot).paddingBottom), h: innerHeight, overClock: !!hit && !!hit.closest('.s2-layer-panel'), scrolls: body.scrollTop > 0 };
+      });
+      await sleep(200);
+      await shot(page, `${r.name}-gift-drawer`);
+      check(!insets || gd.head >= 47, `gift composer head below the status bar (top ${Math.round(gd.head)})`);
+      check(!insets || !gd.overClock, 'gift composer rows never draw over the status bar');
+      check(gd.footBottom <= gd.h + 0.5 && (!insets || gd.footPad >= 34), `"Gonder" foot inside the screen, clear of the home indicator (pad ${gd.footPad})`);
+      check(gd.scrolls, 'gift composer body scrolls');
+      const row = await page.evaluate(() => {
+        const a = document.querySelector('.s2-gdrawer .s2-gfoot-draft').getBoundingClientRect();
+        const b = document.querySelector('.s2-gdrawer .s2-gfoot-send').getBoundingClientRect();
+        return Math.abs(a.top - b.top) < 2 && b.right <= innerWidth;
+      });
+      check(row, '"Taslaga kaydet" and "Gonder" share one row on iPhone');
+      if (SHOTS) await (await page.$('.s2-gdrawer .s2-gprev'))?.screenshot({ path: path.join(SHOTS, `${r.name}-gift-drawer-preview.jpg`), type: 'jpeg', quality: 70 });
+      await page.keyboard.press('Escape');
+      await sleep(800);
+    }
 
     if (!phone) {
       // Buy (hold), then "Görünüm kaydet" in the celebration: the toast is above it.

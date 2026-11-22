@@ -535,7 +535,7 @@ export default function Shop2Market({
             onClose={() => setGift(null)}
             label={t("shop2.gifts.giftIt")}
             width={phone ? undefined : 852}
-            className={phone ? "s2-full" : "s2-gift-drawer"}
+            className={phone ? "s2-full is-flush" : "s2-gift-drawer"}
           >
             <GiftComposer target={gift} variant="drawer" onDone={() => setGift(null)} onClose={() => setGift(null)} />
           </Layer>
