@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
@@ -7,6 +7,7 @@ import { useLocale, useT } from "../../context/LocaleContext";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { countryCode, countryName, flagEmoji, isCountryItem } from "../../lib/countryFlags";
 import OverlayPortal from "../ui/OverlayPortal";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const CATEGORY_LABEL = {
   banner: "Profile Banner",
@@ -37,6 +38,22 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
   const { locale } = useLocale();
   const [equipping, setEquipping] = useState(false);
   const [equipped, setEquipped] = useState(false);
+  const titleId = useId();
+  const cardRef = useRef(null);
+  // Tab stays in the popup while it is open.
+  useModalFocus(Boolean(gift), cardRef, { delay: 80 });
+  // A real dialog, like the DesCoin gift popup: Escape closes it.
+  useEffect(() => {
+    if (!gift) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onDismiss?.();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [gift, onDismiss]);
 
   if (!gift) return null;
   const { item, message, from } = gift;
@@ -68,6 +85,10 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
         exit={{ opacity: 0 }}
       >
         <motion.div
+          ref={cardRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className="shop-gift-card"
           initial={{ opacity: 0, scale: 0.85, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -82,7 +103,7 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
             <Gift size={28} />
           </div>
 
-          <h3>{t("You received a gift!")}</h3>
+          <h3 id={titleId}>{t("You received a gift!")}</h3>
           <p className="shop-gift-from">
             {t("{name} sent you", { name: from?.username || t("Descall staff") })}
           </p>

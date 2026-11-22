@@ -492,6 +492,8 @@ export const SHOP2_RU = {
     "saveDraft": "Сохранить черновик",
     "draftSaved": "Черновик сохранён",
     "send": "Отправить",
+    "pickFriendFirst": "Сначала выбери друга",
+    "pickFutureTime": "Выбери время в будущем",
     "schedule": "Запланировать подарок",
     "sent": "Отправлено: {name}",
     "scheduled": "Запланировано: {name}",

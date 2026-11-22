@@ -4368,6 +4368,7 @@ button.s2-strip:hover {
   gap: 3px;
   max-height: 420px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .s2-friend {
   display: flex;
@@ -4589,48 +4590,213 @@ button.s2-strip:hover {
 }
 .s2-gphones {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
+  align-items: flex-start;
+}
+/* Phone preview (what the friend sees): a real phone shape, 9 : 19.5 screen, rounded
+   corners, Dynamic Island pill, status bar, wallpaper glow in the wrap colour and a home
+   indicator. Everything inside is sized in cqw (container width), so the single phone, the
+   pair in the tab and the small one in the drawer are the same picture at different sizes
+   and nothing is clipped. */
+.s2-gphone {
+  container-type: inline-size;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 230px;
 }
 .s2-gphones.is-one .s2-gphone {
-  width: 230px;
+  flex: none;
+  width: min(240px, 100%);
+  max-width: none;
 }
-.s2-gphone {
+.s2-gphone-screen {
   position: relative;
-  flex: 1;
-  max-width: 230px;
-  min-height: 300px;
+  box-sizing: border-box;
+  aspect-ratio: 9 / 19.5;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 26px 10px 12px;
-  border-radius: 30px;
-  background: radial-gradient(260px 200px at 50% 0%, rgba(124, 77, 234, 0.22), transparent 70%), #0e0f16;
-  box-shadow: 0 0 0 5px #1d1e27, 0 0 0 6px #30313c, 0 18px 40px rgba(0, 0, 0, 0.5);
+  gap: 3cqw;
+  padding: 3.2cqw 6.5cqw 2.6cqw;
+  border: 2.8cqw solid #050509;
+  border-radius: 15cqw;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(95cqw 75cqw at 15% 18%, color-mix(in srgb, var(--wrap, #f0567a) 42%, transparent), transparent 70%),
+    radial-gradient(110cqw 95cqw at 92% 92%, rgba(88, 122, 245, 0.5), transparent 70%),
+    radial-gradient(80cqw 70cqw at 80% 40%, rgba(124, 77, 234, 0.28), transparent 70%),
+    linear-gradient(170deg, #1b1536, #0b0c16 55%, #0f1630);
+  box-shadow:
+    0 0 0 1px #3b3c4a,
+    0 0 0 2px #15161e,
+    0 22px 48px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: background 400ms ease;
 }
-.s2-gphone::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  width: 34%;
-  height: 11px;
-  border-radius: 6px;
+.s2-gphone-status {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 9cqw;
+  margin: 0 -1.5cqw;
+  flex: none;
+}
+.s2-gphone-status b {
+  font: 650 4.6cqw/1 Inter, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  padding-left: 2cqw;
+}
+.s2-gphone-island {
+  width: 30cqw;
+  height: 8.6cqw;
+  border-radius: 99px;
   background: #000;
-  transform: translateX(-50%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.s2-gphone-sys {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.6cqw;
+  padding-right: 1cqw;
+  height: 3.6cqw;
+}
+.s2-gphone-sys i {
+  width: 0.9cqw;
+  border-radius: 0.3cqw;
+  background: #fff;
+}
+.s2-gphone-sys i:nth-child(1) { height: 30%; }
+.s2-gphone-sys i:nth-child(2) { height: 55%; }
+.s2-gphone-sys i:nth-child(3) { height: 80%; }
+.s2-gphone-sys i:nth-child(4) { height: 100%; }
+.s2-gphone-sys em {
+  width: 6.4cqw;
+  height: 3.2cqw;
+  margin-left: 1.2cqw;
+  border-radius: 1cqw;
+  box-shadow: inset 0 0 0 0.35cqw rgba(255, 255, 255, 0.55);
+  background: linear-gradient(90deg, #fff 70%, transparent 70%) 0.8cqw 0.8cqw / calc(100% - 1.6cqw) calc(100% - 1.6cqw) no-repeat;
 }
 .s2-gphone-time {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.6cqw;
+  margin-top: 2cqw;
+  flex: none;
 }
-.s2-gphone-time b {
-  font: 300 var(--fs-28) "Inter Display", Inter, sans-serif;
-  letter-spacing: -0.02em;
+.s2-gphone-time svg {
+  width: 4.6cqw;
+  height: 4.6cqw;
+  opacity: 0.85;
 }
 .s2-gphone-time small {
-  font-size: var(--fs-11);
-  color: var(--s2-mute);
+  font: 600 4.8cqw/1.2 Inter, system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.82);
+  text-transform: capitalize;
+}
+.s2-gphone-time b {
+  font: 650 22cqw/1 "Inter Display", Inter, system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
+}
+.s2-gphone-stack {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.6cqw;
+  min-height: 0;
+}
+.s2-gphone .s2-gnotif {
+  gap: 2.6cqw;
+  padding: 3cqw 3.4cqw;
+  border-radius: 6.5cqw;
+  background: rgba(30, 30, 44, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+  font-size: 4.3cqw;
+  line-height: 1.3;
+}
+.s2-gphone .s2-gnotif > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.s2-gnotif-top {
+  display: flex;
+  align-items: baseline;
+  gap: 2cqw;
+}
+.s2-gnotif-top b {
+  flex: 1;
+  min-width: 0;
+}
+.s2-gphone .s2-gnotif small {
+  font-size: 4.1cqw;
+  color: rgba(255, 255, 255, 0.78);
+}
+.s2-gphone .s2-gnotif-top small {
+  flex: none;
+  color: rgba(255, 255, 255, 0.5);
+}
+.s2-gphone .s2-gnotif-ic {
+  width: 9cqw;
+  height: 9cqw;
+  border-radius: 2.4cqw;
+  background: linear-gradient(160deg, #7b95ff, #587af5 60%, #4a5fd8);
+}
+.s2-gphone .s2-gnotif-ic svg {
+  width: 5cqw;
+  height: 5cqw;
+}
+.s2-gphone .s2-gopen {
+  gap: 2cqw;
+  padding: 4.6cqw 4.4cqw 4.2cqw;
+  border-radius: 7cqw;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wrap) 26%, rgba(28, 24, 44, 0.7)), rgba(18, 17, 30, 0.72));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wrap) 45%, rgba(255, 255, 255, 0.08)), 0 8px 24px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+.s2-gphone .s2-gopen .s2-gbox {
+  width: 17cqw;
+  height: 14cqw;
+  margin-top: 1.4cqw;
+  border-radius: 2.4cqw;
+}
+.s2-gphone .s2-gopen b {
+  font-size: 4.8cqw;
+  line-height: 1.25;
+}
+.s2-gphone .s2-gopen p {
+  font-size: 4.1cqw;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.s2-gphone .s2-btn.is-fake {
+  width: 100%;
+  height: 9.6cqw;
+  min-height: 0;
+  margin-top: 1cqw;
+  padding: 0 4cqw;
+  border-radius: 99px;
+  font-size: 4.3cqw !important;
+  justify-content: center;
+}
+.s2-gphone-home {
+  flex: none;
+  align-self: center;
+  width: 36cqw;
+  height: 1.6cqw;
+  margin-top: 1.4cqw;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.85);
 }
 .s2-gnotif {
   display: flex;
@@ -4718,27 +4884,44 @@ button.s2-strip:hover {
   width: 70px;
   height: 60px;
 }
-.s2-gphone.is-opened {
-  justify-content: center;
+.s2-gphone.is-opened .s2-gphone-screen {
+  background:
+    radial-gradient(110cqw 90cqw at 50% 38%, color-mix(in srgb, var(--wrap, #f0567a) 30%, transparent), transparent 70%),
+    linear-gradient(180deg, #15131f, #0d0e17);
 }
 .s2-gopened {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 2cqw;
   text-align: center;
 }
 .s2-gopened .s2-art.is-card {
-  width: 140px;
+  width: 60cqw;
   aspect-ratio: 1;
   border-radius: 50%;
 }
+.s2-gopened .s2-gbox.is-lg {
+  width: 30cqw;
+  height: 26cqw;
+}
 .s2-gopened b {
-  font-size: var(--fs-15);
+  max-width: 100%;
+  margin-top: 2cqw;
+  font-size: 5.8cqw;
+  overflow-wrap: anywhere;
 }
 .s2-gopened small {
-  font-size: var(--fs-11);
+  font-size: 4.3cqw;
   color: var(--s2-mute);
+}
+.s2-gopened .s2-btn.is-fake {
+  width: auto;
+  margin-top: 3cqw;
+  padding: 0 7cqw;
 }
 .s2-gdesk {
   display: flex;
@@ -4805,8 +4988,7 @@ button.s2-strip:hover {
   justify-content: center;
 }
 .s2-gdesk-mini .s2-gphones.is-one .s2-gphone {
-  width: 160px;
-  min-height: 220px;
+  width: 170px;
 }
 .s2-gfoot {
   display: flex;
@@ -4840,6 +5022,54 @@ button.s2-strip:hover {
 }
 .s2-gfoot-note.is-block {
   color: #ffb4a8;
+}
+.s2-gfoot-note.is-step {
+  color: var(--s2-dim);
+}
+/* Phone foot: total and balance on top (a long balance such as 1.000.011.687 has the
+   whole width), the hint under it, then one row of buttons with "Gonder" widest. The
+   composer's X already closes it, so "Vazgec" is not repeated here. */
+.s2-gdrawer.is-phone .s2-gfoot,
+.s2-gifts.is-phone .s2-gfoot {
+  gap: 8px 10px;
+  padding: 12px 16px;
+}
+.s2-gdrawer.is-phone .s2-gtotal,
+.s2-gifts.is-phone .s2-gtotal {
+  flex: 1 1 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+}
+.s2-gdrawer.is-phone .s2-gtotal small,
+.s2-gifts.is-phone .s2-gtotal small {
+  flex: 1 1 100%;
+  overflow-wrap: anywhere;
+}
+.s2-gdrawer.is-phone .s2-gfoot-note,
+.s2-gifts.is-phone .s2-gfoot-note {
+  flex: 1 1 100%;
+  min-width: 0;
+  font-size: var(--fs-11);
+}
+.s2-gdrawer.is-phone .s2-gfoot-cancel {
+  display: none;
+}
+.s2-gdrawer.is-phone .s2-gfoot-send,
+.s2-gifts.is-phone .s2-gfoot-send {
+  flex: 1 1 0;
+  justify-content: center;
+}
+/* iPhone "Hediyeler" full screen: the title and its close button stay on top while the
+   friend list, form and preview scroll under them. */
+.s2-layer.is-full .s2-gifts > .s2-fullhead {
+  position: sticky;
+  top: -14px;
+  z-index: 4;
+  margin: -14px -16px 0;
+  padding: 14px 16px 10px;
+  background: linear-gradient(180deg, #10111a 80%, rgba(16, 17, 26, 0));
 }
 .s2-recent {
   display: flex;
@@ -4982,8 +5212,13 @@ button.s2-strip:hover {
   display: flex;
   gap: 10px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   padding: 8px 0 2px;
   scrollbar-width: thin;
+}
+.s2-received-row > .s2-rgift {
+  scroll-snap-align: start;
 }
 .s2-rgift {
   display: flex;
@@ -5003,7 +5238,14 @@ button.s2-strip:hover {
 .s2-rgift > span:nth-child(2) {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 170px;
   font-size: var(--fs-13);
+}
+.s2-rgift > span:nth-child(2) > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .s2-rgift small {
   font-size: var(--fs-11);
@@ -5085,6 +5327,11 @@ button.s2-strip:hover {
 .s2-gifts.is-phone .s2-gphones {
   flex-direction: column;
   align-items: center;
+}
+.s2-gifts.is-phone .s2-gphones .s2-gphone {
+  flex: none;
+  width: min(240px, 100%);
+  max-width: none;
 }
 
 /* ---------- checkout + celebration ---------- */
@@ -5585,22 +5832,55 @@ button.s2-strip:hover {
   margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
   margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
 }
+
+/* Full screen (iPhone gifts, Gece Pazari, gift composer): the scroll box starts BELOW the
+   status bar. The top inset is the layer's own opaque padding, so rows scrolled up stop
+   under it instead of drawing over the clock (the inset used to be the panel's padding,
+   inside the scroll box). With the keyboard open (iOS keeps the web view full height) the
+   panel ends above the keys, so the message box and "Gonder" stay reachable. */
 .s2-layer.is-full {
-  padding: 0;
+  padding: env(safe-area-inset-top, 0px) 0 0;
   place-items: stretch;
+  background: #10111a;
+}
+html.kb-open .s2-layer.is-full {
+  padding-bottom: var(--kb-inset, 0px);
 }
 .s2-layer.is-full .s2-layer-panel {
   width: 100%;
   height: 100%;
   max-height: none;
   border-radius: 0;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(500px 300px at 80% -10%, rgba(124, 77, 234, 0.25), transparent 60%), #10111a;
+  box-shadow: none;
   animation: s2-sheet 320ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
+html.kb-open .s2-layer.is-full .s2-layer-panel {
+  padding-bottom: 12px;
+}
+/* The gift composer brings its own head, scroll body and foot: no panel padding, no
+   panel scroll; only its body scrolls, the foot keeps the home indicator clear. */
+.s2-layer.is-full .s2-layer-panel.is-flush {
+  padding: 0;
+  overflow: hidden;
+}
 .s2-layer.is-full .s2-gdrawer {
-  margin: calc(-14px - env(safe-area-inset-top, 0px)) -16px calc(-16px - env(safe-area-inset-bottom, 0px));
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
+}
+.s2-layer.is-full .s2-gdrawer .s2-gfoot {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+html.kb-open .s2-layer.is-full .s2-gdrawer .s2-gfoot {
+  padding-bottom: 12px;
+}
+html.kb-open .s2-layer.is-sheet {
+  padding-bottom: var(--kb-inset, 0px);
+}
+html.kb-open .s2-layer.is-sheet .s2-layer-panel {
+  max-height: calc(100dvh - var(--kb-inset, 0px) - env(safe-area-inset-top, 0px) - 12px);
+  padding-bottom: 12px;
 }
 .s2-grab {
   display: grid;

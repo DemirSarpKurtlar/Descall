@@ -177,6 +177,9 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal((deliverySeg.match(/role="tab"/g) || []).length, 2, `${layout} gifts: two delivery choices`);
   has(deliverySeg, "shop2.gifts.now", `${layout} gifts: now`);
   has(deliverySeg, "shop2.gifts.pickTime", `${layout} gifts: at a time`);
+  // The friend's view is a real phone (status bar, Dynamic Island, home indicator) and
+  // "Gonder" off with no friend chosen says why.
+  for (const x of ["s2-gphone-screen", "s2-gphone-island", "s2-gphone-status", "s2-gphone-home", "s2-gnotif", "s2-gopen", "shop2.gifts.pickFriendFirst"]) has(g, x, `${layout} gifts ${x}`);
   for (const x of ["shop2.gifts.onBirthday", "shop2.gifts.filter.birthday", "shop2.gifts.bday", "s2-friend-bday"]) assert.ok(!g.includes(x), `${layout} gifts: no birthday ${x}`);
   const inv = m.render("inv", c);
   has(inv, "Aurora", "retired item listed");
@@ -185,6 +188,9 @@ for (const layout of ["desktop", "phone"]) {
   const co = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
   has(co, "s2-hold", "hold-to-confirm");
   has(co, "Fener Halkası");
+  // Short of DesCoin: the balance line is not shown going negative ("5.120 -> -1.000").
+  const poor = m.render("checkout", { ...c, balance: 10 }, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
+  assert.ok(!/→ <\/span>(<!-- -->)?-/.test(poor) && !/>-\d/.test(poor.split("shop2.checkout.balance")[1]?.slice(0, 400) || ""), `${layout} checkout: no negative balance after`);
   const done = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", phase: "done", result: { purchaseId: "p1", paid: 2870, balance: 2250, refundableUntil: new Date(NOW + 600e3).toISOString() } }, onClose: noop });
   for (const x of ["s2-cele", "s2-parts", "s2-cele-slots", "is-glow"]) has(done, x, `${layout} celebration ${x}`);
 }
@@ -196,7 +202,8 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal(m.render("look", c, { text: "https://descall.com/settings" }), "", "no card without a look link");
   const sh = m.render("share", { ...c, openShare: noop }, { target: { setKey: "gece-limani" }, onClose: noop });
   has(sh, "s2-share", "share sheet");
-  assert.ok(sh.includes("shop2.share.loading") && !sh.includes("shop2.gifts.noFriends"), "share sheet: loading, not \"no friends\", before the list arrives");
+  has(sh, "s2-skeleton", "share sheet shows loading rows, not 'no friends', before the list arrives");
+  assert.ok(!sh.includes("shop2.gifts.noFriends"), "share sheet: no \"no friends\" before the list arrives");
 }
 {
   // Item sheet: an owned item shows no "balance after" (equipping is free), the equip button

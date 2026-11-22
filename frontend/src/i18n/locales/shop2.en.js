@@ -492,6 +492,8 @@ export const SHOP2_EN = {
     "saveDraft": "Save draft",
     "draftSaved": "Draft saved",
     "send": "Send",
+    "pickFriendFirst": "Pick a friend first",
+    "pickFutureTime": "Pick a time in the future",
     "schedule": "Schedule gift",
     "sent": "Sent to {name}",
     "scheduled": "Scheduled for {name}",

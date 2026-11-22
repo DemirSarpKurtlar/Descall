@@ -290,13 +290,17 @@ for (const f of uiFiles) {
 }
 
 // ---------- type scale: only --fs-11/12/13/15/17/20/28 ----------
+// Exception: container units (cqw). The gift preview phone (.s2-gphone) is a scaled
+// picture of a phone screen, not app text; its sizes follow the phone's width.
 const css = readFileSync(join(src, "styles/shop2-ui.css"), "utf8");
 for (const m of css.matchAll(/font(?:-size)?\s*:\s*([^;]+);/g)) {
   const v = m[1];
+  if (/\dcqw/.test(v) && !/px/.test(v)) continue;
   assert.equal(/\d+(\.\d+)?px/.test(v.replace(/\/\s*[\d.]+/, "")) && !/var\(--fs-/.test(v), false, `literal px font size: ${v}`);
   for (const t of v.matchAll(/--fs-(\d+)/g)) assert.ok(["11", "12", "13", "15", "17", "20", "28"].includes(t[1]), `off-scale token --fs-${t[1]}`);
 }
-assert.equal(/font-size:\s*\d/.test(css), false, "no literal font-size");
+assert.equal(/font-size:\s*\d(?![\d.]*cqw)/.test(css), false, "no literal font-size");
+assert.equal([...css.matchAll(/^([^{}\n]+)\{[^}]*font(?:-size)?\s*:[^;]*\dcqw/gm)].every((m) => /\.s2-gphone|\.s2-gopened/.test(m[1])), true, "cqw font sizes only inside the gift preview phone");
 assert.equal(EMOJI.test(css), false, "no emoji in the styles");
 // iPhone landscape: sheets and full-screen windows keep their content out of the notch side,
 // the item drawer out of the status bar and above the home indicator.
