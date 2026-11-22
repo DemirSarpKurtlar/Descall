@@ -281,6 +281,18 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   const show = notify.slice(notify.search(/pub (?:async )?fn notification_show\b/), notify.indexOf("fn flash_taskbar"));
   assert.match(show, /let title = filtered\.get\("title"\)/, "the capsule uses the filtered title");
   assert.doesNotMatch(show.slice(show.indexOf("let title = filtered")), /payload\.title\b(?!\.as_str\(\)\))/, "never the raw sender after filtering");
+  // One redaction path (round 1 had two): redact_locked is defined once and called only by
+  // app_lock's final filter; the shell's notification code has no lock check of its own.
+  const rustFiles = ["commands/notify.rs", "commands/app.rs", "boot.rs", "tray.rs", "tray_menu.rs", "state.rs", "premium/mod.rs", "premium/toast.rs", "premium/features/quick_reply.rs", "premium/features/app_lock.rs", "premium/logic/rules.rs"];
+  const callers = rustFiles.filter((f) => {
+    const src = codeOnly(read(`desktop/app/src-tauri/src/${f}`));
+    const body = src.includes("#[cfg(test)]") ? src.slice(0, src.indexOf("#[cfg(test)]")) : src;
+    return /redact_locked\(&/.test(body);
+  });
+  assert.deepEqual(callers, ["premium/features/app_lock.rs"], "redact_locked is called from app_lock only");
+  assert.equal((codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs")).match(/pub fn redact_locked\(/g) || []).length, 1, "one redact_locked");
+  assert.doesNotMatch(codeOnly(read("desktop/app/src-tauri/src/commands/notify.rs")), /locked|app_lock/i, "no second lock check in notify.rs");
+  assert.equal((notify.match(/crate::premium::notify_filter\(/g) || []).length, 1, "notification_show runs the filter chain once");
   // The Rust port keeps Electron's rules (appLockRedact.cjs), checked side by side here.
   const { redactLockedNotification, LOCKED_TAG } = await import(join(repo, "frontend/electron/premium/appLockRedact.cjs"));
   const rules = codeOnly(read("desktop/app/src-tauri/src/premium/logic/rules.rs"));
