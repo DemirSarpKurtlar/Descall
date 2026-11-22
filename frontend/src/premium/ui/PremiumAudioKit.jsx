@@ -8,10 +8,11 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../../context/localeContextInstance";
 import { linearToDb, meterPercent, rms, smoothLevel } from "../audio/noiseGateMath.js";
 import RangeSlider from "./RangeSlider.jsx";
+import { premiumBridge } from "../../lib/desktopShell.js";
 import "./premiumAudio.css";
 
 export function isDesktopApp() {
-  return typeof window !== "undefined" && Boolean(window.descallPremium);
+  return Boolean(premiumBridge());
 }
 
 export function Section({ title, children, hint }) {
@@ -308,7 +309,7 @@ export function usePremiumStatus(channel, deps = []) {
   const [status, setStatus] = useState(null);
   const [n, setN] = useState(0);
   useEffect(() => {
-    const b = typeof window !== "undefined" ? window.descallPremium : null;
+    const b = premiumBridge();
     if (!b || !channel) return undefined;
     let live = true;
     b.invoke(channel).then((r) => { if (live) setStatus(r && r.ok !== false ? r : null); }).catch(() => { if (live) setStatus(null); });

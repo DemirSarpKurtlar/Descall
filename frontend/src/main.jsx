@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
 import { isPublicMarketingPath } from "./site/marketingPaths";
-import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
+import { isCapacitorNativeShell, isDesktopShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken, hydrateSecureToken } from "./lib/storage";
 import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
@@ -73,8 +73,8 @@ if (isCapacitorNativeShell()) {
 }
 
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
-const isElectronDesktop =
-  typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+// Electron or the Rust / Tauri app (lib/desktopShell.js).
+const isElectronDesktop = typeof window !== "undefined" && isDesktopShell();
 // Yönetici › Kayıt İstatistikleri window (Electron opens it as its own BrowserWindow):
 // boot only that page, not the whole app (no socket, no second session shell).
 const isSignupStatsWindow = /^\/admin\/signup-stats\/?$/.test(path);

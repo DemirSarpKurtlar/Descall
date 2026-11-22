@@ -179,7 +179,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
   const admin = readFileSync(join(src, "admin.rs"), "utf8");
   const main = readFileSync(join(src, "main.rs"), "utf8");
   // app:visibility like main.cjs: restore and show also clear "backgrounded" without a focus event.
-  assert.match(boot, /if was_minimized\.swap\(false, [^)]*\)(?: && win\.is_visible\(\)\.unwrap_or\(false\))? \{\s*visibility\(&win, false\);/, "restore from minimized resumes the page");
+  assert.match(boot, /if was_minimized(?:\.swap\(false, [^)]*\))?(?: && win\.is_visible\(\)\.unwrap_or\(false\))? \{\s*visibility\(&win, false\);/, "restore from minimized resumes the page");
   const showMain = state.slice(state.indexOf("pub fn show_main"), state.indexOf("pub fn show_main") + 600);
   assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "tray / second launch show resumes the page");
   // First close to the tray tells the user once (main.cjs background-notice-shown).

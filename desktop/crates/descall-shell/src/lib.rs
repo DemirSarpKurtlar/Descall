@@ -24,7 +24,9 @@
 //! | `logfile`           | electron-log main.log (layout, 1 MB)    | line format, filter, rotation         |
 //! | `ipc_policy`        | per-window preloads (notif, overlay...) | commands per window, capabilities     |
 //! | `window_keys`       | windowKeys.cjs devToolsAllowed          | (DevTools opt-in file)                |
+//! | `bridge`            | main.cjs per-sender IPC rules           | shim commands vs generate_handler!    |
 
+pub mod bridge;
 pub mod clipboard;
 pub mod crash;
 pub mod csp;

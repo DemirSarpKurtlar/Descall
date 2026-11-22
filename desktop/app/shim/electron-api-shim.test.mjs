@@ -48,7 +48,7 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null } = {}) {
   const invokes = [];
   const winListeners = new Map();
   const listeners = new Map();
@@ -61,8 +61,9 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const tauriGlobal = {
       core: { invoke: answer },
       event: {
-        listen: (event, handler) => {
+        listen: (event, handler, options) => {
           if (!listeners.has(event)) listeners.set(event, []);
+          handler.__target = (options && options.target) || { kind: "Any" };
           listeners.get(event).push(handler);
           return Promise.resolve(() => { unlistened.push(event); listeners.set(event, listeners.get(event).filter((h) => h !== handler)); });
         },
@@ -70,7 +71,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   };
   const window = {
     __DESCALL_BOOT__: boot,
-    __TAURI_INTERNALS__: { metadata: { currentWebview: { label: boot.mode === "admin" ? "admin" : "main" } }, invoke: answer, transformCallback: () => 1 },
+    __TAURI_INTERNALS__: { metadata: { currentWebview: { label } }, invoke: answer, transformCallback: () => 1 },
     addEventListener: (type, fn, capture) => { if (!winListeners.has(type)) winListeners.set(type, []); winListeners.get(type).push({ fn, capture: Boolean(capture) }); },
   };
   // Real Tauri order: plugin init scripts (premium-shim.js) run BEFORE the withGlobalTauri
@@ -81,7 +82,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
     window,
     document: { addEventListener: () => {}, documentElement: { classList: { _s: new Set(), add(c) { this._s.add(c); } } } },
     localStorage: store(),
-    sessionStorage: store(),
+    sessionStorage: session || store(),
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
     navigator: {},
     URL,
@@ -95,9 +96,18 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   vm.runInContext(premiumShimSrc, ctx, { filename: "premium-shim.js" });
   window.__TAURI__ = tauriGlobal;
   vm.runInContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
-  const emit = (event, payload) => (listeners.get(event) || []).forEach((h) => h({ payload }));
+  // Calls the shim makes by itself at start (e.g. the reduced-transparency refresh).
+  const startup = invokes.splice(0);
+  // Tauri emit_to(label) semantics: a listener with target Any hears every event (that was
+  // the leak); one with a label target only the events sent to that label. `to` omitted = this
+  // window (Rust emit_to(own label)).
+  const hears = (h, to) => {
+    const t = h.__target || { kind: "Any" };
+    return t.kind === "Any" || to === undefined || t.label === to;
+  };
+  const emit = (event, payload, to = label) => (listeners.get(event) || []).forEach((h) => { if (hears(h, to)) h({ payload }); });
   const dispatch = (type, ev) => { for (const l of winListeners.get(type) || []) l.fn(ev); return ev; };
-  return { api: window.electronAPI, premium: window.descallPremium, window, invokes, listeners, unlistened, emit, ctx, dispatch, winListeners };
+  return { api: window.electronAPI, premium: window.descallPremium, window, invokes, startup, listeners, unlistened, emit, ctx, dispatch, winListeners };
 }
 // Values from the vm realm have other prototypes: compare their JSON shape.
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -144,7 +154,7 @@ const CASES = [
   ["showNotification", ["Ayşe", { body: "selam", tag: "dm:1", data: { type: "dm" } }], "notification_show", { payload: { title: "Ayşe", options: { body: "selam", tag: "dm:1", data: { type: "dm" } } } }],
   ["closeNotification", [{ tag: "call:1" }], "notification_close", { payload: { tag: "call:1" } }],
   ["closeNotification", [], "notification_close", { payload: {} }],
-  ["getScreenSources", [], "screen_sources", undefined],
+  ["getScreenSources", [], "screen_sources", { thumbnails: true }],
   ["isWindowFocused", [], "window_is_focused", undefined],
   ["focusWindow", [], "window_focus", undefined],
   ["scanProcesses", [], "processes_scan", undefined],
@@ -187,6 +197,8 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(s.api.secureToken.set("new.tok.en"), true);
   assert.equal(s.api.secureToken.get(), "new.tok.en");
   assert.equal(s.ctx.sessionStorage.getItem("__descall_token_override"), "new.tok.en", "survives a boot-retry reload");
+  assert.equal(s.api.secureToken.set("x".repeat(16 * 1024 + 1)), false, "a token the store refuses answers false");
+  assert.equal(s.api.secureToken.get(), "new.tok.en", "and is not cached");
   assert.equal(s.api.secureToken.clear(), true);
   assert.equal(s.api.secureToken.get(), null);
   assert.equal(await s.api.selectDisplaySource("screen:0:0"), false, "no native lane loaded -> false");
@@ -286,19 +298,21 @@ for (const [path, args, cmd, expected] of CASES) {
   for (const [k, m] of [["c", { ctrlKey: true }], ["v", { ctrlKey: true }], ["x", { ctrlKey: true }], ["a", { ctrlKey: true }], ["z", { ctrlKey: true }], ["k", { ctrlKey: true }], ["ArrowLeft"], ["Enter"]]) {
     assert.equal(key(k, m), false, `${k} ${JSON.stringify(m || {})} stays with the app`);
   }
-  assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
-  // F11: maximize / restore like Electron's windowKeys.cjs (never on repeat or with modifiers).
-  const toggles = () => s.invokes.filter((c) => c[0] === "window_toggle_maximize").length;
+  // F11 toggles maximize like windowKeys.cjs; with a modifier or on auto-repeat it does nothing.
+  s.invokes.length = 0;
   assert.equal(key("F11"), true, "F11 handled");
-  assert.equal(toggles(), 1, "F11 toggles maximize");
-  key("F11", { repeat: true });
-  key("F11", { shiftKey: true });
-  key("F11", { altKey: true });
-  key("F11", { ctrlKey: true });
-  assert.equal(toggles(), 1, "not on auto-repeat or with a modifier");
+  deq(s.invokes.map((c) => c[0]), ["window_toggle_maximize"], "F11 toggles maximize");
+  s.invokes.length = 0;
+  for (const m of [{ ctrlKey: true }, { shiftKey: true }, { altKey: true }, { repeat: true }]) key("F11", m);
+  deq(s.invokes, [], "F11 with a modifier or auto-repeat does not maximize");
+  assert.equal(s.dispatch("mouseup", ev({ button: 3 })).defaultPrevented, true, "mouse back button does not navigate");
+  // (F11 is covered just above: T1 and T8 both tested it; one copy kept.)
   // F12 / Ctrl+Shift+I ask the shell for DevTools (it opens them only with the opt-in).
   const devtools = () => s.invokes.filter((c) => c[0] === "window_toggle_devtools").length;
-  assert.equal(devtools(), 2, "F12 and Ctrl+Shift+I (pressed above) ask for DevTools");
+  s.invokes.length = 0;
+  key("F12");
+  key("I", { ctrlKey: true, shiftKey: true });
+  assert.equal(devtools(), 2, "F12 and Ctrl+Shift+I ask for DevTools");
   key("F12", { repeat: true });
   key("F12", { ctrlKey: true });
   key("I", { ctrlKey: true, shiftKey: true, altKey: true });
@@ -452,7 +466,10 @@ for (const [k, channel] of Object.entries(LISTENERS)) {
   assert.ok((s.listeners.get(channel) || []).length >= 1, `${k} listens to ${channel}`);
   s.emit(channel, { v: 1 });
   if (k === "onUpdateAvailable" || k === "onUpdateDownloaded") {
-    deq(got[0][1], { v: 1 }, `${k} keeps Electron's (event, info) callback shape`);
+    // preload.cjs: handler = (_, data) => callback(data). The shim used to pass a fake
+    // (event, info) pair and return nothing.
+    deq(got[0], [{ v: 1 }], `${k} passes the payload like preload.cjs`);
+    assert.equal(typeof off, "function", `${k} returns an unsubscribe function`);
   } else if (k === "onMaximizedChange" || k === "onReducedTransparencyChange") {
     deq(got[got.length - 1], [true], `${k} passes a boolean`);
   } else {
@@ -460,7 +477,13 @@ for (const [k, channel] of Object.entries(LISTENERS)) {
   }
   if (typeof off === "function") {
     off();
-    assert.ok(s.unlistened.includes(channel), `${k} unsubscribe removes the Tauri listener`);
+    const n = got.length;
+    s.emit(channel, { v: 2 });
+    s.emit(channel, null);
+    assert.equal(got.length, n, `${k} unsubscribe stops the callback`);
+    // The transparency value has one shell listener for the whole page (it keeps the sync
+    // getter current); every other member drops its own Tauri listener.
+    if (k !== "onReducedTransparencyChange") assert.ok(s.unlistened.includes(channel), `${k} unsubscribe removes the Tauri listener`);
   }
 }
 {
@@ -479,10 +502,366 @@ for (const [k, channel] of Object.entries(LISTENERS)) {
   deq(v, [{ backgrounded: true }, {}], "app:visibility payload as appVisibility.js expects");
 }
 
+// 3b. Kind parity, derived from the preload sources (no hand-kept list) ----------------------
+// Every member a preload exposes is classified by what it does on the fake ipcRenderer:
+//   on -> "listener" (returns what Electron returned: an unsubscribe function or nothing),
+//   invoke -> "promise", sendSync -> "sync" (a plain value, never a promise),
+//   send -> "fire" (returns undefined), no IPC -> by its return value.
+// The shim member must exist and keep that kind. A new preload member, or a shim member that
+// turns a sync answer into a promise (secureToken.get, getPrefersReducedTransparency, zoom.get),
+// fails here.
+const isThenable = (v) => Boolean(v) && typeof v.then === "function";
+const membersOf = (obj, prefix = "") => Object.keys(obj).flatMap((k) => {
+  const v = obj[k];
+  return v && typeof v === "object" && !Array.isArray(v) ? membersOf(v, `${prefix}${k}.`) : [`${prefix}${k}`];
+});
+const argsFor = (path) => (/(^|\.)on[A-Z]\w*$/.test(path) ? [() => {}] : path === "descallHud.fileName" ? [{ name: "a.png" }] : ["ready", "y"]);
+function classify(pre, obj, path) {
+  const fn = get(obj, path);
+  if (typeof fn !== "function") return { kind: `value:${typeof fn}` };
+  const before = pre.ipcCalls.length;
+  const out = fn(...argsFor(path));
+  if (isThenable(out)) out.catch(() => {});
+  const calls = pre.ipcCalls.slice(before).map((c) => c[0]);
+  if (calls.includes("on")) return { kind: "listener", ret: typeof out };
+  if (calls.includes("sendSync")) return { kind: "sync" };
+  if (calls.includes("invoke") || isThenable(out)) return { kind: "promise" };
+  if (calls.includes("send") || out === undefined) return { kind: "fire" };
+  if (typeof out === "function") return { kind: "listener", ret: "function" };
+  return { kind: "sync" };
+}
+function checkKind(label, ref, shimObj, path) {
+  const fn = get(shimObj, path);
+  if (ref.kind.startsWith("value:")) {
+    assert.equal(`value:${typeof fn}`, ref.kind, `${label}.${path} is a ${ref.kind}`);
+    return;
+  }
+  assert.equal(typeof fn, "function", `${label}.${path} exists as a function`);
+  const out = fn(...argsFor(path));
+  if (isThenable(out)) out.catch(() => {});
+  if (ref.kind === "promise") assert.ok(isThenable(out), `${label}.${path} returns a promise like Electron's invoke`);
+  if (ref.kind === "sync") assert.ok(!isThenable(out) && out !== undefined, `${label}.${path} answers synchronously like Electron's sendSync`);
+  if (ref.kind === "fire") assert.equal(out, undefined, `${label}.${path} returns nothing like Electron's send`);
+  if (ref.kind === "listener") assert.equal(typeof out, ref.ret, `${label}.${path} returns ${ref.ret === "function" ? "an unsubscribe function" : "nothing"} like the preload`);
+}
+let kindsChecked = 0;
+for (const [label, pre, mk] of [["electronAPI(main)", electronMain, () => loadShim()], ["electronAPI(admin)", electronAdmin, () => loadShim({ boot: { mode: "admin" } })]]) {
+  const shim = mk();
+  for (const path of membersOf(pre.api)) {
+    const ref = classify(pre, pre.api, path);
+    checkKind(label, ref, shim.api, path);
+    kindsChecked += 1;
+  }
+}
+{
+  const shim = loadShim();
+  for (const path of membersOf(electronMain.premium)) {
+    checkKind("descallPremium", classify(electronMain, electronMain.premium, path), shim.premium, path);
+    kindsChecked += 1;
+  }
+}
+// The same kinds hold for the secondary windows' bridges (notification capsule, voice overlay,
+// Descall+ HUD and launcher, tray panel), each against its Electron preload.
+function loadPreloadNamed(file) {
+  const exposed = {};
+  const ipcCalls = [];
+  const ipc = {
+    invoke: (ch, ...a) => { ipcCalls.push(["invoke", ch, a]); return Promise.resolve(null); },
+    send: (ch, ...a) => ipcCalls.push(["send", ch, a]),
+    sendSync: (ch, ...a) => { ipcCalls.push(["sendSync", ch, a]); return null; },
+    on: (ch) => { ipcCalls.push(["on", ch]); return ipc; },
+    off: () => ipc,
+    removeListener: () => ipc,
+  };
+  const electron = { contextBridge: { exposeInMainWorld: (n, api) => { exposed[n] = api; } }, ipcRenderer: ipc, webUtils: { getPathForFile: (f) => f.name } };
+  vm.runInNewContext(readFileSync(join(electronDir, file), "utf8"), { require: (m) => (m === "electron" ? electron : {}), console: { log() {} } }, { filename: file });
+  return { exposed, ipcCalls };
+}
+function loadPage(file, label, extra = {}) {
+  const invokes = [];
+  const listens = [];
+  const answer = (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(null); };
+  const window = {
+    __TAURI_INTERNALS__: { metadata: { currentWebview: { label } }, invoke: answer, transformCallback: () => 1 },
+    __TAURI__: {
+      core: { invoke: answer },
+      event: { listen: (event, handler, options) => { listens.push({ event, handler, target: (options && options.target) || { kind: "Any" } }); return Promise.resolve(() => {}); } },
+      window: { getCurrentWindow: () => ({ startDragging: () => Promise.resolve() }) },
+    },
+    __descallShellRequire: (m) => (m === "./mainI18n.cjs" ? { setLocale() {} } : {
+      describeNotification: (x) => ({ name: x.title, preview: x.body }),
+      buildNotificationHtml: () => "",
+      buildOverlayHtml: () => "",
+    }),
+    __descallMountShellPage: () => {},
+    ...extra,
+  };
+  window.top = window;
+  const ctx = { window, document: { addEventListener() {} }, location: { hostname: "x" }, console, Promise, Object, String, Number, Boolean, Set, Array };
+  vm.createContext(ctx);
+  vm.runInContext(readFileSync(join(here, file), "utf8"), ctx, { filename: file });
+  return { window, invokes, listens };
+}
+const PAGE_BRIDGES = [
+  // [shim file, window label, Electron preload, exposed name]
+  ["shell-notif.js", "notif-7", "notifPreload.cjs", "notifAPI"],
+  ["shell-overlay.js", "overlay", "overlayPreload.cjs", "overlayAPI"],
+  ["premium-hud-shim.js", "hud-3", "premium/hudPreload.cjs", "descallHud"],
+  ["premium-launcher-shim.js", "launcher", "premium/launcher/launcherPreload.cjs", "launcherAPI"],
+  ["tray-menu-shim.js", "tray-menu", "trayMenuPreload.cjs", "trayMenuAPI"],
+];
+for (const [file, label, preloadFile, name] of PAGE_BRIDGES) {
+  const pre = loadPreloadNamed(preloadFile);
+  const page = loadPage(file, label);
+  const ref = pre.exposed[name];
+  const mine = page.window[name];
+  assert.ok(ref && mine, `${name}: exposed by ${preloadFile} and ${file}`);
+  deq(Object.keys(mine).sort(), Object.keys(ref).sort(), `${name}: same keys as ${preloadFile}`);
+  const refPre = { ipcCalls: pre.ipcCalls };
+  for (const path of membersOf(ref)) {
+    checkKind(name, classify(refPre, { [name]: ref }, `${name}.${path}`), { [name]: mine }, `${name}.${path}`);
+    kindsChecked += 1;
+  }
+  // Every listener of a secondary window hears only the events sent to that window.
+  for (const l of page.listens) {
+    deq(l.target, { kind: "WebviewWindow", label }, `${file}: ${l.event} listens for its own window only`);
+  }
+}
+console.log(`bridge members kind-checked against the Electron preloads: ${kindsChecked}`);
+
+// 3c. Events reach only the window they were sent to ------------------------------------------
+// Tauri's global listen() hears an emit_to() aimed at ANY window. A Descall+ pop-out
+// (popout-*) or extra-account window (acct-*) runs this shim too, so before the fix a
+// notification click, a call accept or a tray action sent to the main window also ran there,
+// and the main window's maximize / content box / visibility leaked into them.
+for (const label of ["popout-1", "acct-42"]) {
+  const s = loadShim({ label });
+  const got = [];
+  for (const [k, channel] of Object.entries(LISTENERS)) s.api[k]((...a) => got.push([k, channel, a]));
+  await tick();
+  // onMaximizedChange answers its own window's state at subscribe time (window-shim.test.mjs);
+  // only what arrives after that counts here.
+  got.length = 0;
+  for (const channel of new Set(Object.values(LISTENERS))) s.emit(channel, { v: 1 }, "main");
+  deq(got, [], `${label}: hears nothing that was sent to the main window`);
+  s.emit("notification:click", { tag: "dm:1" }, label);
+  deq(got.map((g) => g[0]).sort(), ["onNotificationClick", "onNotificationClicked"], `${label}: still hears what is sent to it`);
+}
+{
+  const s = loadShim();
+  const got = [];
+  s.api.onCallAccept((d) => got.push(d));
+  s.api.onMaximizedChange((d) => got.push(d));
+  await tick();
+  got.length = 0; // the subscribe-time state of its own window (window-shim.test.mjs)
+  s.emit("notification:call-accept", { id: 1 }, "acct-42");
+  s.emit("window:maximized", true, "admin");
+  deq(got, [], "main: an admin window's maximize or another window's event is not heard");
+  s.emit("window:maximized", true, "main");
+  deq(got, [true]);
+}
+{
+  // descallPremium.on in a pop-out does not hear the premium:* events sent to the main window.
+  const s = loadShim({ label: "popout-2" });
+  const got = [];
+  s.premium.on("premium:settings-changed", (x) => got.push(x));
+  await tick(); await tick();
+  s.emit("premium:settings-changed", { a: 1 }, "main");
+  await tick(); await tick();
+  deq(got, [], "pop-out: premium events for the main window stay there");
+}
+
+// 3d. Sync answers that must survive a reload, and promises that never reject ----------------
+{
+  // zoom.get(): WebView2 keeps the controller zoom across a reload; the shim must too.
+  const session = (() => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) }; })();
+  const first = loadShim({ session });
+  first.api.zoom.set(1.25);
+  const reloaded = loadShim({ session });
+  assert.equal(reloaded.api.zoom.get(), 1.25, "zoom.get() after a reload is the zoom the page set");
+  deq(reloaded.startup.filter((c) => c[0] === "window_set_zoom"), [["window_set_zoom", { factor: 1.25 }]], "and the shell zoom is re-applied to match");
+  const fresh = loadShim();
+  assert.equal(fresh.api.zoom.get(), 1, "a new app start begins at 100 %");
+  assert.ok(!fresh.startup.some((c) => c[0] === "window_set_zoom"), "no zoom call at a fresh start");
+}
+{
+  // getPrefersReducedTransparency(): the boot snapshot is written once per window; a reload
+  // later in the day asks the shell again and tells the listeners when it changed.
+  const s = loadShim({ boot: { reducedTransparency: false }, responses: { app_reduced_transparency: true } });
+  const seen = [];
+  s.api.onReducedTransparencyChange((v) => seen.push(v));
+  assert.ok(s.startup.some((c) => c[0] === "app_reduced_transparency"), "refresh asked at start");
+  await tick();
+  assert.equal(s.api.getPrefersReducedTransparency(), true, "getter follows the fresh answer");
+  deq(seen, [true], "listeners told once");
+  s.emit("native-theme:reduced-transparency-changed", false);
+  assert.equal(s.api.getPrefersReducedTransparency(), false, "and the change event");
+  deq(seen, [true, false]);
+  s.emit("native-theme:reduced-transparency-changed", false);
+  deq(seen, [true, false], "no duplicate for the same value");
+}
+{
+  // Electron answered these without ever rejecting (main.cjs catches and returns a value).
+  const s = loadShim({ fail: ["clipboard_read_image", "clipboard_write_text", "screen_sources", "updates_check"] });
+  assert.equal(await s.api.readClipboardImage(), null, "clipboard image failure -> null");
+  deq(await s.api.writeClipboardText("hi"), { ok: false }, "copy failure -> { ok: false }");
+  deq(await s.api.getScreenSources(), [], "capture failure -> []");
+  const upd = await s.api.checkForUpdates();
+  assert.equal(upd.success, false, "update check failure -> { success: false }");
+  s.window.__descallNativeShare = { getSources: () => Promise.reject(new Error("wgc")), select: () => Promise.reject(new Error("x")) };
+  deq(await s.api.getScreenSources(), [], "native lane failure -> []");
+  assert.equal(await s.api.selectDisplaySource("screen:0:0"), false, "native select failure -> false");
+  const typed = loadShim({ responses: { clipboard_read_image: new Uint8Array([1, 2, 3]) } });
+  assert.equal((await typed.api.readClipboardImage()).length, 3, "typed-array answer accepted");
+}
+
+{
+  // secureToken.get() is sync and per-window cached; a sign-in / sign-out in another owner
+  // window (the shell's secure-token:changed) updates it, as Electron's file read did.
+  const s = loadShim({ boot: { token: "old.tok.en" } });
+  await tick();
+  s.emit("secure-token:changed", { token: "new.tok.en" });
+  assert.equal(s.api.secureToken.get(), "new.tok.en", "another window signed in");
+  s.emit("secure-token:changed", { token: null });
+  assert.equal(s.api.secureToken.get(), null, "another window signed out");
+  assert.equal(s.ctx.sessionStorage.getItem("__descall_token_override"), "", "and a reload sees it too");
+  const acct = loadShim({ label: "acct-42", boot: { token: "acct.tok.en" } });
+  await tick();
+  acct.emit("secure-token:changed", { token: "owner.tok.en" }, "main");
+  assert.equal(acct.api.secureToken.get(), "acct.tok.en", "an extra-account window keeps its own session");
+  const systemRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "system.rs"), "utf8");
+  assert.match(systemRs, /pub const TOKEN_EVENT: &str = "secure-token:changed";/);
+  assert.match(systemRs, /crate::premium::signed_out\(\);/, "signing out resets the Descall+ gate (main.cjs premium.gate.reset())");
+}
+
+// 3e. Capabilities: every window a bridge runs in may use the plugin commands it calls -------
+{
+  const capDir = join(here, "..", "src-tauri", "capabilities");
+  const caps = ["default.json", "shell.json", "tray-menu.json"].map((f) => JSON.parse(readFileSync(join(capDir, f), "utf8")));
+  const glob = (pattern, label) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`).test(label);
+  const capsFor = (label) => caps.filter((c) => c.windows.some((w) => glob(w, label)));
+  // core:default bundles core:event:default (listen / unlisten), core:window:default, ...
+  const allowed = (label, perm) => capsFor(label).some((c) => c.permissions.includes(perm)
+    || (perm.startsWith("core:event:") && c.permissions.includes("core:default"))
+    || (perm === "opener:allow-open-url" && c.permissions.includes("opener:allow-open-url")));
+  // [shim, windows it is injected into (one sample label per glob)]
+  const WINDOWS = {
+    "electron-api-shim.js": ["main", "admin", "signup-stats", "popout-1", "acct-7"],
+    "premium-shim.js": ["main", "popout-1", "acct-7", "launcher"],
+    "native-screen-share.js": ["main", "popout-1"],
+    "premium-hud-shim.js": ["hud-1", "widget-clock"],
+    "premium-launcher-shim.js": ["launcher"],
+    "shell-notif.js": ["notif-1"],
+    "shell-overlay.js": ["overlay", "overlay-3"],
+    "tray-menu-shim.js": ["tray-menu"],
+  };
+  const PLUGIN_PERM = {
+    "plugin:window|minimize": "core:window:allow-minimize",
+    "plugin:window|toggle_maximize": "core:window:allow-toggle-maximize",
+    "plugin:window|is_maximized": "core:window:allow-is-maximized",
+    "plugin:window|close": "core:window:allow-close",
+    "plugin:opener|open_url": "opener:allow-open-url",
+    "plugin:event|listen": "core:event:allow-listen",
+    "plugin:event|unlisten": "core:event:allow-unlisten",
+  };
+  for (const [file, labels] of Object.entries(WINDOWS)) {
+    const src = readFileSync(join(here, file), "utf8");
+    const needs = new Set();
+    for (const m of src.matchAll(/"(plugin:[a-z-]+\|[a-z_]+)"/g)) needs.add(m[1]);
+    for (const m of src.matchAll(/winCmd\("\w+", "(\w+)"\)/g)) needs.add(`plugin:window|${m[1]}`);
+    if (/\.listen\(/.test(src) || /plugin:event\|listen/.test(src)) { needs.add("plugin:event|listen"); needs.add("plugin:event|unlisten"); }
+    if (/startDragging\(/.test(src)) needs.add("core:window:allow-start-dragging");
+    for (const label of labels) {
+      assert.ok(capsFor(label).length > 0, `${label} (${file}) is in a capability`);
+      for (const need of needs) {
+        const perm = PLUGIN_PERM[need] || need;
+        assert.ok(allowed(label, perm), `${label} may use ${need} (${perm}) for ${file}`);
+      }
+    }
+  }
+  // Every window label the shell creates is in exactly one capability.
+  const rsFiles = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith(".rs")) rsFiles.push(readFileSync(p, "utf8"));
+    }
+  };
+  walk(join(here, "..", "src-tauri", "src"));
+  const rs = rsFiles.join("\n");
+  const labels = new Set(["main", "pip", "sidebar"]);
+  for (const m of rs.matchAll(/const LABEL: &str = "([a-z-]+)"/g)) labels.add(m[1]);
+  // Labels built from a prefix constant (the in-call mini card is overlay-<n>, T4).
+  for (const m of rs.matchAll(/const LABEL_PREFIX: &str = "([a-z-]+)-"/g)) labels.add(`${m[1]}-1`);
+  // format!("x-{...}") builds window labels, except these secret-store / log keys.
+  const NOT_WINDOWS = new Set(["account", "http"]);
+  for (const m of rs.matchAll(/format!\("([a-z]+)-\{/g)) if (!NOT_WINDOWS.has(m[1])) labels.add(`${m[1]}-1`);
+  for (const m of rs.matchAll(/Some\(\("([a-z-]+)", (?:STATS|PANEL)_PATH/g)) labels.add(m[1]);
+  for (const want of ["overlay-1", "launcher", "tray-menu", "admin", "signup-stats", "notif-1", "popout-1", "acct-1", "hud-1", "widget-1"]) {
+    assert.ok(labels.has(want), `window label ${want} found in the Rust sources`);
+  }
+  for (const label of labels) assert.equal(capsFor(label).length, 1, `${label} is covered by exactly one capability`);
+}
+
+
+// 3f. Shell-side event parity with main.cjs (read from the Rust sources) ----------------------
+{
+  const src = join(here, "..", "src-tauri", "src");
+  const stateRs = readFileSync(join(src, "state.rs"), "utf8");
+  const at = stateRs.indexOf("pub fn show_main");
+  const showMain = stateRs.slice(at, stateRs.indexOf("\n}\n", at));
+  // mainWindow.on('show') sent app:visibility false and the content box; focus alone was not
+  // enough (Windows can refuse it after a tray / notification click: animations stayed paused).
+  assert.match(showMain, /to_main\(app, "app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)\)/, "show_main: app:visibility false");
+  assert.match(showMain, /to_main\(app, "window:content-box"/, "show_main: content box");
+  const bootRs = readFileSync(join(src, "boot.rs"), "utf8");
+  assert.match(bootRs, /WindowEvent::Moved\(_\) => \{\s*publish_content_box\(&win\);\s*save_window_state_soon\(&win\);/, "a drag saves the window state debounced");
+  assert.ok(!/WindowEvent::Moved\(_\) => \{[^}]*save_window_state\(&win\)/.test(bootRs), "not on every Moved event");
+  const updatesRs = readFileSync(join(src, "commands", "updates.rs"), "utf8");
+  assert.match(updatesRs, /"available": version\.is_some\(\) \|\| ready/, "check-for-updates answers available");
+  assert.match(updatesRs, /"phase": phase/, "update:error carries the phase");
+  assert.match(updatesRs, /map_err\(\|e\| \(e\.to_string\(\), "download"\)\)/, "a failed download is phase download");
+  const appRs = readFileSync(join(src, "commands", "app.rs"), "utf8");
+  assert.match(appRs, /descall_shell::bridge::sets_ui_locale\(window\.label\(\)\)/, "admin windows may set the language (main.cjs app:locale)");
+  const adminRs = readFileSync(join(src, "admin.rs"), "utf8");
+  assert.match(adminRs, /install_browser_guards\(&win\)/, "admin windows get the WebView2 browser guards");
+  assert.match(adminRs, /is_safe_external_url\((?:url|next)\.as_str\(\)\)[\s\S]{0,200}open_url/, "admin window.open opens the default browser");
+  const overlayRs = readFileSync(join(src, "commands", "overlay.rs"), "utf8");
+  for (const cmd of ["overlay_show", "overlay_update", "overlay_hide"]) {
+    const at = overlayRs.indexOf(`pub fn ${cmd}<`);
+    assert.ok(at > 0 && /if !from_main\(&window\) \{\s*return;/.test(overlayRs.slice(at, at + 300)), `${cmd}: only the main window drives the voice overlay`);
+  }
+  const mainRsSrc = readFileSync(join(src, "main.rs"), "utf8");
+  assert.match(mainRsSrc, /"app:main-error", descall_shell::bridge::panic_summary\(/, "panics reach onMainError as a mainErrors.cjs summary");
+  // will-navigate (main.cjs): a non-app URL is cancelled and a web or mail link goes to the browser.
+  assert.match(mainRsSrc, /\.on_navigation\(\{\s*let app = handle\.clone\(\);\s*move \|url\| boot::main_navigation\(&app, url\)/, "main window navigation goes through main_navigation");
+  const navAt = bootRs.indexOf("pub fn main_navigation");
+  const nav = bootRs.slice(navAt, bootRs.indexOf("\n}\n", navAt));
+  assert.match(nav, /if is_app_url\(url\) \{\s*return true;/, "the app navigates in place");
+  assert.match(nav, /is_safe_external_url\(url\.as_str\(\)\)[\s\S]{0,120}open_url\(url\.as_str\(\)/, "a safe external URL opens in the default browser");
+  assert.match(nav, /\n    false$/, "and the window itself never leaves the app");
+  // nativeTheme 'updated' reached every window (getAllWindows), admin and Descall+ windows too.
+  const watchAt = bootRs.indexOf("pub fn watch_reduced_transparency");
+  const watch = bootRs.slice(watchAt, bootRs.indexOf("\n}\n", watchAt));
+  assert.match(watch, /app\.emit\("native-theme:reduced-transparency-changed", now\)/, "reduced transparency change goes to every window");
+  assert.ok(!/to_main\(&app, "native-theme/.test(watch), "not to the main window only");
+  // mainWindow 'minimize' / 'restore': backgrounded true once, then false on restore even
+  // when Windows does not give the restored window the focus.
+  const resizedAt = bootRs.indexOf("WindowEvent::Resized(_) =>");
+  const resized = bootRs.slice(resizedAt, bootRs.indexOf("WindowEvent::Moved", resizedAt));
+  assert.match(resized, /minimized\.swap\(minimized,/, "the minimized state is tracked");
+  assert.match(resized, /if !was_minimized \{\s*visibility\(&win, true\);/, "minimize: backgrounded");
+  assert.match(resized, /if was_minimized(?: && win\.is_visible\(\)\.unwrap_or\(false\))? \{\s*visibility\(&win, false\);/, "restore: not backgrounded");
+}
+
 // 4. Commands exist in main.rs -----------------------------------------------------------------
 const handler = mainRs.slice(mainRs.indexOf("generate_handler!["), mainRs.indexOf("])", mainRs.indexOf("generate_handler![")));
 const registered = new Set([...handler.matchAll(/::(\w+),/g)].map((m) => m[1]));
-const fromShim = new Set([...shimSrc.matchAll(/(?:invoke|fire)\("(\w+)"/g)].map((m) => m[1]));
+// Every plain string literal in the first argument, so fire(v ? "token_set" : "token_clear") counts both.
+const commandsIn = (src) => new Set([...src.matchAll(/\b(?:invoke|fire|winCmd)\(([^,)\n]*)/g)].flatMap((m) => [...m[1].matchAll(/"(\w+)"/g)].map((x) => x[1])));
+const fromShim = commandsIn(shimSrc);
+assert.ok(fromShim.has("token_set") && fromShim.has("token_clear") && fromShim.has("window_minimize"), "command parser sees ternaries and winCmd");
 for (const cmd of new Set([...called, ...fromShim])) assert.ok(registered.has(cmd), `${cmd} is registered in main.rs`);
 for (const cmd of ["notif_action", "overlay_action"]) assert.ok(registered.has(cmd), `${cmd} (shell pages) is registered`);
 // The native screen-share lane (native-screen-share.js) is injected into the same page.

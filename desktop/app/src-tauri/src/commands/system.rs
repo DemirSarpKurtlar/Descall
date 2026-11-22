@@ -10,6 +10,21 @@ fn trusted<R: Runtime>(w: &WebviewWindow<R>) -> bool {
     matches!(w.label(), "main" | "admin" | "signup-stats")
 }
 
+/// Page event that keeps each owner window's synchronous secureToken.get() current.
+pub const TOKEN_EVENT: &str = "secure-token:changed";
+
+
+/// Electron read the token file on every secureToken.get(), so a sign-in or sign-out in one
+/// window was seen by the others at once. The shim answers get() from a per-window cache:
+/// tell the owner windows what the store now holds.
+fn publish_token<R: Runtime>(app: &AppHandle<R>, token: Option<&str>) {
+    use tauri::{Emitter, EventTarget};
+    let _ = app.emit_filter(TOKEN_EVENT, json!({ "token": token }), |t| match t {
+        EventTarget::Window { label } | EventTarget::Webview { label } | EventTarget::WebviewWindow { label } | EventTarget::AnyLabel { label } => descall_shell::bridge::is_owner_session(label),
+        _ => false,
+    });
+}
+
 #[tauri::command]
 pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token: String) -> bool {
     if token.len() > 16 * 1024 {
@@ -22,7 +37,12 @@ pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token:
     if !trusted(&window) {
         return false;
     }
-    crate::secure_store::set(&app, crate::secure_store::TOKEN, token.trim())
+    let token = token.trim();
+    let ok = crate::secure_store::set(&app, crate::secure_store::TOKEN, token);
+    if ok {
+        publish_token(&app, Some(token).filter(|t| !t.is_empty()));
+    }
+    ok
 }
 
 #[tauri::command]
@@ -33,8 +53,14 @@ pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> b
     if !trusted(&window) {
         return false;
     }
+    // Signed out: the Descall+ entitlement claim goes at once (main.cjs secure-token:clear
+    // called premium.gate.reset()).
     crate::premium::signed_out();
-    crate::secure_store::set(&app, crate::secure_store::TOKEN, "")
+    let ok = crate::secure_store::set(&app, crate::secure_store::TOKEN, "");
+    if ok {
+        publish_token(&app, None);
+    }
+    ok
 }
 
 /// clipboard:read-image: PNG bytes (raw IPC body, no base64), empty when there is none.

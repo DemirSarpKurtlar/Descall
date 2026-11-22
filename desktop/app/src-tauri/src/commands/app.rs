@@ -14,7 +14,7 @@ pub fn app_version<R: Runtime>(app: AppHandle<R>) -> String {
 /// app:locale: tray, capsules, overlay and dialogs follow the UI language.
 #[tauri::command]
 pub fn app_set_locale<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, locale: String) {
-    if window.label() != state::MAIN {
+    if !descall_shell::bridge::sets_ui_locale(window.label()) {
         return;
     }
     let locale: String = locale.chars().take(16).collect();

@@ -134,7 +134,7 @@ fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool
             i.install_started = false;
             i.staged = Some((update, bytes));
             shell(app).quitting.store(false, Ordering::Release);
-            to_main(app, "update:error", json!({ "message": e.to_string() }));
+            to_main(app, "update:error", error_payload(&e.to_string(), "install"));
             false
         }
     }
@@ -201,7 +201,7 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
         let u = app.state::<Updates>();
         let mut i = u.inner.lock().unwrap();
         if i.deferral.update_ready || i.check_in_flight {
-            return Ok(json!({ "success": true, "updateInfo": null, "updateReady": i.deferral.update_ready, "updateVersion": i.version }));
+            return Ok(json!({ "success": true, "updateInfo": null, "available": i.deferral.update_ready, "updateReady": i.deferral.update_ready, "updateVersion": i.version }));
         }
         i.check_in_flight = true;
     }
@@ -215,18 +215,38 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
                 let i = u.inner.lock().unwrap();
                 (i.deferral.update_ready, i.version.clone())
             };
-            Ok(json!({ "success": true, "updateInfo": version.map(|v| json!({ "version": v })), "updateReady": ready, "updateVersion": v }))
+            Ok(check_result(version, ready, v))
         }
-        Err(e) => {
-            to_main(&app, "update:error", json!({ "message": e }));
+        Err((e, phase)) => {
+            to_main(&app, "update:error", error_payload(&e, phase));
             Err(e)
         }
     }
 }
 
-async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, String> {
-    let updater = app.updater().map_err(|e| e.to_string())?;
-    let Some(update) = updater.check().await.map_err(|e| e.to_string())? else { return Ok(None) };
+/// check-for-updates answer, as main.cjs: `available` tells the update card whether anything
+/// newer exists (ElectronUpdateToast.jsx drops the card when it is false).
+fn check_result(version: Option<String>, ready: bool, ready_version: Option<String>) -> Value {
+    json!({
+        "success": true,
+        "available": version.is_some() || ready,
+        "updateInfo": version.map(|v| json!({ "version": v })),
+        "updateReady": ready,
+        "updateVersion": ready_version,
+    })
+}
+
+/// update:error, as main.cjs: the message capped at 200 characters and the phase, so the page
+/// shows the error card only for a download it was showing ("download"), never for a quiet
+/// background check that failed ("check").
+fn error_payload(message: &str, phase: &'static str) -> Value {
+    json!({ "message": message.chars().take(200).collect::<String>(), "phase": phase })
+}
+
+async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (String, &'static str)> {
+    let check = |e: String| (e, "check");
+    let updater = app.updater().map_err(|e| check(e.to_string()))?;
+    let Some(update) = updater.check().await.map_err(|e| check(e.to_string()))? else { return Ok(None) };
     let version = update.version.clone();
     to_main(app, "update:downloading", json!({ "version": version }));
     let app_p = app.clone();
@@ -248,7 +268,7 @@ async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String
             || {},
         )
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| (e.to_string(), "download"))?;
     let busy = live_busy(app);
     {
         let u = app.state::<Updates>();
@@ -339,4 +359,25 @@ pub fn updates_restart<R: Runtime>(app: AppHandle<R>, confirmed: bool) -> Value 
 #[tauri::command]
 pub fn updates_status<R: Runtime>(app: AppHandle<R>) -> Value {
     json!({ "updateReady": is_ready(&app), "updateVersion": ready_version(&app) })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// ElectronUpdateToast.jsx reads `available` (retry card) and update:error `phase`.
+    #[test]
+    fn answers_match_main_cjs() {
+        let none = check_result(None, false, None);
+        assert_eq!(none["available"], json!(false));
+        assert_eq!(none["success"], json!(true));
+        let found = check_result(Some("4.2.0".into()), true, Some("4.2.0".into()));
+        assert_eq!(found["available"], json!(true));
+        assert_eq!(found["updateInfo"]["version"], json!("4.2.0"));
+        assert_eq!(found["updateReady"], json!(true));
+        let long = "x".repeat(500);
+        let e = error_payload(&long, "download");
+        assert_eq!(e["phase"], json!("download"));
+        assert_eq!(e["message"].as_str().unwrap().chars().count(), 200);
+    }
 }

@@ -36,13 +36,18 @@
       onUpdate: function (cb) { if (typeof cb === "function") updateHandlers.push(cb); },
     }),
   });
+  // Only this capsule's updates: the global listen() also hears updates sent to the other
+  // capsules (every grouped toast used to take the newest chat's text).
+  var meta = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+  var label = String((meta && meta.currentWebview && meta.currentWebview.label) || "");
+  var own = label ? { target: { kind: "WebviewWindow", label: label } } : undefined;
   T.event.listen("notif:update", function (e) {
     var p = (e && e.payload) || {};
     var m = card.describeNotification({ title: p.title, body: p.body, data: p.data, appIcon: p.appIcon, avatarUrl: p.avatarUrl });
     updateHandlers.forEach(function (cb) {
       try { cb({ title: m.name, body: m.preview || "", context: m.context || "", count: p.count || 1 }); } catch (err) { console.error(err); }
     });
-  });
+  }, own);
 
   var model = card.describeNotification({
     title: input.title || "",

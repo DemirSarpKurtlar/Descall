@@ -321,6 +321,24 @@ fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
     let _ = std::fs::write(path, v.to_string());
 }
 
+/// main.cjs saveWindowStateSoon: a drag or a resize fires Moved / Resized many times a second;
+/// write window-state.json once the window has been still for 400 ms, not on every event (each
+/// write read and rewrote the file on the UI thread while the user dragged the window).
+static SAVE_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+pub const SAVE_STATE_DEBOUNCE_MS: u64 = 400;
+
+fn save_window_state_soon<R: Runtime>(w: &WebviewWindow<R>) {
+    use std::sync::atomic::Ordering;
+    let gen = SAVE_GEN.fetch_add(1, Ordering::AcqRel) + 1;
+    let w = w.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(SAVE_STATE_DEBOUNCE_MS)).await;
+        if SAVE_GEN.load(Ordering::Acquire) == gen {
+            save_window_state(&w);
+        }
+    });
+}
+
 // ---- cold start (launchVisibility.cjs) --------------------------------------------------------
 
 const RELAUNCH_MARKER: &str = "updater-relaunch.json";
@@ -363,6 +381,22 @@ pub fn cold_start<R: Runtime>(app: &AppHandle<R>, argv: &[String]) -> descall_sh
 /// else opens in the default browser (the shim's link handler and on_new_window).
 pub fn is_app_url(url: &tauri::Url) -> bool {
     descall_shell::trust::is_app_url(url.as_str(), crate::state::is_dev())
+}
+
+/// Main window will-navigate (main.cjs): only the app navigates in place. A web or mail link
+/// the page navigates to by itself (location.assign, a form, a link the shim's click handler
+/// did not see) opens in the default browser, as openExternalSafely did; it used to do nothing.
+pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool {
+    if is_app_url(url) {
+        return true;
+    }
+    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    } else {
+        log::warn!("[nav] not opening will-navigate: {}", url.as_str().chars().take(120).collect::<String>());
+    }
+    false
 }
 
 // ---- window events ---------------------------------------------------------------------------
@@ -410,7 +444,6 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     // had Focused(true): a window restored without activation (Win+D twice, a taskbar
     // thumbnail) kept html.app-backgrounded, every CSS animation stayed paused at frame 0
     // and Settings > Magaza showed an empty body (its cards fade in).
-    let was_minimized = std::sync::atomic::AtomicBool::new(false);
     w.on_window_event(move |e| {
         let app = win.app_handle();
         match e {
@@ -441,22 +474,26 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 if changed {
                     crate::state::to_main(app, "window:maximized", maximized);
                 }
-                if win.is_minimized().unwrap_or(false) {
-                    was_minimized.store(true, std::sync::atomic::Ordering::Relaxed);
-                    visibility(&win, true);
+                let minimized = win.is_minimized().unwrap_or(false);
+                let was_minimized = crate::state::shell(app).minimized.swap(minimized, std::sync::atomic::Ordering::AcqRel);
+                if minimized {
+                    if !was_minimized {
+                        visibility(&win, true); // mainWindow 'minimize'
+                    }
                 } else {
-                    // Back from minimized (main.cjs 'restore'): the page resumes its animations
-                    // even when Windows does not hand it the focus (foreground lock).
-                    if was_minimized.swap(false, std::sync::atomic::Ordering::Relaxed) && win.is_visible().unwrap_or(false) {
+                    // mainWindow 'restore' sent app:visibility false on its own, focus or not:
+                    // a restore without the focus (foreground lock) kept the page's animations
+                    // paused. Not for a window restored while hidden to the tray.
+                    if was_minimized && win.is_visible().unwrap_or(false) {
                         visibility(&win, false);
                     }
                     publish_content_box(&win);
-                    save_window_state(&win);
+                    save_window_state_soon(&win);
                 }
             }
             WindowEvent::Moved(_) => {
                 publish_content_box(&win);
-                save_window_state(&win);
+                save_window_state_soon(&win);
             }
             WindowEvent::Focused(true) => visibility(&win, false),
             WindowEvent::ScaleFactorChanged { .. } => publish_content_box(&win),
@@ -538,7 +575,10 @@ pub fn watch_reduced_transparency<R: Runtime>(app: &AppHandle<R>) {
             let now = crate::platform::reduced_transparency();
             if now != last {
                 last = now;
-                crate::state::to_main(&app, "native-theme:reduced-transparency-changed", now);
+                // Every window, as nativeTheme 'updated' did (BrowserWindow.getAllWindows): the
+                // admin and Descall+ windows follow the switch too.
+                use tauri::Emitter;
+                let _ = app.emit("native-theme:reduced-transparency-changed", now);
             }
         }
     });

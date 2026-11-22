@@ -8,6 +8,9 @@
   if (window.top !== window || window.launcherAPI) return;
   const T = window.__TAURI__;
   if (!T || !T.core || !T.event) return;
+  const meta = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+  const label = String((meta && meta.currentWebview && meta.currentWebview.label) || "");
+  const own = label ? { target: { kind: "WebviewWindow", label } } : undefined;
   const call = (channel, ...args) => T.core.invoke("premium_invoke", { channel, args });
   Object.defineProperty(window, "launcherAPI", {
     value: Object.freeze({
@@ -20,7 +23,7 @@
       close: () => call("premium:launcher:close"),
       onReset: (callback) => {
         if (typeof callback !== "function") return;
-        T.event.listen("premium:launcher:reset", (e) => callback(e.payload || {}));
+        T.event.listen("premium:launcher:reset", (e) => callback(e.payload || {}), own).catch(() => {});
       },
     }),
     writable: false,

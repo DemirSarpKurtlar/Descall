@@ -66,11 +66,14 @@ fn install_panic_hook() {
     std::panic::set_hook(Box::new(move |info| {
         log::error!("[main] panic: {info}");
         if let Some(app) = APP.get() {
-            // Message only: the location and any path in it would name the build machine's
-            // and the user's folders (descall_shell::crash).
+            // mainErrors.cjs summary shape { kind, name, message, stack }. The message is
+            // descall_shell::crash::page_message (one line, every path replaced, capped); the
+            // location goes through bridge::scrub_paths (no build machine or user folders).
             let p = info.payload();
             let text = p.downcast_ref::<&str>().copied().or_else(|| p.downcast_ref::<String>().map(String::as_str));
-            state::to_main(app, "app:main-error", serde_json::json!({ "message": descall_shell::crash::page_message(text) }));
+            let message = descall_shell::crash::page_message(text);
+            let location = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()));
+            state::to_main(app, "app:main-error", descall_shell::bridge::panic_summary(&message, location.as_deref()));
         }
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
@@ -154,7 +157,10 @@ fn main() {
                 .on_download(webview::on_download)
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
-                .on_navigation(boot::is_app_url)
+                .on_navigation({
+                    let app = handle.clone();
+                    move |url| boot::main_navigation(&app, url)
+                })
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {

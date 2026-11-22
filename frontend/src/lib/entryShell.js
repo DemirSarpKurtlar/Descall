@@ -6,16 +6,21 @@
  * gtag skip and lib/sentry.js).
  */
 import { isPublicMarketingPath } from "../site/marketingPaths.js";
+import { isDesktopShell } from "./desktopShell.js";
+
+export { isDesktopShell, isTauriShell } from "./desktopShell.js";
 
 function currentWindow(win) {
   if (win !== undefined) return win;
   return typeof window !== "undefined" ? window : null;
 }
 
-/** Electron desktop (preload exposes electronAPI.isElectron). */
+/**
+ * Desktop app: Electron (preload exposes electronAPI.isElectron) or the Rust / Tauri app
+ * (same bridge, see lib/desktopShell.js). The name stays for the existing callers.
+ */
 export function isElectronShell(win) {
-  const w = currentWindow(win);
-  return Boolean(w && w.electronAPI && w.electronAPI.isElectron);
+  return isDesktopShell(currentWindow(win));
 }
 
 /**
