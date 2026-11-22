@@ -77,6 +77,8 @@ fn install_panic_hook() {
 fn main() {
     logging::init();
     errors::init_early();
+    // One taskbar button however Descall was started (before any window exists).
+    platform::set_app_user_model_id();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".

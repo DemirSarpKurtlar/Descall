@@ -20,6 +20,7 @@
 // 12. Taskbar thumbnail tooltips follow a language change live.
 // 13. The native tray menu (panel fallback) has Electron's order.
 // 14. Taskbar badge and tray dot count the same unread messages.
+// 15. The process has Descall's AppUserModelID: one taskbar button however it was started.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -404,6 +405,25 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(app, /useDesktopTray\(\{ me, myStatus, dmUnread, groupUnread,/);
   const tm = codeOnly(read("desktop/app/src-tauri/src/tray_menu.rs"));
   assert.match(tm, /let unread = next\.get\("signedIn"\)\.and_then\(Value::as_bool\) == Some\(true\) && next\.get\("unreadMessages"\)/);
+}
+
+// ---- 15: one taskbar button (process AppUserModelID) ---------------------------------------------------
+{
+  // Electron set it at boot (toastIdentity.cjs app.setAppUserModelId); Tauri never did, so only
+  // a start from the Start Menu shortcut carried the id and an autostart / update / toast / link
+  // start got its own taskbar button next to the pinned one (badge and thumbnail buttons on it).
+  const platform = codeOnly(read("desktop/app/src-tauri/src/platform.rs"));
+  const fn = platform.slice(platform.indexOf("pub fn set_app_user_model_id"), platform.indexOf("pub fn session_locked"));
+  const id = fn.match(/SetCurrentProcessExplicitAppUserModelID\(w!\("([^"]+)"\)\)/);
+  assert.ok(id, "SetCurrentProcessExplicitAppUserModelID with a literal id");
+  const conf = JSON.parse(read("desktop/app/src-tauri/tauri.conf.json"));
+  assert.equal(id[1], conf.identifier, "same id as the Tauri identifier");
+  assert.match(read("desktop/app/src-tauri/nsis/hooks.nsh"), new RegExp(`!define DESCALL_AUMID "${id[1].replace(/\./g, "\\.")}"`), "and the installer's shortcut");
+  assert.match(codeOnly(read("desktop/app/src-tauri/src/premium/toast.rs")), new RegExp(`APP_USER_MODEL_ID: &str = "${id[1].replace(/\./g, "\\.")}"`), "and the toasts");
+  assert.match(read("frontend/electron/premium/toastIdentity.cjs"), new RegExp(`'${id[1].replace(/\./g, "\\.")}'`), "and Electron");
+  const main = codeOnly(read("desktop/app/src-tauri/src/main.rs"));
+  const body = main.slice(main.indexOf("fn main()"));
+  assert.ok(body.indexOf("platform::set_app_user_model_id()") > 0 && body.indexOf("platform::set_app_user_model_id()") < body.indexOf("tauri::Builder::default()"), "set before the app and its first window");
 }
 
 console.log("shell-notif.test: ok");
