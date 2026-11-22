@@ -202,6 +202,10 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
     const rs = readFileSync(join(src, "premium", "features", f), "utf8");
     assert.match(rs, /crate::commands::window::forward_maximized\(&w\);/, `${f}: maximized state reaches the window's title bar`);
   }
+  // containRestoredWindow: unmaximize and restore pull a window that hangs off its monitor back.
+  assert.match(boot, /if !maximized \{\s*contain_restored\(&win\); \/\/ mainWindow 'unmaximize'/);
+  assert.match(boot, /if was_minimized \{\s*contain_restored\(&win\); \/\/ mainWindow 'restore'/);
+  assert.match(boot, /if !overflows\(b, work\) \{\s*return;\s*\}\s*let f = fit_bounds_to_work_area/);
   // A second launch while the main window is still being built is kept (round 2).
   assert.match(main, /\.plugin\(tauri_plugin_single_instance::init\([\s\S]{0,300}state::request_show\(app\);/);
 }
