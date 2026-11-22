@@ -75,7 +75,10 @@ assert.ok(/\.msg-seen \{[^}]*font-size: var\(--fs-11\)/.test(css));
   assert.equal(applyPeerRead(out, me, at), out, "no change returns the same list");
   const app = readFileSync(join(here, "../App.jsx"), "utf8");
   assert.ok(app.includes("applyPeerRead(cur, myIdRef.current, at)"), "App wires dm:peer_read through applyPeerRead");
-  assert.ok(app.includes('document.visibilityState === "hidden"') && app.includes("pendingDmReadRef.current = convWith"), "a hidden window does not mark the open DM read (messaging-03)");
+  // Hidden: a hidden tab, or (desktop shells) minimized / in the tray (lib/appVisibility.js
+  // pageHiddenFromUser: the shells keep visibilityState "visible").
+  assert.ok(app.includes("} else if (pageHiddenFromUser()) {") && app.includes("pendingDmReadRef.current = convWith"), "a hidden window does not mark the open DM read (messaging-03)");
+  assert.match(readFileSync(join(here, "appVisibility.js"), "utf8"), /if \(doc\.visibilityState === "hidden"\) return true;/, "a hidden tab still counts as hidden");
 }
 
 console.log("readReceipts selftest OK");

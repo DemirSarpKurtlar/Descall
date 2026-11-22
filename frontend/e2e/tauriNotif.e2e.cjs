@@ -15,7 +15,8 @@
  *     state counts it (unreadMessages, the tray dot and the taskbar badge read this);
  *   - the same DM with Descall focused and that chat open shows no notification;
  *   - that chat open with Descall hidden to the tray: the DM counts as unread and is marked
- *     read only once Descall is back on screen (WebView2 keeps the page "visible");
+ *     read only once Descall is back on screen (WebView2 keeps the page "visible"); the same
+ *     for an open group;
  *   - notification:click with only the routing ids (what a toast clicked after a cold start
  *     sends, premium/features/quick_reply.rs) opens that DM;
  *   - the Electron envelope { title, body, tag, data } for a group opens the group;
@@ -280,6 +281,21 @@ async function main() {
     await shellEmit('notification:click', { title: 'Hafta Sonu', body: 'arkadas2: selam', tag: `group-${GROUP}`, data: { type: 'group', groupId: GROUP, groupName: 'Hafta Sonu', from: 'arkadas2' } });
     await waitFor('group route', (id) => location.pathname.includes(id) || /\/groups?\//.test(location.pathname), GROUP, 8000).catch((e) => problems.push(e.message));
     check(/group/.test(await page.evaluate(() => location.pathname)), `group click opened the group (${await page.evaluate(() => location.pathname)})`);
+
+    // 5b. That group open and Descall in the tray: its messages count as unread until seen.
+    await shellEmit('app:visibility', { backgrounded: true });
+    await sleep(200);
+    const n5 = (await calls('notification_show')).length;
+    b.emit('group:message', { groupId: GROUP, message: { id: 'g-1', content: 'hafta sonu?', created_at: new Date().toISOString(), sender: { id: U(2), username: 'arkadas2' } } });
+    await waitFor('group capsule', (n) => window.__tauriCalls.filter(([c]) => c === 'notification_show').length > n, n5, 5000).catch((e) => problems.push(e.message));
+    await sleep(800);
+    const tray6 = await lastTray();
+    check(tray6 && tray6.unreadMessages === 1, `open group in the tray: counted as unread (${tray6 && tray6.unreadMessages})`);
+    await shellEmit('app:visibility', { backgrounded: false });
+    await page.mouse.click(640, 400);
+    await sleep(800);
+    const tray7 = await lastTray();
+    check(tray7 && tray7.unreadMessages === 0, `back on screen: group unread cleared (${tray7 && tray7.unreadMessages})`);
 
     // 6. Tray panel actions run the app's own handlers.
     await shellEmit('tray:action', { action: 'openDms', arg: null });

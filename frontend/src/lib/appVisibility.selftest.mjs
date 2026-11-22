@@ -232,5 +232,8 @@ assert.match(read("../styles/visual-polish-pack.css"), /animation: unread-badge-
   const flush = app.slice(app.indexOf("const pendingDmReadRef = useRef(null);"), app.indexOf("const activeGroupRef = useRef(null);"));
   assert.match(flush, /if \(pageHiddenFromUser\(\)\) return;/, "the read receipt waits until Descall is back on screen");
   assert.match(flush, /\["focus", "pointerdown", "keydown"\]/, "and goes out on focus or the first input");
+  const grpMsg = app.slice(app.indexOf('socket.on("group:message", ('), app.indexOf('socket.on("group:message:ack"'));
+  assert.match(grpMsg, /\} else if \(!isFromMe\) \{[\s\S]*?if \(pageHiddenFromUser\(\)\) \{\s*pendingGroupReadRef\.current = groupId;\s*setGroupUnread\(\(prev\) => \(\{ \.\.\.prev, \[groupId\]: \(prev\[groupId\] \|\| 0\) \+ 1 \}\)\);/, "open group out of sight: counted as unread");
+  assert.match(flush, /const groupId = pendingGroupReadRef\.current;[\s\S]*?if \(groupId && activeGroupRef\.current\?\.id === groupId\)/, "and cleared once seen, if still open");
 }
 console.log("appVisibility.selftest ok");

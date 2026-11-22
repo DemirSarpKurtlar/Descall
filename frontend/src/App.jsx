@@ -755,10 +755,22 @@ export default function App() {
   // Polish messaging-03: a DM that got messages while the window was hidden is
   // marked read ("Görüldü") only once the window is visible again.
   const pendingDmReadRef = useRef(null);
+  // The same for an open group: its unread count goes once the window is seen again.
+  const pendingGroupReadRef = useRef(null);
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
     const flush = () => {
       if (pageHiddenFromUser()) return;
+      const groupId = pendingGroupReadRef.current;
+      pendingGroupReadRef.current = null;
+      if (groupId && activeGroupRef.current?.id === groupId) {
+        setGroupUnread((prev) => {
+          if (!prev[groupId]) return prev;
+          const n = { ...prev };
+          delete n[groupId];
+          return n;
+        });
+      }
       const peerId = pendingDmReadRef.current;
       if (!peerId) return;
       pendingDmReadRef.current = null;
@@ -2611,7 +2623,12 @@ export default function App() {
           avatarUrl: normalized.from?.avatarUrl || null,
         });
       } else if (!isFromMe) {
-        // Open group but window hidden / in tray / unfocused: still notify.
+        // Open group but window hidden / in tray / unfocused: still notify. Out of sight
+        // (minimized, in the tray, a hidden tab) it also counts as unread until seen, like a DM.
+        if (pageHiddenFromUser()) {
+          pendingGroupReadRef.current = groupId;
+          setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
+        }
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),
