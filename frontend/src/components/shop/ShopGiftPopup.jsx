@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
@@ -7,6 +7,7 @@ import { useLocale, useT } from "../../context/LocaleContext";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { countryCode, countryName, flagEmoji, isCountryItem } from "../../lib/countryFlags";
 import OverlayPortal from "../ui/OverlayPortal";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const CATEGORY_LABEL = {
   banner: "Profile Banner",
@@ -38,6 +39,9 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
   const [equipping, setEquipping] = useState(false);
   const [equipped, setEquipped] = useState(false);
   const titleId = useId();
+  const cardRef = useRef(null);
+  // Tab stays in the popup while it is open.
+  useModalFocus(Boolean(gift), cardRef, { delay: 80 });
   // A real dialog, like the DesCoin gift popup: Escape closes it.
   useEffect(() => {
     if (!gift) return undefined;
@@ -81,6 +85,7 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
         exit={{ opacity: 0 }}
       >
         <motion.div
+          ref={cardRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
