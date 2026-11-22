@@ -26,6 +26,10 @@ pub struct Shell {
     pub has_tray: AtomicBool,
     pub boot: Mutex<BootWatch>,
     pub last_maximized: Mutex<Option<bool>>,
+    /// The main window is minimized: the next non-minimized resize is mainWindow 'restore'.
+    pub minimized: AtomicBool,
+    /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
+    pub deep_link: Mutex<Option<String>>,
 }
 
 #[derive(Default)]
@@ -68,12 +72,26 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        // Electron sent app:visibility on 'show' / 'restore', not only on 'focus': Windows can
+        // refuse the focus (foreground lock after a tray or notification click), and the page
+        // then kept its animations paused (html.app-backgrounded) until the next click.
+        to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
+        // main.cjs mainWindow.on('show', publishBox).
+        to_main(app, "window:content-box", crate::commands::window::content_box(&w));
     }
 }
 
 /// Send an event to the main page only (Electron: mainWindow.webContents.send).
 pub fn to_main<R: Runtime, S: Serialize + Clone>(app: &AppHandle<R>, event: &str, payload: S) {
     let _ = app.emit_to(MAIN, event, payload);
+}
+
+/// A descall:// link for the page: kept until the page takes it (deep_link_take), and
+/// announced with `app:deep-link` for a page that is already running.
+pub fn deliver_deep_link<R: Runtime>(app: &AppHandle<R>, url: String) {
+    log::info!("[deep-link] {} chars", url.len());
+    *shell(app).deep_link.lock().unwrap() = Some(url);
+    to_main(app, "app:deep-link", ());
 }
 
 pub fn data_dir<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {

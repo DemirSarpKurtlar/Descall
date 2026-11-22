@@ -235,3 +235,48 @@ test("a failing native start falls back to L4 for the same call", async () => {
   assert.ok(p.calls.some((c) => c[0] === "original"));
   assert.equal(p.window.__descallNativeShare.lane, "L4");
 });
+
+test("the native lane is the main window's only (pop-outs and account windows use WebView2's picker)", () => {
+  for (const [label, expected] of [["main", true], [undefined, true], ["popout-3", false], ["acct-ab12", false]]) {
+    const w = new FakeTarget();
+    Object.assign(w, {
+      __TAURI__: { core: { invoke: async () => null } }, chrome: { webview: new FakeTarget() }, VideoFrame: class {},
+      __TAURI_INTERNALS__: { metadata: label ? { currentWebview: { label } } : undefined },
+    });
+    w.top = w;
+    load({ window: w, document: { documentElement: {}, images: [] }, navigator: { mediaDevices: { getDisplayMedia: async () => null } } });
+    assert.equal(w.__descallNativeShare.supported, expected, String(label));
+  }
+});
+
+test("picker tiles refresh live; a window that closed is dimmed and disabled", async () => {
+  const p = fakePage({ startInfo: START });
+  let tick = 0;
+  p.window.__TAURI__.core.invoke = async (cmd, args) => {
+    p.calls.push([cmd, args]);
+    if (cmd === "screen_sources") return [{ id: "screen:0:0", name: "S", thumbnailDataURL: "data:s0" }, { id: "window:9:0", name: "W", thumbnailDataURL: "data:w0" }];
+    if (cmd === "screen_thumbnails") { tick += 1; return args.ids.map((id) => ({ id, alive: id !== "window:9:0", thumbnailDataURL: `data:${id[0]}${tick}` })); }
+    return null;
+  };
+  const list = await p.window.__descallNativeShare.getSources();
+  assert.equal(list.length, 2);
+  const tile = (src) => {
+    const btn = { disabled: false, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+    return { src, style: {}, closest: (sel) => (sel === "button" ? btn : null), btn };
+  };
+  const screen = tile("data:s0");
+  const win = tile("data:w0");
+  p.ctx.document.images.push(screen, win);
+  try {
+    await new Promise((r) => setTimeout(r, 1100));
+    assert.deepEqual([...p.calls.find((c) => c[0] === "screen_thumbnails")[1].ids].sort(), ["screen:0:0", "window:9:0"]);
+    assert.equal(screen.src, "data:s1", "fresh thumbnail swapped in place");
+    assert.equal(screen.btn.disabled, false);
+    assert.equal(win.style.opacity, "0.35");
+    assert.equal(win.btn.disabled, true, "a closed window cannot be picked");
+    assert.equal(win.btn.attrs["aria-disabled"], "true");
+  } finally {
+    p.ctx.document.images.length = 0; // picker closed: the refresh stops by itself
+    await new Promise((r) => setTimeout(r, 1100));
+  }
+});

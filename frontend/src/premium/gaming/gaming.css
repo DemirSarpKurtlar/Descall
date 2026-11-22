@@ -165,3 +165,8 @@
   .pg-modal-backdrop { backdrop-filter: none; }
   .pgl-aurora { filter: none; opacity: 0.4; }
 }
+
+/* Tauri: the lock screen's bar drags through data-tauri-drag-region (AppLockScreen.jsx); a CSS
+   drag region becomes a WebView2 caption that swallows the window button clicks. */
+html.tauri-app .pgl-bar,
+html.tauri-app .pgl-bar * { -webkit-app-region: no-drag; app-region: no-drag; }

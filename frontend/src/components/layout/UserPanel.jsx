@@ -5,6 +5,8 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
+import DesktopUpdatePane from "../settings/DesktopUpdatePane";
+import { hasDesktopUpdater } from "../../lib/desktopUpdateState.js";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
 import { isTabletLayout, readStoredSettings } from "../../lib/appearancePrefs";
 import { applyStoredAppearance, setPremiumThemeKey } from "../../lib/appearanceSync";
@@ -45,7 +47,7 @@ import {
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { confirmAction } from "../../lib/glassConfirm";
-import { profileDraftDirty, nestedOverlayOpen } from "../../lib/settingsClose";
+import { profileDraftDirty, nestedOverlayOpen, shellClickClosesSettings } from "../../lib/settingsClose";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
@@ -335,6 +337,8 @@ const NAV_GROUPS_DEF = [
       { id: "notifications", labelKey: "settings.notifications", icon: Bell, hintKey: "settings.notificationsHint" },
       { id: "language", labelKey: "settings.language", icon: Globe, hintKey: "settings.languageHint" },
       { id: "licenses", labelKey: "settings.licenses", icon: FileText, hintKey: "settings.licensesHint" },
+      // Desktop shells only (Electron, Tauri): version and "Check for updates".
+      { id: "desktop", labelKey: "updateToast.settings_title", icon: Monitor, hintKey: "updateToast.settings_hint" },
     ],
   },
   {
@@ -368,6 +372,7 @@ const S3_NAV_TILES = {
   notifications: ["bell", "red"],
   language: ["globe", "blue"],
   licenses: ["book", "gray"],
+  desktop: ["win", "blue"],
   voice: ["volume", "green"],
   sound: ["music", "teal"],
   premium: ["sparkle", "purple"],
@@ -392,6 +397,7 @@ const TAB_TITLE_KEYS = {
   notifications: "settings.notifications",
   language: "settings.language",
   licenses: "settings.licenses",
+  desktop: "updateToast.settings_title",
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
@@ -477,17 +483,18 @@ const UserPanel = forwardRef(function UserPanel({
   // iOS: the Descall+ page only for members (status only, no upsell; App Store 3.1.1).
   const premiumPlan = useSyncExternalStore(subscribePremium, () => getPremiumState().plan, () => getPremiumState().plan);
   const hidePremiumNav = isNativeIOS() && !premiumPlan;
+  const showDesktopNav = useMemo(() => hasDesktopUpdater(typeof window !== "undefined" ? window.electronAPI : null), []);
   const navGroups = useMemo(
     () =>
       NAV_GROUPS_DEF.map((g) => ({
         label: t(g.labelKey),
-        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav)).map((item) => ({
+        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav) && !(item.id === "desktop" && !showDesktopNav)).map((item) => ({
           ...item,
           label: t(item.labelKey),
           hint: t(item.hintKey),
         })),
       })),
-    [t, hidePremiumNav]
+    [t, hidePremiumNav, showDesktopNav]
   );
 
   const tabTitles = useMemo(() => {
@@ -2671,6 +2678,9 @@ const UserPanel = forwardRef(function UserPanel({
           </div>
         );
 
+      case "desktop":
+        return <DesktopUpdatePane />;
+
       case "licenses":
         return (
           <div className="us-tab">
@@ -3042,8 +3052,11 @@ const UserPanel = forwardRef(function UserPanel({
   });
 
   const handleShellClick = (e) => {
-    // Close only when the click lands outside the dialog panel
-    if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
+    // Close only on the Settings backdrop itself. Layers portaled to <body> (the photo /
+    // banner picker, the crop dialog, the username modal) still bubble their React clicks
+    // up here; a click on their own backdrop closes them and must not close Settings too.
+    if (!shellClickClosesSettings(e, panelRef.current)) return;
+    requestClose();
   };
 
   const desktopFade = reduceMotion

@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "A conexão de desktop do Descall+ não iniciou",
+        "body": "Esta janela não conseguiu se conectar aos recursos de desktop, então os atalhos e os outros recursos de desktop estão desligados. Reinicie o app; se continuar, atualize o app.",
+        "pill": "Sem conexão",
+        "tile": "Conexão de desktop ausente",
+        "reload": "Recarregar"
+      },
       "gate": {
         "title": "Os recursos de desktop estão bloqueados neste computador",
         "checking": "Verificando sua assinatura neste computador. Pode levar alguns segundos.",
@@ -6572,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "App para computador",
+    "settings_hint": "Versão e atualizações",
+    "settings_version": "Versão {version}",
+    "settings_check": "Verificar atualizações",
+    "settings_checking": "Verificando atualizações…",
+    "settings_upToDate": "O Descall está atualizado",
+    "settings_checkFailed": "Não foi possível verificar atualizações. Tente de novo em instantes.",
+    "settings_downloading": "O Descall {version} está sendo baixado em segundo plano",
+    "settings_unavailable": "As atualizações automáticas estão desativadas nesta versão",
+    "settings_lastChecked": "Última verificação {time}",
     "confirmBody": "Você está em um chat de voz. Reiniciar agora vai encerrá-lo. O Descall {version} também pode ser instalado sozinho depois que você sair.",
     "confirmLater": "Agora não",
     "confirmRestart": "Encerrar chamada e reiniciar",

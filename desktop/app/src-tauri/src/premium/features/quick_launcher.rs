@@ -58,6 +58,7 @@ impl F {
                 let Some(url) = super::multi_window::app_url(h, "/premium-launcher/launcher.html") else { return false };
                 let origin = url.origin();
                 let built = WebviewWindowBuilder::new(&h.app, LABEL, tauri::WebviewUrl::External(url))
+                    .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
                     .title("Descall")
                     .inner_size(WIDTH, HEIGHT)
                     .decorations(false)
@@ -71,6 +72,9 @@ impl F {
                     .visible_on_all_workspaces(true)
                     .visible(false)
                     .use_https_scheme(true)
+                    // Same WebView2 browser arguments as the main window (shared user data
+                    // folder; other arguments fail with ERROR_INVALID_STATE).
+                    .additional_browser_args(crate::BROWSER_ARGS)
                     .initialization_script(SHIM)
                     .on_navigation(move |u| u.origin() == origin)
                     .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)

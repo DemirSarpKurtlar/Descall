@@ -53,6 +53,29 @@ pub fn reduced_transparency() -> bool {
     }
 }
 
+/// Blocks until a value under the Personalize key changes (RegNotifyChangeKeyValue: no
+/// polling, the thread sleeps in the kernel). False when the key cannot be watched; the
+/// caller then falls back to a slow poll.
+pub fn wait_personalize_change() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Registry::{RegCloseKey, RegNotifyChangeKeyValue, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, KEY_NOTIFY, REG_NOTIFY_CHANGE_LAST_SET};
+        let path = windows_core::HSTRING::from(PERSONALIZE);
+        let mut key = HKEY::default();
+        if RegOpenKeyExW(HKEY_CURRENT_USER, &path, None, KEY_NOTIFY, &mut key) != ERROR_SUCCESS {
+            return false;
+        }
+        let r = RegNotifyChangeKeyValue(key, false, REG_NOTIFY_CHANGE_LAST_SET, None, false);
+        let _ = RegCloseKey(key);
+        r == ERROR_SUCCESS
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
+}
+
 /// OS UI languages, most preferred first ("tr-TR", "en-US"), plus the user locale.
 pub fn os_languages() -> Vec<String> {
     #[allow(unused_mut)]
@@ -116,6 +139,39 @@ pub fn autostart_enabled() -> bool {
     {
         let _ = (RUN, STARTUP_APPROVED_RUN);
         false
+    }
+}
+
+/// The current Run value data (`"C:\...\Descall.exe" --autostart --hidden`), if any.
+pub fn autostart_command() -> Option<String> {
+    #[cfg(windows)]
+    {
+        windows_registry::CURRENT_USER.open(RUN).and_then(|k| k.get_string(descall_shell::launch::RUN_VALUE)).ok()
+    }
+    #[cfg(not(windows))]
+    {
+        None
+    }
+}
+
+/// ensureAutostartLoginItem (main.cjs): the first start turns login auto-start on once, a Run
+/// value of this exe without the hidden args is rewritten, and a decision the user (or the
+/// Electron app before the migration) made is never undone.
+pub fn ensure_autostart(app_data: &std::path::Path, electron_user_data: Option<&std::path::Path>, migrated: bool) {
+    use descall_shell::launch::{autostart_launch_action, AutostartAction, AUTOSTART_MARKER_FILE};
+    let marker = app_data.join(AUTOSTART_MARKER_FILE);
+    let marker_exists = marker.exists();
+    let electron_decided = migrated || electron_user_data.is_some_and(|d| d.join(AUTOSTART_MARKER_FILE).exists());
+    // Only a value that starts this exe is ours to rewrite (an old Electron path is not).
+    let exe = std::env::current_exe().ok().map(|p| p.to_string_lossy().to_lowercase());
+    let current = autostart_command().filter(|cmd| exe.as_deref().is_some_and(|e| cmd.to_lowercase().contains(e)));
+    let action = autostart_launch_action(marker_exists, electron_decided, current.as_deref());
+    if action != AutostartAction::None {
+        log::info!("[boot] login item: {action:?}");
+        set_autostart(true);
+    }
+    if !marker_exists {
+        let _ = std::fs::write(&marker, crate::state::now_ms().to_string());
     }
 }
 

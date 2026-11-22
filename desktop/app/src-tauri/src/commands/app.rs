@@ -14,7 +14,7 @@ pub fn app_version<R: Runtime>(app: AppHandle<R>) -> String {
 /// app:locale: tray, capsules, overlay and dialogs follow the UI language.
 #[tauri::command]
 pub fn app_set_locale<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, locale: String) {
-    if window.label() != state::MAIN {
+    if !descall_shell::bridge::sets_ui_locale(window.label()) {
         return;
     }
     let locale: String = locale.chars().take(16).collect();
@@ -57,9 +57,33 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
     }
     if report.phase == "app-mounted" {
         crate::migration::on_app_mounted(&app);
+        // Main-process errors queued so far (and the previous run's crash) to Sentry.
+        crate::errors::attach();
     }
     if report.phase == "inline-missing" {
         log::error!("[boot] index.html inline boot scripts did not run (CSP hash mismatch?)");
+    }
+}
+
+/// Page warnings and errors to main.log (Electron: console-message -> main.log): the shim
+/// sends console.warn / console.error of the first minute, uncaught errors, unhandled
+/// rejections and CSP violations. Tokens are dropped, lines capped and rate limited.
+#[tauri::command]
+pub fn app_log<R: Runtime>(window: WebviewWindow<R>, level: String, message: String) {
+    use descall_shell::logfile;
+    static RATE: std::sync::Mutex<(u64, u32)> = std::sync::Mutex::new((0, 0));
+    let Ok(mut rate) = RATE.lock() else { return };
+    let (next, allowed) = logfile::renderer_rate(*rate, state::now_ms());
+    *rate = next;
+    drop(rate);
+    if !allowed {
+        return;
+    }
+    let line = logfile::renderer_message(&message);
+    if level == "error" {
+        log::error!("[renderer:{}] {line}", window.label());
+    } else {
+        log::warn!("[renderer:{}] {line}", window.label());
     }
 }
 
@@ -90,4 +114,14 @@ pub fn activity_set_busy<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     if shell(&app).user_busy.swap(busy, Ordering::AcqRel) != busy {
         crate::commands::updates::note_busy(&app);
     }
+}
+
+/// The pending descall:// link (cold start or second launch), taken once: the page routes it
+/// with frontend/src/lib/deepLinks.js. Main window only.
+#[tauri::command]
+pub fn deep_link_take<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> Option<String> {
+    if window.label() != state::MAIN {
+        return None;
+    }
+    shell(&app).deep_link.lock().unwrap().take()
 }

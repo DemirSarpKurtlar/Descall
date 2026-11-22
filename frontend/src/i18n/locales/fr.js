@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "La connexion bureau de Descall+ n'a pas démarré",
+        "body": "Cette fenêtre n'a pas pu se connecter aux fonctions de bureau : les raccourcis et les autres fonctions de bureau sont désactivés. Redémarre l'app ; si cela continue, mets-la à jour.",
+        "pill": "Non connecté",
+        "tile": "Connexion bureau absente",
+        "reload": "Recharger"
+      },
       "gate": {
         "title": "Les fonctions bureau sont verrouillées sur cet ordinateur",
         "checking": "Vérification de ton abonnement sur cet ordinateur. Cela peut prendre quelques secondes.",
@@ -6572,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Application de bureau",
+    "settings_hint": "Version et mises à jour",
+    "settings_version": "Version {version}",
+    "settings_check": "Rechercher des mises à jour",
+    "settings_checking": "Recherche de mises à jour…",
+    "settings_upToDate": "Descall est à jour",
+    "settings_checkFailed": "Impossible de rechercher des mises à jour. Réessaie dans un instant.",
+    "settings_downloading": "Descall {version} se télécharge en arrière-plan",
+    "settings_unavailable": "Les mises à jour automatiques sont désactivées dans cette version",
+    "settings_lastChecked": "Dernière vérification {time}",
     "confirmBody": "Tu es dans un chat vocal. Redémarrer maintenant y mettra fin. Descall {version} peut aussi s'installer tout seul une fois que tu l'auras quitté.",
     "confirmLater": "Pas maintenant",
     "confirmRestart": "Raccrocher et redémarrer",

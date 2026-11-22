@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "La conexión de escritorio de Descall+ no se inició",
+        "body": "Esta ventana no pudo conectarse a las funciones de escritorio, así que los atajos y las demás funciones de escritorio están desactivados. Reinicia la app; si sigue pasando, actualízala.",
+        "pill": "Sin conexión",
+        "tile": "Falta la conexión de escritorio",
+        "reload": "Recargar"
+      },
       "gate": {
         "title": "Las funciones de escritorio están bloqueadas en este equipo",
         "checking": "Comprobando tu membresía en este equipo. Puede tardar unos segundos.",
@@ -6572,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Aplicación de escritorio",
+    "settings_hint": "Versión y actualizaciones",
+    "settings_version": "Versión {version}",
+    "settings_check": "Buscar actualizaciones",
+    "settings_checking": "Buscando actualizaciones…",
+    "settings_upToDate": "Descall está actualizado",
+    "settings_checkFailed": "No se pudieron buscar actualizaciones. Inténtalo de nuevo en un momento.",
+    "settings_downloading": "Descall {version} se está descargando en segundo plano",
+    "settings_unavailable": "Las actualizaciones automáticas están desactivadas en esta compilación",
+    "settings_lastChecked": "Última comprobación {time}",
     "confirmBody": "Estás en un chat de voz. Si reinicias ahora, terminará. Descall {version} también puede instalarse solo cuando salgas.",
     "confirmLater": "Ahora no",
     "confirmRestart": "Finalizar llamada y reiniciar",

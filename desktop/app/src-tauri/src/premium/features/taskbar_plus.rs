@@ -119,6 +119,13 @@ impl Feature for F {
         match ev {
             Bus::App => self.set_badge(h),
             Bus::Call => self.set_buttons(h, false),
+            // Shown again from the tray: the window has a new taskbar button without the
+            // overlay icon (the thumbnail buttons come back through TaskbarButtonCreated,
+            // premium/platform.rs).
+            Bus::Focus(l, true) if l == "main" => {
+                self.last_badge.store(-1, Ordering::Relaxed);
+                self.set_badge(h);
+            }
             Bus::Settings(k) if k == "taskbar_plus" => {
                 self.last_badge.store(-1, Ordering::Relaxed);
                 self.set_badge(h);

@@ -5,12 +5,12 @@ use descall_shell::occlusion::{self, Insets, Rect};
 use tauri::{Manager, Runtime, WebviewWindow};
 
 #[tauri::command]
-pub fn window_minimize<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_minimize<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.minimize();
 }
 
 #[tauri::command]
-pub fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
     if window.is_maximized().unwrap_or(false) {
         let _ = window.unmaximize();
     } else {
@@ -18,10 +18,24 @@ pub fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) {
     }
 }
 
+/// F12 / Ctrl+Shift+I (windowKeys.cjs): DevTools of the calling window, only when
+/// webview::devtools_allowed (dev run or the support opt-in file); otherwise nothing.
+#[tauri::command]
+pub async fn window_toggle_devtools<R: Runtime>(window: WebviewWindow<R>) {
+    if !crate::webview::devtools_allowed(window.app_handle()) {
+        return;
+    }
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
+}
+
 /// window:close: the main window hides to the tray (CloseRequested in boot.rs); other
 /// windows close.
 #[tauri::command]
-pub fn window_close<R: Runtime>(window: WebviewWindow<R>) {
+pub async fn window_close<R: Runtime>(window: WebviewWindow<R>) {
     let _ = window.close();
 }
 
@@ -62,6 +76,56 @@ pub fn window_is_focused<R: Runtime>(window: WebviewWindow<R>) -> bool {
 #[tauri::command]
 pub fn window_focus<R: Runtime>(window: WebviewWindow<R>) {
     crate::state::show_main(window.app_handle());
+}
+
+/// Right-click on a title bar (data-tauri-drag-region, electron-api-shim.js): the Windows
+/// window menu (Restore, Move, Size, Minimize, Maximize, Close) at the cursor. Electron's
+/// app-region caption gave it natively; Tauri's drag regions are page script. The menu runs
+/// its own modal loop, so it goes to the event loop instead of running inside the IPC call.
+#[tauri::command]
+pub async fn window_system_menu<R: Runtime>(window: WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let Some(h) = window.hwnd().ok().map(|h| h.0 as isize) else { return };
+        let _ = window.run_on_main_thread(move || show_system_menu(h));
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window;
+    }
+}
+
+#[cfg(windows)]
+fn show_system_menu(h: isize) {
+    use windows::Win32::Foundation::{HWND, LPARAM, POINT, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        EnableMenuItem, GetCursorPos, GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, MENU_ITEM_FLAGS, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE,
+        SC_RESTORE, SC_SIZE, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_SYSCOMMAND,
+    };
+    unsafe {
+        let hwnd = HWND(h as *mut core::ffi::c_void);
+        let menu = GetSystemMenu(hwnd, false);
+        if menu.is_invalid() {
+            return;
+        }
+        // Same items enabled as the caption menu of a normal window in that state.
+        let maximized = IsZoomed(hwnd).as_bool();
+        let state = |on: bool| -> MENU_ITEM_FLAGS { MF_BYCOMMAND | if on { MF_ENABLED } else { MF_GRAYED } };
+        let _ = EnableMenuItem(menu, SC_RESTORE, state(maximized));
+        let _ = EnableMenuItem(menu, SC_MAXIMIZE, state(!maximized));
+        let _ = EnableMenuItem(menu, SC_MOVE, state(!maximized));
+        let _ = EnableMenuItem(menu, SC_SIZE, state(!maximized));
+        let mut pt = POINT::default();
+        if GetCursorPos(&mut pt).is_err() {
+            return;
+        }
+        let _ = SetForegroundWindow(hwnd);
+        let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, None, hwnd, None);
+        if cmd.0 != 0 {
+            // SC_CLOSE becomes WM_CLOSE: the main window still hides to the tray.
+            let _ = PostMessageW(Some(hwnd), WM_SYSCOMMAND, WPARAM(cmd.0 as usize), LPARAM(0));
+        }
+    }
 }
 
 /// zoom.set (smoothZoom.js): 0.5 .. 2.

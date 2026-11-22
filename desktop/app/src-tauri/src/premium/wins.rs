@@ -79,9 +79,13 @@ pub fn hwnd(w: &WebviewWindow) -> Option<isize> {
     }
 }
 
+/// tao rewrites GWL_EXSTYLE from its own flags whenever it applies a style change on the main
+/// thread (show, always-on-top, click-through, minimize / restore), which drops the
+/// WS_EX_LAYERED bit set here: the opacity was lost as soon as a window was shown or pinned.
+/// Queued on the main thread, it runs after the changes tao has queued before it.
 pub fn set_opacity(w: &WebviewWindow, alpha: f64) {
     if let Some(hw) = hwnd(w) {
-        platform::set_opacity(hw, alpha);
+        let _ = w.run_on_main_thread(move || platform::set_opacity(hw, alpha));
     }
 }
 
@@ -138,6 +142,16 @@ pub fn apply_behaviour(h: &Host, label: &str, kind: &str) {
     let Some(w) = h.app.get_webview_window(label) else { return };
     let _ = w.set_always_on_top(on_top_for(h, kind));
     set_opacity(&w, opacity_for(h, kind));
+}
+
+/// Show a Descall+ window. tao rewrites GWL_EXSTYLE when the visibility changes, so an
+/// opacity set while the window was hidden (a new pop-out, the auto-hidden sidebar, windows
+/// hidden by app_lock) is gone once it shows: set it again behind the show.
+pub fn show(h: &Host, w: &WebviewWindow, kind: &str) {
+    let _ = w.show();
+    if matches!(kind, "call" | "sidebar" | "popout") {
+        set_opacity(w, opacity_for(h, kind));
+    }
 }
 
 /// Main window plus every tracked app window, as (label, kind).
@@ -214,6 +228,7 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
     }
     let title = h.et(if kind == "call" { "window.call" } else { "window.sidebar" }, &[]);
     let built = WebviewWindowBuilder::new(&h.app, label, WebviewUrl::External("about:blank".parse().ok()?))
+        .devtools(crate::webview::devtools_allowed(&h.app)) // support opt-in only (webview.rs)
         .window_features(features)
         .title(title)
         .decorations(false)
@@ -225,7 +240,22 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
         .always_on_top(on_top_for(h, kind))
         .visible_on_all_workspaces(kind != "call")
         .background_color(tauri::window::Color(0x14, 0x15, 0x1e, 0xff))
+        // The portal document inherits the main window's origin (https://tauri.localhost), and
+        // the requests it makes (fonts, app images) go through THIS webview's protocol filter.
+        // Without https here the filter is http://tauri.localhost/* and none of them load.
+        .use_https_scheme(true)
         .on_navigation(|u| u.scheme() == "about")
+        // A link in the call / sidebar portal: the default browser (as pop-outs do), never a
+        // bare WebView2 popup window (Electron's windowKit denied it).
+        .on_new_window(|u, _| {
+            if u.scheme() == "https" {
+                if let Some(h) = crate::premium::host() {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = h.app.opener().open_url(u.as_str(), None::<&str>);
+                }
+            }
+            NewWindowResponse::Deny
+        })
         .build();
     let w = match built {
         Ok(w) => w,
@@ -236,6 +266,8 @@ pub fn portal_open(h: &Host, url: &tauri::Url, features: NewWindowFeatures) -> O
     };
     set_bounds(&w, b);
     set_opacity(&w, opacity_for(h, kind));
+    // No browser menu / accelerator keys (Reload would empty the portal), as in the main window.
+    crate::webview::install_browser_guards(&w);
     track(h, label, kind, portal_feature(kind), json!({}));
     Some(NewWindowResponse::Create { window: w })
 }
@@ -255,6 +287,12 @@ pub fn on_bus(h: &Host, ev: &Bus) {
         _ => return,
     };
     let Some(entry) = lock(&h.windows).get(label).cloned() else { return };
+    // Restored from the taskbar (or resized): tao rewrote the window style, opacity again.
+    if matches!(ev, Bus::Resized(_)) && matches!(entry.kind.as_str(), "call" | "sidebar" | "popout") {
+        if let Some(w) = h.app.get_webview_window(label) {
+            set_opacity(&w, opacity_for(h, &entry.kind));
+        }
+    }
     if !matches!(entry.kind.as_str(), "call" | "popout") {
         return;
     }

@@ -16,8 +16,16 @@
 (() => {
   "use strict";
   if (window.top !== window || window.__descallPremiumShim) return;
-  const T = window.__TAURI__;
-  if (!T || !T.core || !T.event) return;
+  // Plugin init scripts run BEFORE the withGlobalTauri bundle (tauri manager/webview.rs: core
+  // init, plugin init scripts, then plugin_global_api_scripts), so window.__TAURI__ does not
+  // exist yet here. Reading it at load time made this shim return early on every start: no
+  // descallPremium, and Settings > Descall+ showed every desktop feature as "Masaustu / Kilitli"
+  // (owner report, desktop-v4.0.1). __TAURI_INTERNALS__ (invoke, transformCallback) is already
+  // there; __TAURI__ is read per call, once all init scripts have run.
+  const internals = () => window.__TAURI_INTERNALS__ || null;
+  const tauri = () => window.__TAURI__ || null;
+  const I0 = internals();
+  if (!I0 && !tauri()) return; // not a Tauri page
   if (location.hostname === "descallhud.localhost") return; // HUD pages have descallHud instead
   // Admin windows never had descallPremium (adminPreload.cjs), nor do the shell's own pages
   // (capsules, overlay). The label is known before any page script runs.
@@ -27,7 +35,29 @@
   if (label === "admin" || label === "signup-stats" || label === "tray-menu" || location.hostname === "descall-shell.localhost") return;
   Object.defineProperty(window, "__descallPremiumShim", { value: true });
 
-  const invoke = (cmd, args) => T.core.invoke(cmd, args);
+  function invoke(cmd, args) {
+    const T = tauri();
+    if (T && T.core && typeof T.core.invoke === "function") return T.core.invoke(cmd, args);
+    const I = internals();
+    if (I && typeof I.invoke === "function") return I.invoke(cmd, args);
+    return Promise.reject(new Error("tauri ipc unavailable"));
+  }
+
+  // Events sent to this window only (ipcRenderer.on): a global listen() also hears the
+  // premium:* events the shell sends to the main window from a pop-out or account window.
+  const own = label ? { kind: "WebviewWindow", label } : { kind: "Any" };
+  /** event.listen as @tauri-apps/api does it, for a call before the global bundle exists. */
+  function listen(event, handler) {
+    const T = tauri();
+    if (T && T.event && typeof T.event.listen === "function") return T.event.listen(event, handler, { target: own });
+    const I = internals();
+    if (!I || typeof I.transformCallback !== "function") return Promise.reject(new Error("tauri events unavailable"));
+    return I.invoke("plugin:event|listen", { event, target: own, handler: I.transformCallback(handler) }).then((eventId) => () => {
+      const reg = window.__TAURI_EVENT_PLUGIN_INTERNALS__;
+      if (reg && typeof reg.unregisterListener === "function") reg.unregisterListener(event, eventId);
+      return I.invoke("plugin:event|unlisten", { event, eventId }).catch(() => {});
+    });
+  }
   const isPremiumChannel = (c) => typeof c === "string" && /^premium:[a-z0-9:_-]{1,64}$/i.test(c);
 
   const isBytes = (v) => v instanceof ArrayBuffer || ArrayBuffer.isView(v);
@@ -65,12 +95,109 @@
     }))).catch(() => []);
   }
 
+  // ---- ordering and late starts ----------------------------------------------------------------
+  // Electron handled IPC in order and started a feature inside premium:settings:set, so a call
+  // right after "switch on" found it running. Here every premium_invoke runs on its own thread
+  // and the host starts features on its bus thread, so (1) calls wait for a settings:set still in
+  // flight, (2) a "locked" answer just after a settings:set is retried briefly, and (3) the
+  // renderer's state pushes (hotkeys, tray mirrors) that arrive before the shell's own
+  // membership check has passed are kept and sent again once their feature runs. Without (3) the
+  // command center / workspace profile / clip hotkeys and the focus / audio profile tray entries
+  // stayed unregistered until the user changed a setting (the check takes a network round trip,
+  // the renderer pushes as soon as its own copy of the plan arrives).
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const isLocked = (r) => Boolean(r && typeof r === "object" && r.ok === false && r.error === "locked");
+  const FEATURE_OF = { hotkeys: "custom_hotkeys", launcher: "quick_launcher" };
+  const featureOf = (channel) => {
+    const m = /^premium:([a-z0-9_]+):/.exec(channel);
+    return m ? FEATURE_OF[m[1]] || m[1] : "";
+  };
+  // Idempotent "here is the current state" pushes: the latest call wins.
+  const REPLAY = new Set([
+    "premium:command_center:hotkey",
+    "premium:workspace_profiles:bind",
+    "premium:focus_mode:state",
+    "premium:audio_device_profiles:mirror",
+    "premium:instant_clip:hotkey",
+    "premium:multi_account:labels",
+    "premium:quick_file_drop:state",
+  ]);
+  const latest = new Map(); // channel -> packed args of the newest call
+  const pending = new Set(); // channels whose newest call was answered "locked"
+  let pendingSet = Promise.resolve();
+  let lastSetAt = 0;
+  let pollTimer = 0;
+  let pollUntil = 0;
+  let pollDelay = 0;
+
+  async function poll() {
+    pollTimer = 0;
+    if (!pending.size) return;
+    let running = [];
+    try {
+      const s = await invoke("premium_invoke", { channel: "premium:status", args: [] });
+      running = s && Array.isArray(s.running) ? s.running : [];
+    } catch (_) { /* host not ready yet */ }
+    for (const channel of [...pending]) {
+      if (!running.includes(featureOf(channel))) continue;
+      const args = latest.get(channel);
+      try {
+        const r = await invoke("premium_invoke", { channel, args });
+        if (!isLocked(r) && latest.get(channel) === args) pending.delete(channel);
+      } catch (_) { pending.delete(channel); }
+    }
+    schedulePoll(false);
+  }
+
+  /** Poll premium:status while something waits: 1 s, slowing to 10 s, for at most 3 minutes. */
+  function schedulePoll(restart) {
+    if (!pending.size) return;
+    const now = Date.now();
+    if (restart || !pollUntil) { pollUntil = now + 180000; pollDelay = 1000; }
+    if (now > pollUntil) { pollUntil = 0; return; }
+    if (pollTimer && !restart) return;
+    if (pollTimer) clearTimeout(pollTimer);
+    const wait = pollDelay;
+    pollDelay = Math.min(10000, Math.round(pollDelay * 1.5));
+    pollTimer = setTimeout(poll, wait);
+  }
+
+  async function send(channel, packed) {
+    let r = await invoke("premium_invoke", { channel, args: packed });
+    if (REPLAY.has(channel)) {
+      if (latest.get(channel) === packed) {
+        if (isLocked(r)) { const first = !pending.size; pending.add(channel); schedulePoll(first); } else pending.delete(channel);
+      }
+      return r;
+    }
+    // A feature switched on a moment ago may still be starting on the host's bus thread.
+    for (let i = 0; i < 6 && isLocked(r) && channel !== "premium:settings:set" && Date.now() - lastSetAt < 2000; i += 1) {
+      await sleep(150);
+      r = await invoke("premium_invoke", { channel, args: packed });
+    }
+    return r;
+  }
+
   async function premiumInvoke(channel, ...args) {
     if (!isPremiumChannel(channel)) throw new Error("premium channel expected");
     if (channel === "premium:app-state" && args[0] && typeof args[0] === "object") {
       args[0] = { ...args[0], __lang: document.documentElement.lang || navigator.language || "" };
     }
-    const r = await invoke("premium_invoke", { channel, args: await packArgs(args) });
+    const packed = await packArgs(args);
+    if (REPLAY.has(channel)) latest.set(channel, packed);
+    // Signed out / no plan: nothing of the previous session is sent again.
+    if (channel === "premium:entitlements" && !(packed[0] && packed[0].plan)) { pending.clear(); latest.clear(); }
+    let r;
+    if (channel === "premium:settings:set") {
+      // In order, like Electron; later calls wait for it.
+      const run = pendingSet.catch(() => {}).then(() => invoke("premium_invoke", { channel, args: packed }));
+      pendingSet = run.then(() => { lastSetAt = Date.now(); }, () => { lastSetAt = Date.now(); });
+      r = await run;
+      if (r && r.ok && packed[1] && packed[1].enabled === true) schedulePoll(true);
+    } else {
+      await pendingSet.catch(() => {});
+      r = await send(channel, packed);
+    }
     if (channel === "premium:instant_clip:sources" && r && r.ok && r.delegate) {
       const { delegate, ...rest } = r;
       return { ...rest, sources: await nativeSources() };
@@ -82,11 +209,11 @@
     if (!isPremiumChannel(channel) || typeof fn !== "function") return () => {};
     let un = null;
     let dead = false;
-    T.event.listen(channel, (e) => {
+    listen(channel, (e) => {
       unpack(e.payload).then((p) => {
         try { fn(...(Array.isArray(p) ? p : [p])); } catch (err) { console.error(err); }
       }).catch((err) => console.error("[premium]", err));
-    }).then((u) => { if (dead) u(); else un = u; });
+    }).then((u) => { if (dead) u(); else un = u; }).catch((err) => console.error("[premium]", err));
     return () => { dead = true; if (un) un(); };
   }
 

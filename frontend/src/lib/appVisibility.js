@@ -89,18 +89,44 @@ export function installPageHiddenPause(win = typeof window !== "undefined" ? win
 }
 const INPUT_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 
+/** Direct input (press, key, touch): the pause classes that say "not on screen" are wrong. */
+export function clearStalePause(root) {
+  if (!root?.classList) return;
+  for (const c of [BACKGROUNDED_CLASS, HIDDEN_CLASS, BLURRED_CLASS]) {
+    if (root.classList.contains(c)) root.classList.toggle(c, false);
+  }
+}
+
 export function applyAppVisibility(root, { backgrounded } = {}) {
   if (!root?.classList) return false;
   root.classList.toggle(BACKGROUNDED_CLASS, Boolean(backgrounded));
   return root.classList.contains(BACKGROUNDED_CLASS);
 }
 
+/**
+ * Input or focus that reaches the page proves the window is on screen. A missed "shown"
+ * message (Tauri sends backgrounded:false only on focus: a window restored without being
+ * activated, or shown from the tray while another app keeps the foreground) left
+ * html.app-backgrounded on for good, every CSS animation paused at its first frame, and
+ * the market's tiles and cards (s2-rise ... both) stayed at opacity 0: Settings > Mağaza
+ * showed its header and tabs over an empty body (owner report, Tauri 4.0.1).
+ */
+const VISIBLE_PROOF_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "focus"];
+
 export function installAppVisibility(win = typeof window !== "undefined" ? window : undefined) {
   const api = win?.electronAPI;
   if (!api || typeof api.onAppVisibility !== "function") return () => {};
   const root = win.document?.documentElement;
   const off = api.onAppVisibility((payload) => applyAppVisibility(root, payload));
-  return typeof off === "function" ? off : () => {};
+  // One cleanup rule for both entry points (clearStalePause, also run by installIdlePause on
+  // a press or key): the shell's own events add wheel and window focus here.
+  const onSeen = () => clearStalePause(root);
+  const canListen = typeof win.addEventListener === "function";
+  if (canListen) for (const ev of VISIBLE_PROOF_EVENTS) win.addEventListener(ev, onSeen, { passive: true, capture: true });
+  return () => {
+    if (typeof off === "function") off();
+    if (canListen) for (const ev of VISIBLE_PROOF_EVENTS) win.removeEventListener(ev, onSeen, { capture: true });
+  };
 }
 
 /**
@@ -126,10 +152,15 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
     if (timer) clearT(timer);
     timer = setT(() => { timer = 0; setIdle(true); }, idleMs());
   };
-  const onInput = () => {
+  const onInput = (e) => {
     // pointermove fires per pixel: re-arm at most every 250 ms.
     const now = Date.now();
     if (root.classList.contains(IDLE_CLASS)) setIdle(false);
+    // A press or key means the window is on screen and focused, whatever the shell said last:
+    // drop a stale backgrounded / hidden / blurred pause (Tauri can report "backgrounded" after
+    // a restore with no focus event, a frameless window can read hidden, the native file
+    // dialog's blur may not get its focus back). Everything mounted afterwards animates.
+    if (e && (e.type === "pointerdown" || e.type === "keydown" || e.type === "touchstart")) clearStalePause(root);
     if (now - lastInput < 250 && timer) return;
     lastInput = now;
     arm();

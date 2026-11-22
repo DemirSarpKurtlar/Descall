@@ -171,6 +171,13 @@
   const early = new Map(); // share id -> ArrayBuffer that arrived before invoke() returned
   const sessions = new Map(); // share id -> Session
 
+  function isMainWebview() {
+    try {
+      const m = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+      const label = m && m.currentWebview && m.currentWebview.label;
+      return !label || label === "main";
+    } catch (_) { return true; }
+  }
   const tr = () => /^tr\b/i.test(document.documentElement.lang || navigator.language || "");
   function announce(lane, extra) {
     api.lane = lane;
@@ -459,6 +466,9 @@
         invoke("screen_share_stats").then((st) => {
           if (!hinted && st && st.blackStreak > 2 * (info.fps || 30)) {
             hinted = true;
+            // Nothing more to learn: no stats call every 2 s for the rest of the share.
+            clearInterval(s.hintTimer);
+            s.hintTimer = null;
             notice("Paylaşılan görüntü siyah. Oyunu pencereli tam ekran (borderless) yapın ya da ekranın tamamını paylaşın.",
               "The shared picture is black. Switch the game to borderless windowed, or share the whole screen.");
           }
@@ -498,7 +508,10 @@
   }
 
   const api = {
-    supported: Boolean(wv) && hasVideoFrame,
+    // screen_share_start serves the main window only (commands/screen.rs). Descall+ pop-outs
+    // and account windows carry this script too: there the lane is off, so the page opens
+    // WebView2's picker once instead of ours and then WebView2's.
+    supported: Boolean(wv) && hasVideoFrame && isMainWebview(),
     lane: null,
     async getSources() {
       const list = await invoke("screen_sources", { thumbnails: true }).catch(() => []);
@@ -539,7 +552,14 @@
       for (const img of imgs) {
         const t = byId.get(this.byUrl.get(img.src));
         if (!t) continue;
-        if (!t.alive) { img.style.opacity = "0.35"; continue; }
+        if (!t.alive) {
+          // The window closed while the picker is open: dim the tile and take it out of the
+          // picker (a dead source would fail to start and drop to WebView2's own picker).
+          img.style.opacity = "0.35";
+          const tile = img.closest ? img.closest("button") : null;
+          if (tile) { tile.disabled = true; tile.setAttribute("aria-disabled", "true"); }
+          continue;
+        }
         if (t.thumbnailDataURL && t.thumbnailDataURL !== img.src) {
           this.byUrl.set(t.thumbnailDataURL, t.id);
           this.byUrl.delete(img.src);

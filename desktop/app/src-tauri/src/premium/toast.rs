@@ -55,16 +55,33 @@ pub fn toast_xml(args: &str, title: &str, body: &str, placeholder: &str) -> Stri
     )
 }
 
-/// Show the toast; its Activated event calls `on_activate`.
-#[cfg(windows)]
+/// A toast without the reply box (the Descall+ "toast" notification style). A click comes back
+/// through the same activation paths and opens the chat, like Electron's Notification click.
+pub fn plain_toast_xml(args: &str, title: &str, body: &str, silent: bool) -> String {
+    format!(
+        r#"<toast launch="{a}" activationType="foreground"><visual><binding template="ToastGeneric"><text>{}</text><text>{}</text></binding></visual>{}</toast>"#,
+        esc(title),
+        esc(body),
+        if silent { r#"<audio silent="true"/>"# } else { "" },
+        a = esc(args)
+    )
+}
+
+/// Show the reply toast; its Activated event calls `on_activate`.
 pub fn show(args: &str, title: &str, body: &str, placeholder: &str, on_activate: OnActivate) -> Result<Handle, String> {
+    show_xml(&toast_xml(args, title, body, placeholder), on_activate)
+}
+
+/// Show a toast from its XML; its Activated event calls `on_activate`.
+#[cfg(windows)]
+pub fn show_xml(toast_xml: &str, on_activate: OnActivate) -> Result<Handle, String> {
     use windows::core::{Interface, HSTRING};
     use windows::Data::Xml::Dom::XmlDocument;
     use windows::Foundation::{IPropertyValue, TypedEventHandler};
     use windows::UI::Notifications::{ToastActivatedEventArgs, ToastNotification, ToastNotificationManager};
 
     let xml = XmlDocument::new().map_err(|e| e.to_string())?;
-    xml.LoadXml(&HSTRING::from(toast_xml(args, title, body, placeholder))).map_err(|e| e.to_string())?;
+    xml.LoadXml(&HSTRING::from(toast_xml)).map_err(|e| e.to_string())?;
     let toast = ToastNotification::CreateToastNotification(&xml).map_err(|e| e.to_string())?;
     toast
         .Activated(&TypedEventHandler::<ToastNotification, windows::core::IInspectable>::new(move |_, a| {
@@ -87,7 +104,7 @@ pub fn show(args: &str, title: &str, body: &str, placeholder: &str, on_activate:
 }
 
 #[cfg(not(windows))]
-pub fn show(_args: &str, _title: &str, _body: &str, _placeholder: &str, _on_activate: OnActivate) -> Result<Handle, String> {
+pub fn show_xml(_toast_xml: &str, _on_activate: OnActivate) -> Result<Handle, String> {
     Err("platform".into())
 }
 
@@ -177,3 +194,18 @@ pub fn register_activator(on_activate: OnActivate) {
 
 #[cfg(not(windows))]
 pub fn register_activator(_on_activate: OnActivate) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plain_toast_has_no_reply_box() {
+        let x = plain_toast_xml("descall-n|id-1", "Ayşe <3", "selam & naber", false);
+        assert!(x.starts_with(r#"<toast launch="descall-n|id-1" activationType="foreground">"#));
+        assert!(x.contains("<text>Ayşe &lt;3</text><text>selam &amp; naber</text>"));
+        assert!(!x.contains("<input") && !x.contains("<audio"));
+        assert!(plain_toast_xml("a", "t", "b", true).contains(r#"<audio silent="true"/>"#));
+        assert!(toast_xml("a", "t", "b", "p").contains(r#"<input id="reply""#));
+    }
+}

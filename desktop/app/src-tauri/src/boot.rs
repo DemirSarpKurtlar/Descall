@@ -21,6 +21,9 @@ pub struct InitialWindow {
     pub height: f64,
     pub x: Option<f64>,
     pub y: Option<f64>,
+    /// Top-left corner in physical pixels (window-state.json px/py, written by this shell).
+    /// Wins over x/y: a logical point is ambiguous across monitors with different scaling.
+    pub physical: Option<(i32, i32)>,
     pub maximized: bool,
     pub min_width: f64,
     pub min_height: f64,
@@ -245,13 +248,55 @@ pub fn initial_window_state<R: Runtime>(app: &AppHandle<R>) -> InitialWindow {
         let wa = m.work_area();
         descall_shell::occlusion::Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s }
     };
-    let (sx, sy) = (n("x"), n("y"));
+    let maximized = v.get("maximized").and_then(|x| x.as_bool()).unwrap_or(false);
+    // Saved by this shell: the physical corner finds its monitor exactly, whatever the scaling
+    // of the others (a logical x/y from the 150 % screen also lands inside the 100 % one).
+    let (mut sx, mut sy) = (n("x"), n("y"));
+    if let (Some(px), Some(py)) = (v.get("px").and_then(|x| x.as_i64()), v.get("py").and_then(|x| x.as_i64())) {
+        let screens: Vec<Screen> = monitors
+            .iter()
+            .map(|m| {
+                let wa = m.work_area();
+                Screen { x: wa.position.x, y: wa.position.y, width: wa.size.width, height: wa.size.height, scale: m.scale_factor() }
+            })
+            .collect();
+        if let Some((f, corner)) = restore_physical(px as i32, py as i32, n("width"), n("height"), &screens) {
+            return InitialWindow { width: f.width, height: f.height, x: None, y: None, physical: Some(corner), maximized, min_width: f.min_width, min_height: f.min_height };
+        }
+        // That monitor is gone: centre on the primary one (below).
+        sx = None;
+        sy = None;
+    }
     let inside = |r: &descall_shell::occlusion::Rect| matches!((sx, sy), (Some(x), Some(y)) if x >= r.x - 8.0 && y >= r.y - 8.0 && x < r.x + r.width && y < r.y + r.height);
     let saved_monitor = monitors.iter().map(to_rect).find(|r| inside(r));
     let on_screen = saved_monitor.is_some();
     let work = saved_monitor.or_else(|| app.primary_monitor().ok().flatten().map(|m| to_rect(&m)));
     let f = descall_shell::occlusion::fit_bounds_to_work_area(sx.filter(|_| on_screen), sy.filter(|_| on_screen), n("width"), n("height"), work, MIN_W, MIN_H);
-    InitialWindow { width: f.width, height: f.height, x: f.x, y: f.y, maximized: v.get("maximized").and_then(|x| x.as_bool()).unwrap_or(false), min_width: f.min_width, min_height: f.min_height }
+    InitialWindow { width: f.width, height: f.height, x: f.x, y: f.y, physical: None, maximized, min_width: f.min_width, min_height: f.min_height }
+}
+
+/// A monitor's work area in physical pixels and its scale factor.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Screen {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub scale: f64,
+}
+
+/// Restore from a saved physical corner: the monitor whose work area holds it (a few pixels
+/// of slack for the invisible resize border), the bounds fitted into that work area in its
+/// own logical units, and the fitted corner back in physical pixels. None when no monitor
+/// holds the corner (unplugged, resolution changed): the caller centres on the primary one.
+pub fn restore_physical(px: i32, py: i32, width: Option<f64>, height: Option<f64>, screens: &[Screen]) -> Option<(descall_shell::occlusion::Fitted, (i32, i32))> {
+    let slack = 16;
+    let s = screens.iter().copied().find(|s| s.width > 0 && s.height > 0 && px >= s.x - slack && py >= s.y - slack && px < s.x + s.width as i32 && py < s.y + s.height as i32)?;
+    let scale = if s.scale.is_finite() && s.scale > 0.0 { s.scale } else { 1.0 };
+    let local = descall_shell::occlusion::Rect { x: 0.0, y: 0.0, width: s.width as f64 / scale, height: s.height as f64 / scale };
+    let f = descall_shell::occlusion::fit_bounds_to_work_area(Some((px - s.x) as f64 / scale), Some((py - s.y) as f64 / scale), width, height, Some(local), MIN_W, MIN_H);
+    let corner = (s.x + (f.x.unwrap_or(0.0) * scale).round() as i32, s.y + (f.y.unwrap_or(0.0) * scale).round() as i32);
+    Some((f, corner))
 }
 
 fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
@@ -268,10 +313,30 @@ fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
             v["y"] = json!((p.y as f64 / s).round());
             v["width"] = json!((sz.width as f64 / s).round());
             v["height"] = json!((sz.height as f64 / s).round());
+            v["px"] = json!(p.x);
+            v["py"] = json!(p.y);
         }
     }
     v["maximized"] = json!(maximized);
     let _ = std::fs::write(path, v.to_string());
+}
+
+/// main.cjs saveWindowStateSoon: a drag or a resize fires Moved / Resized many times a second;
+/// write window-state.json once the window has been still for 400 ms, not on every event (each
+/// write read and rewrote the file on the UI thread while the user dragged the window).
+static SAVE_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+pub const SAVE_STATE_DEBOUNCE_MS: u64 = 400;
+
+fn save_window_state_soon<R: Runtime>(w: &WebviewWindow<R>) {
+    use std::sync::atomic::Ordering;
+    let gen = SAVE_GEN.fetch_add(1, Ordering::AcqRel) + 1;
+    let w = w.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(SAVE_STATE_DEBOUNCE_MS)).await;
+        if SAVE_GEN.load(Ordering::Acquire) == gen {
+            save_window_state(&w);
+        }
+    });
 }
 
 // ---- cold start (launchVisibility.cjs) --------------------------------------------------------
@@ -318,6 +383,22 @@ pub fn is_app_url(url: &tauri::Url) -> bool {
     descall_shell::trust::is_app_url(url.as_str(), crate::state::is_dev())
 }
 
+/// Main window will-navigate (main.cjs): only the app navigates in place. A web or mail link
+/// the page navigates to by itself (location.assign, a form, a link the shim's click handler
+/// did not see) opens in the default browser, as openExternalSafely did; it used to do nothing.
+pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool {
+    if is_app_url(url) {
+        return true;
+    }
+    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    } else {
+        log::warn!("[nav] not opening will-navigate: {}", url.as_str().chars().take(120).collect::<String>());
+    }
+    false
+}
+
 // ---- window events ---------------------------------------------------------------------------
 
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
@@ -328,8 +409,41 @@ fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
 }
 
+/// Same file name as main.cjs (userData/background-notice-shown).
+const BACKGROUND_NOTICE: &str = "background-notice-shown";
+
+/// True the first time only: writes the marker in `dir` and answers whether it was new.
+/// A marker that cannot be written still answers true once per run of the caller.
+pub fn background_notice_due(dir: &std::path::Path) -> bool {
+    let marker = dir.join(BACKGROUND_NOTICE);
+    if marker.exists() {
+        return false;
+    }
+    let _ = std::fs::write(&marker, crate::state::now_ms().to_string());
+    true
+}
+
+/// First close to the tray: "Descall keeps running in the background" (main.cjs showed it
+/// once; the Tauri shell hid the window without a word). Off the event-loop thread, since
+/// the capsule is a new window.
+fn background_notice_once<R: Runtime>(app: &AppHandle<R>) {
+    let Some(dir) = crate::state::data_dir(app) else { return };
+    if !background_notice_due(&dir) {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let body = crate::state::et(&app, "notice.background", &[]);
+        let _ = crate::commands::notify::show_capsule(&app, "Descall", &json!({ "body": body, "tag": "descall-background", "data": { "type": "announcement" } }));
+    });
+}
+
 pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
     let win = w.clone();
+    // Electron sent backgrounded:false on 'show' and 'restore' as well as 'focus'. Tauri only
+    // had Focused(true): a window restored without activation (Win+D twice, a taskbar
+    // thumbnail) kept html.app-backgrounded, every CSS animation stayed paused at frame 0
+    // and Settings > Magaza showed an empty body (its cards fade in).
     w.on_window_event(move |e| {
         let app = win.app_handle();
         match e {
@@ -342,6 +456,7 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 save_window_state(&win);
                 if crate::state::shell(app).has_tray.load(std::sync::atomic::Ordering::Acquire) {
                     let _ = win.hide();
+                    background_notice_once(app);
                 } else {
                     let _ = win.minimize();
                 }
@@ -359,16 +474,26 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 if changed {
                     crate::state::to_main(app, "window:maximized", maximized);
                 }
-                if win.is_minimized().unwrap_or(false) {
-                    visibility(&win, true);
+                let minimized = win.is_minimized().unwrap_or(false);
+                let was_minimized = crate::state::shell(app).minimized.swap(minimized, std::sync::atomic::Ordering::AcqRel);
+                if minimized {
+                    if !was_minimized {
+                        visibility(&win, true); // mainWindow 'minimize'
+                    }
                 } else {
+                    // mainWindow 'restore' sent app:visibility false on its own, focus or not:
+                    // a restore without the focus (foreground lock) kept the page's animations
+                    // paused. Not for a window restored while hidden to the tray.
+                    if was_minimized && win.is_visible().unwrap_or(false) {
+                        visibility(&win, false);
+                    }
                     publish_content_box(&win);
-                    save_window_state(&win);
+                    save_window_state_soon(&win);
                 }
             }
             WindowEvent::Moved(_) => {
                 publish_content_box(&win);
-                save_window_state(&win);
+                save_window_state_soon(&win);
             }
             WindowEvent::Focused(true) => visibility(&win, false),
             WindowEvent::ScaleFactorChanged { .. } => publish_content_box(&win),
@@ -436,18 +561,81 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
     });
 }
 
-/// Windows "Transparency effects" switch: tell the page when it flips.
+/// Windows "Transparency effects" switch: tell the page when it flips. The thread waits for
+/// a registry change notification (Electron: nativeTheme 'updated'); it polled every 3 s
+/// before, waking the CPU for the whole run.
 pub fn watch_reduced_transparency<R: Runtime>(app: &AppHandle<R>) {
     let app = app.clone();
     std::thread::spawn(move || {
         let mut last = crate::platform::reduced_transparency();
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(3));
+            if !crate::platform::wait_personalize_change() {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+            }
             let now = crate::platform::reduced_transparency();
             if now != last {
                 last = now;
-                crate::state::to_main(&app, "native-theme:reduced-transparency-changed", now);
+                // Every window, as nativeTheme 'updated' did (BrowserWindow.getAllWindows): the
+                // admin and Descall+ windows follow the switch too.
+                use tauri::Emitter;
+                let _ = app.emit("native-theme:reduced-transparency-changed", now);
             }
         }
     });
+}
+
+#[cfg(test)]
+mod window_state_tests {
+    use super::{restore_physical, Screen};
+
+    // Laptop 1920x1080 at 100 % (taskbar 40 px), external 3840x2160 at 150 % on its right.
+    const LAPTOP: Screen = Screen { x: 0, y: 0, width: 1920, height: 1040, scale: 1.0 };
+    const EXTERNAL: Screen = Screen { x: 1920, y: 0, width: 3840, height: 2100, scale: 1.5 };
+
+    #[test]
+    fn the_window_comes_back_on_the_scaled_monitor_it_was_on() {
+        // Saved at physical (2400, 300) on the external screen. As a logical point (1600, 200)
+        // that also lies inside the laptop's work area, which is where it used to reopen.
+        let (f, corner) = restore_physical(2400, 300, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("on the external screen");
+        assert_eq!(corner, (2400, 300));
+        assert_eq!((f.width, f.height), (1400.0, 900.0));
+    }
+
+    #[test]
+    fn a_window_hanging_off_the_work_area_is_pulled_back() {
+        let (f, corner) = restore_physical(100, 900, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("on the laptop");
+        assert_eq!(corner, (100, 140));
+        assert_eq!((f.width, f.height), (1400.0, 900.0));
+        // Bigger than the screen: shrinks to the work area, and so does the minimum size.
+        let small = Screen { x: 0, y: 0, width: 1366, height: 728, scale: 1.0 };
+        let (f, corner) = restore_physical(0, 0, Some(1600.0), Some(1000.0), &[small]).expect("on screen");
+        assert_eq!((f.width, f.height, corner), (1366.0, 728.0, (0, 0)));
+        assert!(f.min_width <= 1366.0 && f.min_height <= 728.0);
+    }
+
+    #[test]
+    fn the_resize_border_corner_still_counts_as_on_screen() {
+        let (_, corner) = restore_physical(-8, -8, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).expect("slack for the border");
+        assert_eq!(corner, (0, 0));
+        // Same on the scaled screen: its border is 12 physical px.
+        let top = Screen { x: 0, y: -2100, width: 3840, height: 2100, scale: 1.5 };
+        let (_, corner) = restore_physical(-12, -2112, Some(1400.0), Some(900.0), &[LAPTOP, top]).expect("slack on the upper screen");
+        assert_eq!(corner, (0, -2100));
+    }
+
+    #[test]
+    fn the_background_notice_shows_once() {
+        let dir = std::env::temp_dir().join(format!("descall-bg-notice-{}-{}", std::process::id(), crate::state::now_ms()));
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(super::background_notice_due(&dir), "first close to the tray");
+        assert!(!super::background_notice_due(&dir), "never again");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_unplugged_monitor_gives_none() {
+        assert!(restore_physical(6000, 300, Some(1400.0), Some(900.0), &[LAPTOP, EXTERNAL]).is_none());
+        assert!(restore_physical(-3000, 0, None, None, &[LAPTOP]).is_none());
+        assert!(restore_physical(10, 10, None, None, &[]).is_none());
+    }
 }

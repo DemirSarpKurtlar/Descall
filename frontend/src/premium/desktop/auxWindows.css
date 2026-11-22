@@ -49,6 +49,9 @@ button { font: inherit; color: inherit; }
 }
 .ax-bar .ax-title { flex: 1; min-width: 0; font-weight: 650; font-size: 12px; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ax-dim); }
 .ax-bar button, .ax-nodrag { -webkit-app-region: no-drag; }
+/* Tauri (WebView2): no CSS drag region, the bar drags through the shell (AuxWindow.jsx). */
+html.tauri-app .ax-bar,
+html.tauri-app .ax-bar * { -webkit-app-region: no-drag; app-region: no-drag; }
 .ax-mark { width: 16px; height: 16px; flex: none; color: rgb(var(--ax-brand)); }
 .ax-ib {
   display: inline-grid;

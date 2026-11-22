@@ -190,6 +190,61 @@ pub fn at_edge(x: i32, y: i32, bounds: Rect, edge: &str) -> bool {
     }
 }
 
+/// How long the display bounds under the pointer are reused before they are looked up again.
+pub const EDGE_DISPLAY_TTL_MS: u64 = 2000;
+
+/// screen_edge_actions: display bounds under the pointer, reused while the pointer stays on
+/// that display and they are fresh (the lookup is a main-thread hop for the monitor list).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct EdgeDisplay(Option<(Rect, u64)>);
+
+impl EdgeDisplay {
+    pub fn get(&mut self, x: i32, y: i32, now: u64, lookup: impl FnOnce() -> Option<Rect>) -> Option<Rect> {
+        if let Some((b, at)) = self.0 {
+            if b.contains(x, y) && now.saturating_sub(at) < EDGE_DISPLAY_TTL_MS {
+                return Some(b);
+            }
+        }
+        let b = lookup()?;
+        self.0 = Some((b, now));
+        Some(b)
+    }
+}
+
+/// screen_edge_actions dwell timer. The poll reads only the cursor position each tick;
+/// `on_edge` (display lookup and edge setting) runs only when the pointer moved, `delay` only
+/// while a stay on the edge is pending.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct EdgeDwell {
+    last: Option<(i32, i32)>,
+    on_edge: bool,
+    since: Option<u64>,
+    fired: bool,
+}
+
+impl EdgeDwell {
+    /// One tick at pointer `pos`. True once per stay on the edge, after `delay` ms.
+    pub fn tick(&mut self, pos: (i32, i32), now: u64, on_edge: impl FnOnce() -> bool, delay: impl FnOnce() -> u64) -> bool {
+        if self.last != Some(pos) {
+            self.last = Some(pos);
+            self.on_edge = on_edge();
+            if !self.on_edge {
+                self.since = None;
+                self.fired = false;
+            }
+        }
+        if !self.on_edge || self.fired {
+            return false;
+        }
+        let since = *self.since.get_or_insert(now);
+        if now.saturating_sub(since) >= delay() {
+            self.fired = true;
+            return true;
+        }
+        false
+    }
+}
+
 /// HUD / widget position from a corner preset ('tl' | 'tr' | 'bl' | 'br') plus a margin.
 pub fn corner_bounds(area: Rect, corner: &str, width: i32, height: i32, margin: i32) -> Rect {
     let left = corner == "tl" || corner == "bl";
@@ -277,5 +332,52 @@ mod tests {
         let d = default_bounds("call", wa, "right", 1.0);
         assert_eq!((d.width, d.height), (480, 300));
         assert_eq!(default_bounds("sidebar", wa, "left", 1.0), Rect::new(0, 0, 300, 1040));
+    }
+
+    #[test]
+    fn edge_dwell_fires_once_and_skips_work_while_the_pointer_rests() {
+        let mut d = EdgeDwell::default();
+        let mut looks = 0;
+        let mut delays = 0;
+        let tick = |d: &mut EdgeDwell, pos: (i32, i32), now: u64, edge: bool, looks: &mut i32, delays: &mut i32| {
+            d.tick(pos, now, || { *looks += 1; edge }, || { *delays += 1; 250 })
+        };
+        // Pointer resting away from the edge: one look, then nothing per tick.
+        assert!(!tick(&mut d, (500, 500), 0, false, &mut looks, &mut delays));
+        for t in 1..50 {
+            assert!(!tick(&mut d, (500, 500), t * 120, false, &mut looks, &mut delays));
+        }
+        assert_eq!((looks, delays), (1, 0));
+        // Onto the edge and resting: fires after the delay, once.
+        assert!(!tick(&mut d, (0, 500), 10_000, true, &mut looks, &mut delays));
+        assert!(!tick(&mut d, (0, 500), 10_120, true, &mut looks, &mut delays));
+        assert!(tick(&mut d, (0, 500), 10_250, true, &mut looks, &mut delays));
+        let after_fire = delays;
+        for t in 0..20 {
+            assert!(!tick(&mut d, (0, 500), 10_400 + t * 120, true, &mut looks, &mut delays));
+        }
+        assert_eq!(looks, 2, "no lookups while resting on the edge");
+        assert_eq!(delays, after_fire, "no settings reads after firing");
+        // Sliding along the edge keeps the stay; leaving and coming back re-arms.
+        assert!(!tick(&mut d, (0, 600), 13_000, true, &mut looks, &mut delays));
+        assert!(!tick(&mut d, (40, 600), 13_120, false, &mut looks, &mut delays));
+        assert!(!tick(&mut d, (0, 600), 13_240, true, &mut looks, &mut delays));
+        assert!(tick(&mut d, (0, 600), 13_490, true, &mut looks, &mut delays));
+    }
+
+    #[test]
+    fn edge_dwell_reuses_display_bounds_on_the_same_display() {
+        let mut d = EdgeDisplay::default();
+        let a = Rect::new(0, 0, 1920, 1080);
+        let b = Rect::new(1920, 0, 2560, 1440);
+        let mut n = 0;
+        let look = |d: &mut EdgeDisplay, x: i32, now: u64, n: &mut i32| d.get(x, 10, now, || { *n += 1; Some(if x < 1920 { a } else { b }) });
+        assert_eq!(look(&mut d, 100, 0, &mut n), Some(a));
+        assert_eq!(look(&mut d, 900, 500, &mut n), Some(a));
+        assert_eq!(n, 1);
+        assert_eq!(look(&mut d, 2000, 600, &mut n), Some(b), "another display: new lookup");
+        assert_eq!(n, 2);
+        assert_eq!(look(&mut d, 2100, 600 + EDGE_DISPLAY_TTL_MS, &mut n), Some(b), "stale: new lookup");
+        assert_eq!(n, 3);
     }
 }

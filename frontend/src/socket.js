@@ -8,6 +8,7 @@ import { isNativeIOS } from "./lib/platform";
 import { installSocketResumeWatchdog } from "./lib/socketResume";
 import { installServerDisconnectRevive } from "./lib/serverDisconnectRevive";
 import { getToken } from "./lib/storage";
+import { isDesktopRuntime } from "./lib/desktopShell.js";
 
 function isNativeApp() {
   try {
@@ -19,11 +20,8 @@ function isNativeApp() {
 
 function isElectronRuntime() {
   if (typeof window === "undefined") return false;
-  if (window.electronAPI && window.electronAPI.isElectron) return true;
-  if (typeof navigator !== "undefined" && /Electron/i.test(navigator.userAgent || "")) {
-    return true;
-  }
-  return false;
+  // Electron or Tauri (lib/desktopShell.js), or the Electron UA before the preload.
+  return isDesktopRuntime(window);
 }
 
 function appPlatform() {

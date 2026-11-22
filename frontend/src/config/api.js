@@ -6,6 +6,8 @@
 // Express + Socket.IO run on Render (https://des-call.onrender.com).
 // Browser on descall.com / www.descall.com MUST use the Render origin
 // (not same-origin /api on Vercel).
+import { isDesktopRuntime } from "../lib/desktopShell.js";
+
 const PRODUCTION_URL = "https://des-call.onrender.com";
 // Retired hosts that must never be used (old and suspended Render services)
 const DEAD_API_HOSTS = ["descall-qzkg.onrender.com", "descall-nru2.onrender.com"];
@@ -36,12 +38,8 @@ function isUsableApiUrl(url) {
 
 function isElectronRuntime() {
   if (typeof window === "undefined") return false;
-  if (window.electronAPI?.isElectron) return true;
-  // Fallback before/without preload bridge
-  if (typeof navigator !== "undefined" && /Electron/i.test(navigator.userAgent || "")) {
-    return true;
-  }
-  return false;
+  // Electron or Tauri bridge, the Tauri globals, or (before/without the preload) the Electron UA.
+  return isDesktopRuntime(window);
 }
 
 /**

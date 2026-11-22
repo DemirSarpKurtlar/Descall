@@ -91,3 +91,5 @@ html.reduce-motion .st3 *{transition:none!important;animation:none!important}
 .st3.st3-embedded.st3-phone .st-win{top:auto;border-radius:0}
 .st3.st3-embedded .st-body{padding:18px 22px 22px}
 .st3.st3-embedded.st3-phone .st-body{padding:4px 12px 24px}
+/* Tauri: the window bar drags through data-tauri-drag-region (SignupStatsWindow.jsx); a CSS drag region becomes a WebView2 caption that swallows the window button clicks. */
+html.tauri-app .st3 .st-tb,html.tauri-app .st3 .st-tb *{-webkit-app-region:no-drag;app-region:no-drag}

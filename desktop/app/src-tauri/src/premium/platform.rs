@@ -23,6 +23,9 @@ mod other {
     pub fn cursor_pos() -> Option<(i32, i32)> {
         None
     }
+    pub fn mouse_button_down() -> bool {
+        false
+    }
     pub fn set_opacity(_hwnd: isize, _alpha: f64) {}
     pub fn start_watcher(_emit: Emit) {}
     pub fn save_dialog(_owner: isize, _name: &str, _dir: Option<PathBuf>, _ext: &str) -> Option<PathBuf> {
@@ -55,16 +58,16 @@ mod win {
     use windows::Win32::System::RemoteDesktop::{WTSRegisterSessionNotification, NOTIFY_FOR_THIS_SESSION};
     use windows::Win32::System::SystemInformation::GetTickCount;
     use windows::Win32::System::Threading::{GetCurrentProcessId, GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
-    use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, GetLastInputInfo, LASTINPUTINFO, VK_LBUTTON, VK_RBUTTON};
     use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
     use windows::Win32::UI::Shell::{
         DefSubclassProc, FileSaveDialog, IFileSaveDialog, IShellItem, ITaskbarList3, SHCreateItemFromParsingName, SetWindowSubclass, TaskbarList, FOS_OVERWRITEPROMPT,
         SIGDN_FILESYSPATH, THBF_ENABLED, THBF_HIDDEN, THB_FLAGS, THB_ICON, THB_TOOLTIP, THUMBBUTTON, THUMBBUTTONMASK,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
-        CreateIconIndirect, CreateWindowExW, DefWindowProcW, DestroyIcon, DispatchMessageW, GetCursorPos, GetMessageW, GetWindowLongPtrW, RegisterClassW, SetLayeredWindowAttributes,
+        CreateIconIndirect, CreateWindowExW, DefWindowProcW, DestroyIcon, DispatchMessageW, GetCursorPos, GetMessageW, GetWindowLongPtrW, RegisterClassW, RegisterWindowMessageW, SetLayeredWindowAttributes,
         SetWindowLongPtrW, TranslateMessage, GWL_EXSTYLE, HICON, ICONINFO, LWA_ALPHA, MSG, WM_COMMAND, WM_DISPLAYCHANGE, WM_SETTINGCHANGE, WM_WTSSESSION_CHANGE, WNDCLASSW,
-        WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_POPUP,
+        WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_POPUP,
     };
 
     use crate::premium::logic::badge;
@@ -84,6 +87,11 @@ mod win {
         }
     }
 
+    /// A mouse button is held (a window drag is still going on). Read only, no hook.
+    pub fn mouse_button_down() -> bool {
+        unsafe { (GetAsyncKeyState(VK_LBUTTON.0 as i32) as u16 & 0x8000) != 0 || (GetAsyncKeyState(VK_RBUTTON.0 as i32) as u16 & 0x8000) != 0 }
+    }
+
     pub fn cursor_pos() -> Option<(i32, i32)> {
         let mut p = POINT::default();
         unsafe { GetCursorPos(&mut p).ok()? };
@@ -98,7 +106,11 @@ mod win {
             if alpha >= 0.999 {
                 if ex & WS_EX_LAYERED.0 as isize != 0 {
                     let _ = SetLayeredWindowAttributes(h, Default::default(), 255, LWA_ALPHA);
-                    SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+                    // Click-through (tao's set_ignore_cursor_events: WS_EX_TRANSPARENT) only
+                    // works on a layered window: a HUD at 100 % keeps the style.
+                    if ex & WS_EX_TRANSPARENT.0 as isize == 0 {
+                        SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+                    }
                 }
                 return;
             }
@@ -246,6 +258,7 @@ mod win {
 
     // -- taskbar thumbnail buttons (taskbar_plus) --
 
+    #[derive(Clone)]
     pub struct ThumbButton {
         pub id: u32,
         pub tip: String,
@@ -255,18 +268,40 @@ mod win {
     struct ThumbState {
         added: bool,
         icons: Vec<isize>,
+        /// The buttons last asked for, re-added when the taskbar button is recreated.
+        last: Vec<ThumbButton>,
     }
 
     static THUMB: Mutex<Option<ThumbState>> = Mutex::new(None);
     static THUMB_CLICK: OnceLock<fn(u32)> = OnceLock::new();
+    static TASKBAR_CREATED: OnceLock<u32> = OnceLock::new();
     const THBN_CLICKED: usize = 0x1800;
     const SUBCLASS_ID: usize = 0xD5C1;
+
+    /// "TaskbarButtonCreated": the window got a new taskbar button (hidden to the tray and
+    /// shown again, Explorer restarted). Its thumbnail toolbar is gone and has to be added
+    /// again with ThumbBarAddButtons (Electron's TaskbarHost does the same).
+    fn taskbar_created() -> u32 {
+        *TASKBAR_CREATED.get_or_init(|| unsafe { RegisterWindowMessageW(w!("TaskbarButtonCreated")) })
+    }
 
     unsafe extern "system" fn thumb_proc(h: HWND, msg: u32, wp: WPARAM, lp: LPARAM, _id: usize, _data: usize) -> LRESULT {
         if msg == WM_COMMAND && (wp.0 >> 16) & 0xFFFF == THBN_CLICKED {
             if let Some(f) = THUMB_CLICK.get() {
                 let id = (wp.0 & 0xFFFF) as u32;
                 std::thread::spawn(move || f(id));
+            }
+        } else if msg != 0 && msg == taskbar_created() {
+            let last = THUMB.try_lock().ok().and_then(|mut g| {
+                g.as_mut().map(|s| {
+                    s.added = false;
+                    s.last.clone()
+                })
+            });
+            if let (Some(last), Some(f)) = (last, THUMB_CLICK.get()) {
+                if !last.is_empty() {
+                    set_thumb_buttons(h.0 as isize, &last, *f);
+                }
             }
         }
         DefSubclassProc(h, msg, wp, lp)
@@ -297,7 +332,8 @@ mod win {
                 return;
             }
             let mut guard = THUMB.lock().unwrap_or_else(|e| e.into_inner());
-            let state = guard.get_or_insert(ThumbState { added: false, icons: Vec::new() });
+            let state = guard.get_or_insert(ThumbState { added: false, icons: Vec::new(), last: Vec::new() });
+            state.last = buttons.to_vec();
             for i in state.icons.drain(..) {
                 let _ = DestroyIcon(HICON(i as *mut core::ffi::c_void));
             }
@@ -322,8 +358,9 @@ mod win {
             if !state.added {
                 let _ = SetWindowSubclass(hw, Some(thumb_proc), SUBCLASS_ID, 0);
                 state.added = tb.ThumbBarAddButtons(hw, &list).is_ok();
-            } else {
-                let _ = tb.ThumbBarUpdateButtons(hw, &list);
+            } else if tb.ThumbBarUpdateButtons(hw, &list).is_err() {
+                // A new taskbar button has no toolbar yet: add it again.
+                state.added = tb.ThumbBarAddButtons(hw, &list).is_ok();
             }
         }
     }

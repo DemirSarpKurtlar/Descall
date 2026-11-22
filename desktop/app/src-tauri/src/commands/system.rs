@@ -10,6 +10,21 @@ fn trusted<R: Runtime>(w: &WebviewWindow<R>) -> bool {
     matches!(w.label(), "main" | "admin" | "signup-stats")
 }
 
+/// Page event that keeps each owner window's synchronous secureToken.get() current.
+pub const TOKEN_EVENT: &str = "secure-token:changed";
+
+
+/// Electron read the token file on every secureToken.get(), so a sign-in or sign-out in one
+/// window was seen by the others at once. The shim answers get() from a per-window cache:
+/// tell the owner windows what the store now holds.
+fn publish_token<R: Runtime>(app: &AppHandle<R>, token: Option<&str>) {
+    use tauri::{Emitter, EventTarget};
+    let _ = app.emit_filter(TOKEN_EVENT, json!({ "token": token }), |t| match t {
+        EventTarget::Window { label } | EventTarget::Webview { label } | EventTarget::WebviewWindow { label } | EventTarget::AnyLabel { label } => descall_shell::bridge::is_owner_session(label),
+        _ => false,
+    });
+}
+
 #[tauri::command]
 pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token: String) -> bool {
     if token.len() > 16 * 1024 {
@@ -22,7 +37,12 @@ pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token:
     if !trusted(&window) {
         return false;
     }
-    crate::secure_store::set(&app, crate::secure_store::TOKEN, token.trim())
+    let token = token.trim();
+    let ok = crate::secure_store::set(&app, crate::secure_store::TOKEN, token);
+    if ok {
+        publish_token(&app, Some(token).filter(|t| !t.is_empty()));
+    }
+    ok
 }
 
 #[tauri::command]
@@ -30,7 +50,17 @@ pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> b
     if crate::premium::account_token(window.label(), None) {
         return true;
     }
-    trusted(&window) && crate::secure_store::set(&app, crate::secure_store::TOKEN, "")
+    if !trusted(&window) {
+        return false;
+    }
+    // Signed out: the Descall+ entitlement claim goes at once (main.cjs secure-token:clear
+    // called premium.gate.reset()).
+    crate::premium::signed_out();
+    let ok = crate::secure_store::set(&app, crate::secure_store::TOKEN, "");
+    if ok {
+        publish_token(&app, None);
+    }
+    ok
 }
 
 /// clipboard:read-image: PNG bytes (raw IPC body, no base64), empty when there is none.
@@ -102,21 +132,40 @@ async fn fetch_to_downloads<R: Runtime>(app: &AppHandle<R>, url: &str, filename:
     if res.content_length().is_some_and(|l| l > download::MAX_DOWNLOAD_BYTES) {
         return Err("file too large".into());
     }
-    let part = target.with_extension("descall-part");
-    let mut file = std::fs::File::create(&part).map_err(|e| e.to_string())?;
+    let part = download::part_path(&target);
+    // create_new: never write into a file that is already there (another download of the
+    // same name, or anything else that appeared since unique_path looked).
+    let mut file = std::fs::OpenOptions::new().write(true).create_new(true).open(&part).map_err(|e| e.to_string())?;
     let mut stream = res.bytes_stream();
     let mut total: u64 = 0;
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| e.to_string())?;
+        let chunk = match chunk {
+            Ok(c) => c,
+            Err(e) => {
+                drop(file);
+                let _ = std::fs::remove_file(&part);
+                return Err(e.to_string());
+            }
+        };
         total += chunk.len() as u64;
         if total > download::MAX_DOWNLOAD_BYTES {
             drop(file);
             let _ = std::fs::remove_file(&part);
             return Err("file too large".into());
         }
-        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        if let Err(e) = file.write_all(&chunk) {
+            drop(file);
+            let _ = std::fs::remove_file(&part);
+            return Err(e.to_string());
+        }
     }
     drop(file);
-    std::fs::rename(&part, &target).map_err(|e| e.to_string())?;
+    // rename replaces an existing file on Windows: a same-name download that finished first
+    // keeps its file, this one takes the next free name.
+    let target = if target.exists() { download::unique_path(&dir, &safe, |p| p.exists()) } else { target };
+    if let Err(e) = std::fs::rename(&part, &target) {
+        let _ = std::fs::remove_file(&part);
+        return Err(e.to_string());
+    }
     Ok(target)
 }

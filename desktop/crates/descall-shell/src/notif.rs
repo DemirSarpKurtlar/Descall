@@ -24,6 +24,27 @@ pub struct Rect {
     pub height: f64,
 }
 
+/// A monitor work area for the stack: `rect` in that monitor's logical px (physical / scale),
+/// plus what turns a laid-out logical point back into the screen's physical px.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Anchor {
+    pub rect: Rect,
+    pub origin_px: (i32, i32),
+    pub scale: f64,
+}
+
+impl Anchor {
+    /// A point of the stack layout (logical px of this monitor) in physical screen px.
+    /// Windows' LogicalPosition uses the scale of the monitor the window is on *now*, so on a
+    /// second monitor with another DPI a logical position lands somewhere else (a 150 %
+    /// monitor right of a 100 % one: x 1920 px is logical 1280, which a window still on the
+    /// first monitor reads as 1280 px, on the wrong screen). Physical px are unambiguous.
+    pub fn to_physical(&self, x: f64, y: f64) -> (i32, i32) {
+        let s = if self.scale > 0.0 { self.scale } else { 1.0 };
+        (self.origin_px.0 + ((x - self.rect.x) * s).round() as i32, self.origin_px.1 + ((y - self.rect.y) * s).round() as i32)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
@@ -55,6 +76,26 @@ pub fn card_height(is_call: bool, kind: Kind) -> f64 {
     } else {
         NOTIF_HEIGHT
     }
+}
+
+/// main.cjs showAppNotification: with Descall in front the in-app UI already shows a call
+/// and any message that does not ask for interaction, so the shell shows nothing (no reply
+/// toast, no capsule, no taskbar flash).
+pub fn skip_in_front(main_in_front: bool, call: bool, require_interaction: bool) -> bool {
+    main_in_front && (call || !require_interaction)
+}
+
+/// Mentions, DMs and calls flash the taskbar button while Descall is not in front.
+pub fn flashes_taskbar(data_type: &str) -> bool {
+    matches!(data_type, "mention" | "dm" | "call" | "group-call")
+}
+
+/// Title and text of a quick reply toast (main.cjs: data.from || title, data.preview || body).
+pub fn reply_toast_text(title: &str, body: &str, data: &serde_json::Value) -> (String, String) {
+    let pick = |key: &str, fallback: &str| {
+        data.get(key).and_then(serde_json::Value::as_str).filter(|s| !s.is_empty()).unwrap_or(fallback).to_string()
+    };
+    (pick("from", title), pick("preview", body))
 }
 
 /// Capsule width for a work area: 480 DIPs, narrower on very small screens.
@@ -141,5 +182,40 @@ mod tests {
         assert_eq!(card_height(false, kind_of("announcement")), NOTIF_HEIGHT_NOTICE);
         assert_eq!(card_height(true, Kind::Notice), NOTIF_HEIGHT_CALL);
         assert_eq!(kind_of("friend-online"), Kind::Online);
+    }
+
+    #[test]
+    fn in_front_order_flash_and_reply_text() {
+        assert!(skip_in_front(true, false, false), "a DM while Descall is in front: nothing");
+        assert!(skip_in_front(true, true, true), "a call while in front: the in-app card");
+        assert!(!skip_in_front(true, false, true), "a mention asks for interaction: capsule");
+        assert!(!skip_in_front(false, false, false));
+        assert!(flashes_taskbar("mention") && flashes_taskbar("dm") && flashes_taskbar("call") && flashes_taskbar("group-call"));
+        assert!(!flashes_taskbar("friend-online") && !flashes_taskbar("group") && !flashes_taskbar(""));
+        let data = serde_json::json!({ "from": "Mert", "preview": "kaleci kim?" });
+        assert_eq!(reply_toast_text("Hafta Sonu Ekibi", "Mert: kaleci kim?", &data), ("Mert".to_string(), "kaleci kim?".to_string()));
+        let bare = serde_json::json!({ "from": "" });
+        assert_eq!(reply_toast_text("Ayşe", "selam", &bare), ("Ayşe".to_string(), "selam".to_string()));
+    }
+    #[test]
+    fn second_monitor_with_another_dpi_maps_to_its_own_pixels() {
+        // 1920x1040 work area at 100 %, then a 150 % monitor to its right (2560x1400 px).
+        let primary = Anchor { rect: Rect { x: 0.0, y: 0.0, width: 1920.0, height: 1040.0 }, origin_px: (0, 0), scale: 1.0 };
+        assert_eq!(primary.to_physical(1500.0, 20.0), (1500, 20));
+        let s = 1.5;
+        let second = Anchor { rect: Rect { x: 1920.0 / s, y: 0.0, width: 2560.0 / s, height: 1400.0 / s }, origin_px: (1920, 0), scale: s };
+        let placed = stack_positions(second.rect, &[Entry { id: 1, call: true, height: card_height(true, Kind::Call) }]);
+        let (px, py) = second.to_physical(placed[0].x, placed[0].y);
+        // On the second monitor, top centre of its work area (not on the first screen).
+        assert!(px >= 1920 && px < 1920 + 2560, "x {px}");
+        let mid = px as f64 + (placed[0].width + 2.0 * SHADOW_PAD) * s / 2.0;
+        assert!((mid - (1920.0 + 1280.0)).abs() <= 2.0, "centre {mid}");
+        // The window's top shadow margin sits above the work area by design (y = margin -
+        // SHADOW_PAD, as stack_top_centre_calls_first_whole_dips checks); the card itself is
+        // inside the monitor.
+        let card_top = py + (SHADOW_PAD * s).round() as i32;
+        assert!((0..1400).contains(&card_top), "card y {card_top} (window y {py})");
+        // The left edge of the area is the monitor origin.
+        assert_eq!(second.to_physical(second.rect.x, second.rect.y), (1920, 0));
     }
 }

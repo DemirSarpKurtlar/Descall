@@ -8,11 +8,46 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
+use tauri::Manager;
 
 use super::Poll;
 use crate::premium::logic::pin::{hash_pin, lockout_ms, valid_pin, verify_pin};
-use crate::premium::logic::rules::{num, truthy};
-use crate::premium::{arg, lock, now_ms, ok, platform, Bus, Caller, Feature, From, Host};
+use crate::premium::logic::rules::{num, redact_locked, truthy};
+use crate::premium::{arg, lock, now_ms, ok, platform, wins, Bus, Caller, Feature, From, Host};
+
+/// Windows hidden by the lock, shown again on unlock.
+static HIDDEN: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+/// Electron's hideOtherWindows: pop-outs and account windows hide until the PIN is entered;
+/// the main window draws the lock screen itself.
+fn hide_others(h: &Host) {
+    let mut hidden = lock(&HIDDEN);
+    for (label, e) in wins::list(h, None) {
+        if !matches!(e.kind.as_str(), "popout" | "account") {
+            continue;
+        }
+        if let Some(w) = h.app.get_webview_window(&label) {
+            if w.is_visible().unwrap_or(false) && w.hide().is_ok() {
+                hidden.push(label);
+            }
+        }
+    }
+}
+
+fn restore_others(h: &Host) {
+    let labels = std::mem::take(&mut *lock(&HIDDEN));
+    for label in &labels {
+        if let Some(w) = h.app.get_webview_window(label) {
+            wins::show(h, &w, &wins::kind_of(h, label).unwrap_or_default());
+        }
+    }
+    if !labels.is_empty() {
+        // The PIN was typed in the main window: it keeps the focus.
+        if let Some(m) = h.app.get_webview_window("main") {
+            let _ = m.set_focus();
+        }
+    }
+}
 
 #[derive(Clone)]
 struct Config {
@@ -65,11 +100,23 @@ impl F {
         self.record().and_then(|r| r.get("len").and_then(|l| num(Some(l)))).filter(|n| n.fract() == 0.0 && (4.0..=12.0).contains(n)).map(|n| n as u64)
     }
 
+    /// Sets the flag (also for the notification filter) and hides / restores the other app
+    /// windows on a change. Returns the previous value.
+    fn set_locked(&self, h: &Host, v: bool) -> bool {
+        let was = self.locked.swap(v, Ordering::Relaxed);
+        if v && !was {
+            hide_others(h);
+        } else if !v && was {
+            restore_others(h);
+        }
+        was
+    }
+
     fn do_lock(&self, h: &Host, reason: &str) -> Value {
         if !lock(&self.config).enabled || self.record().is_none() {
             return json!({ "ok": false, "error": "no_pin" });
         }
-        self.locked.store(true, Ordering::Relaxed);
+        self.set_locked(h, true);
         h.send("premium:app_lock:locked", json!({ "locked": true, "reason": reason }));
         ok(json!({ "locked": true }))
     }
@@ -130,7 +177,7 @@ impl Feature for F {
     fn stop(&self, h: &Host) {
         self.idle.stop();
         // Membership gone: the lock is released (a premium feature must not lock people out).
-        if self.locked.swap(false, Ordering::Relaxed) {
+        if self.set_locked(h, false) {
             h.send("premium:app_lock:locked", json!({ "locked": false }));
         }
     }
@@ -171,7 +218,7 @@ impl Feature for F {
                     c.json()
                 };
                 h.write_json("app_lock", &cfg);
-                self.locked.store(false, Ordering::Relaxed);
+                self.set_locked(h, false);
                 self.arm(h);
                 ok(json!({}))
             }
@@ -199,7 +246,7 @@ impl Feature for F {
                     return Ok(json!({ "ok": false, "error": "blocked", "retryInMs": until - now }));
                 }
                 let Some(rec) = self.record() else {
-                    self.locked.store(false, Ordering::Relaxed);
+                    self.set_locked(h, false);
                     return Ok(ok(json!({ "locked": false })));
                 };
                 if !verify_pin(&pin, Some(&rec)) {
@@ -210,7 +257,7 @@ impl Feature for F {
                 }
                 self.failures.store(0, Ordering::Relaxed);
                 self.blocked_until.store(0, Ordering::Relaxed);
-                self.locked.store(false, Ordering::Relaxed);
+                self.set_locked(h, false);
                 if self.pin_length().is_none() {
                     let mut r = rec.clone();
                     r["len"] = json!(pin.len());
@@ -242,5 +289,32 @@ impl Feature for F {
             }
             _ => {}
         }
+    }
+    /// While locked, a capsule or toast shows nothing personal (Electron app_lock.cjs
+    /// notificationFilter with appLockRedact.cjs; the Tauri shell showed sender and text).
+    fn notify_filter(&self, h: &Host, payload: Value) -> Option<Value> {
+        if !self.locked.load(Ordering::Relaxed) {
+            return Some(payload);
+        }
+        Some(redact_locked(&payload, &crate::state::et(&h.app, "notif.locked", &[])))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn locked_message_toast_has_no_sender_or_preview() {
+        let p = json!({ "title": "Ada", "quickReply": { "conv": "dm:1" }, "options": { "body": "secret", "tag": "dm-1", "avatarUrl": "https://x/a.png", "silent": true, "data": { "type": "dm", "from": "Ada", "preview": "secret" } } });
+        let r = redact_locked(&p, "Unlock to see it");
+        assert_eq!(r, json!({ "title": "Descall", "options": { "body": "Unlock to see it", "tag": "descall-locked", "requireInteraction": false, "silent": true, "avatarUrl": null, "data": {} } }));
+    }
+
+    #[test]
+    fn locked_call_still_rings_without_names() {
+        let p = json!({ "title": "Ada", "options": { "body": "Ada is calling", "tag": "call-7", "requireInteraction": true, "data": { "type": "group-call", "callType": "video", "callId": "7", "groupId": "g", "groupName": "Team" } } });
+        let r = redact_locked(&p, "x");
+        assert_eq!(r, json!({ "title": "Descall", "options": { "body": "", "tag": "call-7", "requireInteraction": true, "silent": false, "avatarUrl": null, "data": { "type": "group-call", "callType": "video", "callId": "7", "groupId": "g" } } }));
     }
 }

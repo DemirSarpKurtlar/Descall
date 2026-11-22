@@ -1,7 +1,20 @@
 //! WebView2 specifics of the main window: the boot-retry clean reload, page permissions
 //! without prompts (Electron's session permission handlers) and the Retry / Quit dialog.
 
-use tauri::{Runtime, WebviewWindow};
+use tauri::{Manager, Runtime, WebviewWindow};
+
+/// DevTools for every webview of the app (windowKeys.cjs canOpenDevTools): dev runs, or a
+/// release build with `<app data>/devtools-enabled` (support opt-in). The tauri `devtools`
+/// feature is on so the opt-in can work in release; without `.devtools(..)` a builder would then
+/// default to on, so every WebviewWindowBuilder sets it from here. Read once per run.
+pub fn devtools_allowed<R: Runtime>(app: &tauri::AppHandle<R>) -> bool {
+    use tauri::Manager;
+    static ALLOWED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ALLOWED.get_or_init(|| {
+        let dir = app.path().app_data_dir().ok();
+        descall_shell::window_keys::devtools_allowed(cfg!(debug_assertions), dir.as_deref(), |p| p.is_file())
+    })
+}
 
 /// Script fallback for a clean reload: drop Service Workers and Cache Storage, reload.
 const CLEAR_JS: &str = "(async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k);}catch(e){}location.reload();})()";
@@ -47,12 +60,13 @@ pub fn clear_and_reload<R: Runtime>(window: &WebviewWindow<R>, why: &str) {
 }
 
 /// Grant microphone / camera / autoplay to the app origin without a prompt, as Electron's
-/// setPermissionRequestHandler did (descall_shell::clipboard::permission_allowed).
+/// setPermissionRequestHandler did (descall_shell::clipboard::permission_decision); every
+/// other request is refused without a prompt, as Electron refused it.
 pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
     #[cfg(windows)]
     {
         let _ = window.with_webview(|pw| unsafe {
-            use descall_shell::clipboard::{permission_allowed, PermissionKind};
+            use descall_shell::clipboard::{permission_decision, PermissionKind};
             use webview2_com::Microsoft::Web::WebView2::Win32::*;
             let Ok(core) = pw.controller().CoreWebView2() else { return };
             let handler = webview2_com::PermissionRequestedEventHandler::create(Box::new(|_, args| {
@@ -71,13 +85,222 @@ pub fn install_permission_handler<R: Runtime>(window: &WebviewWindow<R>) {
                     COREWEBVIEW2_PERMISSION_KIND_GEOLOCATION => PermissionKind::Geolocation,
                     _ => PermissionKind::Other,
                 };
-                if permission_allowed(k, &uri, cfg!(debug_assertions)) {
-                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                // Allow the app's media, refuse the rest silently as Electron did: left at
+                // "default", WebView2 showed its own Edge prompt ("tauri.localhost wants to show
+                // notifications") over the app. Kinds the shared rules do not know are refused
+                // too (T8), except multiple automatic downloads (exports); autoplay outside the
+                // app keeps WebView2's default (T7).
+                match permission_decision(k, &uri, cfg!(debug_assertions)) {
+                    Some(true) => args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?,
+                    Some(false) => args.SetState(COREWEBVIEW2_PERMISSION_STATE_DENY)?,
+                    None if k == PermissionKind::Other && kind != COREWEBVIEW2_PERMISSION_KIND_MULTIPLE_AUTOMATIC_DOWNLOADS => {
+                        args.SetState(COREWEBVIEW2_PERMISSION_STATE_DENY)?
+                    }
+                    None => {}
                 }
                 Ok(())
             }));
             let mut token = 0i64;
             let _ = core.add_PermissionRequested(&handler, &mut token);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window;
+    }
+}
+
+/// Electron never showed a browser menu or ran browser shortcuts. WebView2 does both (Back,
+/// Reload, Save as, Print, More tools; Ctrl+R, F5, Alt+Left, Ctrl+P, Ctrl+Shift+I), which could
+/// reload the app or navigate it away. Browser accelerator keys go off (editing keys such as
+/// Ctrl+C/V/X/A/Z stay with the page); the default menu is trimmed to Electron's
+/// (descall_shell::clipboard::electron_menu_items: edit items on a field, Copy on selected
+/// text, else none). The page's own menus call preventDefault, so WebView2 never asks for them.
+/// Password saving goes off here; autofill pop-ups are off through the builders
+/// (general_autofill_enabled(false), Electron never showed either). electron-api-shim.js has
+/// the same rules on the page side.
+pub fn install_browser_guards<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(|pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::*;
+            use windows_core::Interface;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            if let Ok(settings) = core.Settings() {
+                if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
+                    let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
+                }
+                // Autofill is off through general_autofill_enabled(false) on every app window
+                // builder; WebView2's password manager has no builder switch.
+                if let Ok(s4) = settings.cast::<ICoreWebView2Settings4>() {
+                    let _ = s4.SetIsPasswordAutosaveEnabled(false);
+                }
+                if let Ok(s6) = settings.cast::<ICoreWebView2Settings6>() {
+                    let _ = s6.SetIsSwipeNavigationEnabled(false);
+                }
+            }
+            let Ok(core11) = core.cast::<ICoreWebView2_11>() else { return };
+            let handler = webview2_com::ContextMenuRequestedEventHandler::create(Box::new(|_, args| {
+                let Some(args) = args else { return Ok(()) };
+                let target = args.ContextMenuTarget()?;
+                let mut editable = windows_core::BOOL(0);
+                target.IsEditable(&mut editable)?;
+                let mut selection = windows_core::BOOL(0);
+                let _ = target.HasSelection(&mut selection);
+                let menu = args.MenuItems()?;
+                let mut count = 0u32;
+                menu.Count(&mut count)?;
+                let mut items = Vec::with_capacity(count as usize);
+                for i in 0..count {
+                    let item = menu.GetValueAtIndex(i)?;
+                    let mut name = windows_core::PWSTR::null();
+                    item.Name(&mut name)?;
+                    let mut kind = COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_COMMAND;
+                    item.Kind(&mut kind)?;
+                    items.push((webview2_com::take_pwstr(name), kind == COREWEBVIEW2_CONTEXT_MENU_ITEM_KIND_SEPARATOR));
+                }
+                let keep = descall_shell::clipboard::electron_menu_items(editable.as_bool(), selection.as_bool(), &items);
+                if !keep.iter().any(|k| *k) {
+                    args.SetHandled(true)?;
+                    return Ok(());
+                }
+                for i in (0..count).rev() {
+                    if !keep[i as usize] {
+                        menu.RemoveValueAtIndex(i)?;
+                    }
+                }
+                Ok(())
+            }));
+            let mut token = 0i64;
+            let _ = core11.add_ContextMenuRequested(&handler, &mut token);
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window;
+    }
+}
+
+/// Page downloads (<a download> exports, blob: / data: files): WebView2's own download bubble
+/// (an Edge flyout over the app) is replaced by what electronAPI.downloadFile does: the file
+/// goes to Downloads under a free name (descall_shell::download) and is shown in Explorer.
+pub fn on_download<R: Runtime>(webview: tauri::Webview<R>, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    use tauri::webview::DownloadEvent;
+    use tauri::Manager;
+    match event {
+        DownloadEvent::Requested { destination, .. } => {
+            let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            if let Ok(dir) = webview.app_handle().path().download_dir() {
+                if let Ok((_, safe)) = descall_shell::download::resolve_download_path(&dir, &name) {
+                    *destination = descall_shell::download::unique_path(&dir, &safe, |p| p.exists());
+                }
+            }
+            true
+        }
+        DownloadEvent::Finished { path, success, .. } => {
+            if success {
+                if let Some(p) = path {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = webview.app_handle().opener().reveal_item_in_dir(&p);
+                }
+            }
+            true
+        }
+        _ => true,
+    }
+}
+
+static CRASH_RELOADS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static ASKING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Reload the main frame from any thread (WebView2 Reload; works while the renderer is hung).
+fn reload<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let _ = window.with_webview(|pw| unsafe {
+            if let Ok(core) = pw.controller().CoreWebView2() {
+                let _ = core.Reload();
+            }
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = window.eval("location.reload()");
+    }
+}
+
+/// WebView2 ProcessFailed on the main window (Electron render-process-gone / unresponsive /
+/// child-process-gone). Before, a renderer crash left a dead page and was never reported.
+/// The summary goes to the page's error reporting once the reloaded page has mounted.
+pub fn on_process_failed<R: Runtime>(window: &WebviewWindow<R>, kind: i32) {
+    use descall_shell::watchdog::{renderer_gone_action, RendererGone};
+    use std::sync::atomic::Ordering;
+    let app = window.app_handle().clone();
+    let (action, name) = renderer_gone_action(kind, CRASH_RELOADS.load(Ordering::Acquire));
+    if action != RendererGone::ReportOnly {
+        // The page is gone or hung: hold the report for the next document, and a live call
+        // cannot survive this (the update deferral treats it as "call ended").
+        crate::errors::detach();
+        crate::commands::updates::reset_voice(&app);
+    }
+    crate::errors::report(descall_shell::main_errors::summary("render-process-gone", name, &format!("WebView2 process failed (kind {kind})")));
+    match action {
+        RendererGone::ReportOnly => {}
+        RendererGone::Reload => {
+            CRASH_RELOADS.fetch_add(1, Ordering::AcqRel);
+            log::warn!("[boot] {name}: reloading the page");
+            reload(window);
+        }
+        RendererGone::Ask => {
+            if ASKING.swap(true, Ordering::AcqRel) {
+                return;
+            }
+            let win = window.clone();
+            tauri::async_runtime::spawn(async move {
+                let hung = kind == 2;
+                let (title, detail) = if hung {
+                    (crate::state::et(&app, "dialog.unresponsive", &[]), crate::state::et(&app, "dialog.unresponsiveDetail", &[]))
+                } else {
+                    (crate::state::et(&app, "dialog.openFailed", &[]), crate::state::et(&app, "dialog.openFailedDetail", &[]))
+                };
+                let retry = tauri::async_runtime::spawn_blocking(move || ask_retry(&title, &detail)).await.unwrap_or(false);
+                ASKING.store(false, Ordering::Release);
+                match (kind, retry) {
+                    // Browser process gone: only a fresh start brings the WebView back.
+                    (0, true) => {
+                        crate::state::set_quitting(&app);
+                        app.restart();
+                    }
+                    (0, false) => {
+                        crate::state::set_quitting(&app);
+                        app.exit(0);
+                    }
+                    (_, true) => reload(&win),
+                    // Wait (hung) or keep the window as it is.
+                    (_, false) => {}
+                }
+            });
+        }
+    }
+}
+
+/// Subscribe the main window to WebView2 ProcessFailed (see on_process_failed).
+pub fn install_process_failed_handler<R: Runtime>(window: &WebviewWindow<R>) {
+    #[cfg(windows)]
+    {
+        let win = window.clone();
+        let _ = window.with_webview(move |pw| unsafe {
+            use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_PROCESS_FAILED_KIND;
+            let Ok(core) = pw.controller().CoreWebView2() else { return };
+            let handler = webview2_com::ProcessFailedEventHandler::create(Box::new(move |_, args| {
+                let Some(args) = args else { return Ok(()) };
+                let mut kind = COREWEBVIEW2_PROCESS_FAILED_KIND::default();
+                args.ProcessFailedKind(&mut kind)?;
+                on_process_failed(&win, kind.0);
+                Ok(())
+            }));
+            let mut token = 0i64;
+            let _ = core.add_ProcessFailed(&handler, &mut token);
         });
     }
     #[cfg(not(windows))]

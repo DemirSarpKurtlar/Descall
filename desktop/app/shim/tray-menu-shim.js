@@ -10,6 +10,9 @@
   if (window.top !== window || window.trayMenuAPI) return;
   const T = window.__TAURI__;
   if (!T || !T.core || !T.event) return;
+  const meta = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
+  const label = String((meta && meta.currentWebview && meta.currentWebview.label) || "");
+  const own = label ? { target: { kind: "WebviewWindow", label } } : undefined;
   Object.defineProperty(window, "trayMenuAPI", {
     value: Object.freeze({
       getState: () => T.core.invoke("tray_menu_state"),
@@ -17,7 +20,7 @@
         if (typeof callback !== "function") return () => {};
         let un = null;
         let dead = false;
-        T.event.listen("tray-menu:state", (e) => callback(e.payload)).then((u) => {
+        T.event.listen("tray-menu:state", (e) => callback(e.payload), own).then((u) => {
           if (dead) u();
           else un = u;
         }).catch(() => {});

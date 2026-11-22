@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { resolveDeepLink } from "./deepLinks.js";
+import { desktopDeepLinkBridge, startDesktopDeepLinks } from "./desktopDeepLinks.js";
 
 /**
  * 3.0.1: iOS deep links, Android App Links too. DescallDeepLinkPlugin (.swift on
@@ -8,6 +9,7 @@ import { resolveDeepLink } from "./deepLinks.js";
  * loaded) and fires "url"; we take it, resolve it with resolveDeepLink and hand
  * the in-app path to the router. takePending clears the URL natively, so the
  * event and the startup read never route it twice.
+ * Tauri desktop: the shell's descall:// bridge (desktopDeepLinks.js).
  * Web, Electron and older native builds without the plugin: no-op.
  */
 
@@ -25,6 +27,8 @@ function nativePlugin() {
 }
 
 export function startNativeDeepLinks(onPath) {
+  const desktop = typeof window !== "undefined" ? desktopDeepLinkBridge(window.electronAPI) : null;
+  if (desktop) return startDesktopDeepLinks(desktop, onPath);
   const p = nativePlugin();
   if (!p || typeof onPath !== "function") return () => {};
   let stopped = false;

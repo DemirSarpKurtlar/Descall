@@ -70,6 +70,38 @@ pub fn ends_paint_watch(phase: &str) -> bool {
     matches!(phase, "painted" | "forced-dismiss")
 }
 
+/// Renderer reloads after a WebView2 renderer crash, per app run (Electron reloaded only
+/// during boot and left a dead white window after it).
+pub const MAX_RENDERER_CRASH_RELOADS: u32 = 3;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RendererGone {
+    /// Reload the page (the session lives in localStorage / IndexedDB and survives).
+    Reload,
+    /// Ask the user: Retry (reload / restart) or wait / quit.
+    Ask,
+    /// WebView2 restarts the process itself (GPU, utility) or it was a sub-frame: report only.
+    ReportOnly,
+}
+
+/// WebView2 ProcessFailed (COREWEBVIEW2_PROCESS_FAILED_KIND) for the main window, plus the
+/// summary name it is reported under (electronAPI.onMainError, kind `render-process-gone`).
+pub fn renderer_gone_action(kind: i32, crash_reloads: u32) -> (RendererGone, &'static str) {
+    match kind {
+        // The browser process is gone: this WebView cannot come back, only the app can.
+        0 => (RendererGone::Ask, "browser-process-exited"),
+        1 if crash_reloads < MAX_RENDERER_CRASH_RELOADS => (RendererGone::Reload, "render-process-exited"),
+        1 => (RendererGone::Ask, "render-process-exited"),
+        // Hung renderer: never reload a live call on our own; Wait / Reload like Electron.
+        2 => (RendererGone::Ask, "render-process-unresponsive"),
+        3 => (RendererGone::ReportOnly, "frame-render-process-exited"),
+        4 => (RendererGone::ReportOnly, "utility-process-exited"),
+        5 => (RendererGone::ReportOnly, "sandbox-helper-process-exited"),
+        6 => (RendererGone::ReportOnly, "gpu-process-exited"),
+        _ => (RendererGone::ReportOnly, "process-exited"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! bootWatchdog.selftest.mjs and paintWatchdog.selftest.mjs (logic parts).
@@ -78,6 +110,17 @@ mod tests {
     #[test]
     fn bounded_backoff_then_ask() {
         assert_eq!([0, 1, 2, 3].map(next_load_retry_delay), [Some(1000), Some(3000), Some(8000), None]);
+    }
+
+    #[test]
+    fn renderer_gone() {
+        assert_eq!(renderer_gone_action(1, 0), (RendererGone::Reload, "render-process-exited"));
+        assert_eq!(renderer_gone_action(1, MAX_RENDERER_CRASH_RELOADS).0, RendererGone::Ask, "no reload loop");
+        assert_eq!(renderer_gone_action(0, 0).0, RendererGone::Ask);
+        assert_eq!(renderer_gone_action(2, 0).0, RendererGone::Ask, "a hung call is never reloaded silently");
+        for k in [3, 4, 5, 6, 7, 8, 9, 42] {
+            assert_eq!(renderer_gone_action(k, 0).0, RendererGone::ReportOnly, "kind {k}");
+        }
     }
 
     #[test]

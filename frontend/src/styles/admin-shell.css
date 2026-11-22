@@ -419,3 +419,15 @@
 .adm-error-retry:focus-visible { outline: 2px solid rgb(var(--adm-brand)); outline-offset: 2px; }
 :root:is(.a11y-solid, .gd-lite) .adm-error-card { background: #1a1c27; -webkit-backdrop-filter: none; backdrop-filter: none; }
 @media (prefers-reduced-motion: reduce) { .adm-error-retry { transition: none; } .adm-error-retry:active { transform: none; } }
+
+/* Tauri (html.tauri-app, WebView2): no CSS drag region. WebView2 turns app-region: drag into a
+   native caption that swallows clicks, the window buttons included (the main title bar's
+   desktop 4.0.1 report). The bar and the state screens drag through data-tauri-drag-region
+   (AdminShell.jsx, AdminPanelPage.jsx) instead. Electron keeps the rules above. */
+html.tauri-app .adm-titlebar,
+html.tauri-app .adm-titlebar *,
+html.tauri-app .adm-state,
+html.tauri-app .adm-state * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}

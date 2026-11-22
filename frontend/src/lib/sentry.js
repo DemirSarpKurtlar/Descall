@@ -8,6 +8,7 @@
  *   before it loads are buffered and sent once it is ready.
  */
 import { afterFirstScreen } from "./afterFirstScreen.js";
+import { desktopShellTag, isDesktopDevOrigin, isLocalHost } from "./sentryShell.js";
 
 const SENTRY_DSN =
   "https://dd5fad1cc547154ece0dd5ff07edb982@o4512220968779776.ingest.de.sentry.io/4512221008035920";
@@ -54,29 +55,15 @@ export function sentryPlatform(isNativeIOS) {
   return "web";
 }
 
-function isLocalHost(hostname) {
-  const h = String(hostname || "").toLowerCase();
-  return (
-    h === "localhost" ||
-    h === "0.0.0.0" ||
-    h === "[::1]" ||
-    h === "::1" ||
-    h.endsWith(".localhost") ||
-    h.endsWith(".local") ||
-    /^127\./.test(h) ||
-    /^10\./.test(h) ||
-    /^192\.168\./.test(h)
-  );
-}
-
 export function isErrorReportingEnabled() {
   if (enabled !== null) return enabled;
   enabled = false;
   try {
     if (!import.meta.env.PROD || typeof window === "undefined") return enabled;
     if (isElectron() || isNativeShell()) {
-      // Electron dev loads http://localhost:5173; packaged builds use file://.
-      enabled = !(isElectron() && window.location.protocol.startsWith("http") && isLocalHost(window.location.hostname));
+      // Electron / Tauri dev runs load http://localhost:5173; packaged Electron uses
+      // descall://app and packaged Tauri https://tauri.localhost (sentryShell.js).
+      enabled = !(isElectron() && isDesktopDevOrigin(window.location.protocol, window.location.hostname));
       return enabled;
     }
     const { protocol, hostname } = window.location;
@@ -85,6 +72,18 @@ export function isErrorReportingEnabled() {
     enabled = false;
   }
   return enabled;
+}
+
+/** Desktop: which shell (Electron or Tauri) and its own version (Tauri ships its own). */
+function shellTags() {
+  try {
+    const shell = desktopShellTag(window.electronAPI);
+    if (!shell) return {};
+    const v = window.__DESCALL_BOOT__?.version;
+    return v ? { desktopShell: shell, shellVersion: String(v).slice(0, 32) } : { desktopShell: shell };
+  } catch {
+    return {};
+  }
 }
 
 function environmentName() {
@@ -135,7 +134,7 @@ function loadSdk() {
             .filter((i) => i.name !== "BrowserSession" && i.name !== "Breadcrumbs" && i.name !== "BrowserApiErrors")
             .concat(Sentry.breadcrumbsIntegration({ console: false })),
         ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications"],
-        initialScope: { tags: { platform: sentryPlatform(isNativeIOS) } },
+        initialScope: { tags: { platform: sentryPlatform(isNativeIOS), ...shellTags() } },
         beforeSend: (event) => scrubEvent(event),
         beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
       });

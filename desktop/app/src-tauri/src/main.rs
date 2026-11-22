@@ -11,6 +11,8 @@ mod admin;
 mod assets;
 mod boot;
 mod commands;
+mod errors;
+mod logging;
 mod migration;
 mod platform;
 mod premium;
@@ -26,7 +28,7 @@ mod webview;
 use std::sync::OnceLock;
 
 use tauri::webview::{NewWindowResponse, PageLoadEvent};
-use tauri::{AppHandle, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 /// Electron main.cjs appendSwitch list, as WebView2 browser arguments. Tauri's own defaults
 /// (msWebOOUI,msPdfOOUI,msSmartScreenProtection) must be repeated when overriding, and every
@@ -45,14 +47,27 @@ pub fn shell_url(page: &str) -> tauri::Url {
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 
-/// Main-process errors reach the page (electronAPI.onMainError) and the log.
+/// The app commands, behind the per-window policy (descall_shell::ipc_policy): the shell's own pages
+/// (capsules, overlay, HUD, launcher, tray panel) reach their bridge's commands only.
+fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    move |invoke| {
+        let label = invoke.message.webview_ref().label().to_string();
+        if !descall_shell::ipc_policy::allowed(&label, invoke.message.command()) {
+            log::warn!("[ipc] {label} may not call {}", invoke.message.command());
+            invoke.resolver.reject("forbidden");
+            return true;
+        }
+        inner(invoke)
+    }
+}
+
+/// Main-process errors reach the page (electronAPI.onMainError, scrubbed of paths) and the
+/// log; a fatal panic (release builds abort) is forwarded on the next start (crate::errors).
 fn install_panic_hook() {
     let default = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         log::error!("[main] panic: {info}");
-        if let Some(app) = APP.get() {
-            state::to_main(app, "app:main-error", serde_json::json!({ "message": info.to_string() }));
-        }
+        errors::on_panic(info);
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
         default(info);
@@ -60,6 +75,8 @@ fn install_panic_hook() {
 }
 
 fn main() {
+    logging::init();
+    errors::init_early();
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
@@ -67,7 +84,13 @@ fn main() {
 
     let app = tauri::Builder::default()
         // Second launch (shortcut, taskbar) raises the existing window: Electron second-instance.
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| state::show_main(app)))
+        // A descall:// link in its argv goes to the running page (deep_link_take).
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(url) = descall_shell::deep_link::from_args(&argv) {
+                state::deliver_deep_link(app, url);
+            }
+            state::show_main(app);
+        }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
@@ -101,6 +124,10 @@ fn main() {
         .setup(move |app| {
             let handle = app.handle().clone();
             let _ = APP.set(handle.clone());
+            errors::init(&handle);
+            if let Some(url) = descall_shell::deep_link::from_args(&argv) {
+                *state::shell(&handle).deep_link.lock().unwrap() = Some(url);
+            }
             state::init_locale(&handle);
             tray_menu::load_snooze(&handle);
 
@@ -115,6 +142,7 @@ fn main() {
             let nav_app = handle.clone();
             let load_app = handle.clone();
             let w = WebviewWindowBuilder::new(app, state::MAIN, WebviewUrl::App("index.html".into()))
+                .devtools(crate::webview::devtools_allowed(&handle)) // support opt-in only (webview.rs)
                 .title("Descall")
                 .inner_size(ws.width, ws.height)
                 .min_inner_size(ws.min_width, ws.min_height)
@@ -122,25 +150,34 @@ fn main() {
                 .visible(false)
                 .background_color(tauri::window::Color(11, 12, 18, 255))
                 .use_https_scheme(true) // origin https://tauri.localhost: in the backend CORS list
+                // HTML5 drag and drop (files into a chat, avatar / banner pickers, server and
+                // folder reordering) like Electron. Tauri's own handler swallows every drop
+                // on Windows and the page got no dragenter / drop at all.
+                .disable_drag_drop_handler()
+                // No browser autofill dropdown under the app's fields (search, username,
+                // message composer); Electron never had one.
+                .general_autofill_enabled(false)
+                // <a download> / blob: exports: Downloads + Explorer, no Edge download bubble.
+                .on_download(webview::on_download)
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
-                .on_navigation(boot::is_app_url)
+                .on_navigation({
+                    let app = handle.clone();
+                    move |url| boot::main_navigation(&app, url)
+                })
                 .on_new_window(move |url, features| {
                     // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
                     if let Some(r) = premium::on_new_window(&nav_app, &url, features) {
                         return r;
                     }
-                    // Other about:blank windows keep their opener; any other http(s) link opens
-                    // in the default browser (setWindowOpenHandler).
+                    // Admin routes get their own window; web and mail links open in the default
+                    // browser; nothing else opens (setWindowOpenHandler: no in-app popups).
                     if admin::is_admin_url(&url) {
                         let h = nav_app.clone();
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
                         return NewWindowResponse::Deny;
                     }
-                    if url.as_str() == "about:blank" || boot::is_app_url(&url) {
-                        return NewWindowResponse::Allow;
-                    }
-                    if descall_shell::trust::is_safe_external_url(url.as_str()) {
+                    if descall_shell::trust::main_window_open(url.as_str()) == descall_shell::trust::WindowOpen::External {
                         use tauri_plugin_opener::OpenerExt;
                         let _ = nav_app.opener().open_url(url.as_str(), None::<&str>);
                     }
@@ -150,7 +187,11 @@ fn main() {
                     PageLoadEvent::Started => {
                         // A reload drops any live call; the update deferral treats it as "call ended".
                         commands::updates::reset_voice(&load_app);
+                        // The mini call card goes with the call (Electron resetVoiceBusyFromLifecycle);
+                        // a stale visible card also kept the update deferral "busy" for good.
+                        commands::overlay::hide(&load_app);
                         commands::screen::stop_on_navigation(&load_app);
+                        errors::detach();
                         boot::arm_paint_watchdog(&w);
                     }
                     PageLoadEvent::Finished => {
@@ -160,7 +201,9 @@ fn main() {
                     }
                 })
                 .build()?;
-            if let (Some(x), Some(y)) = (ws.x, ws.y) {
+            if let Some((x, y)) = ws.physical {
+                let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
+            } else if let (Some(x), Some(y)) = (ws.x, ws.y) {
                 let _ = w.set_position(tauri::LogicalPosition::new(x, y));
             }
             if ws.maximized {
@@ -168,6 +211,8 @@ fn main() {
             }
             boot::bind_window_events(&w);
             webview::install_permission_handler(&w);
+            webview::install_browser_guards(&w);
+            webview::install_process_failed_handler(&w);
             tray::create(&handle);
             premium_hooks::install(&handle);
 
@@ -192,26 +237,44 @@ fn main() {
                 }
             }
 
+            if !state::is_dev() {
+                // descall:// opens this exe (HKCU\Software\Classes\descall), also after a
+                // migration into another folder or a portable copy; the installer writes the same.
+                {
+                    use tauri_plugin_deep_link::DeepLinkExt;
+                    if let Err(e) = handle.deep_link().register_all() {
+                        log::warn!("[deep-link] scheme registration failed: {e}");
+                    }
+                }
+                if let Some(dir) = state::data_dir(&handle) {
+                    let electron = handle.path().data_dir().ok().map(|d| d.join(descall_migrate::paths::ELECTRON_USER_DATA));
+                    platform::ensure_autostart(&dir, electron.as_deref(), migration::migration_id().is_some());
+                }
+            }
             migration::cleanup_on_start(&handle);
             boot::watch_reduced_transparency(&handle);
             commands::updates::schedule_background_checks(&handle);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(guarded(tauri::generate_handler![
             commands::app::app_version,
             commands::app::app_set_locale,
             commands::app::app_boot_retry,
             commands::app::app_boot_state,
             commands::app::app_reduced_transparency,
+            commands::app::app_log,
             commands::app::voice_set_busy,
             commands::app::activity_set_busy,
+            commands::app::deep_link_take,
             commands::window::window_minimize,
             commands::window::window_toggle_maximize,
+            commands::window::window_toggle_devtools,
             commands::window::window_close,
             commands::window::window_content_box,
             commands::window::window_is_focused,
             commands::window::window_focus,
             commands::window::window_set_zoom,
+            commands::window::window_system_menu,
             commands::updates::updates_check,
             commands::updates::updates_restart,
             commands::updates::updates_status,
@@ -242,7 +305,7 @@ fn main() {
             tray_menu::tray_set_state,
             tray_menu::tray_menu_state,
             tray_menu::tray_menu_act,
-        ])
+        ]))
         .build(assets::with_nested_routes(tauri::generate_context!()))
         .expect("Descall failed to start");
 
@@ -257,6 +320,34 @@ fn main() {
 
 #[cfg(test)]
 mod config_tests {
+    /// Tauri updates run the old uninstaller with /UPDATE before installing: the uninstall
+    /// hook must not delete the login auto-start (Run value) or the toast activator then,
+    /// or every update turns "Start with Windows" off.
+    #[test]
+    fn update_keeps_autostart_and_toast_activator() {
+        let hooks = include_str!("../nsis/hooks.nsh");
+        let at = hooks.find("!macro NSIS_HOOK_POSTUNINSTALL").expect("post-uninstall hook");
+        let body = &hooks[at..at + hooks[at..].find("!macroend").expect("macro end")];
+        let guard = body.find("${If} $UpdateMode <> 1").expect("deletions guarded by $UpdateMode");
+        for line in body.lines().filter(|l| l.trim_start().starts_with("Delete")) {
+            let pos = body.find(line).unwrap();
+            assert!(pos > guard && pos < body.find("${EndIf}").unwrap(), "unguarded: {line}");
+        }
+        assert!(body.contains(r#"CurrentVersion\Run" "${DESCALL_AUMID}""#), "a real uninstall still removes auto-start");
+    }
+
+    /// Single instance before every other plugin (Tauri requires it first so a second launch
+    /// exits before touching anything), and its argv reaches the deep-link handoff.
+    #[test]
+    fn second_launch_focuses_and_forwards_links() {
+        let main = include_str!("main.rs");
+        let builder = &main[main.find("tauri::Builder::default()").unwrap()..];
+        let first_plugin = builder.find(".plugin(").unwrap();
+        assert!(builder[first_plugin..].starts_with(".plugin(tauri_plugin_single_instance::init("), "single instance is the first plugin");
+        let cb = &builder[first_plugin..first_plugin + 400];
+        assert!(cb.contains("deep_link::from_args(&argv)") && cb.contains("state::show_main(app)"));
+        assert!(main.contains("commands::app::deep_link_take,"));
+    }
     /// The web build (ELECTRON_BUILD=1, IIFE) ships no .css file: every stylesheet is a
     /// <style> element its JS adds at start-up. If Tauri adds hashes/nonces to style-src,
     /// 'unsafe-inline' stops counting and all of those are blocked: the app opens as bare,

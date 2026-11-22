@@ -151,6 +151,11 @@ pub(crate) trait Feature: Send + Sync {
     fn on_tray(&self, _h: &Host, _rest: &str) -> bool {
         false
     }
+    /// Final notification filter (Electron notifyHooks.registerFinal): runs after quick reply
+    /// on every { title, options } payload while the feature runs; None drops it.
+    fn notify_filter(&self, _h: &Host, payload: Value) -> Option<Value> {
+        Some(payload)
+    }
 }
 
 // ---- host -------------------------------------------------------------------------------------
@@ -397,6 +402,10 @@ impl Host {
         let size = bytes.len();
         let mut b = lock(&self.blobs);
         b.retain(|_, x| x.at.elapsed() < Duration::from_secs(120));
+        let held: Vec<(u64, usize)> = b.iter().map(|(k, x)| (*k, x.bytes.len())).collect();
+        for old in rules::blobs_to_evict(&held, size) {
+            b.remove(&old);
+        }
         b.insert(id, Blob { bytes, at: Instant::now() });
         json!({ "__blob": id, "size": size })
     }
@@ -822,16 +831,28 @@ pub fn on_new_window(app: &AppHandle, url: &tauri::Url, features: tauri::webview
 /// Notification hooks (notifyHooks.cjs): `None` = drop it; the payload may gain `quickReply`.
 #[allow(dead_code)]
 pub fn notify_filter(payload: Value) -> Option<Value> {
-    match host() {
-        Some(h) => features::quick_reply::filter(h, payload),
-        None => Some(payload),
+    let Some(h) = host() else { return Some(payload) };
+    let mut p = features::quick_reply::filter(h, payload)?;
+    // Final filters after quick reply, as Electron's registerFinal: app_lock redacts whatever
+    // is left (sender, text, avatar, the reply box) while Descall is locked.
+    for f in &h.features {
+        if h.is_running(f.key()) {
+            p = f.notify_filter(h, p)?;
+        }
     }
+    Some(p)
 }
 
 /// Native reply toast for a DM marked by [`notify_filter`]; false = show the capsule instead.
 #[allow(dead_code)]
 pub fn show_quick_reply(title: &str, body: &str, conv: &str, click_data: Value) -> bool {
     host().is_some_and(|h| features::quick_reply::show(h, title, body, conv, click_data))
+}
+
+/// The "toast" notification style as a native toast whose click opens the chat; false = the
+/// caller falls back to the plugin notification.
+pub fn show_toast(title: &str, body: &str, silent: bool, click: Value) -> bool {
+    host().is_some_and(|h| features::quick_reply::show_plain(h, title, body, silent, click))
 }
 
 /// Read the session token from the shell's secure store (auth-token); the renderer's own
@@ -880,4 +901,15 @@ pub fn is_aux_window(label: &str) -> bool {
 #[allow(dead_code)]
 pub fn account_token(label: &str, token: Option<&str>) -> bool {
     host().is_some_and(|h| features::multi_account::store_token(h, label, token))
+}
+
+/// token_clear from the owner's window (sign out): entitlements and the renderer's token go,
+/// so Descall+ features stop at once, as Electron's secure-token:clear called gate.reset().
+pub fn signed_out() {
+    if let Some(h) = host() {
+        lock(&h.renderer_token).clear();
+        if lock(&h.gate).reset() {
+            h.bus(Bus::Reconcile);
+        }
+    }
 }

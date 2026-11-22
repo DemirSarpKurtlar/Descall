@@ -189,11 +189,20 @@ impl HotkeyManager {
         json!({ "accel": a, "free": free })
     }
 
-    /// compat registerHotkey: free-form accelerator for one owner feature.
+    /// compat registerHotkey: free-form accelerator for one owner feature. Like Electron's
+    /// compat.cjs it only replaces this owner's own registration: an accelerator another
+    /// feature holds (the command center's default Ctrl+Shift+K is also the quick launcher's)
+    /// is refused, never taken away from it.
     pub fn register_extra(&self, owner: &str, accel: &str, f: Handler) -> bool {
         let Some(p) = to_plugin_accel(accel) else { return false };
-        if self.gs().is_registered(p.as_str()) {
+        let mine = lock(&self.st).extras.get(owner).is_some_and(|l| l.contains(&p));
+        if mine {
             let _ = self.gs().unregister(p.as_str());
+            if let Some(l) = lock(&self.st).extras.get_mut(owner) {
+                l.retain(|x| x != &p);
+            }
+        } else if self.gs().is_registered(p.as_str()) {
+            return false;
         }
         let ok = self.register(&p, f);
         if ok {

@@ -148,6 +148,7 @@ fn ensure<R: Runtime>(app: &AppHandle<R>) -> Option<(WebviewWindow<R>, bool)> {
     }
     let w_px = PANEL.pad * 2.0 + PANEL.card + PANEL.gap + PANEL.flyout;
     let built = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App(PAGE.into()))
+        .devtools(crate::webview::devtools_allowed(app)) // support opt-in only (webview.rs)
         .title("Descall")
         .inner_size(w_px, PANEL.max_height)
         .decorations(false)
@@ -369,6 +370,8 @@ pub fn tray_set_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, s
         return;
     }
     let next = model::normalize_app_state(&state);
+    let unread = next.get("signedIn").and_then(Value::as_bool) == Some(true) && next.get("unreadMessages").and_then(Value::as_u64).unwrap_or(0) > 0;
+    crate::tray::set_unread(&app, unread);
     {
         let sh = tm(&app);
         let mut i = sh.inner.lock().unwrap();

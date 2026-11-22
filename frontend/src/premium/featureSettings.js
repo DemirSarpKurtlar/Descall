@@ -10,17 +10,28 @@
  * Web / mobile: localStorage "descall:premium:<key>" (per device).
  */
 import { useCallback, useEffect, useState } from "react";
+import { premiumBridge } from "../lib/desktopShell.js";
 
 const LS_PREFIX = "descall:premium:";
 const cache = new Map();
 const listeners = new Set();
 
 function bridge() {
-  return typeof window !== "undefined" ? window.descallPremium || null : null;
+  // window.descallPremium in either desktop shell (Electron preload or Tauri premium-shim.js).
+  return premiumBridge();
 }
 
 export function isDesktopApp() {
   return Boolean(bridge());
+}
+
+/**
+ * Inside the desktop app (Electron preload or the Tauri shell) but without the Descall+ bridge:
+ * the bridge script failed to load. Settings > Descall+ says so instead of "desktop app only".
+ */
+export function desktopBridgeMissing() {
+  if (typeof window === "undefined" || bridge()) return false;
+  return Boolean(window.__TAURI_INTERNALS__ || window.isTauri || window.electronAPI);
 }
 
 function readLocal(key) {

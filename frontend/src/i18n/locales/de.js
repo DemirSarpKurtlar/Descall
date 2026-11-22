@@ -880,6 +880,13 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "bridge": {
+        "title": "Die Descall+-Desktopverbindung wurde nicht gestartet",
+        "body": "Dieses Fenster konnte keine Verbindung zu den Desktop-Funktionen herstellen, daher sind Tastenkürzel und die anderen Desktop-Funktionen aus. Starte die App neu; passiert es weiter, aktualisiere die App.",
+        "pill": "Nicht verbunden",
+        "tile": "Desktopverbindung fehlt",
+        "reload": "Neu laden"
+      },
       "gate": {
         "title": "Desktop-Funktionen sind auf diesem Computer gesperrt",
         "checking": "Deine Mitgliedschaft wird auf diesem Computer geprüft. Das kann ein paar Sekunden dauern.",
@@ -6572,6 +6579,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Desktop-App",
+    "settings_hint": "Version und Updates",
+    "settings_version": "Version {version}",
+    "settings_check": "Nach Updates suchen",
+    "settings_checking": "Suche nach Updates…",
+    "settings_upToDate": "Descall ist auf dem neuesten Stand",
+    "settings_checkFailed": "Updates konnten nicht geprüft werden. Versuche es gleich noch einmal.",
+    "settings_downloading": "Descall {version} wird im Hintergrund heruntergeladen",
+    "settings_unavailable": "Automatische Updates sind in diesem Build aus",
+    "settings_lastChecked": "Zuletzt geprüft {time}",
     "confirmBody": "Du bist in einem Sprachchat. Ein Neustart beendet ihn. Descall {version} kann sich auch selbst installieren, nachdem du ihn verlassen hast.",
     "confirmLater": "Nicht jetzt",
     "confirmRestart": "Anruf beenden und neu starten",

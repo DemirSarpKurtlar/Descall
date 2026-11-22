@@ -256,6 +256,16 @@ export const nested = {
     }
   },
   "updateToast": {
+    "settings_title": "Desktop app",
+    "settings_hint": "Version and updates",
+    "settings_version": "Version {version}",
+    "settings_check": "Check for updates",
+    "settings_checking": "Checking for updates…",
+    "settings_upToDate": "Descall is up to date",
+    "settings_checkFailed": "Could not check for updates. Try again in a moment.",
+    "settings_downloading": "Descall {version} is downloading in the background",
+    "settings_unavailable": "Automatic updates are off in this build",
+    "settings_lastChecked": "Last checked {time}",
     "titleDownloading": "Downloading Descall {version}",
     "titleInstalling": "Installing Descall {version}",
     "subDownloading": "In the background · {percent}%",

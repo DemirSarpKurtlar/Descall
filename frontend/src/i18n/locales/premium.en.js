@@ -11,6 +11,13 @@ export const PREMIUM_EN = {
     "ultraTip": "Descall Ultra member"
   },
   "hub": {
+    "bridge": {
+      "title": "The Descall+ desktop connection did not start",
+      "body": "This window could not connect to the desktop features, so shortcuts and the other desktop features are off. Restart the app; if it keeps happening, update the app.",
+      "pill": "Not connected",
+      "tile": "Desktop connection missing",
+      "reload": "Reload"
+    },
     "gate": {
       "title": "Desktop features are locked on this computer",
       "checking": "Checking your membership on this computer. This can take a few seconds.",
