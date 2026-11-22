@@ -1364,6 +1364,8 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
     assert.doesNotMatch(html, /style=/, `no style for ${evil}`);
     assert.match(html, />A<\/span>$/, "the initial instead");
   }
+  // Every value the HUD writes into its markup is escaped or a number.
+  assert.doesNotMatch(hud, /data-since="'\+(?!\(Number\()/, "data-since takes numbers only");
 }
 
 console.log("electron-api-shim.test: ok");
