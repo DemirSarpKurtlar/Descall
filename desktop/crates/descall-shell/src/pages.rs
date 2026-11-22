@@ -22,7 +22,7 @@ pub const OVERLAY_JS: &str = include_str!("../../../app/shim/shell-overlay.js");
 /// address); the main window never shows those images either.
 macro_rules! shell_img_src {
     () => {
-        "https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.googleusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data:"
+        "https://descall.com https://des-call.onrender.com https://pc.descall.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.googleusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data:"
     };
 }
 pub const IMG_SRC: &str = shell_img_src!();
