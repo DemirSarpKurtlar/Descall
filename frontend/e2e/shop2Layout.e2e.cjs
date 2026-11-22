@@ -160,6 +160,12 @@ async function run(browser, base, boot0, r, problems) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
   const phone = r.name === 'iphone';
+  // iPhone: a 47 px status bar and a 34 px home indicator, as env(safe-area-inset-*).
+  let insets = false;
+  if (phone) {
+    const cdp = await ctx.newCDPSession(page);
+    insets = await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, bottom: 34, left: 0, right: 0 } }).then(() => true, () => false);
+  }
   try {
     await page.goto(`${base}/settings/shop`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitFor(page, `${r.name} market`, () => !!document.querySelector('.s2-root .s2-body .s2-card') && !document.getElementById('boot-splash'));
@@ -237,6 +243,37 @@ async function run(browser, base, boot0, r, problems) {
       return;
     }
 
+    // Hediyeler: the phone preview is a real phone shape with nothing clipped; on iPhone the
+    // full screen scrolls below the status bar (rows never draw over the clock).
+    await clickTab(page, 4);
+    await waitFor(page, `${r.name} gifts`, () => !!document.querySelector('.s2-gphone-screen .s2-gopen') && !!document.querySelector('.s2-friend'));
+    await sleep(900);
+    await shot(page, `${r.name}-gifts`);
+    if (SHOTS) await (await page.$('.s2-gprev'))?.screenshot({ path: path.join(SHOTS, `${r.name}-gifts-preview.jpg`), type: 'jpeg', quality: 70 });
+    const gp = await page.evaluate(() => [...document.querySelectorAll('.s2-gphone-screen')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => {
+      const b = el.getBoundingClientRect();
+      const inner = [...el.querySelectorAll('.s2-gopen, .s2-gopened, .s2-gphone-home, .s2-gphone-time b')].map((n) => n.getBoundingClientRect());
+      return { ratio: b.height / b.width, w: b.width, inside: inner.every((x) => x.top >= b.top - 0.5 && x.bottom <= b.bottom + 0.5 && x.left >= b.left - 0.5 && x.right <= b.right + 0.5) };
+    }));
+    check(gp.length > 0 && gp.every((x) => Math.abs(x.ratio - 19.5 / 9) < 0.08), `gift phone preview has a phone aspect ratio (${gp.map((x) => x.ratio.toFixed(2)).join(', ')})`);
+    check(gp.every((x) => x.inside), 'gift card, clock and home indicator stay inside the phone screen');
+    if (phone) {
+      const sb = await page.evaluate(() => {
+        const panel = document.querySelector('.s2-layer.is-full .s2-layer-panel');
+        panel.scrollTop = 220;
+        const top = panel.getBoundingClientRect().top;
+        const hit = document.elementFromPoint(120, 20);
+        return { top, overClock: !!hit && !!hit.closest('.s2-layer-panel') };
+      });
+      await sleep(200);
+      await shot(page, `${r.name}-gifts-scrolled`);
+      check(!insets || sb.top >= 47, `gifts scroll box starts below the status bar (top ${Math.round(sb.top)}, insets ${insets})`);
+      check(!insets || !sb.overClock, 'scrolled gift rows do not draw over the status bar');
+      await page.evaluate(() => document.querySelector('.s2-layer.is-full .s2-fullhead .s2-x').click());
+      await sleep(700);
+    }
+    check((await overflow()) <= 0, 'no horizontal page overflow (Hediyeler)');
+
     // Drawer / sheet from a Vitrin card.
     await clickTab(page, 0);
     await waitFor(page, `${r.name} vitrin`, () => !!document.querySelector('.s2-card .s2-card-art'));
@@ -256,6 +293,35 @@ async function run(browser, base, boot0, r, problems) {
     await sleep(900);
     const after = await page.evaluate(() => ({ layer: !!document.querySelector('.s2-layer'), settings: !!document.querySelector('.user-settings .s2-root') }));
     check(!after.layer && after.settings, `Escape closes only the layer (layer ${after.layer}, settings ${after.settings})`);
+
+    if (phone) {
+      // Gift composer from the detail sheet (full screen on iPhone): its head sits below the
+      // status bar, only its body scrolls, the "Gonder" foot clears the home indicator.
+      await page.click('.s2-card .s2-card-art');
+      await waitFor(page, 'detail gift button', () => !!document.querySelector('.s2-layer button[aria-label="Hediye et"]'));
+      await sleep(500);
+      await page.evaluate(() => document.querySelector('.s2-layer button[aria-label="Hediye et"]').click());
+      await waitFor(page, 'gift composer', () => !!document.querySelector('.s2-layer.is-full .s2-gdrawer .s2-friend'));
+      await sleep(700);
+      const gd = await page.evaluate(() => {
+        const body = document.querySelector('.s2-gdrawer-body');
+        body.scrollTop = 300;
+        const head = document.querySelector('.s2-gdrawer-head').getBoundingClientRect();
+        const foot = document.querySelector('.s2-gdrawer .s2-gfoot');
+        const fb = foot.getBoundingClientRect();
+        const hit = document.elementFromPoint(120, 20);
+        return { head: head.top, footBottom: fb.bottom, footPad: parseFloat(getComputedStyle(foot).paddingBottom), h: innerHeight, overClock: !!hit && !!hit.closest('.s2-layer-panel'), scrolls: body.scrollTop > 0 };
+      });
+      await sleep(200);
+      await shot(page, `${r.name}-gift-drawer`);
+      check(!insets || gd.head >= 47, `gift composer head below the status bar (top ${Math.round(gd.head)})`);
+      check(!insets || !gd.overClock, 'gift composer rows never draw over the status bar');
+      check(gd.footBottom <= gd.h + 0.5 && (!insets || gd.footPad >= 34), `"Gonder" foot inside the screen, clear of the home indicator (pad ${gd.footPad})`);
+      check(gd.scrolls, 'gift composer body scrolls');
+      if (SHOTS) await (await page.$('.s2-gdrawer .s2-gprev'))?.screenshot({ path: path.join(SHOTS, `${r.name}-gift-drawer-preview.jpg`), type: 'jpeg', quality: 70 });
+      await page.keyboard.press('Escape');
+      await sleep(800);
+    }
 
     if (!phone) {
       // Buy (hold), then "Görünüm kaydet" in the celebration: the toast is above it.

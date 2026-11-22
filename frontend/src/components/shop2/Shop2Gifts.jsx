@@ -34,6 +34,7 @@ import {
   Heart,
   Info,
   Layers,
+  Lock,
   MessageCircle,
   Monitor,
   Package,
@@ -86,33 +87,57 @@ function GiftPreview({ to, sender, item, setName, message, wrap, hiddenItem, hid
   const s2 = useS2();
   const from = hideName ? t("shop2.gifts.someone") : sender;
   const label = hiddenItem ? t("shop2.gifts.aPackage") : setName || (item ? s2.itemName(item) : "");
-  const phone = (
-    <div className="s2-gphone">
-      <div className="s2-gphone-time">
-        <b className="s2-num">{(when || new Date()).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</b>
-        <small>{(when || new Date()).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}</small>
-      </div>
-      <div className="s2-gnotif">
-        <span className="s2-gnotif-ic"><Gift size={14} /></span>
-        <span><b>{t("shop2.gifts.appName")}</b><small>{t("shop2.gifts.notif", { name: from })}</small></span>
-      </div>
-      <div className="s2-gopen" style={{ "--wrap": wrap }}>
-        <span className="s2-gbox" aria-hidden="true"><i /></span>
-        <b>{t("shop2.gifts.fromX", { name: from })}</b>
-        {message ? <p>{`"${message.length > 70 ? `${message.slice(0, 70)}...` : message}"`}</p> : null}
-        <span className="s2-btn is-primary is-sm is-fake">{t("shop2.gifts.openPackage")}</span>
+  const at = when || new Date();
+  const clock = at.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  // Phone chrome: status bar with a Dynamic Island pill, then the screen, then the home
+  // indicator. Sizes inside are container units (cqw), so the phone keeps its proportions
+  // at any width (single preview, the pair in the tab, the small one in the drawer).
+  const chrome = (body, opened) => (
+    <div className={`s2-gphone${opened ? " is-opened" : ""}`} style={{ "--wrap": wrap }}>
+      <div className="s2-gphone-screen">
+        <div className="s2-gphone-status" aria-hidden="true">
+          <b className="s2-num">{clock}</b>
+          <span className="s2-gphone-island" />
+          <span className="s2-gphone-sys"><i /><i /><i /><i /><em /></span>
+        </div>
+        {body}
+        <span className="s2-gphone-home" aria-hidden="true" />
       </div>
     </div>
   );
-  const opened = (
-    <div className="s2-gphone is-opened">
-      <div className="s2-gopened">
-        {item && !hiddenItem ? <Shop2Art item={item} size="card" me={to} sample={nameOf(to)} /> : <span className="s2-gbox is-lg" style={{ "--wrap": wrap }}><i /></span>}
-        <b>{label}</b>
-        <small>{t("shop2.gifts.fromShort", { name: from })}</small>
-        <span className="s2-btn is-primary is-sm is-fake">{t("shop2.gifts.wearNow")}</span>
+  const phone = chrome(
+    <>
+      <div className="s2-gphone-time">
+        <Lock size={11} />
+        <small>{at.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}</small>
+        <b className="s2-num">{clock}</b>
       </div>
-    </div>
+      <div className="s2-gphone-stack">
+        <div className="s2-gnotif">
+          <span className="s2-gnotif-ic"><Gift size={14} /></span>
+          <span>
+            <span className="s2-gnotif-top"><b>{t("shop2.gifts.appName")}</b><small>{t("shop2.gifts.justNow")}</small></span>
+            <small>{t("shop2.gifts.notif", { name: from })}</small>
+          </span>
+        </div>
+        <div className="s2-gopen">
+          <span className="s2-gbox" aria-hidden="true"><i /></span>
+          <b>{t("shop2.gifts.fromX", { name: from })}</b>
+          {message ? <p>{`"${message.length > 70 ? `${message.slice(0, 70)}...` : message}"`}</p> : null}
+          <span className="s2-btn is-primary is-sm is-fake">{t("shop2.gifts.openPackage")}</span>
+        </div>
+      </div>
+    </>,
+    false,
+  );
+  const opened = chrome(
+    <div className="s2-gopened">
+      {item && !hiddenItem ? <Shop2Art item={item} size="card" me={to} sample={nameOf(to)} /> : <span className="s2-gbox is-lg" style={{ "--wrap": wrap }}><i /></span>}
+      <b>{label}</b>
+      <small>{t("shop2.gifts.fromShort", { name: from })}</small>
+      <span className="s2-btn is-primary is-sm is-fake">{t("shop2.gifts.wearNow")}</span>
+    </div>,
+    true,
   );
   const desktop = (
     <div className="s2-gdesk">
@@ -230,6 +255,12 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 
+  // iPhone: the keyboard slides up after focus; once the panel has shrunk above it
+  // (html.kb-open), bring the message box back into the middle of what is left.
+  const keepInView = (e) => {
+    const el = e.currentTarget;
+    setTimeout(() => el.isConnected && el.scrollIntoView?.({ block: "center", behavior: "smooth" }), 350);
+  };
   const saveDraft = () => {
     const drafts = { ...(s2.data.prefs.giftDrafts || {}), [draftKey]: { to, message, when, at, hiddenItem, hideName, thankCard, wrap } };
     s2.actions.setPref({ giftDrafts: drafts });
@@ -326,7 +357,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
       ) : null}
       {variant === "drawer" ? <div className="s2-step"><span>2</span>{t("shop2.gifts.message")}</div> : <div className="s2-eyebrow">{t("shop2.gifts.message")}</div>}
       <div className={`s2-textarea${tooLong ? " is-over" : ""}`}>
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder={t("shop2.gifts.messagePh")} aria-label={t("shop2.gifts.message")} />
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} onFocus={phone ? keepInView : undefined} rows={3} placeholder={t("shop2.gifts.messagePh")} aria-label={t("shop2.gifts.message")} />
         <small className="s2-num">{count} / {SHOP2_MESSAGE_MAX}</small>
       </div>
       <div className="s2-chips-wrap">
@@ -401,7 +432,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
       <div className="s2-gtotal">
         <span className="s2-eyebrow">{t("shop2.gifts.total")}</span>
         <span className="s2-price is-lg"><Coin size="lg" /><b className="s2-num">{formatNumber(price, locale)}</b></span>
-        <small className="s2-num">{t("shop2.gifts.balance", { from: formatNumber(s2.balance, locale), to: formatNumber(s2.balance - price, locale) })}</small>
+        {price <= s2.balance ? <small className="s2-num s2-gtotal-bal">{t("shop2.gifts.balance", { from: formatNumber(s2.balance, locale), to: formatNumber(s2.balance - price, locale) })}</small> : null}
         {setDeduct > 0 ? <small className="is-green">{t("shop2.gifts.theirsDeducted", { n: formatNumber(setDeduct, locale) })}</small> : null}
       </div>
       {blockNote ? (
