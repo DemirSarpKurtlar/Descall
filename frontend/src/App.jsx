@@ -76,7 +76,7 @@ import { API_BASE_URL } from "./config/api";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
 import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
-import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
+import { isPushToTalkRelease, matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { createPttFocusGuard } from "./lib/pttFocusGuard.js";
 import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
@@ -902,6 +902,12 @@ export default function App() {
     const onKey = (event) => {
       const profile = readVoiceProfile();
       if (!profile.pushToTalk) return;
+      // Letting go of the letter or of a modifier first both end the hold.
+      if (guard.held && isPushToTalkRelease(event, profile.pttAccelerator)) {
+        if (matchPushToTalkEvent(event, profile.pttAccelerator)) event.preventDefault();
+        guard.key(false);
+        return;
+      }
       if (!matchPushToTalkEvent(event, profile.pttAccelerator)) return;
       event.preventDefault();
       guard.key(event.type === "keydown");
