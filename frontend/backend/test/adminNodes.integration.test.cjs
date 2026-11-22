@@ -126,6 +126,16 @@ const fakeCluster = {
     fc.published.push({ channel, msg });
   },
   subscribe() {},
+  // The rest of the lib/cluster API that other modules touch at load time (single-node no-ops).
+  configured: () => false,
+  linkInvalidate: (_kind, fn) => fn,
+  invalidate: () => false,
+  onInvalidate: () => () => {},
+  hasRemoteUser: () => false,
+  leaderOnly: (_name, fn) => fn,
+  withoutReplication: (fn) => fn(),
+  leaderId: () => "render",
+  updateSelf() {},
 };
 const clusterPath = require.resolve("../lib/cluster");
 require.cache[clusterPath] = { id: clusterPath, filename: clusterPath, loaded: true, exports: fakeCluster };
@@ -220,8 +230,8 @@ const audited = (action) => state.auditLog.filter((e) => e.action === action);
     assert(r.body.storage.ok === false && r.body.keys.available === false && r.body.keys.max === 5, `storage off: ${JSON.stringify(r.body.storage)} ${JSON.stringify(r.body.keys)}`);
     assert(r.body.single === false && r.body.kv.ok === true && r.body.kv.configured === false, `cluster on: ${JSON.stringify(r.body.kv)}`);
     assert(r.body.nodes.length === 2 && r.body.totals.conns === 68 && r.body.totals.byNode["pc-demir"] === 10, `totals: ${JSON.stringify(r.body.totals)}`);
-    assert(r.body.capacity.estimate === r.body.capacity.renderUsers + r.body.capacity.pcUsers && r.body.capacity.pcUsers > 800 && r.body.capacity.perUserMb === 2.28, "measured on Render (58 users, 312 MB): " + `capacity: ${JSON.stringify(r.body.capacity)}`);
-    assert(r.body.cfg.ramMb === 3072 && r.body.cfg.schedule.tz === "Europe/Istanbul" && r.body.cfg.schedule.slots.length === 7, "default cfg filled in");
+    assert(r.body.capacity.estimate === r.body.capacity.renderUsers + r.body.capacity.pcUsers && r.body.capacity.pcUsers === Math.floor((2048 * 0.85 - 180) / 2.28) && r.body.capacity.perUserMb === 2.28, "measured on Render (58 users, 312 MB): " + `capacity: ${JSON.stringify(r.body.capacity)}`);
+    assert(r.body.cfg.ramMb === 2048 && r.body.cfg.cores === 2 && r.body.cfg.schedule.tz === "Europe/Istanbul" && r.body.cfg.schedule.slots.length === 0 && r.body.cfg.emergency.on === false, "default cfg filled in");
     assert(r.body.pc.registered === true && r.body.pc.online === true, `pc: ${JSON.stringify(r.body.pc)}`);
     assert(typeof r.body.savedUsdMonth === "number" && r.body.saved.month === new Date().toISOString().slice(0, 7), "saved-cost line");
     r = await call(base, "GET", "/api/admin/nodes/keys", O);
@@ -518,6 +528,51 @@ const audited = (action) => state.auditLog.filter((e) => e.action === action);
     await superSock.fire("admin:nodes:watch");
     assert(superSock.joined.includes(monitor.ROOM), "is_super_admin owner can watch");
     monitor.stop();
+
+    /* ---------------- the PC tray: PUT /api/node/local/cfg (Descall Node app) ---------------- */
+    {
+      const { createNodeRoutes } = require("../routes/node");
+      const TOKEN = "ctl_" + "k".repeat(40);
+      const fakeRuntime = { io: null, isDraining: () => false, drainSelf: async () => ({}), resumeSelf: async () => {}, pauseSelf: async () => {} };
+      const fakeRouter = { decide: async () => ({}), recordRegistration: () => false };
+      const tray = express();
+      tray.use(express.json());
+      tray.use("/api/node", createNodeRoutes({ cluster: fakeCluster, router: fakeRouter, runtime: fakeRuntime, nodeKeys: { verify: async () => null }, env: { NODE_ENV: "test", DESCALL_NODE_CONTROL_TOKEN: TOKEN } }));
+      const traySrv = http.createServer(tray);
+      await new Promise((r) => traySrv.listen(0, "127.0.0.1", r));
+      const tbase = `http://127.0.0.1:${traySrv.address().port}`;
+      const put = async (body, headers = { "x-descall-node-control": TOKEN }) => {
+        const res = await fetch(`${tbase}/api/node/local/cfg`, { method: "PUT", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+        return { status: res.status, body: await res.json() };
+      };
+      try {
+        let t = await put({ ramMb: 2560 }, {});
+        assert(t.status === 403, "tray cfg needs the control token");
+        t = await put({ ramMb: 2560 }, { "x-descall-node-control": TOKEN, "CF-Connecting-IP": "198.51.100.7" });
+        assert(t.status === 403, "tray cfg never through the tunnel");
+        t = await put({ emergency: { on: false } });
+        assert(t.status === 400 && t.body.code === "BAD_CFG", "the tray cannot touch the emergency switch");
+        t = await put({ ramMb: 1000 });
+        assert(t.status === 400, "same validation as the admin panel (512 MB steps)");
+        t = await put({ ramMb: 2560, gameMode: { enabled: false } });
+        assert(t.status === 200 && t.body.cfg.ramMb === 2560 && t.body.cfg.gameMode.enabled === false && fc.cfg.ramMb === 2560, `tray cfg applied to the cluster: ${JSON.stringify(t.body).slice(0, 160)}`);
+        const durable = rows("node_settings").find((x) => x.id === "pc");
+        assert(durable && durable.value.ramMb === 2560, "tray cfg in the durable copy too");
+        assert(fc.events.some((e) => e.kind === "cfg_update" && e.detail?.via === "pc-tray"), "tray cfg event");
+        const st = await fetch(`${tbase}/api/node/local/status`, { headers: { "x-descall-node-control": TOKEN } }).then((x) => x.json());
+        assert(st.cfg.ramMb === 2560 && st.kv.ok === true, "tray status shows the cluster cfg");
+      } finally {
+        traySrv.close();
+      }
+    }
+
+    /* ---------------- dc:nodes times are epoch ms (lib/cluster) ---------------- */
+    {
+      const at = Date.now() - 4000;
+      const ov = M.overview({ enabled: true, kv: { ok: true }, nodes: [{ ...baseNodes()[0], lastBeat: at }, { ...baseNodes()[1], lastBeat: at }], cfg: {}, events: [], ledger: {}, keys: {} });
+      assert(ov.pc.lastSeenAt === new Date(at).toISOString(), "lastSeenAt from an epoch-ms beat");
+      assert(M.timeMs(at) === at && M.timeMs(new Date(at).toISOString()) === at && Number.isNaN(M.timeMs(null)), "timeMs accepts ms and ISO");
+    }
 
     /* ---------------- pure model ---------------- */
     assert(M.inSchedule({ schedule: { enabled: true, tz: "Europe/Istanbul", slots: [{ d: 1, from: "18:00", to: "02:00" }] } }, new Date("2026-11-23T17:30:00Z")) === true, "Monday 20:30 Istanbul is in");

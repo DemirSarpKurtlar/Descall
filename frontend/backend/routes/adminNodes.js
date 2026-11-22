@@ -98,26 +98,35 @@ function pushLive(req) {
 }
 
 /**
- * The routing runtime of lib/cluster/routing.js (agent 2: getNodeRouting() with
- * runtime.requestNode(id, "drain" | "resume") and router.revokeKey(keyId)), when present on
- * this build; null otherwise (then the cluster node state alone is set).
+ * The node routing of this process (routes/node.js attachNodeRouting(): runtime.requestNode(id,
+ * "drain" | "resume", { reason, detail }) and router.revokeKey(keyId)); null before it is
+ * attached (tests, a build without it): then the cluster node state alone is set.
  */
 function routing() {
   try {
-    const m = require("../lib/cluster/routing");
+    const m = require("./node");
     return typeof m?.getNodeRouting === "function" ? m.getNodeRouting() || null : null;
   } catch {
     return null;
   }
 }
 
-/** Drain / resume a node: the routing runtime moves the users (node:move); always set the state too. */
+/**
+ * Drain / resume a node. The routing runtime of the target node moves its users (node:move,
+ * then paused) or resumes it; the state is also set here so every node and the panel see it
+ * at once, even when the target missed the command (it drains itself on its next tick when
+ * the emergency switch is on).
+ */
 async function moveNode(id, action, reason) {
   const r = routing();
-  const request = r?.runtime?.requestNode || r?.requestNode;
-  if (typeof request === "function") {
+  const runtime = r?.runtime;
+  if (runtime && typeof runtime.requestNode === "function") {
     try {
-      await request.call(r.runtime || r, id, action === "drain" ? "drain" : "resume", reason);
+      const extra = action === "drain" ? { reason: "drain", detail: String(reason || "").slice(0, 300) || null } : { reason: String(reason || "resume").slice(0, 300) };
+      // Not awaited for a drain of this very node: it takes up to 10 s; the panel follows it live.
+      const p = runtime.requestNode(id, action === "drain" ? "drain" : "resume", extra);
+      if (action !== "drain") await p;
+      else Promise.resolve(p).catch(() => {});
     } catch (err) {
       console.warn("[admin-nodes] routing requestNode failed:", err?.message || err);
     }

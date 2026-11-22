@@ -990,8 +990,13 @@ if (isVercel) {
   void runBoot();
   module.exports = httpServer;
 } else {
-  httpServer.listen(PORT, async () => {
-    console.log(`Server listening on port ${PORT}`);
+  // Hybrid server: a secondary node (the owner's PC) is reached only through its Cloudflare
+  // Tunnel and the local Descall Node app, so it binds to loopback; Render binds as before.
+  const listenHost = require("./lib/cluster/config").readListenHost(process.env);
+  const onListen = async () => {
+    console.log(`Server listening on ${listenHost ? `${listenHost}:` : "port "}${PORT}`);
     await runBoot();
-  });
+  };
+  if (listenHost) httpServer.listen(PORT, listenHost, onListen);
+  else httpServer.listen(PORT, onListen);
 }

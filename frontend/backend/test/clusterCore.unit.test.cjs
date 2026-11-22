@@ -375,6 +375,49 @@ test("single node (no REDIS_URL): same API in memory, leader, no KV", async () =
   await c.stop();
 });
 
+test("cfg contract additions: loadRule.enabled, schedule.enabled, emergency, updatedAt; updateSelf; leaderId", async () => {
+  const { mergeCfg, DEFAULT_CFG } = require("../lib/cluster");
+  assert.strictEqual(DEFAULT_CFG.loadRule.enabled, true);
+  assert.strictEqual(DEFAULT_CFG.schedule.enabled, true);
+  assert.deepStrictEqual(DEFAULT_CFG.schedule.slots, [], "no slots = always available");
+  assert.strictEqual(DEFAULT_CFG.emergency.on, false);
+  const a = mergeCfg(DEFAULT_CFG, { loadRule: { enabled: false, preferPc: true }, schedule: { enabled: false, slots: [{ d: 0, from: "12:00", to: "03:00" }] } });
+  assert.strictEqual(a.loadRule.enabled, false);
+  assert.strictEqual(a.loadRule.preferPc, true);
+  assert.strictEqual(a.schedule.enabled, false);
+  assert.deepStrictEqual(a.schedule.slots, [{ d: 0, from: "12:00", to: "03:00" }], "d 0 = Sunday kept");
+  const e = mergeCfg(a, { emergency: { on: true, at: "2026-11-22T10:00:00.000Z", by: "admin", reason: "x".repeat(400), extra: 1 }, updatedAt: "2026-11-22T10:00:00.000Z", updatedBy: "admin", bogus: 1 });
+  assert.deepStrictEqual(Object.keys(e.emergency), ["on", "at", "by", "reason"]);
+  assert.strictEqual(e.emergency.on, true);
+  assert.strictEqual(e.emergency.reason.length, 300);
+  assert.strictEqual(e.updatedAt, "2026-11-22T10:00:00.000Z");
+  assert.strictEqual(e.bogus, undefined, "unknown keys dropped");
+  assert.strictEqual(mergeCfg(e, { emergency: { on: false } }).emergency.on, false);
+  assert.strictEqual(mergeCfg(e, { updatedAt: "not a date" }).updatedAt, "2026-11-22T10:00:00.000Z");
+
+  const server = createFakeRedisServer();
+  const c = createCluster({ env: { DESCALL_NODE_CORES: "1", DESCALL_PRIMARY_URL: "https://p.example", DESCALL_CLUSTER_METRICS_MS: "50" }, log: quiet });
+  c.start({});
+  assert.strictEqual(c.cores, 1, "DESCALL_NODE_CORES");
+  assert.strictEqual(c.primaryUrl, "https://p.example", "DESCALL_PRIMARY_URL alias");
+  assert.strictEqual(c.leaderId(), "render", "single node leads itself");
+  c.updateSelf({ gameMode: true, memoryMb: 1024 });
+  const self = (await c.getNodes())[0];
+  assert.strictEqual(self.gameMode, true);
+  assert.strictEqual(self.memLimit, 1024, "the supervisor's smaller share");
+  assert.ok(Number.isFinite(self.lastBeat) && Number.isFinite(self.startedAt), "epoch ms times");
+  await c.stop();
+  const p = node(server, "render", "primary");
+  const pc = node(server, "pc-x", "secondary", { DESCALL_NODE_PRIMARY_URL: "https://des-call.onrender.com" });
+  assert.strictEqual(pc.primaryUrl, "https://des-call.onrender.com");
+  await waitFor(() => p.isLeader(), 3000, "primary leads");
+  await waitFor(() => pc.leaderId() === "render", 3000, "secondary sees the leader id");
+  await p.setCfg({ emergency: { on: true, by: "admin", reason: "drill" } }, "admin");
+  await waitFor(async () => (await pc.getCfg()).emergency.on === true, 3000, "emergency reaches the PC");
+  await pc.stop();
+  await p.stop();
+});
+
 test("metrics middleware: p95 and error rate", async () => {
   const { createMetrics } = require("../lib/cluster/metrics");
   const m = createMetrics({ cores: 2, getConns: () => 7 });

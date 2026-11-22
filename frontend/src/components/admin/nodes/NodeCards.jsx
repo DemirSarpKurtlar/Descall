@@ -538,7 +538,7 @@ export function GamePanel({ data, busyKey, disabled, onPatch, onEditPlan }) {
   const gm = cfg?.gameMode || { enabled: true, shareMb: 1024, fullHandover: false };
   const sch = cfg?.schedule || { enabled: true, slots: [] };
   const { pc } = pickNodes(data);
-  const choices = shareChoices(cfg?.ramMb || 3072);
+  const choices = shareChoices(cfg?.ramMb || 2048);
   const nowBits = [
     t(pc?.gameMode ? "anodes.game.nowGame" : "anodes.game.nowNoGame"),
     t(sch.enabled === false ? "anodes.game.nowNoPlan" : data?.schedule?.now ? "anodes.game.nowIn" : "anodes.game.nowOut"),

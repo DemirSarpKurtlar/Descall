@@ -24,7 +24,11 @@ const { Server } = require("socket.io");
 const { io: ioClient } = require("socket.io-client");
 const { createRouter, createNodeRuntime } = require("../lib/cluster/routing");
 const { createNodeRoutes, refuseWhileDraining } = require("../routes/node");
-const nodeKeys = require("../lib/nodeKeys");
+
+const NODE_KEY = "dsk_node_" + "Q".repeat(43);
+const CONTROL_TOKEN = "ctl_" + "z".repeat(40);
+/** lib/nodeKeys verify() shape: { id, name } for a known key, else null. */
+const nodeKeys = { verify: async (secret) => (secret === NODE_KEY ? { id: "nk_pc", name: "PC" } : null) };
 
 function assert(cond, msg) {
   if (!cond) throw new Error("FAIL: " + msg);
@@ -119,7 +123,7 @@ async function startNode(kv, { nodeId, role, memLimit, env }) {
   const router = createRouter({ cluster, env: env(url), dwellMs: 0 });
   const runtime = createNodeRuntime({ cluster, io, router, env: env(url), pollMs: 50, log: () => {} });
   runtime.start({ intervalMs: 3_600_000 });
-  app.use("/api/node", createNodeRoutes({ cluster, router, runtime, env: env(url) }));
+  app.use("/api/node", createNodeRoutes({ cluster, router, runtime, nodeKeys, env: env(url) }));
   refuseWhileDraining(io, runtime, cluster);
   return { app, server, io, port, url, cluster, router, runtime };
 }
@@ -131,15 +135,13 @@ async function getJson(url, init) {
 
 (async () => {
   const kv = createSharedKv();
-  const NODE_KEY = "dsk_node_" + "Q".repeat(43);
-  nodeKeys.__addForTests(NODE_KEY, "nk_pc");
 
   const render = await startNode(kv, { nodeId: "render", role: "primary", memLimit: 512, env: () => ({ NODE_ENV: "test" }) });
   const pc = await startNode(kv, {
     nodeId: "pc-home",
     role: "secondary",
     memLimit: 4096,
-    env: () => ({ NODE_ENV: "test", DESCALL_PRIMARY_URL: render.url, DESCALL_NODE_KEY: NODE_KEY }),
+    env: () => ({ NODE_ENV: "test", DESCALL_NODE_PRIMARY_URL: render.url, DESCALL_NODE_KEY: NODE_KEY, DESCALL_NODE_CONTROL_TOKEN: CONTROL_TOKEN }),
   });
 
   const { createNodeRouting } = await import(pathToFileURL(path.join(__dirname, "../../src/lib/nodeRouting.js")).href);
@@ -167,8 +169,39 @@ async function getJson(url, init) {
     const reg = await pc.runtime.register();
     assert(reg.ok && reg.json.ok === true && reg.json.cfg && reg.json.cfg.loadRule.renderHighPct === 60, "PC registered with its key and got the config");
     assert(kv.events.some((e) => e.kind === "node:register" && e.detail.id === "pc-home" && e.detail.keyId === "nk_pc"), "register event");
-    const local = await getJson(`${pc.url}/api/node/drain-self`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${NODE_KEY}`, "CF-Connecting-IP": "203.0.113.9" }, body: "{}" });
-    assert(local.status === 403, "drain-self through the tunnel (Cloudflare headers) refused");
+    assert(reg.json.capacity && reg.json.capacity.baseMb === 180 && reg.json.capacity.headroom === 0.85 && reg.json.capacity.perUserMb === 2.5, "register answer carries the shared capacity numbers");
+
+    /* local control (the Descall Node app): token + loopback + no tunnel headers */
+    const ctl = (extra = {}) => ({ "Content-Type": "application/json", "x-descall-node-control": CONTROL_TOKEN, ...extra });
+    const st0 = await getJson(`${pc.url}/api/node/local/status`, { headers: ctl() });
+    assert(st0.status === 200 && st0.body.state === "active" && st0.body.nodeId === "pc-home" && st0.body.conns === 0 && st0.body.remaining === 0 && st0.body.kv.ok === true && st0.body.cfg.loadRule.renderHighPct === 60, "local status");
+    for (const [label, headers] of [
+      ["no token", { "Content-Type": "application/json" }],
+      ["wrong token", ctl({ "x-descall-node-control": CONTROL_TOKEN.slice(0, -1) + "y" })],
+      ["through the tunnel (CF-Connecting-IP)", ctl({ "CF-Connecting-IP": "203.0.113.9" })],
+      ["through the tunnel (cf-ray)", ctl({ "cf-ray": "8abc-IST" })],
+      ["behind a proxy (X-Forwarded-For)", ctl({ "X-Forwarded-For": "203.0.113.9" })],
+      ["from a web page (Origin)", ctl({ Origin: "https://evil.example" })],
+    ]) {
+      const r1 = await getJson(`${pc.url}/api/node/local/status`, { headers });
+      const r2 = await getJson(`${pc.url}/api/node/local/drain`, { method: "POST", headers, body: "{}" });
+      assert(r1.status === 403 && r2.status === 403 && r2.body.code === "NODE_LOCAL_ONLY", `local control refused: ${label}`);
+    }
+    // fetch() cannot set Host: plain http for the DNS rebinding case (a page on a name that
+    // resolves to 127.0.0.1 sends its own Host).
+    const rebind = await new Promise((resolve, reject) => {
+      const rq = http.request({ host: "127.0.0.1", port: pc.port, path: "/api/node/local/status", headers: { ...ctl(), Host: "pc.descall.com" } }, (rs) => {
+        rs.resume();
+        resolve(rs.statusCode);
+      });
+      rq.on("error", reject);
+      rq.end();
+    });
+    assert(rebind === 403, "local control refused: another Host (DNS rebinding)");
+    const noTokenNode = await getJson(`${render.url}/api/node/local/status`, { headers: ctl() });
+    assert(noTokenNode.status === 403, "a node without DESCALL_NODE_CONTROL_TOKEN has no local control");
+    const badState = await getJson(`${pc.url}/api/node/local/state`, { method: "POST", headers: ctl(), body: JSON.stringify({ state: "down" }) });
+    assert(badState.status === 400, "local state: only active / paused / draining");
 
     /* Render normal -> Render */
     kv.nodes.get("render").memRss = 200; // 39 %
@@ -198,16 +231,24 @@ async function getJson(url, init) {
     let moveSeen = null;
     socket.on("node:move", (p) => (moveSeen = p));
     const drainAck = render.runtime.waitForDrainDone("pc-home", 15_000);
-    const result = await pc.runtime.drainSelf({ reason: "drain", jitterMs: 300, timeoutMs: 10_000 });
-    assert(moveSeen && moveSeen.reason === "drain" && moveSeen.toUrl === render.url && moveSeen.jitterMs === 300, "client got node:move");
+    // The app's drain (shutdown / sleep / pause): answers at once, the app follows `remaining`.
+    const started0 = Date.now();
+    const drainRes = await getJson(`${pc.url}/api/node/local/drain`, { method: "POST", headers: ctl(), body: JSON.stringify({ reason: "shutdown", timeoutMs: 10_000 }) });
+    assert(drainRes.status === 200 && drainRes.body.ok === true && drainRes.body.remaining === 1 && Date.now() - started0 < 1500, "local drain answers at once with the remaining sockets");
+    const st1 = await getJson(`${pc.url}/api/node/local/status`, { headers: ctl() });
+    assert(st1.body.state === "draining" && st1.body.draining === true, "local status: draining");
+    const result = await drainAck;
+    assert(moveSeen && moveSeen.reason === "drain" && moveSeen.toUrl === render.url && moveSeen.jitterMs === 3000, "client got node:move");
     assert(result.moved === 1 && result.dropped === 0, `drain moved the client (moved ${result.moved}, dropped ${result.dropped})`);
     assert(result.ms < 10_000, "drain finished before the 10 s limit");
     await waitFor(() => socket.connected && render.io.engine.clientsCount === 1, 5000, "socket on Render");
     assert(pc.io.engine.clientsCount === 0, "PC has no connection left");
     assert(routing.apiBase() === render.url && routing.isOnSecondary() === false, "REST follows to Render");
     assert(kv.nodes.get("pc-home").state === "paused", "PC paused after the drain");
-    const ack = await drainAck;
-    assert(ack && ack.id === "pc-home" && ack.moved === 1, "drain-done reached the primary");
+    assert(result && result.id === "pc-home" && result.moved === 1, "drain-done reached the primary");
+    await waitFor(async () => (await getJson(`${pc.url}/api/node/local/status`, { headers: ctl() })).body.remaining === 0, 3000, "local status remaining 0");
+    const st2 = await getJson(`${pc.url}/api/node/local/status`, { headers: ctl() });
+    assert(st2.body.state === "paused" && st2.body.conns === 0, "local status: paused, nothing left");
     assert(kv.events.some((e) => e.kind === "node:drain-start") && kv.events.some((e) => e.kind === "node:drain-done"), "drain events");
     const a3 = await getJson(`${render.url}/api/node/assign?sid=tab-new-000001`);
     assert(a3.body.nodeId === "render", "paused PC: new users to Render");
@@ -237,8 +278,10 @@ async function getJson(url, init) {
     s1.disconnect();
 
     /* PC back; its server dies: connect_error -> Render */
-    await pc.runtime.resumeSelf("test");
+    const resumed = await getJson(`${pc.url}/api/node/local/state`, { method: "POST", headers: ctl(), body: JSON.stringify({ state: "active", gameMode: false, memoryMb: 4096 }) });
+    assert(resumed.status === 200 && resumed.body.state === "active", "local state: active");
     assert(kv.nodes.get("pc-home").state === "active", "PC resumed");
+    assert(kv.events.some((e) => e.kind === "node:resume" && e.detail.reason === "tray"), "resume event from the tray");
     const tab2 = storage();
     const routing2 = client(tab2);
     await routing2.init();

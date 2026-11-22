@@ -279,6 +279,75 @@ async function d(r, c, hint) {
     await rt2.tick();
     assert.strictEqual(c.nodes[1].state, "paused", "revoked key: drained and paused");
     assert.strictEqual(rt2.autoPaused, "revoked");
+
+    // Emergency ("all to Render"): the PC drains itself even if it missed the command, and
+    // resumes on its own once the owner clears it.
+    const rt3 = createNodeRuntime({ cluster: c, io, env: { ...env, DESCALL_PRIMARY_URL: undefined, DESCALL_NODE_PRIMARY_URL: "https://primary.example" }, now, fetchImpl, sleep: async () => {}, log: () => {} });
+    c.nodes[1].state = "active";
+    c.cfg.emergency = { on: true, at: "2026-11-20T15:05:00Z", by: "admin", reason: "test" };
+    conns = 2;
+    emitted.length = 0;
+    calls.length = 0;
+    await rt3.tick();
+    assert.strictEqual(c.nodes[1].state, "paused", "emergency: drained");
+    assert.strictEqual(rt3.autoPaused, "emergency");
+    assert.strictEqual(emitted[0].payload.toUrl, "https://primary.example", "DESCALL_NODE_PRIMARY_URL is the primary");
+    assert.ok(calls.every((x) => x.url.startsWith("https://primary.example/")), "register / drain-done go to DESCALL_NODE_PRIMARY_URL");
+    await rt3.tick();
+    assert.strictEqual(c.nodes[1].state, "paused", "emergency still on: stays paused");
+    c.cfg.emergency = { on: false, at: null, by: null, reason: null };
+    await rt3.tick();
+    assert.strictEqual(c.nodes[1].state, "active", "emergency cleared: resumed");
+  }
+
+  /* ---------- emergency on the primary: everyone to Render ---------- */
+  {
+    const c = fakeCluster();
+    const r = createRouter({ cluster: c, now, dwellMs: 0 });
+    c.nodes = [render(90), pc(10)];
+    c.cfg.schedule = { tz: "Europe/Istanbul", slots: [] };
+    r.recordRegistration("pc-home", "nk_1");
+    assert.strictEqual((await d(r, c, { sid: "tab-emerg-0001" })).nodeId, "pc-home", "control: Render at 90 % sends to the PC");
+    c.cfg.emergency = { on: true, at: "x", by: "admin", reason: "drill" };
+    const e1 = await d(r, c, { sid: "tab-emerg-0001" });
+    assert.strictEqual(e1.nodeId, "render", "emergency: Render even for a tab stuck on the PC");
+    assert.strictEqual(e1.reason, "pc-emergency");
+    assert.deepStrictEqual(pcEligibility(pc(10), c.cfg, t), { ok: false, reason: "emergency" });
+    c.cfg.emergency = { on: false };
+    assert.strictEqual((await d(r, c, { sid: "tab-emerg-0002" })).nodeId, "pc-home", "emergency off: the load rule again");
+  }
+
+  /* ---------- env aliases, local control guard, node key result shapes ---------- */
+  {
+    assert.strictEqual(routing.envPrimaryUrl({ DESCALL_NODE_PRIMARY_URL: "https://a.example/" }), "https://a.example");
+    assert.strictEqual(routing.envPrimaryUrl({ DESCALL_PRIMARY_URL: "https://b.example" }), "https://b.example", "DESCALL_PRIMARY_URL alias");
+    assert.strictEqual(routing.envPrimaryUrl({ DESCALL_NODE_PRIMARY_URL: "https://a.example", DESCALL_PRIMARY_URL: "https://b.example" }), "https://a.example", "the node app name wins");
+    const cfgMod = require("../lib/cluster/config");
+    assert.strictEqual(cfgMod.readListenHost({ DESCALL_NODE_ROLE: "secondary" }), "127.0.0.1", "secondary listens on loopback");
+    assert.strictEqual(cfgMod.readListenHost({ DESCALL_NODE_ROLE: "primary" }), undefined, "primary as before");
+    assert.strictEqual(cfgMod.readListenHost({}), undefined, "no env: as before");
+    assert.strictEqual(cfgMod.readCores({ DESCALL_NODE_CORES: "1" }), 1, "DESCALL_NODE_CORES caps the cores");
+    assert.strictEqual(cfgMod.readClusterConfig({ DESCALL_PRIMARY_URL: "https://p.example" }).primaryUrl, "https://p.example");
+
+    const { isLocalControlRequest, keyResult } = require("../routes/node");
+    const tok = "t".repeat(32);
+    const req = (h = {}, addr = "127.0.0.1") => ({ socket: { remoteAddress: addr }, headers: { host: "127.0.0.1:3210", "x-descall-node-control": tok, ...h } });
+    assert.strictEqual(isLocalControlRequest(req(), tok), true, "loopback + token");
+    assert.strictEqual(isLocalControlRequest(req({}, "::ffff:127.0.0.1"), tok), true, "IPv4-mapped loopback");
+    assert.strictEqual(isLocalControlRequest(req({}, "::1"), tok), true, "IPv6 loopback");
+    assert.strictEqual(isLocalControlRequest(req({ host: "localhost:3210" }), tok), true, "localhost host");
+    assert.strictEqual(isLocalControlRequest(req({}, "192.168.1.5"), tok), false, "LAN address refused");
+    assert.strictEqual(isLocalControlRequest(req({ "cf-connecting-ip": "1.2.3.4" }), tok), false, "tunnel refused");
+    assert.strictEqual(isLocalControlRequest(req({ "cf-warp-tag-id": "x" }), tok), false, "tunnel tag refused");
+    assert.strictEqual(isLocalControlRequest(req({ origin: "null" }), tok), false, "browser origin refused");
+    assert.strictEqual(isLocalControlRequest(req({ host: "pc.descall.com" }), tok), false, "foreign host refused");
+    assert.strictEqual(isLocalControlRequest(req({ "x-descall-node-control": tok + "x" }), tok), false, "longer token refused");
+    assert.strictEqual(isLocalControlRequest(req(), ""), false, "no token configured: refused");
+    assert.strictEqual(isLocalControlRequest(req({ "x-descall-node-control": "short" }), "short"), false, "too short a token: refused");
+    assert.deepStrictEqual(keyResult({ id: "k1", name: "PC" }), { ok: true, keyId: "k1" }, "lib/nodeKeys shape");
+    assert.deepStrictEqual(keyResult({ ok: true, keyId: "k2" }), { ok: true, keyId: "k2" }, "{ ok, keyId } shape");
+    assert.deepStrictEqual(keyResult(null), { ok: false, keyId: null });
+    assert.deepStrictEqual(keyResult({ ok: false, id: "k3" }), { ok: false, keyId: null });
   }
 
   /* ---------- drain timeout: leftovers are dropped ---------- */

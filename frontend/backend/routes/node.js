@@ -9,16 +9,23 @@
  * Node to node (Authorization: Bearer dsk_node_..., secondary -> primary):
  *   POST /register   { id, url, version, memoryMb, cores } -> { ok, cfg }
  *   POST /drain-done { id, moved?, dropped?, ms? }        -> { ok }
- * Local supervisor only (the Descall Node service on the PC, never through the tunnel):
- *   POST /drain-self  { reason?, timeoutMs? } -> { ok, moved, dropped, ms }
- *   POST /resume-self                         -> { ok }
- *   Bearer must be this node's own DESCALL_NODE_KEY and the request must come straight
- *   from loopback without Cloudflare headers (tunnel traffic also arrives from loopback).
- */
+ * Local control (the Descall Node app on the PC talking to the backend it runs; never
+ * through the tunnel). Request straight from 127.0.0.1 / ::1, Host 127.0.0.1 / localhost,
+ * no Origin and no Cloudflare / proxy headers (tunnel traffic also arrives from loopback,
+ * always with them), header `x-descall-node-control` equal (constant time) to
+ * DESCALL_NODE_CONTROL_TOKEN, the per-launch random token the app put in this process env:
+ *   GET  /local/status -> { ok, nodeId, role, state, conns, remaining, p95ms, memRss, memLimit,
+ *                          cpu, cores, gameMode, draining, cfg, kv: { ok } }
+ *   POST /local/drain  { reason?, timeoutMs? } -> { ok, remaining }   starts the graceful
+ *                      drain (node:move, then paused) and answers at once; the app follows
+ *                      `remaining` in /local/status
+ *   POST /local/state  { state?: active|paused|draining, gameMode?, memoryMb? } -> { ok, state }
+ *   PUT  /local/cfg    partial dc:cfg:pc (same validation as the admin panel) -> { cfg }
+  */
 
 const crypto = require("crypto");
 const express = require("express");
-const { createRouter, createNodeRuntime } = require("../lib/cluster/routing");
+const { createRouter, createNodeRuntime, localConnCount } = require("../lib/cluster/routing");
 const { ipOfRequest } = require("../lib/clientIp");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const { apiError } = require("../lib/apiError");
@@ -26,6 +33,12 @@ const { apiError } = require("../lib/apiError");
 const NODE_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const BEARER_RE = /^Bearer\s+(\S+)$/i;
 const FAIL_LIMIT = { windowMs: 10 * 60 * 1000, max: 20 };
+const CONTROL_HEADER = "x-descall-node-control";
+const CONTROL_TOKEN_MIN = 16;
+/** Present on every request that came through Cloudflare (tunnel) or another proxy. */
+const PROXY_HEADERS = ["cf-connecting-ip", "cf-ray", "cf-ipcountry", "cf-visitor", "cf-warp-tag-id", "cdn-loop", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-real-ip", "forwarded", "true-client-ip"];
+const LOCAL_HOST_RE = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/i;
+const LOCAL_STATES = new Set(["active", "paused", "draining"]);
 
 function bearerOf(req) {
   const m = BEARER_RE.exec(String(req.get("authorization") || ""));
@@ -42,6 +55,50 @@ function safeEqual(a, b) {
 function isLoopback(addr) {
   const s = String(addr || "").replace(/^::ffff:/, "");
   return s === "127.0.0.1" || s === "::1";
+}
+
+/** The local control guard; pure so the tests can drive it without a socket. */
+function isLocalControlRequest(req, token) {
+  const want = String(token || "");
+  if (want.length < CONTROL_TOKEN_MIN) return false;
+  if (!isLoopback(req.socket && req.socket.remoteAddress)) return false;
+  const h = req.headers || {};
+  if (PROXY_HEADERS.some((k) => h[k] != null)) return false;
+  if (h.origin != null) return false;
+  if (!LOCAL_HOST_RE.test(String(h.host || ""))) return false;
+  const got = h[CONTROL_HEADER];
+  return typeof got === "string" && safeEqual(got, want);
+}
+
+/** H3 nodeKeys.verify() answers { id, name } | null; older stubs { ok, keyId }. */
+function keyResult(r) {
+  if (!r || typeof r !== "object") return { ok: false, keyId: null };
+  if (r.ok === true) return { ok: true, keyId: r.keyId || r.id || null };
+  if (r.ok === undefined && r.id) return { ok: true, keyId: r.id };
+  return { ok: false, keyId: null };
+}
+
+/** Capacity + saved cost for the register answer (lib/nodeKeys/model.js formula). */
+async function registerExtras(cluster, cfg) {
+  try {
+    const M = require("../lib/nodeKeys/model");
+    const store = require("../lib/nodeKeys/store");
+    const nodes = await cluster.getNodes();
+    const cap = M.capacity(nodes, cfg, { assumePc: true });
+    let savedUsdMonth = null;
+    try {
+      const ledger = await store.loadLedger(Date.now());
+      savedUsdMonth = M.savedUsd(Number(ledger && ledger.gbHours) || 0);
+    } catch {
+      savedUsdMonth = null;
+    }
+    return {
+      capacity: { estimate: cap.estimate, pcUsers: cap.pcUsers, renderUsers: cap.renderUsers, perUserMb: cap.perUserMb, baseMb: M.BASE_MB, headroom: M.HEADROOM },
+      ...(savedUsdMonth == null ? {} : { savedUsdMonth }),
+    };
+  } catch {
+    return {};
+  }
 }
 
 function validNodeUrl(u, env) {
@@ -95,7 +152,8 @@ function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.en
     const secret = bearerOf(req);
     let result = { ok: false, keyId: null };
     try {
-      if (secret) result = (await keys.verify(secret)) || result;
+      const nodeId = req.body && typeof req.body.id === "string" ? req.body.id.slice(0, 40) : null;
+      if (secret) result = keyResult(await keys.verify(secret, { nodeId, ip: ipOfRequest(req) }));
     } catch {
       result = { ok: false, keyId: null };
     }
@@ -127,7 +185,9 @@ function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.en
     } catch {
       cfg = null;
     }
-    res.json({ ok: true, cfg });
+    // The tray popover shows the same capacity / saved-cost numbers as the admin panel.
+    const extra = await registerExtras(cluster, cfg);
+    res.json({ ok: true, cfg, ...extra });
   });
 
   r.post("/drain-done", requireNodeKey, async (req, res) => {
@@ -145,23 +205,107 @@ function createNodeRoutes({ cluster, router, runtime, nodeKeys, env = process.en
     res.json({ ok: true });
   });
 
-  function requireLocalSupervisor(req, res, next) {
-    const own = String(env.DESCALL_NODE_KEY || "");
-    const direct = isLoopback(req.socket && req.socket.remoteAddress) && !req.get("cf-connecting-ip") && !req.get("x-forwarded-for") && !req.get("cf-ray");
-    if (!own || !direct || !safeEqual(bearerOf(req), own)) return res.status(403).json(apiError("Forbidden", null, { code: "NODE_LOCAL_ONLY" }));
+  function requireLocalControl(req, res, next) {
+    if (!isLocalControlRequest(req, env.DESCALL_NODE_CONTROL_TOKEN)) return res.status(403).json(apiError("Forbidden", null, { code: "NODE_LOCAL_ONLY" }));
+    res.set("Cache-Control", "no-store");
     next();
   }
 
-  r.post("/drain-self", requireLocalSupervisor, async (req, res) => {
-    const b = req.body || {};
-    const timeoutMs = Math.min(30_000, Math.max(0, Number(b.timeoutMs) || 10_000));
-    const result = await runtime.drainSelf({ reason: typeof b.reason === "string" ? b.reason : "drain", timeoutMs });
-    res.json({ ok: true, ...result });
+  async function selfNode() {
+    try {
+      return (await cluster.getNodes()).find((n) => n && n.id === cluster.nodeId) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function localConns() {
+    return runtime && runtime.io ? localConnCount(runtime.io) : null;
+  }
+
+  r.get("/local/status", requireLocalControl, async (_req, res) => {
+    const self = await selfNode();
+    let cfg = null;
+    let kv = { ok: false };
+    try {
+      cfg = await cluster.getCfg();
+    } catch {
+      cfg = null;
+    }
+    try {
+      const st = await cluster.kvStatus();
+      kv = { ok: Boolean(st && st.ok) };
+    } catch {
+      kv = { ok: false };
+    }
+    const draining = Boolean(runtime && runtime.isDraining());
+    const live = localConns();
+    const conns = live != null ? live : Number(self && self.conns) || 0;
+    res.json({
+      ok: true,
+      nodeId: cluster.nodeId,
+      role: cluster.role,
+      state: draining ? "draining" : (self && self.state) || "active",
+      conns,
+      remaining: draining ? conns : 0,
+      p95ms: Number(self && self.p95ms) || 0,
+      memRss: Number(self && self.memRss) || Math.round(process.memoryUsage().rss / 1048576),
+      memLimit: Number(self && self.memLimit) || null,
+      cpu: Number(self && self.cpu) || 0,
+      cores: Number(self && self.cores) || null,
+      gameMode: Boolean(self && self.gameMode),
+      draining,
+      cfg,
+      kv,
+    });
   });
 
-  r.post("/resume-self", requireLocalSupervisor, async (_req, res) => {
-    await runtime.resumeSelf("supervisor");
-    res.json({ ok: true });
+  r.post("/local/drain", requireLocalControl, async (req, res) => {
+    const b = req.body || {};
+    const why = typeof b.reason === "string" ? b.reason.slice(0, 40) : "drain";
+    const timeoutMs = Math.min(30_000, Math.max(0, Number(b.timeoutMs) || 10_000));
+    const remaining = localConns() || 0;
+    // Answer at once: the app polls /local/status (`remaining`) and stops the process after 10 s.
+    runtime.drainSelf({ reason: why, detail: `local:${why}`, timeoutMs }).catch(() => {});
+    res.json({ ok: true, remaining });
+  });
+
+  r.post("/local/state", requireLocalControl, async (req, res) => {
+    const b = req.body || {};
+    if (b.state !== undefined && !LOCAL_STATES.has(b.state)) return res.status(400).json(apiError("Invalid node state", null, { code: "NODE_STATE_INVALID" }));
+    const patch = {};
+    if (typeof b.gameMode === "boolean") patch.gameMode = b.gameMode;
+    if (Number.isFinite(Number(b.memoryMb)) && Number(b.memoryMb) > 0) patch.memoryMb = Number(b.memoryMb);
+    if (Object.keys(patch).length && typeof cluster.updateSelf === "function") cluster.updateSelf(patch);
+    const self = await selfNode();
+    const cur = runtime.isDraining() ? "draining" : (self && self.state) || "active";
+    if (b.state && b.state !== cur) {
+      if (b.state === "active") await runtime.resumeSelf("tray");
+      else if (b.state === "paused") {
+        if ((localConns() || 0) > 0) runtime.drainSelf({ reason: "drain", detail: "local:pause" }).catch(() => {});
+        else await runtime.pauseSelf("tray");
+      } else if (b.state === "draining") runtime.drainSelf({ reason: "drain", detail: "local:state" }).catch(() => {});
+    }
+    if (typeof cluster.beatNow === "function") await Promise.resolve(cluster.beatNow()).catch(() => {});
+    res.json({ ok: true, state: b.state || cur });
+  });
+
+  r.put("/local/cfg", requireLocalControl, async (req, res) => {
+    try {
+      const M = require("../lib/nodeKeys/model");
+      const service = require("../lib/nodeKeys/service");
+      const before = await service.getCfg();
+      const v = M.validateCfgPatch(req.body, before);
+      if (!v.ok) return res.status(400).json(apiError("Invalid setting: {field}", { field: v.field }, { code: "BAD_CFG" }));
+      const actor = { id: null, username: "pc-tray", via: "tray" };
+      const cfg = await service.setCfg(v.patch, actor);
+      const parts = M.changedParts(before, cfg);
+      if (parts.length) await service.logEvent("cfg_update", { parts, ramMb: cfg.ramMb, cores: cfg.cores, prevRamMb: before.ramMb, via: "pc-tray", nodeId: cluster.nodeId }, actor).catch(() => {});
+      res.json({ cfg, changed: parts });
+    } catch (err) {
+      console.warn("[node] local cfg failed:", err && err.message);
+      res.status(500).json(apiError("Internal server error.", null, { code: "INTERNAL" }));
+    }
   });
 
   return r;
@@ -201,4 +345,4 @@ function getNodeRouting() {
   return singleton;
 }
 
-module.exports = { createNodeRoutes, attachNodeRouting, getNodeRouting, refuseWhileDraining, NODE_ID_RE };
+module.exports = { createNodeRoutes, attachNodeRouting, getNodeRouting, refuseWhileDraining, isLocalControlRequest, keyResult, NODE_ID_RE, CONTROL_HEADER };

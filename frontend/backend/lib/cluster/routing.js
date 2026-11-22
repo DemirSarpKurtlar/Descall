@@ -44,6 +44,16 @@ function cleanUrl(u) {
   return String(u || "").trim().replace(/\/+$/, "");
 }
 
+/** DESCALL_NODE_PRIMARY_URL (set by the Descall Node app), DESCALL_PRIMARY_URL as an alias. */
+function envPrimaryUrl(env) {
+  return cleanUrl((env && (env.DESCALL_NODE_PRIMARY_URL || env.DESCALL_PRIMARY_URL)) || "");
+}
+
+/** Admin "all to Render" switch (dc:cfg:pc emergency.on). */
+function emergencyOn(cfg) {
+  return Boolean(cfg && cfg.emergency && cfg.emergency.on === true);
+}
+
 /* ---------------------------------------------------------------- schedule */
 
 const fmtCache = new Map();
@@ -150,6 +160,7 @@ function pcEligibility(node, cfg, nowMs, { registered = true } = {}) {
   if (node.state !== "active") return { ok: false, reason: `state:${node.state || "unknown"}` };
   if (!registered) return { ok: false, reason: "unregistered" };
   if (!cleanUrl(node.url)) return { ok: false, reason: "no-url" };
+  if (emergencyOn(cfg)) return { ok: false, reason: "emergency" };
   if (!inSchedule(cfg && cfg.schedule, nowMs)) return { ok: false, reason: "schedule" };
   if (gameActive(node, cfg) && cfg.gameMode && cfg.gameMode.fullHandover) return { ok: false, reason: "game" };
   return { ok: true, reason: "ok" };
@@ -213,7 +224,7 @@ function createRouter(opts = {}) {
   const bootAt = now();
 
   function primaryFallbackUrl() {
-    return cleanUrl(env.DESCALL_PRIMARY_URL) || DEFAULT_PRIMARY_URL;
+    return envPrimaryUrl(env) || DEFAULT_PRIMARY_URL;
   }
 
   function selfAnswer(reason) {
@@ -392,7 +403,7 @@ function createNodeRuntime(opts = {}) {
   const drainWaiters = new Map(); // nodeId -> Set<fn>
 
   async function primaryUrl() {
-    if (cluster.role === "secondary") return cleanUrl(env.DESCALL_PRIMARY_URL) || (await router.primaryUrl());
+    if (cluster.role === "secondary") return envPrimaryUrl(env) || (await router.primaryUrl());
     return router.primaryUrl();
   }
 
@@ -465,6 +476,12 @@ function createNodeRuntime(opts = {}) {
     await cluster.pushEvent("node:resume", { reason });
   }
 
+  /** Supervisor pause without a drain (nothing connected, or the app already drained). */
+  async function pauseSelf(reason = "pause") {
+    pausedLocal = true;
+    await cluster.setNodeState(cluster.nodeId, "paused", reason);
+  }
+
   /** Move `count` of this node's sockets (rebalance / game share), newest first. */
   async function moveSome(count, reason, jitterMs = DRAIN_JITTER_MS) {
     if (!io || count <= 0) return 0;
@@ -516,7 +533,7 @@ function createNodeRuntime(opts = {}) {
   }
 
   async function register() {
-    const cores = require("os").cpus().length;
+    const cores = Number(cluster.cores) || Math.floor(Number(env.DESCALL_NODE_CORES)) || require("os").cpus().length;
     const res = await callPrimary("/api/node/register", {
       id: cluster.nodeId,
       url: cluster.publicUrl,
@@ -552,7 +569,14 @@ function createNodeRuntime(opts = {}) {
     const t = now();
     const outOfSchedule = !inSchedule(cfg && cfg.schedule, t);
     const handover = gameActive(self, cfg) && Boolean(cfg.gameMode && cfg.gameMode.fullHandover);
+    const emergency = emergencyOn(cfg);
     if (self.state === "active") {
+      if (emergency) {
+        // "All to Render" also holds for a PC that missed the command or came back later.
+        autoPaused = "emergency";
+        await drainSelf({ reason: "drain", detail: "emergency" });
+        return;
+      }
       if (outOfSchedule) {
         autoPaused = "schedule";
         await drainSelf({ reason: "schedule" });
@@ -576,7 +600,7 @@ function createNodeRuntime(opts = {}) {
     }
     if (self.state === "paused" && autoPaused && autoPaused !== "revoked") {
       // Only a pause this runtime made itself is lifted; an admin pause stays.
-      if (!outOfSchedule && !handover) await resumeSelf(`auto:${autoPaused}`);
+      if (!outOfSchedule && !handover && !emergency) await resumeSelf(`auto:${autoPaused}`);
     }
   }
 
@@ -613,6 +637,7 @@ function createNodeRuntime(opts = {}) {
   return {
     drainSelf,
     resumeSelf,
+    pauseSelf,
     moveSome,
     requestNode,
     waitForDrainDone,
@@ -621,6 +646,7 @@ function createNodeRuntime(opts = {}) {
     tick,
     start,
     stop,
+    io,
     isDraining: () => Boolean(draining),
     /** False while this node drains or stays paused after its own drain (new sockets refused). */
     acceptsConnections: () => !draining && !pausedLocal,
@@ -648,6 +674,8 @@ module.exports = {
   pcShareMb,
   memPct,
   pcEligibility,
+  emergencyOn,
+  envPrimaryUrl,
   loadRule,
   nextMode,
   localConnCount,

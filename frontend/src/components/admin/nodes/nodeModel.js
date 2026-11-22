@@ -106,7 +106,7 @@ export function capacityFor(data, ramMb) {
 export function draftOf(cfg) {
   const c = cfg || {};
   return {
-    ramMb: clamp(Math.round(num(c.ramMb) / RAM_STEP_MB) * RAM_STEP_MB || 3072, RAM_MIN_MB, RAM_MAX_MB),
+    ramMb: clamp(Math.round(num(c.ramMb) / RAM_STEP_MB) * RAM_STEP_MB || 2048, RAM_MIN_MB, RAM_MAX_MB),
     cores: clamp(Math.round(num(c.cores)) || 4, CORES_MIN, CORES_MAX),
     loadRule: {
       enabled: c.loadRule?.enabled !== false,
@@ -274,7 +274,7 @@ export function chartSeries(series, data, now = Date.now()) {
     }
   };
   if (render) put(render.id, "render", num(render.memLimit) || 512);
-  if (pc) put(pc.id, "pc", num(pc.memLimit) || num(data?.cfg?.ramMb) || 3072);
+  if (pc) put(pc.id, "pc", num(pc.memLimit) || num(data?.cfg?.ramMb) || 2048);
   // Network latency: the worst node per bucket; errors weighted by connections.
   const lat = Array(n).fill(null);
   const errW = Array(n).fill(0);
@@ -471,7 +471,7 @@ export function errorKey(err) {
 /* ---------- time ---------- */
 
 export function agoLabel(iso, now = Date.now()) {
-  const t = Date.parse(iso || "");
+  const t = typeof iso === "number" ? iso : Date.parse(iso || "");
   if (!Number.isFinite(t)) return { key: "anodes.ago.never" };
   const s = Math.max(0, Math.round((now - t) / 1000));
   if (s < 5) return { key: "anodes.ago.now" };

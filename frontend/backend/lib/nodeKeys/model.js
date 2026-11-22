@@ -45,18 +45,19 @@ const PER_USER_MAX = 8;
 const MEASURE_MIN_CONNS = 25;
 const USD_PER_GB_HOUR = 12.5 / 730; // Render Standard: 12.5 USD per GB-month, 730 h a month
 
+/**
+ * Same defaults as lib/cluster/index.js DEFAULT_CFG and the Descall Node app (cfg.rs): a
+ * 2 GB / 2 core share, load rule on, game mode on, schedule on with no slots (= always
+ * available until the owner draws the week), no emergency.
+ */
 const DEFAULT_CFG = Object.freeze({
-  ramMb: 3072,
-  cores: 4,
+  ramMb: 2048,
+  cores: 2,
   loadRule: Object.freeze({ enabled: true, renderHighPct: 60, pcHighPct: 85 }),
   gameMode: Object.freeze({ enabled: true, shareMb: 1024, fullHandover: false }),
-  schedule: Object.freeze({
-    enabled: true,
-    tz: "Europe/Istanbul",
-    // Weekdays 18:00-02:00, weekends 12:00-03:00 (the draft's heat map).
-    slots: Object.freeze([1, 2, 3, 4, 5].map((d) => ({ d, from: "18:00", to: "02:00" })).concat([6, 0].map((d) => ({ d, from: "12:00", to: "03:00" })))),
-  }),
+  schedule: Object.freeze({ enabled: true, tz: "Europe/Istanbul", slots: Object.freeze([]) }),
   alerts: Object.freeze({ pcDown: true, kvFull: true, render90: true }),
+  emergency: Object.freeze({ on: false, at: null, by: null, reason: null }),
 });
 
 const ALERT_KINDS = Object.freeze(["pcDown", "kvFull", "render90"]);
@@ -335,6 +336,18 @@ function monthKey(date = new Date()) {
   return new Date(date).toISOString().slice(0, 7);
 }
 
+/** lastBeat / startedAt: epoch ms in dc:nodes (lib/cluster), ISO elsewhere -> epoch ms or NaN. */
+function timeMs(v) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+  if (typeof v === "string" && /^\d{10,}$/.test(v)) return Number(v);
+  return Date.parse(v || "");
+}
+
+function toIso(v) {
+  const t = timeMs(v);
+  return Number.isFinite(t) && t > 0 ? new Date(t).toISOString() : null;
+}
+
 /* ---------------- overview payload ---------------- */
 
 function eventKey(e) {
@@ -389,7 +402,7 @@ function overview(p) {
     savedUsdMonth: savedUsd(gbHours),
     saved: { month: p.ledger?.month || monthKey(now), gbHours: Math.round(gbHours * 10) / 10, pcHours: Math.round((Number(p.ledger?.pcHours) || 0) * 10) / 10 },
     schedule: { now: inSchedule(cfg, new Date(now)), hoursPerWeek: scheduledHours(cfg) },
-    pc: { registered, online: Boolean(pc && pc.state !== "down"), lastSeenAt: pc?.lastBeat || p.keys?.lastUsedAt || null },
+    pc: { registered, online: Boolean(pc && pc.state !== "down"), lastSeenAt: toIso(pc?.lastBeat) || p.keys?.lastUsedAt || null },
     keys: { available: Boolean(p.keys?.available), active: Number(p.keys?.active) || 0, max: KEY_ACTIVE_MAX },
     storage: { ok: Boolean(p.storage) },
     emergency: isObj(cfg.emergency) && cfg.emergency.on ? cfg.emergency : null,
@@ -439,4 +452,6 @@ module.exports = {
   monthKey,
   mergeEvents,
   overview,
+  timeMs,
+  toIso,
 };

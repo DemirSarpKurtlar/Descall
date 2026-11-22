@@ -39,7 +39,7 @@ function evaluate(prev, { nodes = [], kv = {}, kvConfigured = false, now = Date.
   const fire = [];
   const pc = nodes.find(M.isPc);
   const primary = nodes.find((n) => !M.isPc(n));
-  const pcFresh = pc && pc.state !== "down" && (!pc.lastBeat || now - Date.parse(pc.lastBeat) < STALE_MS);
+  const pcFresh = pc && pc.state !== "down" && (!pc.lastBeat || now - M.timeMs(pc.lastBeat) < STALE_MS);
   const pcActive = Boolean(pcFresh && pc.state === "active");
   if (prev.pcWasActive && !pcFresh) {
     fire.push({ kind: "pcDown", reason: "lost", vars: { node: prev.pcId || "pc" } });

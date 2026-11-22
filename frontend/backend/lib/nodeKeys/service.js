@@ -82,7 +82,7 @@ async function buildOverview({ now = Date.now() } = {}) {
   } catch {
     enabled = false;
   }
-  const leader = nodes.find((n) => n?.isLeader)?.id || (safe(() => c.isLeader()) ? c.nodeId : null);
+  const leader = nodes.find((n) => n?.isLeader)?.id || (typeof c.leaderId === "function" ? safe(() => c.leaderId()) || null : null) || (safe(() => c.isLeader()) ? c.nodeId : null);
   return M.overview({
     enabled,
     kv,

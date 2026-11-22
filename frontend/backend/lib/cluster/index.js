@@ -42,13 +42,22 @@ const CTL_CHANNEL = "dc:ctl";
 const EVENTS_MAX = 200;
 const NODE_STATES = new Set(["active", "draining", "paused"]);
 
+/**
+ * dc:cfg:pc defaults, the same in the admin panel (lib/nodeKeys/model.js normalizes over
+ * this) and in the Descall Node app (desktop/crates/descall-node/src/cfg.rs).
+ * loadRule.enabled false = every new user stays on Render; schedule.enabled false or no
+ * slots = the PC is always available; slot d 0 = Sunday (Date.getDay()), Europe/Istanbul.
+ * emergency.on (admin "all to Render") = /api/node/assign answers Render for everyone and
+ * a secondary drains itself until it is cleared.
+ */
 const DEFAULT_CFG = Object.freeze({
   ramMb: 2048,
   cores: 2,
-  loadRule: { renderHighPct: 60, pcHighPct: 85 },
-  gameMode: { enabled: false, shareMb: 1024, fullHandover: false },
-  schedule: { tz: "Europe/Istanbul", slots: [] },
+  loadRule: { enabled: true, renderHighPct: 60, pcHighPct: 85 },
+  gameMode: { enabled: true, shareMb: 1024, fullHandover: false },
+  schedule: { enabled: true, tz: "Europe/Istanbul", slots: [] },
   alerts: { pcDown: true, kvFull: true, render90: true },
+  emergency: { on: false, at: null, by: null, reason: null },
 });
 
 const aliveKey = (id) => `dc:node:${id}:alive`;
@@ -73,6 +82,8 @@ function mergeCfg(current, partial = {}) {
   if (p.ramMb !== undefined) base.ramMb = clampInt(p.ramMb, 512, 8192, base.ramMb);
   if (p.cores !== undefined) base.cores = clampInt(p.cores, 1, 8, base.cores);
   if (p.loadRule && typeof p.loadRule === "object") {
+    if (p.loadRule.enabled !== undefined) base.loadRule.enabled = Boolean(p.loadRule.enabled);
+    if (p.loadRule.preferPc !== undefined) base.loadRule.preferPc = Boolean(p.loadRule.preferPc);
     if (p.loadRule.renderHighPct !== undefined) base.loadRule.renderHighPct = clampInt(p.loadRule.renderHighPct, 10, 95, base.loadRule.renderHighPct);
     if (p.loadRule.pcHighPct !== undefined) base.loadRule.pcHighPct = clampInt(p.loadRule.pcHighPct, 10, 99, base.loadRule.pcHighPct);
   }
@@ -82,6 +93,7 @@ function mergeCfg(current, partial = {}) {
     if (p.gameMode.shareMb !== undefined) base.gameMode.shareMb = clampInt(p.gameMode.shareMb, 256, 8192, base.gameMode.shareMb);
   }
   if (p.schedule && typeof p.schedule === "object") {
+    if (p.schedule.enabled !== undefined) base.schedule.enabled = Boolean(p.schedule.enabled);
     if (typeof p.schedule.tz === "string" && /^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(p.schedule.tz)) base.schedule.tz = p.schedule.tz;
     if (Array.isArray(p.schedule.slots)) {
       base.schedule.slots = p.schedule.slots
@@ -93,6 +105,19 @@ function mergeCfg(current, partial = {}) {
   if (p.alerts && typeof p.alerts === "object") {
     for (const k of ["pcDown", "kvFull", "render90"]) if (p.alerts[k] !== undefined) base.alerts[k] = Boolean(p.alerts[k]);
   }
+  if (p.emergency && typeof p.emergency === "object") {
+    const e = p.emergency;
+    const str = (v, max) => (v == null ? null : String(v).slice(0, max));
+    base.emergency = {
+      on: Boolean(e.on),
+      at: str(e.at, 40),
+      by: str(e.by, 64),
+      reason: str(e.reason, 300),
+    };
+  }
+  // Durable-copy stamp (lib/nodeKeys/service.js compares it with node_settings on boot).
+  if (typeof p.updatedAt === "string" && !Number.isNaN(Date.parse(p.updatedAt))) base.updatedAt = p.updatedAt.slice(0, 40);
+  if (p.updatedBy !== undefined) base.updatedBy = p.updatedBy == null ? null : String(p.updatedBy).slice(0, 64);
   return base;
 }
 
@@ -781,9 +806,17 @@ function createCluster({ env = process.env, log = console } = {}) {
     useRedisFactory: (fn) => {
       if (!C.kv) C.factory = fn;
     },
+    /** The node's own entry follows its supervisor: game mode, a smaller memory share. */
     updateSelf: (patch = {}) => {
-      if (patch && typeof patch === "object" && "gameMode" in patch) C.selfExtra.gameMode = Boolean(patch.gameMode);
+      if (!patch || typeof patch !== "object") return;
+      if ("gameMode" in patch) C.selfExtra.gameMode = Boolean(patch.gameMode);
+      if ("memoryMb" in patch) {
+        const mb = Math.round(Number(patch.memoryMb));
+        if (Number.isFinite(mb) && mb >= 64) C.cfg.memoryMb = Math.min(65536, mb);
+      }
     },
+    /** Node id holding dc:leader (this node on a single node). */
+    leaderId: () => (configured() && C.leader ? C.leader.leaderId() || null : C.cfg.nodeId),
     on: (ev, cb) => emitter.on(ev, cb),
     off: (ev, cb) => emitter.off(ev, cb),
     metricsMiddleware: metrics.middleware,
@@ -798,6 +831,8 @@ function createCluster({ env = process.env, log = console } = {}) {
     nodeId: { get: () => C.cfg.nodeId, enumerable: true },
     role: { get: () => C.cfg.role, enumerable: true },
     publicUrl: { get: () => C.cfg.publicUrl, enumerable: true },
+    primaryUrl: { get: () => C.cfg.primaryUrl, enumerable: true },
+    cores: { get: () => C.cfg.cores, enumerable: true },
     store: { get: () => C.store, enumerable: true },
     replicator: { get: () => C.replicator, enumerable: false },
   });

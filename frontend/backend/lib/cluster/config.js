@@ -29,6 +29,30 @@ function cleanId(raw, fallback) {
   return s || fallback;
 }
 
+/**
+ * The primary's public URL as a secondary sees it. DESCALL_NODE_PRIMARY_URL is the name the
+ * Descall Node app sets; DESCALL_PRIMARY_URL is accepted as an alias.
+ */
+function readPrimaryUrl(env = process.env) {
+  return String(env.DESCALL_NODE_PRIMARY_URL || env.DESCALL_PRIMARY_URL || "").trim().replace(/\/+$/, "");
+}
+
+/** CPU cores this node may use: DESCALL_NODE_CORES (the PC share) capped by the machine. */
+function readCores(env = process.env) {
+  const machine = typeof os.availableParallelism === "function" ? os.availableParallelism() : os.cpus().length;
+  const want = Math.floor(Number(env.DESCALL_NODE_CORES));
+  return Number.isFinite(want) && want >= 1 ? Math.min(machine, want) : machine;
+}
+
+/**
+ * Interface the HTTP server binds to. A secondary (the owner's PC) is reached only through
+ * the Cloudflare Tunnel and its local supervisor, so it listens on loopback alone.
+ */
+function readListenHost(env = process.env) {
+  const role = String(env.DESCALL_NODE_ROLE || "").trim().toLowerCase();
+  return role === "secondary" ? "127.0.0.1" : undefined;
+}
+
 function readClusterConfig(env = process.env) {
   const role = String(env.DESCALL_NODE_ROLE || "").trim().toLowerCase() === "secondary" ? "secondary" : "primary";
   const nodeId = cleanId(env.DESCALL_NODE_ID, role === "primary" ? "render" : `pc-${cleanId(os.hostname(), "node").slice(0, 8)}`);
@@ -47,7 +71,8 @@ function readClusterConfig(env = process.env) {
     role,
     publicUrl,
     memoryMb,
-    cores: typeof os.availableParallelism === "function" ? os.availableParallelism() : os.cpus().length,
+    cores: readCores(env),
+    primaryUrl: readPrimaryUrl(env),
     version: readVersion(),
     kvMaxMb: num("DESCALL_KV_MAX_MB", 25),
     beatMs: num("DESCALL_CLUSTER_BEAT_MS", 5000),
@@ -61,4 +86,4 @@ function readClusterConfig(env = process.env) {
   };
 }
 
-module.exports = { readClusterConfig, cleanId };
+module.exports = { readClusterConfig, readPrimaryUrl, readCores, readListenHost, cleanId };
