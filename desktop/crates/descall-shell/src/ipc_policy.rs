@@ -130,6 +130,28 @@ pub fn is_hud_page(url: &str) -> bool {
     matches!(u.scheme(), "http" | "https") && u.host_str() == Some(HUD_HOST) && u.port().is_none() && u.username().is_empty() && u.password().is_none()
 }
 
+/// Second check in front of every app command (main.rs guarded), on the calling webview's
+/// current URL: an http(s) page must be exactly one of the shell's own origins (the dev server
+/// in a dev run too). Tauri's own local-origin test compares scheme and host only, so a
+/// webview that ever reached `https://tauri.localhost:<port>` or `http://tauri.localhost` (the
+/// app is served on https only: that is whatever listens on 127.0.0.1:80) would still get every
+/// app command through a navigation a guard missed. about:blank (the portals) and non-http
+/// custom schemes are left to Tauri's own check, as is a URL that does not parse.
+pub fn origin_allows_ipc(url: &str, is_dev: bool) -> bool {
+    let Ok(u) = url::Url::parse(url) else { return true };
+    if !matches!(u.scheme(), "http" | "https") {
+        return true;
+    }
+    match crate::trust::origin_of(url) {
+        Some(o) => IPC_ORIGINS.contains(&o.as_str()) || (is_dev && o == crate::trust::DEV_ORIGIN),
+        None => false,
+    }
+}
+
+/// The http(s) origins of every page the shell loads: the app (use_https_scheme), the shell
+/// pages and the HUD (served on http, the https form for safety).
+pub const IPC_ORIGINS: &[&str] = &[crate::trust::APP_ORIGIN, crate::trust::SHELL_ORIGIN, "http://descallhud.localhost", "https://descallhud.localhost"];
+
 /// Host of the `descallhud` URI scheme on Windows (WebView2 serves custom schemes as
 /// `http(s)://<scheme>.localhost`).
 pub const HUD_HOST: &str = "descallhud.localhost";
@@ -220,6 +242,30 @@ mod tests {
         for prefix in ["\"notif-{", "\"popout-{", "\"acct-{", "\"widget-{", "\"hud-{"] {
             assert!(srcs.iter().any(|s| s.contains(prefix)), "label prefix {prefix} no longer used: update the list above");
         }
+    }
+
+    #[test]
+    fn ipc_needs_a_portless_origin() {
+        for u in [
+            "https://tauri.localhost/index.html",
+            "https://tauri.localhost:443/settings",
+            "https://descall-shell.localhost/notif.html",
+            "http://descallhud.localhost/voice",
+            "about:blank",
+            "about:blank#descall-premium-call",
+        ] {
+            assert!(origin_allows_ipc(u, false), "{u}");
+        }
+        for u in ["https://tauri.localhost:8443/", "http://tauri.localhost:80/", "http://tauri.localhost/", "http://descall-shell.localhost/notif.html", "https://evil.example/", "http://descallhud.localhost:8080/voice", "https://descall-shell.localhost:1/notif.html", "https://x@tauri.localhost/", "http://localhost:5173/"] {
+            assert!(!origin_allows_ipc(u, false), "{u}");
+        }
+        assert!(origin_allows_ipc("http://localhost:5173/settings", true), "the dev server in a dev run");
+        assert!(!origin_allows_ipc("http://localhost:5174/", true));
+        let main = include_str!("../../../app/src-tauri/src/main.rs");
+        let g = &main[main.find("fn guarded(").unwrap()..];
+        let g = &g[..g.find("\n}\n").unwrap()];
+        assert!(g.contains("origin_allows_ipc(url.as_str(), state::is_dev())"), "guarded() checks the caller's URL");
+        assert!(g.find("origin_allows_ipc").unwrap() < g.find("inner(invoke)").unwrap());
     }
 
     #[test]
@@ -569,6 +615,8 @@ mod capability_tests {
                 let chain = &chain[..chain.find(".build()").unwrap_or(chain.len())];
                 assert!(chain.contains("BROWSER_ARGS)") || chain.contains(".window_features("), "{file}: a window builder with WebView2's default arguments");
                 assert!(chain.contains(".on_navigation("), "{file}: a window builder without a navigation guard");
+                // IPC_ORIGINS (origin_allows_ipc) expects https pages, the HUD's http page aside.
+                assert!(chain.contains(".use_https_scheme(true)") || (file == "premium/overlay.rs" && src.contains("http://{SCHEME}.localhost")), "{file}: a page origin outside IPC_ORIGINS");
                 assert!(chain.contains(".on_new_window("), "{file}: a window builder that lets window.open create raw WebView2 popups");
                 rest = &rest[i + 1..];
             }

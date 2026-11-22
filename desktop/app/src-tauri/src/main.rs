@@ -57,6 +57,15 @@ fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -
             invoke.resolver.reject("forbidden");
             return true;
         }
+        // Tauri's local-origin test ignores the port: a page on <app host>:<port> (a local
+        // server) must not reach app commands even if some navigation got there.
+        if let Ok(url) = invoke.message.webview_ref().url() {
+            if !descall_shell::ipc_policy::origin_allows_ipc(url.as_str(), state::is_dev()) {
+                log::warn!("[ipc] {label}: refused {} from a page with a port", invoke.message.command());
+                invoke.resolver.reject("forbidden");
+                return true;
+            }
+        }
         inner(invoke)
     }
 }
