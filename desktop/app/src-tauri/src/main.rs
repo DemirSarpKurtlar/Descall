@@ -237,6 +237,9 @@ fn main() {
                 }
                 StartAction::Hide => {
                     log::info!("[boot] {:?}: window stays in the tray", launch.reason);
+                    // Start in the tray (Windows sign-in): no hide event ever comes, so the
+                    // WebView2 memory target is evaluated here (low after LOW_AFTER_MS).
+                    webview::update_main_memory(&handle);
                 }
             }
 

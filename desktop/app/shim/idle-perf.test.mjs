@@ -114,6 +114,8 @@ for (const f of walk(join(DESKTOP, "app/shim"), ".js")) {
   const show = /pub fn show_main<R: Runtime>[\s\S]*?\n\}/.exec(state);
   assert.match(show[0], /crate::webview::update_main_memory\(app\)/, "show_main (tray click, notification, second launch) sets it back to normal");
   assert.match(state, /pub memory: Mutex<descall_shell::memory_target::Target>/, "Shell keeps the applied target");
+  const main = code(read("app/src-tauri/src/main.rs"));
+  assert.ok(/StartAction::Hide => \{\s*log::info![^\n]*\n\s*webview::update_main_memory\(&handle\);/.test(main), "a start in the tray (no hide event) also gets the low target");
   const app = code(read("app/src-tauri/src/commands/app.rs"));
   const busy = /pub fn voice_set_busy[\s\S]*?\n\}/.exec(app);
   assert.match(busy[0], /update_main_memory\(&app\)/, "a call starting in the tray restores the normal target");
