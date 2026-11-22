@@ -167,5 +167,12 @@ async fn fetch_to_downloads<R: Runtime>(app: &AppHandle<R>, url: &str, filename:
         let _ = std::fs::remove_file(&part);
         return Err(e.to_string());
     }
+    // Mark of the Web (Zone 3): a program or Office document from a chat opens with
+    // SmartScreen / Protected View like any browser download. Not on FAT drives; ignored there.
+    let mut stream = target.clone().into_os_string();
+    stream.push(download::ZONE_STREAM);
+    if let Err(e) = std::fs::write(&stream, download::zone_identifier(url)) {
+        log::warn!("[download] no Zone.Identifier: {e}");
+    }
     Ok(target)
 }
