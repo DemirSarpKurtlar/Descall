@@ -60,6 +60,8 @@ const ADMIN: &[&str] = &[
     // Right-click on the title bar: the Windows window menu (T5); F12 with the support
     // opt-in only (T8, the command checks webview::devtools_allowed).
     "window_system_menu",
+    // Windows 11 Snap layouts on the bar's maximize button (round 2, src-tauri/src/snap.rs).
+    "window_snap_button",
     "window_toggle_devtools",
     "window_close",
     "window_content_box",
@@ -340,7 +342,9 @@ mod capability_tests {
         let mut rest = shim;
         while let Some(i) = rest.find("winCmd(\"") {
             rest = &rest[i + 8..];
-            let second = rest.split(',').nth(1).unwrap_or_default().trim().trim_end_matches(')').trim_matches('"').to_string();
+            // Only inside this call's parentheses: a comment after it may hold commas too.
+            let call = rest.split(')').next().unwrap_or_default();
+            let second = call.split(',').nth(1).unwrap_or_default().trim().trim_matches('"').to_string();
             if !second.is_empty() && !second.contains('(') {
                 needed.push(("window".into(), second));
             }

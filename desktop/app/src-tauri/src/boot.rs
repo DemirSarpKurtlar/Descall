@@ -401,6 +401,47 @@ pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool
 
 // ---- window events ---------------------------------------------------------------------------
 
+/// main.cjs containRestoredWindow (on 'unmaximize' and 'restore'): a restored window that hangs
+/// past the work area of its monitor (resolution or scaling changed while it was maximized or
+/// minimized, a monitor went away) is pulled back inside it, smaller if it must be.
+fn contain_restored<R: Runtime>(w: &WebviewWindow<R>) {
+    use descall_shell::occlusion::{fit_bounds_to_work_area, overflows, Rect};
+    if w.is_maximized().unwrap_or(false) || w.is_fullscreen().unwrap_or(false) || w.is_minimized().unwrap_or(false) || in_move_size_loop() {
+        return;
+    }
+    let Some(m) = w.current_monitor().ok().flatten() else { return };
+    let s = m.scale_factor();
+    let wa = m.work_area();
+    let work = Rect { x: wa.position.x as f64 / s, y: wa.position.y as f64 / s, width: wa.size.width as f64 / s, height: wa.size.height as f64 / s };
+    let (Ok(p), Ok(sz)) = (w.outer_position(), w.outer_size()) else { return };
+    let b = Rect { x: p.x as f64 / s, y: p.y as f64 / s, width: sz.width as f64 / s, height: sz.height as f64 / s };
+    if !overflows(b, work) {
+        return;
+    }
+    let f = fit_bounds_to_work_area(Some(b.x), Some(b.y), Some(b.width), Some(b.height), Some(work), MIN_W, MIN_H);
+    log::info!("[window] restored past the work area: fitted to {}x{}", f.width, f.height);
+    let _ = w.set_min_size(Some(tauri::LogicalSize::new(f.min_width, f.min_height)));
+    let _ = w.set_size(tauri::LogicalSize::new(f.width, f.height));
+    if let (Some(x), Some(y)) = (f.x, f.y) {
+        let _ = w.set_position(tauri::LogicalPosition::new(x, y));
+    }
+}
+
+/// The user is dragging or sizing the window (a maximized window dragged off its title bar is
+/// restored inside that loop): moving it then would fight the drag; the drag ends where the
+/// user puts it.
+fn in_move_size_loop() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::Threading::GetCurrentThreadId;
+        use windows::Win32::UI::WindowsAndMessaging::{GetGUIThreadInfo, GUITHREADINFO, GUI_INMOVESIZE};
+        let mut info = GUITHREADINFO { cbSize: std::mem::size_of::<GUITHREADINFO>() as u32, ..Default::default() };
+        GetGUIThreadInfo(GetCurrentThreadId(), &mut info).is_ok() && (info.flags.0 & GUI_INMOVESIZE.0) != 0
+    }
+    #[cfg(not(windows))]
+    false
+}
+
 fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
     crate::state::to_main(w.app_handle(), "window:content-box", crate::commands::window::content_box(w));
 }
@@ -473,6 +514,9 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 };
                 if changed {
                     crate::state::to_main(app, "window:maximized", maximized);
+                    if !maximized {
+                        contain_restored(&win); // mainWindow 'unmaximize'
+                    }
                 }
                 let minimized = win.is_minimized().unwrap_or(false);
                 let was_minimized = crate::state::shell(app).minimized.swap(minimized, std::sync::atomic::Ordering::AcqRel);
@@ -486,6 +530,9 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                     // paused. Not for a window restored while hidden to the tray.
                     if was_minimized && win.is_visible().unwrap_or(false) {
                         visibility(&win, false);
+                    }
+                    if was_minimized {
+                        contain_restored(&win); // mainWindow 'restore'
                     }
                     publish_content_box(&win);
                     save_window_state_soon(&win);

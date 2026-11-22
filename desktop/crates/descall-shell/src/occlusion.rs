@@ -53,6 +53,12 @@ pub fn fills_work_area(b: Rect, w: Rect) -> bool {
     (b.x - w.x).abs() <= s && (b.y - w.y).abs() <= s && (b.width - w.width).abs() <= s && (b.height - w.height).abs() <= s
 }
 
+/// main.cjs containRestoredWindow: a restored (unmaximized / un-minimized) window hangs past
+/// the work area of its monitor, more than 1 px of DPI rounding on any side.
+pub fn overflows(b: Rect, w: Rect) -> bool {
+    b.x < w.x - 1.0 || b.y < w.y - 1.0 || b.x + b.width > w.x + w.width + 1.0 || b.y + b.height > w.y + w.height + 1.0
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Fitted {
     pub x: Option<f64>,
@@ -101,6 +107,18 @@ mod tests {
     const WORK: Rect = Rect { x: 0.0, y: 0.0, width: 1920.0, height: 1040.0 };
     const fn r(x: f64, y: f64, width: f64, height: f64) -> Rect {
         Rect { x, y, width, height }
+    }
+
+    #[test]
+    fn a_restored_window_past_the_work_area_overflows() {
+        assert!(!overflows(r(100.0, 100.0, 1400.0, 900.0), WORK));
+        assert!(!overflows(r(-1.0, 0.0, 1921.0, 1041.0), WORK), "1 px DPI slop");
+        assert!(overflows(r(0.0, 0.0, 1920.0, 1080.0), WORK), "under the taskbar");
+        assert!(overflows(r(800.0, 100.0, 1400.0, 900.0), WORK), "past the right edge");
+        assert!(overflows(r(100.0, -40.0, 1400.0, 900.0), WORK), "title bar above the screen");
+        // fit_bounds_to_work_area then pulls it back inside.
+        let f = fit_bounds_to_work_area(Some(800.0), Some(100.0), Some(1400.0), Some(900.0), Some(WORK), 1200.0, 700.0);
+        assert!(!overflows(r(f.x.unwrap(), f.y.unwrap(), f.width, f.height), WORK));
     }
 
     #[test]

@@ -73,6 +73,24 @@ assert.match(jsx, /return host \? createPortal\(bar, host\) : bar;/, "title bar 
 // Restore glyph while maximized (was the same square, smaller).
 assert.match(jsx, /isMaximized \? \([\s\S]{0,120}<svg className="win-restore-glyph"/, "restore glyph while maximized");
 
+// App lock bar: follows the window's maximized state (round 2; it always said "Maximize").
+assert.match(lock, /const maximized = useWindowMaximized\(locked\);/, "app lock subscribes to the maximized state while locked");
+assert.match(lock, /api\.onMaximizedChange\(\(v\) => setMaximized\(Boolean\(v\)\)\)/);
+assert.match(lock, /title=\{maximized \? t\("Restore"\) : t\("Maximize"\)\}[\s\S]{0,200}\{maximized \? \([\s\S]{0,80}<svg className="win-restore-glyph"/, "app lock bar: restore glyph and label while maximized");
+
+// Windows 11 Snap layouts: every desktop bar marks its maximize button for the shell's
+// native input sink, and the sink's hover / press (data-snap-state) look like :hover / :active.
+assert.match(jsx, /className="win-btn maximize"[\s\S]{0,160}data-snap-layout=""/, "main title bar maximize button");
+assert.match(adminShell, /className="adm-wc" data-snap-layout="" aria-label=\{maximized/, "admin bar maximize button");
+assert.match(lock, /className="pgl-winbtn" data-snap-layout=""/, "app lock bar maximize button");
+assert.match(stats, /className="wc" \{\.\.\.\(electron \? \{ "data-snap-layout": "" \} : \{\}\)\}/, "signup stats window maximize button (own window only)");
+assert.match(stats, /electron && winMax \? t\("Restore"\)/, "signup stats window shows Restore while maximized");
+for (const sel of [".titlebar .win-btn", ".adm-wc", ".st3 .st-tb .wc", ".pgl-winbtn"]) {
+  const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.match(css, new RegExp(`html\\.tauri-app ${esc}\\[data-snap-state="hover"\\]`), `${sel}: sink hover styled`);
+  assert.match(css, new RegExp(`html\\.tauri-app ${esc}\\[data-snap-state="press"\\]`), `${sel}: sink press styled`);
+}
+
 // titleBarDoubleClick: maximizes in Electron, does nothing in Tauri (the drag script did it).
 const { titleBarDoubleClick, inTauriShell } = await import("../lib/windowDrag.js");
 let calls = 0;

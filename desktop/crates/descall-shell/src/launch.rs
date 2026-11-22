@@ -79,6 +79,18 @@ pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<Backgroun
     ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
 }
 
+/// A second launch (desktop shortcut, taskbar, Start menu) reached this instance while it was
+/// still starting, before its main window existed (Electron `userRequestedShow`): the user
+/// asked for the window, so a hidden login start or a quiet updater relaunch shows it too.
+/// Before this the request found no window and was dropped: the second click did nothing.
+pub fn with_show_request(start: ColdStart, requested: bool) -> ColdStart {
+    if requested {
+        ColdStart { action: StartAction::Show, ..start }
+    } else {
+        start
+    }
+}
+
 /// Marker file (app data folder) once the first start has decided on auto-start. Same name
 /// as Electron's (launchVisibility.cjs AUTOSTART_MARKER_FILE), which lives in
 /// `%APPDATA%\Descall`; an Electron marker counts too: that user already decided there and the
@@ -116,6 +128,20 @@ mod tests {
     //! launchVisibility.selftest.mjs.
     use super::*;
     const EXE: &str = r"C:\Program Files\Descall\Descall.exe";
+
+    #[test]
+    fn a_second_launch_during_boot_shows_the_window() {
+        let hidden = decide_cold_start(&["descall.exe", "--autostart", "--hidden"], None, false);
+        assert_eq!(hidden.action, StartAction::Hide);
+        let shown = with_show_request(hidden, true);
+        assert_eq!(shown.action, StartAction::Show);
+        assert_eq!(shown.reason, StartReason::Autostart, "only the visibility changes");
+        assert_eq!(with_show_request(hidden, false), hidden);
+        let quiet = decide_cold_start(&["descall.exe"], Some(BackgroundMode::Minimized), true);
+        assert_eq!(with_show_request(quiet, true).action, StartAction::Show);
+        let manual = decide_cold_start(&["descall.exe"], None, false);
+        assert_eq!(with_show_request(manual, true), manual);
+    }
 
     #[test]
     fn url_arguments_never_carry_flags() {

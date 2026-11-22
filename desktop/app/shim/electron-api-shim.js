@@ -389,6 +389,20 @@
       e.preventDefault();
       winCmd("window_toggle_maximize", "toggle_maximize");
     }
+    // Alt+Space: the window menu, as on a captioned window (Electron's frameless window got it
+    // from Windows). WebView2 has the keyboard focus, so the key never reached the window's
+    // default handling. Not AltGr (Ctrl+Alt); the shell skips it when Windows already opened
+    // the menu itself.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.code === "Space" || e.key === " ")) {
+      e.preventDefault();
+      fire("window_system_menu", { keyboard: true });
+    }
+    // Alt+F4 closes this window (the main window hides to the tray), as Windows did for
+    // Electron's window; with WebView2 holding the focus the key may stay in the page.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat && (e.key === "F4" || e.code === "F4")) {
+      e.preventDefault();
+      winCmd("window_close", "close");
+    }
     // F12 / Ctrl+Shift+I: DevTools (windowKeys.cjs). WebView2's own shortcut is off with the
     // browser accelerator keys; the shell opens them only in a dev run or with the support
     // opt-in file (webview::devtools_allowed), otherwise the command does nothing.
@@ -396,6 +410,56 @@
       : (e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === "KeyI" || String(e.key || "").toLowerCase() === "i");
     if (devKey && !e.repeat && !e.altKey) fire("window_toggle_devtools");
   }, true);
+  // Windows 11 Snap layouts (src-tauri/src/snap.rs): the shell lays an invisible native input
+  // sink over the page's maximize button ([data-snap-layout]) that answers HTMAXBUTTON, so
+  // Windows offers the snap layouts on hover; the sink also takes the clicks (maximize /
+  // restore) and right-click. The page reports where its button is (the visible one on top,
+  // e.g. the app lock bar over the main title bar) and mirrors the sink's hover / press into
+  // data-snap-state, since the page itself no longer sees the pointer there.
+  let snapSent;
+  let snapEl = null;
+  let snapQueued = false;
+  const snapTarget = () => {
+    const doc = document;
+    if (!doc || typeof doc.querySelectorAll !== "function" || typeof doc.elementFromPoint !== "function") return null;
+    const list = doc.querySelectorAll("[data-snap-layout]");
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const el = list[i];
+      const r = el.getBoundingClientRect();
+      if (!(r.width > 0 && r.height > 0)) continue;
+      const hit = doc.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (hit && (hit === el || el.contains(hit))) return { el, r };
+    }
+    return null;
+  };
+  const snapReport = () => {
+    snapQueued = false;
+    let t = null;
+    try { t = snapTarget(); } catch (_) { t = null; }
+    if (snapEl && (!t || t.el !== snapEl)) { try { snapEl.removeAttribute("data-snap-state"); } catch (_) { /* gone */ } }
+    snapEl = t ? t.el : null;
+    const rect = t ? { x: t.r.left, y: t.r.top, width: t.r.width, height: t.r.height, dpr: Number(window.devicePixelRatio) || 1 } : null;
+    const key = JSON.stringify(rect);
+    if (key === snapSent) return;
+    snapSent = key;
+    fire("window_snap_button", { rect });
+  };
+  const snapSoon = () => {
+    if (snapQueued) return;
+    snapQueued = true;
+    (typeof requestAnimationFrame === "function" ? requestAnimationFrame : (f) => setTimeout(f, 16))(snapReport);
+  };
+  on("window:snap-state", (state) => {
+    if (!snapEl) return;
+    if (state === "hover" || state === "press") snapEl.setAttribute("data-snap-state", state);
+    else snapEl.removeAttribute("data-snap-state");
+  });
+  window.addEventListener("resize", snapSoon);
+  // Bars come and go (sign-in, app lock, admin loading screens) and move with zoom: a light
+  // check every second, sent only when the button moved.
+  if (typeof setInterval === "function") setInterval(snapSoon, 1000);
+  document.addEventListener("DOMContentLoaded", snapSoon);
+
   // Mouse back / forward buttons navigate history in WebView2.
   const blockNavButtons = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
   window.addEventListener("mouseup", blockNavButtons, true);

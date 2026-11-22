@@ -64,6 +64,20 @@ function useClock(active) {
   return now;
 }
 
+/**
+ * Maximized state of this window while the lock is up, so the lock's own title bar shows the
+ * restore glyph and label like the main TitleBar (the bar always said "Maximize" before).
+ */
+export function useWindowMaximized(active, api = typeof window !== "undefined" ? window.electronAPI : null) {
+  const [maximized, setMaximized] = useState(false);
+  useEffect(() => {
+    if (!active || typeof api?.onMaximizedChange !== "function") return undefined;
+    const off = api.onMaximizedChange((v) => setMaximized(Boolean(v)));
+    return () => { if (typeof off === "function") off(); };
+  }, [active, api]);
+  return maximized;
+}
+
 export default function AppLockScreen({ me = null }) {
   const { t, locale } = useLocale();
   const [locked, setLocked] = useState(false);
@@ -75,6 +89,7 @@ export default function AppLockScreen({ me = null }) {
   const inputRef = useRef(null);
   const lockRef = useRef(null);
   const now = useClock(locked);
+  const maximized = useWindowMaximized(locked);
 
   useEffect(() => {
     pinvoke("premium:app_lock:status").then((r) => {
@@ -152,7 +167,16 @@ export default function AppLockScreen({ me = null }) {
           <div className="pgl-bar-brand" aria-hidden="true"><DescallBrand /></div>
           <div className="pgl-bar-controls">
             <button type="button" className="pgl-winbtn" onClick={() => winApi.minimizeWindow?.()} title={t("Minimize")} aria-label={t("Minimize")}><Minus size={16} strokeWidth={2} /></button>
-            <button type="button" className="pgl-winbtn" onClick={() => winApi.maximizeWindow?.()} title={t("Maximize")} aria-label={t("Maximize")}><Square size={13} strokeWidth={2} /></button>
+            <button type="button" className="pgl-winbtn" data-snap-layout="" onClick={() => winApi.maximizeWindow?.()} title={maximized ? t("Restore") : t("Maximize")} aria-label={maximized ? t("Restore") : t("Maximize")}>
+              {maximized ? (
+                <svg className="win-restore-glyph" width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+                  <rect x="1.75" y="4.25" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M4.25 4.25V3.25c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <Square size={13} strokeWidth={2} />
+              )}
+            </button>
             <button type="button" className="pgl-winbtn is-close" onClick={() => winApi.closeWindow?.()} title={t("Close")} aria-label={t("Close")}><X size={16} strokeWidth={2} /></button>
           </div>
         </div>

@@ -45,6 +45,7 @@ pub mod notif;
 pub mod occlusion;
 pub mod pages;
 pub mod processes;
+pub mod snap;
 pub mod tray_panel;
 pub mod trust;
 pub mod watchdog;
