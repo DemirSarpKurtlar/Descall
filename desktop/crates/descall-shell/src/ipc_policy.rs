@@ -291,7 +291,7 @@ mod tests {
         }
         let overlay = include_str!("../../../app/src-tauri/src/premium/overlay.rs");
         assert!(overlay.contains(".on_navigation(|u| descall_shell::ipc_policy::is_hud_page(u.as_str()))"), "the HUD windows use the exact guard");
-        assert!(overlay.contains(&format!("\"http://{{SCHEME}}.localhost/{{}}\"")) && HUD_HOST == "descallhud.localhost");
+        assert!(overlay.contains("\"http://{SCHEME}.localhost/{}\"") && HUD_HOST == "descallhud.localhost");
     }
 
     /// Every navigation guard compares the whole origin (scheme, host and port), because Tauri's
