@@ -407,6 +407,8 @@ fn publish_content_box<R: Runtime>(w: &WebviewWindow<R>) {
 
 fn visibility<R: Runtime>(w: &WebviewWindow<R>, backgrounded: bool) {
     crate::state::to_main(w.app_handle(), "app:visibility", json!({ "backgrounded": backgrounded }));
+    // Tray / minimized for a while without a call: WebView2 memory target low (webview.rs).
+    crate::webview::update_main_memory(w.app_handle());
 }
 
 /// Same file name as main.cjs (userData/background-notice-shown).

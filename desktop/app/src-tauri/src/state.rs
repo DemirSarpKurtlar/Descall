@@ -30,6 +30,8 @@ pub struct Shell {
     pub minimized: AtomicBool,
     /// A descall:// link from argv (cold start or second launch) the page has not taken yet.
     pub deep_link: Mutex<Option<String>>,
+    /// WebView2 memory target of the main window (webview::update_main_memory).
+    pub memory: Mutex<descall_shell::memory_target::Target>,
 }
 
 #[derive(Default)]
@@ -78,6 +80,7 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         to_main(app, "app:visibility", serde_json::json!({ "backgrounded": false }));
         // main.cjs mainWindow.on('show', publishBox).
         to_main(app, "window:content-box", crate::commands::window::content_box(&w));
+        crate::webview::update_main_memory(app);
     }
 }
 

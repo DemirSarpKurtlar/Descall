@@ -44,6 +44,8 @@ jobs:
         run: node app/shim/shell-notif.test.mjs
       - name: Calls and media rules (no sync command builds a window, one WebView2 environment, media CSP)
         run: node app/shim/media-calls.test.mjs
+      - name: Idle CPU / RAM (timer inventory, tray memory target, no OS thread per tick)
+        run: node app/shim/idle-perf.test.mjs
       - name: Release helpers (key checks, Tauri updater signature, setup manifest signing)
         run: |
           python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install --quiet cryptography

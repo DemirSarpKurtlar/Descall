@@ -102,6 +102,8 @@ pub fn voice_set_busy<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, b
     }
     if shell(&app).voice_busy.swap(busy, Ordering::AcqRel) != busy {
         crate::commands::updates::note_busy(&app);
+        // A call in the tray keeps the page at its normal memory target.
+        crate::webview::update_main_memory(&app);
     }
 }
 
