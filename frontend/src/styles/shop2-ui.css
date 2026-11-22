@@ -5474,6 +5474,18 @@ button.s2-strip:hover {
 .s2-layer.is-sheet .s2-layer-panel.is-tall {
   max-height: 88dvh;
 }
+/* iPhone in landscape: the notch and the rounded corners sit on the left / right edge
+   (safe-area-inset-left/right ~47px). A full-width sheet or full-screen window kept only
+   16px there, so the title, the close button and the buy row ran under the notch. */
+.s2-layer.is-sheet .s2-layer-panel,
+.s2-layer.is-full .s2-layer-panel {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.s2-layer.is-sheet .s2-grab {
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+}
 .s2-layer.is-full {
   padding: 0;
   place-items: stretch;
@@ -6786,6 +6798,12 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
 .s2-layer-panel.s2-side {
   padding: 16px;
   overflow-y: auto;
+}
+/* The item drawer is full height (and full width under 700px, e.g. an iPad split view or a
+   phone in landscape): keep its top row out of the status bar and its buy row above the
+   home indicator. */
+.s2-layer.is-drawer .s2-layer-panel.s2-side {
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) 16px;
 }
 .s2-root.is-embedded .s2-title p {
   margin-top: 0;
