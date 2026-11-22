@@ -394,7 +394,8 @@ pub fn main_navigation<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) -> bool
         use tauri_plugin_opener::OpenerExt;
         let _ = app.opener().open_url(url.as_str(), None::<&str>);
     } else {
-        log::warn!("[nav] not opening will-navigate: {}", url.as_str().chars().take(120).collect::<String>());
+        // Redact before cutting: a token cut in half no longer looks like one.
+        log::warn!("[nav] not opening will-navigate: {}", descall_shell::secrets::redact(url.as_str()).chars().take(120).collect::<String>());
     }
     false
 }

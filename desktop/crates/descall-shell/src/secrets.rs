@@ -183,6 +183,19 @@ mod tests {
         }
     }
 
+    /// A JWT cut in half (a log line shortened to 120 characters) is not recognised any more,
+    /// so callers that shorten redact first (boot::main_navigation).
+    #[test]
+    fn redact_before_cutting() {
+        let url = format!("https://e.example/p/{JWT}/x");
+        let cut_first: String = url.chars().take(50).collect();
+        assert!(!has_jwt(&cut_first), "a cut token no longer matches");
+        let ok: String = redact(&url).chars().take(50).collect();
+        assert!(!ok.contains("eyJ"), "{ok}");
+        let boot = include_str!("../../../app/src-tauri/src/boot.rs");
+        assert!(boot.contains("secrets::redact(url.as_str()).chars().take(120)"), "main_navigation redacts, then cuts");
+    }
+
     #[test]
     fn multi_byte_text_does_not_panic() {
         assert_eq!(redact("çağrı token=ş€crét bitti"), "çağrı token=<redacted> bitti");
