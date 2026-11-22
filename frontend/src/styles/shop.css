@@ -1606,6 +1606,13 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   display: none;
 }
 
+/* Touch screens swipe the strip; an arrow there only covers the first / last chip. */
+@media (hover: none) and (pointer: coarse) {
+  .shop-chip-arrow {
+    display: none;
+  }
+}
+
 html.glass-lite .shop-chip-arrow,
 html.gd-lite .shop-chip-arrow {
   -webkit-backdrop-filter: blur(8px) saturate(120%);
