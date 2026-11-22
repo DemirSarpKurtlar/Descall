@@ -31,7 +31,7 @@ export const SETTINGS_CHECKLIST = Object.freeze({
   global_ptt: ["enabled", "hint", "binding", "releaseDelay", "forceToggle", "?toggleTimeout", "?mode", "elevated"],
   custom_hotkeys: [
     "enabled", "hint", "toggle_mute", "toggle_deafen", "push_to_talk", "quick_launcher", "volume_up", "volume_down",
-    "save", "?saveAnyway", "cancel", "reset", "?failures", "?saved",
+    "save", "?saveAnyway", "cancel", "reset", "?failures", "?clash", "?saved",
   ],
   media_keys: ["enabled", "hint", "playPause", "next", "previous", "stop", "?taken"],
   quick_launcher: ["enabled", "hint", "hotkey", "open", "?clash"],

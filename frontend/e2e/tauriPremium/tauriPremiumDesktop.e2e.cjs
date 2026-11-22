@@ -7,11 +7,12 @@
  *  - quick launcher vs command center: both default to Ctrl+Shift+K. With both on, only one
  *    can hold the global shortcut; both panels now say so (data-s="<key>.clash") instead of one
  *    silently losing it, and the command center panel says when its shortcut could not be
- *    registered for another reason. The defaults themselves are unchanged.
+ *    registered for another reason. The defaults themselves are unchanged;
+ *  - voice / gaming HUD, quick drop and sidebar ask the shell for their windows.
  *
  *   ELECTRON_BUILD=1 npx vite build --outDir /tmp/descall-e2e-dist
  *   node e2e/tauriPremium/tauriPremiumDesktop.e2e.cjs --dist=/tmp/descall-e2e-dist
- *   ONLY=features|clash|taken limits the scenarios.
+ *   ONLY=features|clash|taken|overlays limits the scenarios.
  */
 const { open, premiumCalls, pw } = require('./harness.cjs');
 
@@ -104,6 +105,8 @@ async function clash(browser) {
   check(await ql.count() === 1, 'quick launcher panel shows the clash');
   const qlText = (await ql.count()) ? await ql.innerText() : '';
   check(/Ctrl\+Shift\+K/.test(qlText) && /komuta merkezi/i.test(qlText), `clash names the keys and the command center (${qlText.slice(0, 140)})`);
+  await openCard(page, 'custom_hotkeys');
+  check(await page.locator('[data-s="custom_hotkeys.clash"]').count() === 1, 'custom hotkeys panel shows the clash');
   await goCat(page, 'desktop_tools');
   await openCard(page, 'command_center');
   check(await page.locator('[data-s="command_center.clash"]').count() === 1, 'command center panel shows the clash too');
@@ -115,6 +118,37 @@ async function clash(browser) {
   await page.evaluate(() => window.descallPremium.invoke('premium:settings:set', 'custom_hotkeys', { bindings: { quick_launcher: 'Shift+Control+K' } }));
   await sleep(600);
   check(await page.locator('[data-s="command_center.clash"]').count() === 1, 'Shift+Control+K is the same shortcut as CommandOrControl+Shift+K');
+  check(!page.errors.length, `no page errors (${page.errors.join(' | ')})`);
+  await ctx.close();
+}
+
+async function overlays(browser) {
+  console.log('scenario: HUDs, quick drop and sidebar ask the shell to open their windows');
+  const { ctx, page } = await open(browser, {});
+  const press = async (key, item) => {
+    await openCard(page, key);
+    const el = page.locator(`[data-s="${key}.${item}"]`).first();
+    if (!(await el.count())) { fails.push(`${key}.${item}: control not found`); return []; }
+    const n0 = (await premiumCalls(page)).length;
+    const b = el.locator('[role=switch], button').first();
+    await ((await b.count()) ? b : el).click();
+    await sleep(1200);
+    return (await premiumCalls(page)).slice(n0);
+  };
+  await goCat(page, 'gaming');
+  for (const hud of ['voice_hud', 'gaming_hud']) {
+    const calls = await press(hud, 'on');
+    check(calls.some(([ch, a]) => ch === 'premium:settings:set' && a[0] === hud && a[1].on === true), `${hud}: show -> settings:set { on: true }`);
+    check(calls.some(([ch, a]) => ch === `premium:${hud}:config` && typeof a[0].corner === 'string'), `${hud}: config pushed`);
+    check(calls.some(([ch, a]) => ch === `premium:${hud}:state` && a[0] && typeof a[0].labels === 'object'), `${hud}: state with labels pushed`);
+    check(calls.some(([ch]) => ch === `premium:${hud}:open`), `${hud}: open asked`);
+  }
+  await goCat(page, 'productivity');
+  let calls = await press('quick_file_drop', 'on');
+  check(calls.some(([ch]) => ch === 'premium:quick_file_drop:open'), 'quick_file_drop: show -> premium:quick_file_drop:open');
+  await goCat(page, 'desktop_tools');
+  calls = await press('desktop_sidebar', 'open');
+  check(calls.some(([ch]) => ch === 'premium:sidebar:toggle'), 'desktop_sidebar: open -> premium:sidebar:toggle');
   check(!page.errors.length, `no page errors (${page.errors.join(' | ')})`);
   await ctx.close();
 }
@@ -140,6 +174,7 @@ async function taken(browser) {
     if (!only || only === 'features') await features(browser);
     if (!only || only === 'clash') await clash(browser);
     if (!only || only === 'taken') await taken(browser);
+    if (!only || only === 'overlays') await overlays(browser);
   } finally { await browser.close(); }
   if (fails.length) { console.log('FAIL\n' + fails.map((f) => ' - ' + f).join('\n')); process.exit(1); }
   console.log('desktop features e2e ok');
