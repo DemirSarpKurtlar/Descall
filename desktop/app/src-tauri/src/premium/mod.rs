@@ -387,12 +387,12 @@ impl Host {
         lock(&self.hooks).boot_script.as_ref().and_then(|f| f(&self.app, label))
     }
 
+    /// The shell's own show_main: it also tells the page it is on screen (app:visibility) when
+    /// Windows refuses the focus (a toast or hotkey from another app), so the page does not keep
+    /// its animations paused (html.app-backgrounded: shop cards stuck at opacity 0), and it
+    /// brings the taskbar button back and remembers a request made before the window exists.
     pub fn show_main(&self) {
-        if let Some(w) = self.app.get_webview_window("main") {
-            let _ = w.unminimize();
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
+        crate::state::show_main(&self.app);
     }
 
     // -- blobs (ArrayBuffers across IPC) --

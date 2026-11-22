@@ -342,6 +342,16 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.ok(rule.indexOf("if updater_relaunch") < rule.indexOf("if is_autostart_launch(argv)"), "the fresh marker decides before the login flags");
 }
 
+// Descall+ raises the main window (toast click, quick launcher, command center, account
+// switch) through the shell's show_main, which also sends app:visibility { backgrounded: false }.
+{
+  const premiumRs = readFileSync(join(here, "..", "src-tauri", "src", "premium", "mod.rs"), "utf8");
+  const body = premiumRs.slice(premiumRs.indexOf("pub fn show_main(&self)"));
+  assert.match(body.slice(0, 120), /^pub fn show_main\(&self\) \{\s*crate::state::show_main\(&self\.app\);\s*\}/);
+  const stateRs = readFileSync(join(here, "..", "src-tauri", "src", "state.rs"), "utf8");
+  assert.match(stateRs.slice(stateRs.indexOf("pub fn show_main")), /^[\s\S]{0,900}"app:visibility", serde_json::json!\(\{ "backgrounded": false \}\)/);
+}
+
 // A hung page (WebView2 ProcessFailed kind 2, repeated every few seconds while hung) is
 // reported once and asked about once, 10 s in, with the window on screen (main.cjs
 // 'unresponsive'); the logic is descall_shell::watchdog::HangWatch (Rust tests there).
