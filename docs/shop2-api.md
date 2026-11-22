@@ -87,6 +87,15 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   itemId }, previousOutfitId, actionId }`: wears the owned items in one request (the previous look is
   kept as a `previous` outfit, one profile broadcast); `POST /history/:actionId/undo` restores it.
   Storefront cards of set pieces carry the price `POST /items/:id/buy` charges (the 7-day partial rate).
+- `POST /look { look: { category: itemId|null }, source?: "inventory"|"revert"|"random"|"palette",
+  themeEngine? }` (addition, inventory "Uygula" / "Geri dön") -> `{ ok, applied, before, actionId,
+  previousOutfitId, unchanged? }`: only the slots that change are written (null takes a slot off),
+  owned items only, each into its own slot; one undoable `look_apply` action (payload `{ applied,
+  before, source }`), several slots also keep a `previous` outfit. 409 `look_not_owned` when nothing
+  could be worn. `POST /api/shop/equip` logs a `look_apply` with `source: "single"` too.
+- `GET /equip-history?limit=` (addition, "Kuşanma geçmişi") -> `{ total, days: 7, entries: [{ id, at,
+  kind, source, outfitId, outfitName, changes: [{ category, from, to }], undoneAt }], items: { id:
+  publicItem } }`: equip-type actions (`look_apply`, `equip`, `outfit_apply`) of the last 7 days.
 - `GET /purchases` (addition) -> `{ purchases: [{ id, kind, setKey, itemIds, amount, listAmount,
   status, source, createdAt, refundableUntil }] }`.
 - `POST /purchases/:id/refund` -> `{ ok, purchaseId, refunded, balance }`. 10 minutes, nothing from it
@@ -143,7 +152,8 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 - `GET /outfits` -> `{ outfits: [{ id, name, kind: "saved"|"previous", look: { category: itemId },
   createdAt }] }` · `POST /outfits { name, look?, kind? }` (current look when omitted; `kind:
   "previous"` = the automatic unnamed look kept before "Hepsini kuşan", newest 5) · `POST /outfits/:id/apply`
-  · `DELETE /outfits/:id` (additions: apply, delete).
+  · `DELETE /outfits/:id` · `PATCH /outfits/:id { name?, pinned?: boolean }` (additions: apply, delete,
+  rename / pin; renaming the automatic look keeps it as a named one). Outfits carry `pinned`.
 - `GET /wishlist` -> `{ items: [{ item, addedAt, owned, available, inStorefrontToday }], sets: [{ setKey,
   addedAt }] }` · `POST /wishlist { itemId | setKey, remove?: true }` · `DELETE /wishlist/:itemId`.
 - `POST /share { itemId | setKey, toUserIds: [id] (1-10), message? }` ("Arkadaşlarına göster") ->
@@ -259,7 +269,7 @@ Destructive actions require `reason` (>= 3 chars, 400 `reason_required`). Audite
 `not_found`, `not_available`, `not_in_storefront`, `sold_out`, `already_owned`, `price_changed`, `insufficient_balance`,
 `wallet_frozen`, `refresh_used`, `lock_not_in_storefront`, `lock_disabled`, `hold_token_required`,
 `new_account_set`, `already_refunded`, `refund_gift`, `refund_window_closed`, `refund_equipped`,
-`refund_not_purchase`, `outfit_limit`, `outfit_name_required`, `item_required`, `wishlist_full`,
+`refund_not_purchase`, `outfit_limit`, `outfit_name_required`, `look_not_owned`, `item_required`, `wishlist_full`,
 `night_closed`, `night_not_eligible`, `card_not_found`, `card_flipped`, `no_flips_left`,
 `card_not_flipped`, `keep_limit`, `card_bought`, `recipient_owns`, `gifts_paused`, `gift_self`,
 `gift_new_account`, `gift_new_account_set`, `gift_daily_cap`, `gift_recipient_cap`, `gift_receive_cap`,

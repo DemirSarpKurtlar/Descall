@@ -193,6 +193,22 @@ router.post(
   }, { kind: "write" })
 );
 
+/**
+ * Inventory "Uygula": several slots in one request ({ look: { category: itemId|null } }, null
+ * takes the slot off). Owned items only, each into its own slot; one undoable action.
+ */
+router.post(
+  "/look",
+  handle(async (req) => {
+    const b = req.body || {};
+    const r = await require("../lib/shop2/looks").apply(req.user.id, b.look, { source: typeof b.source === "string" ? b.source : "inventory", themeEngine: typeof b.themeEngine === "string" ? b.themeEngine : null, io: io(req) });
+    return { ok: true, ...r };
+  }, { kind: "write" })
+);
+
+/** "Kuşanma geçmişi": equip changes of the last 7 days with per-slot from / to. */
+router.get("/equip-history", handle(async (req) => require("../lib/shop2/looks").history(req.user.id, { limit: Number(req.query.limit) || 20, base: base(req) })));
+
 router.get(
   "/purchases",
   handle(async (req) => ({
@@ -312,6 +328,15 @@ router.post("/history/:id/undo", handle(async (req) => ({ ok: true, ...(await hi
 router.get("/outfits", handle(async (req) => ({ outfits: (await outfits.list(req.user.id)).map(outfits.publicOutfit) })));
 router.post("/outfits", handle(async (req) => ({ ok: true, outfit: outfits.publicOutfit(await outfits.save(req.user.id, { name: req.body?.name, look: req.body?.look || null, kind: req.body?.kind === "previous" ? "previous" : "saved" })) }), { kind: "write" }));
 router.post("/outfits/:id/apply", handle(async (req) => ({ ok: true, ...(await outfits.apply(req.user.id, String(req.params.id), { io: io(req) })) }), { kind: "write" }));
+/** Rename ({ name }) and / or pin ({ pinned: boolean }) a saved look. */
+router.patch(
+  "/outfits/:id",
+  handle(async (req) => {
+    const b = req.body || {};
+    if (b.name === undefined && b.pinned === undefined) return Promise.reject(Object.assign(new Error("bad_request"), { code: "bad_request", status: 400 }));
+    return { ok: true, outfit: outfits.publicOutfit(await require("../lib/shop2/looks").update(req.user.id, String(req.params.id), { name: b.name, pinned: b.pinned })) };
+  }, { kind: "write" })
+);
 router.delete("/outfits/:id", handle(async (req) => outfits.remove(req.user.id, String(req.params.id)), { kind: "write" }));
 
 /* ---------------------------------------------------------------- wishlist */

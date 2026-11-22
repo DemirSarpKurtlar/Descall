@@ -18,7 +18,7 @@ const MAX_PREVIOUS = 5;
 const MAX_WISHLIST = 200;
 
 function publicOutfit(r) {
-  return { id: r.id, name: r.name || null, kind: r.kind || "saved", look: r.look || {}, createdAt: r.created_at };
+  return { id: r.id, name: r.name || null, kind: r.kind || "saved", look: r.look || {}, createdAt: r.created_at, pinned: require("./looks").pinnedOf(r) };
 }
 
 async function list(userId) {
