@@ -721,8 +721,10 @@ pub async fn premium_invoke(webview: Webview, channel: String, args: Vec<Value>)
 }
 
 /// Raw bytes in (an ArrayBuffer argument); returns a `{ __blob }` placeholder for the next call.
+/// Async, so the copy of up to 100 MB (a file dropped on the drop zone) happens off the UI
+/// thread, which runs every Descall window: a sync command froze them all while it copied.
 #[tauri::command]
-pub fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
+pub async fn premium_blob_put(webview: Webview, request: tauri::ipc::Request<'_>) -> Result<Value, String> {
     let h = host().ok_or("premium host not ready")?;
     let label = webview.label();
     if h.caller_for(label).is_none() && !overlay::is_overlay(label) {

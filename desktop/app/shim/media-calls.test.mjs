@@ -158,9 +158,9 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
 
 // ---- 1b. no sync command does slow, blocking work ---------------------------------------------
 // Sync commands run on the UI thread (the one event loop of every Descall window): a clipboard
-// screenshot read + PNG encode (tens of MB of RGBA), a sleep, a channel wait, a network call or a
-// PIN hash there freezes every window until it returns. Such commands are async and move the
-// work to the blocking pool. (Small state / settings file writes are fine.)
+// screenshot read + PNG encode (tens of MB of RGBA), a copy of a raw request body, a sleep, a channel
+// wait, a network call or a PIN hash there freezes every window until it returns. Such commands
+// are async and move the work to the blocking pool. (Small state / settings file writes are fine.)
 {
   const slow = {
     "clipboard image read / PNG encode": /\.read_image\(|\bencode_png\(/,
@@ -169,6 +169,7 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
     "network": /\breqwest::/,
     "PIN hash (scrypt)": /\bscrypt::|\bhash_pin\(|\bverify_pin\(/,
     "block_on": /\bblock_on\(/,
+    "raw IPC body copy (up to 100 MB)": /\bInvokeBody::Raw\b/,
   };
   const bad = [];
   for (const [what, re] of Object.entries(slow)) {
