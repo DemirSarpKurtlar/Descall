@@ -68,4 +68,52 @@ mod tests {
         // compares the remote list without it.
         assert!(electron_const("SCRIPT_REMOTE").split_whitespace().all(|s| s != "'unsafe-eval'"));
     }
+
+    /// Every window has a CSP: app pages (main, admin, pop-outs, account windows, launcher,
+    /// tray panel) get tauri.conf.json's; the call / sidebar portals are about:blank documents
+    /// of the main page and inherit it; the shell pages and the HUD send their own header.
+    #[test]
+    fn every_window_has_a_csp() {
+        let conf: serde_json::Value = serde_json::from_str(TAURI_CONF).unwrap();
+        let csp = &conf["app"]["security"]["csp"];
+        assert!(csp.is_object(), "app CSP on");
+        assert_eq!(csp["object-src"], "'none'");
+        assert_eq!(csp["base-uri"], "'self'");
+        assert_eq!(csp["default-src"], "'self'", "frames and anything unlisted: the app origin only");
+        for (directive, v) in csp.as_object().unwrap() {
+            for src in sources(v.as_str().unwrap_or_default()) {
+                assert!(src != "*" && src != "http:" && src != "https:" && src != "file:", "{directive} allows {src}");
+            }
+        }
+        assert!(conf["app"]["security"].get("dangerousRemoteDomainIpcAccess").is_none());
+        assert!(conf["app"]["security"].get("assetProtocol").is_none_or(|a| a["enable"] != true), "no asset protocol file access");
+        for (name, header) in [("shell pages", crate::pages::CSP), ("HUD", include_str!("../../../app/src-tauri/src/premium/overlay.rs"))] {
+            assert!(header.contains("default-src 'none'"), "{name}");
+        }
+        let main = include_str!("../../../app/src-tauri/src/main.rs");
+        assert!(main.contains(".header(\"Content-Security-Policy\", descall_shell::pages::CSP)"), "the shell scheme sends its CSP");
+        assert!(!crate::pages::CSP.contains("'unsafe-eval'"));
+    }
+
+    /// Updates are minisign-verified over https. The committed config carries a placeholder
+    /// key (the updater stays off: commands/updates.rs configured()), the release workflow
+    /// puts the committed desktop/keys/tauri-updater.pub in at build time.
+    #[test]
+    fn updater_is_signed_and_https() {
+        let conf: serde_json::Value = serde_json::from_str(TAURI_CONF).unwrap();
+        let up = &conf["plugins"]["updater"];
+        let endpoints = up["endpoints"].as_array().expect("endpoints");
+        assert!(!endpoints.is_empty());
+        for e in endpoints {
+            assert!(e.as_str().unwrap().starts_with("https://"), "{e}");
+        }
+        assert!(up.get("dangerousInsecureTransportProtocol").is_none_or(|v| v != true));
+        assert!(up.get("dangerousAcceptInvalidCerts").is_none_or(|v| v != true));
+        let key = up["pubkey"].as_str().unwrap_or_default();
+        let updates = include_str!("../../../app/src-tauri/src/commands/updates.rs");
+        assert!(key.starts_with("REPLACE") && updates.contains("!key.is_empty() && !key.starts_with(\"REPLACE\")"), "placeholder key keeps the updater off");
+        let wf = include_str!("../../../../.github/workflows/tauri-release.yml");
+        assert!(wf.contains("updater = @{ pubkey = $env:UPDATER_PUB }") && wf.contains("desktop/keys/tauri-updater.pub"));
+        assert!(!updates.contains("version_comparator"), "no custom comparator (downgrades stay refused)");
+    }
 }
