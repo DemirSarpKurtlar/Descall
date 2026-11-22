@@ -492,6 +492,8 @@ export const SHOP2_DE = {
     "saveDraft": "Entwurf speichern",
     "draftSaved": "Entwurf gespeichert",
     "send": "Senden",
+    "pickFriendFirst": "Wähle zuerst einen Freund",
+    "pickFutureTime": "Wähle einen Zeitpunkt in der Zukunft",
     "schedule": "Geschenk planen",
     "sent": "An {name} gesendet",
     "scheduled": "Für {name} geplant",
@@ -585,7 +587,8 @@ export const SHOP2_DE = {
     "undo": "Das ließ sich nicht rückgängig machen.",
     "share": "Teilen geht gerade nicht.",
     "open": "Das Paket ließ sich nicht öffnen.",
-    "thank": "Der Dank konnte nicht gesendet werden."
+    "thank": "Der Dank konnte nicht gesendet werden.",
+    "equip": "Ausrüsten hat nicht geklappt. Versuch es noch einmal."
   },
   "look": {
     "newSet": "Neuer Look · Set",
@@ -599,6 +602,7 @@ export const SHOP2_DE = {
     "body": "Dein neuer Look geht als Karte im Chat an die gewählten Freunde.",
     "note": "Notiz",
     "notePh": "Notiz hinzufügen (optional)",
+    "loading": "Deine Freunde werden geladen…",
     "send": "Senden",
     "chosen": "{n} / {max} gewählt",
     "sent": "An {n} von {total} gesendet",

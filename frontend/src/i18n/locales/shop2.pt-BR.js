@@ -492,6 +492,8 @@ export const SHOP2_PT_BR = {
     "saveDraft": "Salvar rascunho",
     "draftSaved": "Rascunho salvo",
     "send": "Enviar",
+    "pickFriendFirst": "Escolha um amigo primeiro",
+    "pickFutureTime": "Escolha um horário no futuro",
     "schedule": "Agendar presente",
     "sent": "Enviado para {name}",
     "scheduled": "Agendado para {name}",
@@ -585,7 +587,8 @@ export const SHOP2_PT_BR = {
     "undo": "Não foi possível desfazer.",
     "share": "Não dá para compartilhar agora.",
     "open": "Não foi possível abrir o pacote.",
-    "thank": "Não foi possível enviar o agradecimento."
+    "thank": "Não foi possível enviar o agradecimento.",
+    "equip": "Não foi possível trocar o que você está usando. Tente de novo."
   },
   "look": {
     "newSet": "Visual novo · set",
@@ -599,6 +602,7 @@ export const SHOP2_PT_BR = {
     "body": "Seu visual novo vai como cartão no chat para os amigos escolhidos.",
     "note": "Nota",
     "notePh": "Adicione uma nota (opcional)",
+    "loading": "Carregando seus amigos…",
     "send": "Enviar",
     "chosen": "{n} / {max} escolhidos",
     "sent": "Enviado para {n} de {total}",

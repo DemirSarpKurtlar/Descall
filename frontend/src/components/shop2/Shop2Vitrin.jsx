@@ -7,12 +7,15 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import { SET_PIECE_ORDER, lastDays, refreshPlan, setPricing, setProgress, undoLeft, mmss, countdownParts } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
+import { keyStep, wrapIndex } from "../../lib/shop2Swipe.js";
+import { useShop2Swipe } from "../../hooks/useShop2Swipe.js";
 import { Chip, Coin, Layer, Num, Price, RollingClock, Seg, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import { ItemDetail, SetQuickPanel, useAgo } from "./Shop2Detail.jsx";
 import {
   AlertTriangle,
   Cart,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Gift,
@@ -279,39 +282,68 @@ export function setGradient(palette = []) {
 }
 
 // ---------------------------------------------------------------------------
-// Featured set banner (A), auto-advances every 8 s, pauses on hover.
+// Featured set banner (A), auto-advances every 8 s; pauses on hover, focus and touch, and
+// restarts the 8 s after a manual change. Switch sets by swipe (touch), the prev / next
+// buttons, the dots, the "Siradaki" chip, or Left / Right / Home / End while focused.
 
 function SetBanner({ sets }) {
   const { t } = useLocale();
   const s2 = useS2();
   const [i, setI] = useState(0);
   const [hover, setHover] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [dir, setDir] = useState(1);
   const now = useNow(true, 30000);
   const list = sets.slice(0, 3);
-  const cur = list[i % Math.max(1, list.length)];
-  const next = list[(i + 1) % Math.max(1, list.length)];
+  const n = list.length;
+  const at = i % Math.max(1, n);
+  const cur = list[at];
+  const next = list[(at + 1) % Math.max(1, n)];
   const detail = cur ? s2.data.setDetails[cur.key] : null;
   const { loadSet } = s2.actions;
+  const go = (d) => {
+    if (n < 2) return;
+    setDir(d < 0 ? -1 : 1);
+    setI((x) => wrapIndex(x % n, d, n));
+  };
+  const pick = (k) => {
+    if (k === at) return;
+    setDir(k < at ? -1 : 1);
+    setI(k);
+  };
+  const swipe = useShop2Swipe(go);
   useEffect(() => {
     for (const s of list) if (!s2.data.setDetails[s.key]) loadSet(s.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.map((s) => s.key).join(",")]);
   useEffect(() => {
-    if (hover || list.length < 2) return undefined;
-    const id = setInterval(() => setI((x) => (x + 1) % list.length), 8000);
-    return () => clearInterval(id);
-  }, [hover, list.length]);
+    if (hover || focused || n < 2) return undefined;
+    const id = setTimeout(() => { setDir(1); setI((x) => (x + 1) % n); }, 8000);
+    return () => clearTimeout(id);
+  }, [hover, focused, n, i]);
   if (!cur) return null;
   const pricing = detail ? setPricing(detail) : null;
   const left = cur.endsAt ? countdownParts(cur.endsAt, now) : null;
   const pieces = detail?.pieces || [];
+  const onKeyDown = (e) => {
+    if (e.target?.closest?.("input, textarea, select")) return;
+    const k = keyStep(e.key, at, n);
+    if (k == null || n < 2) return;
+    e.preventDefault();
+    pick(k);
+  };
   return (
     <section
-      className="s2-banner"
+      className={`s2-banner${dir < 0 ? " is-back" : ""}`}
       style={{ "--set-bg": setGradient(cur.palette), "--set-accent": cur.palette?.[2] || "#587af5" }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false); }}
+      onKeyDown={onKeyDown}
+      {...swipe}
       aria-roledescription={t("shop2.banner.carousel")}
+      aria-label={s2.setName(cur)}
     >
       <div className="s2-banner-slots" key={cur.key}>
         {(pieces.length ? pieces : Array.from({ length: SET_PIECE_ORDER.length }, () => null)).slice(0, SET_PIECE_ORDER.length).map((p, k) => (
@@ -323,9 +355,15 @@ function SetBanner({ sets }) {
       </div>
       <div className="s2-banner-text" key={`t-${cur.key}`}>
         <div className="s2-banner-chips">
-          <Chip tone="violet" icon={Star}>{t("shop2.banner.featured", { i: (i % list.length) + 1, n: list.length })}</Chip>
+          <Chip tone="violet" icon={Star}>{t("shop2.banner.featured", { i: at + 1, n })}</Chip>
           {left && !left.done ? <Chip icon={Clock}>{t("shop2.banner.left", { d: Math.floor(left.h / 24), h: left.h % 24 })}</Chip> : null}
-          {next && next.key !== cur.key ? <Chip><span className="s2-dotc" style={{ background: next.palette?.[2] }} />{t("shop2.banner.next", { name: s2.setName(next) })}</Chip> : null}
+          {next && next.key !== cur.key ? (
+            <button type="button" className="s2-chip is-muted s2-banner-next" onClick={() => go(1)}>
+              <span className="s2-dotc" style={{ background: next.palette?.[2] }} />
+              <span className="s2-banner-next-name">{t("shop2.banner.next", { name: s2.setName(next) })}</span>
+              <ChevronRight size={12} />
+            </button>
+          ) : null}
         </div>
         <h2>{s2.setName(cur)}</h2>
         <p className="s2-muted">{cur.tagline ? s2.itemName({ name: cur.tagline }) : t("shop2.banner.desc")}</p>
@@ -349,11 +387,17 @@ function SetBanner({ sets }) {
           <button type="button" className="s2-btn is-primary" onClick={() => s2.openSet(cur.key)}>{t("shop2.banner.inspect")}<ChevronRight size={15} /></button>
           <button type="button" className="s2-btn" onClick={() => s2.openGift({ setKey: cur.key })}><Gift size={15} />{t("shop2.gifts.giftIt")}</button>
           <button type="button" className="s2-btn is-ghost" onClick={() => s2.openSet(cur.key)}><Shirt size={15} />{t("shop2.banner.tryOn")}</button>
-          <span className="s2-dots" role="tablist">
-            {list.map((s, k) => (
-              <button key={s.key} type="button" role="tab" aria-selected={k === i % list.length} aria-label={s2.setName(s)} className={k === i % list.length ? "is-on" : ""} onClick={() => setI(k)} />
-            ))}
-          </span>
+          {n > 1 ? (
+            <span className="s2-banner-nav">
+              <button type="button" className="s2-ibtn is-sm s2-banner-step is-prev" onClick={() => go(-1)} aria-label={t("Previous")}><ChevronLeft size={16} /></button>
+              <span className="s2-dots" role="tablist" aria-label={t("shop2.banner.carousel")}>
+                {list.map((s, k) => (
+                  <button key={s.key} type="button" role="tab" aria-selected={k === at} aria-label={s2.setName(s)} title={s2.setName(s)} className={k === at ? "is-on" : ""} style={{ "--dot": s.palette?.[2] }} onClick={() => pick(k)} />
+                ))}
+              </span>
+              <button type="button" className="s2-ibtn is-sm s2-banner-step is-next" onClick={() => go(1)} aria-label={t("Next")}><ChevronRight size={16} /></button>
+            </span>
+          ) : null}
         </div>
       </div>
     </section>

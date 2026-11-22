@@ -30,9 +30,13 @@ import Shop2Checkout from ${J("components/shop2/Shop2Checkout.jsx")};
 import Shop2Market from ${J("components/shop2/Shop2Market.jsx")};
 import LookCardFromText from ${J("components/shop2/LookCard.jsx")};
 import Shop2Share from ${J("components/shop2/Shop2Share.jsx")};
+import { ItemDetail, SetQuickPanel } from ${J("components/shop2/Shop2Detail.jsx")};
+import Shop2Search from ${J("components/shop2/Shop2Search.jsx")};
+import ShopItemThumb from ${J("components/shop/ShopItemThumb.jsx")};
+import { firstChannels } from ${J("components/shop2/Shop2Stage.jsx")};
 import * as L from ${J("lib/shop2Logic.js")};
-export { L };
-const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout };
+export { L, firstChannels };
+const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout, detail: ItemDetail, setq: SetQuickPanel, search: Shop2Search, thumb: ShopItemThumb };
 export function render(name, ctx, props = {}) {
   return renderToString(h(LocaleProvider, { meLanguage: "tr" }, h(Shop2Ctx.Provider, { value: ctx }, h(C[name], props))));
 }
@@ -173,6 +177,9 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal((deliverySeg.match(/role="tab"/g) || []).length, 2, `${layout} gifts: two delivery choices`);
   has(deliverySeg, "shop2.gifts.now", `${layout} gifts: now`);
   has(deliverySeg, "shop2.gifts.pickTime", `${layout} gifts: at a time`);
+  // The friend's view is a real phone (status bar, Dynamic Island, home indicator) and
+  // "Gonder" off with no friend chosen says why.
+  for (const x of ["s2-gphone-screen", "s2-gphone-island", "s2-gphone-status", "s2-gphone-home", "s2-gnotif", "s2-gopen", "shop2.gifts.pickFriendFirst"]) has(g, x, `${layout} gifts ${x}`);
   for (const x of ["shop2.gifts.onBirthday", "shop2.gifts.filter.birthday", "shop2.gifts.bday", "s2-friend-bday"]) assert.ok(!g.includes(x), `${layout} gifts: no birthday ${x}`);
   const inv = m.render("inv", c);
   has(inv, "Aurora", "retired item listed");
@@ -181,6 +188,9 @@ for (const layout of ["desktop", "phone"]) {
   const co = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
   has(co, "s2-hold", "hold-to-confirm");
   has(co, "Fener Halkası");
+  // Short of DesCoin: the balance line is not shown going negative ("5.120 -> -1.000").
+  const poor = m.render("checkout", { ...c, balance: 10 }, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
+  assert.ok(!/→ <\/span>(<!-- -->)?-/.test(poor) && !/>-\d/.test(poor.split("shop2.checkout.balance")[1]?.slice(0, 400) || ""), `${layout} checkout: no negative balance after`);
   const done = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", phase: "done", result: { purchaseId: "p1", paid: 2870, balance: 2250, refundableUntil: new Date(NOW + 600e3).toISOString() } }, onClose: noop });
   for (const x of ["s2-cele", "s2-parts", "s2-cele-slots", "is-glow"]) has(done, x, `${layout} celebration ${x}`);
 }
@@ -192,6 +202,57 @@ for (const layout of ["desktop", "phone"]) {
   assert.equal(m.render("look", c, { text: "https://descall.com/settings" }), "", "no card without a look link");
   const sh = m.render("share", { ...c, openShare: noop }, { target: { setKey: "gece-limani" }, onClose: noop });
   has(sh, "s2-share", "share sheet");
+  has(sh, "s2-skeleton", "share sheet shows loading rows, not 'no friends', before the list arrives");
+  assert.ok(!sh.includes("shop2.gifts.noFriends"), "share sheet: no \"no friends\" before the list arrives");
+}
+{
+  // Item sheet: an owned item shows no "balance after" (equipping is free), the equip button
+  // is disabled while that item's equip is in flight; an unowned one shows the balance line.
+  const c = ctx("phone");
+  const owned = { item: set.pieces[2].item, price: 500, owned: true };
+  const d1 = m.render("detail", c, { slot: owned });
+  assert.ok(!d1.includes("shop2.detail.balanceAfter"), "owned item: no balance-after row");
+  has(d1, "shop2.common.equip", "owned item: equip button");
+  const d2 = m.render("detail", { ...c, busyItemId: set.pieces[2].item.id }, { slot: owned });
+  assert.match(d2, /<button[^>]*disabled=""[^>]*aria-busy="true"/, "equip button disabled while busy");
+  const d3 = m.render("detail", c, { slot: storefront.slots[3] });
+  has(d3, "shop2.detail.balanceAfter", "unowned item: balance-after row");
+  // Rarity chip matches the card colours: common is grey (it was blue like "Nadir").
+  const dc = m.render("detail", { ...c, itemLabels: () => ({ category: "banner", rarity: "Yaygın", rarityId: "common" }) }, { slot: storefront.slots[0] });
+  assert.match(dc, /s2-chip is-muted[^"]*">Yaygın/, "common rarity chip is muted");
+  // A stale sheet snapshot (old price 999) reads today's storefront price (620): 5120 -> 4500.
+  const d4 = m.render("detail", c, { slot: { ...storefront.slots[3], price: 999 } });
+  assert.ok(d4.includes("4.500") && !d4.includes("4.121"), "item sheet uses the live storefront price");
+  // Set panel: a complete set offers no 0 D purchase; a set you cannot afford says how much is missing.
+  const full = { ...set, pieces: set.pieces.map((p) => ({ ...p, owned: true })), yourPrice: 0 };
+  const q1 = m.render("setq", { ...c, data: { ...c.data, setDetails: { "gece-limani": full } } }, { setKey: "gece-limani" });
+  has(q1, "shop2.kasa.complete", "complete set: done state");
+  assert.ok(!q1.includes("shop2.buy.buyN"), "complete set: no buy button");
+  const q2 = m.render("setq", { ...c, balance: 100 }, { setKey: "gece-limani" });
+  has(q2, "s2-short", "set panel: short-by when unaffordable");
+  const closed = { ...set, yourPrice: null, setRateClosed: true };
+  const qc = m.render("setq", { ...c, data: { ...c.data, setDetails: { "gece-limani": closed } } }, { setKey: "gece-limani" });
+  has(qc, "shop2.sets.notOnSale", "closed set: not on sale note");
+  assert.ok(!qc.includes("shop2.buy.buyN"), "closed set: no buy button");
+  const q3 = m.render("setq", c, { setKey: "gece-limani" });
+  has(q3, "shop2.buy.buyN", "set panel: buy button when affordable");
+  // 4 suggested pieces p0 p1 p4 p5 = 2100 D singles; the whole set (2870 D) is 770 D more.
+  assert.match(q3, /shop2\.buy\.chosenSub/, "set panel: whole-set hint");
+  // Search with nothing to list renders the empty line.
+  const sr = m.render("search", { ...c, data: { ...c.data, storefront: null, sets: [], wishlist: [] } }, { onClose: noop });
+  has(sr, "s2-results-empty", "search: empty line");
+  // Stage: the chosen voice channel stays in the list when it is not among the first 5.
+  const chans = Array.from({ length: 8 }, (_, i) => ({ id: `c${i}`, name: `k${i}`, type: i === 7 ? "voice" : "text" }));
+  assert.deepEqual(m.firstChannels(chans, chans[7]).map((x) => x.id), ["c0", "c1", "c2", "c3", "c4", "c7"], "stage keeps the voice channel");
+  assert.equal(m.firstChannels(chans, chans[1]).length, 5, "stage: voice already listed");
+}
+{
+  // Aura / call overlay thumbnails of Market 2.0 items ({ tr, en } names) draw the name's first
+  // letter, not "[" from "[object Object]".
+  for (const cat of ["profile_aura", "call_overlay"]) {
+    const th = m.render("thumb", ctx("desktop"), { item: it("x", cat, 300, "Kutup Işığı", { effect_key: "k" }) });
+    assert.ok(/>K</.test(th) && !/>\[</.test(th), `${cat} thumb letter`);
+  }
 }
 const shell = m.renderMarket({ me: { id: "me", username: "d" }, balance: 2940, inventory: [], ownedItemIds: new Set(), allProducts: null });
 has(shell, "s2-root", "market shell renders");

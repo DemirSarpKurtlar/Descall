@@ -1019,6 +1019,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   border-radius: var(--r-md);
   padding: 10px 12px;
   margin: 8px 0 4px;
+  overflow-wrap: anywhere;
 }
 
 .shop-gift-actions {
@@ -1604,6 +1605,13 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
 
 .shop-chip-arrow[hidden] {
   display: none;
+}
+
+/* Touch screens swipe the strip; an arrow there only covers the first / last chip. */
+@media (hover: none) and (pointer: coarse) {
+  .shop-chip-arrow {
+    display: none;
+  }
 }
 
 html.glass-lite .shop-chip-arrow,

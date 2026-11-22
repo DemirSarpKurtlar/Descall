@@ -3,7 +3,7 @@
 // before / after, chat, voice channel, join sound, desktop / phone, dark / light) or the
 // stage in the user's own server, and the kasa (price ladder with owned pieces deducted,
 // singles vs set, price history, title reward, saved outfits, owners, other sets).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import {
@@ -18,6 +18,8 @@ import {
   SHOP2_PARTIAL_DAYS,
 } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
+import { useShop2Swipe } from "../../hooks/useShop2Swipe.js";
+import { keyStep } from "../../lib/shop2Swipe.js";
 import { Chip, HScroller, Layer, Num, Price, Seg, ShortBy, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import Shop2Stage, { StagePicker, useStage } from "./Shop2Stage.jsx";
@@ -37,6 +39,7 @@ import {
   Cart,
   Check,
   ChevronLeft,
+  ChevronRight,
   Clock,
   Crown,
   Eye,
@@ -70,10 +73,20 @@ function SetSwitcher({ sets, active, onPick }) {
   const now = useNow(true, 60000);
   const ends = sets.map((x) => x.endsAt).filter(Boolean).sort()[0];
   const left = ends ? countdownParts(ends, now) : null;
+  // Left / Right / Home / End move between sets (tabs pattern); focus follows the pick.
+  const onKeyDown = (e) => {
+    const at = sets.findIndex((x) => x.key === active);
+    const k = keyStep(e.key, Math.max(0, at), sets.length);
+    if (k == null) return;
+    e.preventDefault();
+    const strip = e.currentTarget;
+    onPick(sets[k].key);
+    requestAnimationFrame(() => strip.querySelectorAll(":scope > [role='tab']")[k]?.focus({ preventScroll: true }));
+  };
   // A real horizontal scroller (16+ sets never fit): wheel, drag, arrows, fades, snap.
   return (
     <div className="s2-switch-row">
-      <HScroller className="s2-switch" wrapClassName="s2-switch-hs" role="tablist" aria-label={t("shop2.sets.switch")} activeKey={active}>
+      <HScroller className="s2-switch" wrapClassName="s2-switch-hs" role="tablist" aria-label={t("shop2.sets.switch")} activeKey={active} onKeyDown={onKeyDown}>
         {sets.map((x) => (
           <button key={x.key} type="button" role="tab" aria-selected={x.key === active} className={x.key === active ? "is-on" : ""} onClick={() => onPick(x.key)} style={{ "--set-accent": x.palette?.[2] }}>
             <span className="s2-switch-art" style={{ background: setGradient(x.palette) }} />
@@ -519,12 +532,13 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
   const s2 = useS2();
   const [focus, setFocus] = useState("all");
   const [device, setDevice] = useState("phone");
-  const touch = useRef(null);
   const idx = sets.findIndex((x) => x.key === set.key);
   const go = (d) => {
     const next = sets[(idx + d + sets.length) % sets.length];
     if (next) onPick(next.key);
   };
+  // Swipe the hero (mostly horizontal moves only, so scrolling the page never changes set).
+  const swipe = useShop2Swipe(go);
   const prog = setProgress(set);
   const banner = set.pieces.find((p) => p.item.category === "banner")?.item;
   const art = banner?.preview_url || banner?.asset_url;
@@ -552,14 +566,14 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
       <div
         className="s2-pset-hero"
         style={{ "--set-bg": setGradient(set.palette), ...(art ? { "--set-art": `url("${String(art).replace(/"/g, "%22")}")` } : {}) }}
-        onTouchStart={(e) => { touch.current = e.touches[0].clientX; }}
-        onTouchEnd={(e) => {
-          if (touch.current == null) return;
-          const dx = e.changedTouches[0].clientX - touch.current;
-          touch.current = null;
-          if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
-        }}
+        {...swipe}
       >
+        {sets.length > 1 ? (
+          <>
+            <button type="button" className="s2-ibtn s2-pset-nav is-prev" onClick={() => go(-1)} aria-label={t("Previous")}><ChevronLeft size={18} /></button>
+            <button type="button" className="s2-ibtn s2-pset-nav is-next" onClick={() => go(1)} aria-label={t("Next")}><ChevronRight size={18} /></button>
+          </>
+        ) : null}
         <div className="s2-hero-chips">
           <Chip>{t("shop2.sets.discount", { n: pricing.discountPct })}</Chip>
           {left && !left.done ? <Chip icon={Clock}>{t("shop2.sets.daysHours", { d: Math.floor(left.h / 24), h: left.h % 24 })}</Chip> : null}
