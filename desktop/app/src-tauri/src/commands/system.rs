@@ -64,12 +64,16 @@ pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> b
 }
 
 /// clipboard:read-image: PNG bytes (raw IPC body, no base64), empty when there is none.
+/// Async, read and encoded on the blocking pool: a sync command runs on the UI thread, and a
+/// 4K screenshot (33 MB of RGBA) froze every window while it was converted and encoded.
 #[tauri::command]
-pub fn clipboard_read_image<R: Runtime>(app: AppHandle<R>) -> tauri::ipc::Response {
-    let bytes = match app.clipboard().read_image() {
+pub async fn clipboard_read_image<R: Runtime>(app: AppHandle<R>) -> tauri::ipc::Response {
+    let bytes = tauri::async_runtime::spawn_blocking(move || match app.clipboard().read_image() {
         Ok(img) => clipboard::encode_png(img.width(), img.height(), img.rgba()),
         Err(_) => Vec::new(),
-    };
+    })
+    .await
+    .unwrap_or_default();
     tauri::ipc::Response::new(bytes)
 }
 
