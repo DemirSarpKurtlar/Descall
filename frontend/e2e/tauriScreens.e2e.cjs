@@ -514,7 +514,16 @@ async function main() {
     await openDm();
     await screen('dm', { open: async (click) => { await click('.dm-item.active'); }, marker: '.message-bubble', close: async () => {} });
     await screen('emoji-picker', { open: (click) => click('.composer-action-btn[aria-label="Emoji"]'), marker: 'text:Emojiler' });
-    await screen('attach-menu', { open: (click) => click('.composer-action-btn[aria-label="Ek Ekle"]'), marker: '.attachment-item' });
+    await screen('attach-menu', {
+      open: (click) => click('.composer-action-btn[aria-label="Ek Ekle"]'),
+      marker: '.attachment-item',
+      close: async () => {
+        await escape();
+        for (let i = 0; i < 8 && await has('.attachment-item'); i++) await sleep(150); // exit animation
+        if (await has('.attachment-item')) await realClick('.composer-action-btn[aria-label="Ek Ekle"]').catch(() => {});
+        for (let i = 0; i < 8 && await has('.attachment-item'); i++) await sleep(150);
+      },
+    });
     await screen('gif-picker', {
       open: async (click) => { await click('.composer-action-btn[aria-label="Ek Ekle"]'); await sleep(300); await click('.attachment-item:nth-child(3)'); },
       marker: 'input[placeholder*="GIF"], .gif-picker, [class*="gif-"]',
@@ -695,8 +704,13 @@ async function main() {
           await sleep(500);
           await scriptClick('.s2-tabs [role=tab]:nth-child(1)');
           await waitFor('market cards', () => document.querySelectorAll('.s2-body .s2-card').length > 0);
-          await sleep(1200);
-          const p = await page.evaluate(() => { const els = [...document.querySelectorAll('.s2-body .s2-card, .s2-tiles .s2-tile')]; return { n: els.length, v: els.filter((n) => Number(getComputedStyle(n).opacity) > 0.9).length }; });
+          // Staggered entrances (up to ~1 s): poll, a loaded CI runner is slow.
+          let p = { n: 0, v: 0 };
+          for (let i = 0; i < 30; i++) {
+            await sleep(200);
+            p = await page.evaluate(() => { const els = [...document.querySelectorAll('.s2-body .s2-card, .s2-tiles .s2-tile')]; return { n: els.length, v: els.filter((n) => Number(getComputedStyle(n).opacity) > 0.9).length }; });
+            if (p.n && p.v === p.n) break;
+          }
           const found = await page.evaluate(audit);
           await shot(`shop-tabs_${mode}`);
           if (p.v !== p.n || found.length) problems.push(`shop-tabs[${mode}]: ${p.v}/${p.n} cards painted ${found.slice(0, 4).join(' | ')}`);
