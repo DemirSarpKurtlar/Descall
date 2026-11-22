@@ -272,6 +272,19 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.match(body, /hinted = true;\s*(?:\/\/[^\n]*\n\s*)*clearInterval\(s\.hintTimer\);\s*s\.hintTimer = null;/, "polling stops once the hint was shown");
 }
 
+// ---- a stop for an ended session never ends the next share (Tauri runs async commands
+// concurrently: quality change = stop + start, the late stop ended the new share).
+{
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  const end = ns.slice(ns.indexOf("    end(reason, fromHost) {"), ns.indexOf("function decorate("));
+  assert.match(end, /invoke\("screen_share_stop", \{ id: this\.id \}\)/, "Session.end stops its own share only");
+  const screen = stripRust(readFileSync(join(srcRoot, "commands", "screen.rs"), "utf8"));
+  assert.match(screen, /pub async fn screen_share_stop<R: Runtime>\(app: AppHandle<R>, id: Option<u32>\)/, "command takes the id");
+  assert.match(screen, /h\.stop_id\(id,/, "host stops that id only");
+  const host = readFileSync(join(here, "..", "..", "crates", "descall-capture", "src", "host.rs"), "utf8");
+  assert.match(host, /pub fn stop_id\(&self, id: u32, reason: &str\) -> bool \{\s*stop_slot\(&self\.active, Some\(id\), reason\)/, "stop_slot with only_id");
+}
+
 // ---- screen share notices speak the app's 7 languages (were Turkish or English only) ----------
 {
   const { createRequire } = await import("node:module");

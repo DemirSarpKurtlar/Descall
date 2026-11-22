@@ -71,7 +71,7 @@ const fakeTauri = `(() => {
       window.__share = { id, ring, end: (reason) => { clearInterval(timer); ring.end(); send('descall-share:' + id + ':end:' + reason); } , stop: () => clearInterval(timer) };
       return { id, bytes: ring.buf.byteLength, width: w, height: h, fps: Math.min(r.fps || 30, 60), displaySurface: r.sourceId.startsWith('window') ? 'window' : 'monitor', hdr: false, cursor: true, audio: Boolean(r.audio) && !window.__noLoopback, audioError: window.__noLoopback ? 'loopback unavailable' : null, echoRisk: false, lane: 'L1' };
     }
-    if (cmd === 'screen_share_stop') { if (window.__share) window.__share.stop(); return null; }
+    if (cmd === 'screen_share_stop') { if (window.__share && (!args || args.id == null || args.id === window.__share.id)) window.__share.stop(); return null; }
     if (cmd === 'screen_share_stats') return { blackStreak: 0 };
     return null;
   }

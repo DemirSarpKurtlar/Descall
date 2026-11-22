@@ -426,7 +426,9 @@
       try { this.video && this.video.close(); } catch (_) { /* ignore */ }
       try { this.audio && this.audio.close(); } catch (_) { /* ignore */ }
       try { wv && typeof wv.releaseBuffer === "function" && wv.releaseBuffer(this.buffer); } catch (_) { /* ignore */ }
-      if (!fromHost) invoke("screen_share_stop").catch(() => {});
+      // Scoped to this session: a late stop must not end the next share (quality change =
+      // stop + start, and Tauri runs the two commands concurrently).
+      if (!fromHost) invoke("screen_share_stop", { id: this.id }).catch(() => {});
       // Like a browser share whose surface went away: tracks end and fire "ended", so the
       // page's existing onended handlers stop the share UI (window closed, monitor removed).
       for (const t of this.tracks || []) {
@@ -521,7 +523,7 @@
       if (info.echoRisk) console.warn("[ScreenShare] echo guard: WebView2 audio outside the Descall process tree");
       return new MediaStream(s.tracks);
     } catch (err) {
-      if (s) s.end("failed", false); else invoke("screen_share_stop").catch(() => {});
+      if (s) s.end("failed", false); else invoke("screen_share_stop", { id: info.id }).catch(() => {});
       throw err;
     }
   }
