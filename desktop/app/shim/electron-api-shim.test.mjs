@@ -180,9 +180,11 @@ assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable fl
 // shows the retry card) and check-for-updates answers `available` like Electron.
 {
   const updatesRs = readFileSync(join(here, "..", "src-tauri", "src", "commands", "updates.rs"), "utf8");
-  assert.match(updatesRs, /"update:error", json!\(\{ "message": message, "phase": phase \}\)/);
+  // One payload helper (T1 error_payload) with T6's scrubbed text (error_message).
+  assert.match(updatesRs, /"update:error", error_payload\(&e, phase\)/);
+  assert.match(updatesRs, /fn error_payload\(message: &str, phase: &'static str\) -> Value \{\s*json!\(\{ "message": error_message\(message\), "phase": phase \}\)/);
   assert.match(updatesRs, /map_err\(\|e\| \("download", e\.to_string\(\)\)\)/);
-  assert.match(updatesRs, /"available": available/);
+  assert.match(updatesRs, /Ok\(check_result\(version, ready, v\)\)/);
 }
 const memberCount = Object.keys(electronMain.api).length - 2 + 2 + 3; // -zoom -secureToken objects, +2 zoom, +3 token
 console.log(`electronAPI members checked: ${memberCount}`);
@@ -965,7 +967,7 @@ for (const label of ["popout-1", "acct-42"]) {
   assert.match(bootRs, /WindowEvent::Moved\(_\) => \{\s*publish_content_box\(&win\);\s*save_window_state_soon\(&win\);/, "a drag saves the window state debounced");
   assert.ok(!/WindowEvent::Moved\(_\) => \{[^}]*save_window_state\(&win\)/.test(bootRs), "not on every Moved event");
   const updatesRs = readFileSync(join(src, "commands", "updates.rs"), "utf8");
-  assert.match(updatesRs, /let available = version\.is_some\(\) \|\| ready;[\s\S]{0,200}"available": available/, "check-for-updates answers available");
+  assert.match(updatesRs, /"available": version\.is_some\(\) \|\| ready/, "check-for-updates answers available");
   assert.match(updatesRs, /"phase": phase/, "update:error carries the phase");
   assert.match(updatesRs, /map_err\(\|e\| \("download", e\.to_string\(\)\)\)/, "a failed download is phase download");
   const appRs = readFileSync(join(src, "commands", "app.rs"), "utf8");

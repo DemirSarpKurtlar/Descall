@@ -210,7 +210,11 @@ mod tests {
         assert!(px >= 1920 && px < 1920 + 2560, "x {px}");
         let mid = px as f64 + (placed[0].width + 2.0 * SHADOW_PAD) * s / 2.0;
         assert!((mid - (1920.0 + 1280.0)).abs() <= 2.0, "centre {mid}");
-        assert!((0..1400).contains(&py), "y {py}");
+        // The window's top shadow margin sits above the work area by design (y = margin -
+        // SHADOW_PAD, as stack_top_centre_calls_first_whole_dips checks); the card itself is
+        // inside the monitor.
+        let card_top = py + (SHADOW_PAD * s).round() as i32;
+        assert!((0..1400).contains(&card_top), "card y {card_top} (window y {py})");
         // The left edge of the area is the monitor origin.
         assert_eq!(second.to_physical(second.rect.x, second.rect.y), (1920, 0));
     }

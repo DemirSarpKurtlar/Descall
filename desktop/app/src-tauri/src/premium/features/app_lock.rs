@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
+use tauri::Manager;
 
 use super::Poll;
 use crate::premium::logic::pin::{hash_pin, lockout_ms, valid_pin, verify_pin};

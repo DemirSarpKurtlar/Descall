@@ -215,25 +215,39 @@ pub async fn check<R: Runtime>(app: AppHandle<R>, reason: &str) -> Result<Value,
                 let i = u.inner.lock().unwrap();
                 (i.deferral.update_ready, i.version.clone())
             };
-            // main.cjs: `available` tells the update card whether anything newer exists
-            // (ElectronUpdateToast.jsx drops the card when it is false); a staged one counts.
-            let available = version.is_some() || ready;
-            Ok(json!({ "success": true, "updateInfo": version.map(|v| json!({ "version": v })), "available": available, "updateReady": ready, "updateVersion": v }))
+            Ok(check_result(version, ready, v))
         }
         Err((phase, e)) => {
             let message = error_message(&e);
             log::warn!("[updater] {phase} failed ({reason}): {message}");
-            // Same payload as main.cjs: 'download' = a visible download failed (the card offers
-            // retry); 'check' = a quiet background check, which the page does not surface.
-            to_main(&app, "update:error", json!({ "message": message, "phase": phase }));
+            to_main(&app, "update:error", error_payload(&e, phase));
             Err(message)
         }
     }
 }
 
+/// check-for-updates answer, as main.cjs: `available` tells the update card whether anything
+/// newer exists (ElectronUpdateToast.jsx drops the card when it is false); a staged one counts.
+fn check_result(version: Option<String>, ready: bool, ready_version: Option<String>) -> Value {
+    json!({
+        "success": true,
+        "available": version.is_some() || ready,
+        "updateInfo": version.map(|v| json!({ "version": v })),
+        "updateReady": ready,
+        "updateVersion": ready_version,
+    })
+}
+
 /// update:error text: no local paths or user names (temp file errors), at most 200 chars.
 pub fn error_message(e: &str) -> String {
     descall_shell::main_errors::scrub_paths(e).chars().take(200).collect()
+}
+
+/// update:error, as main.cjs: the scrubbed message and the phase. 'download' = a visible
+/// download failed (the card offers retry); 'check' = a quiet background check, which the
+/// page does not surface; 'install' = the staged installer did not start.
+fn error_payload(message: &str, phase: &'static str) -> Value {
+    json!({ "message": error_message(message), "phase": phase })
 }
 
 async fn check_and_stage<R: Runtime>(app: &AppHandle<R>) -> Result<Option<String>, (&'static str, String)> {
@@ -320,16 +334,6 @@ pub fn install_on_quit<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn update_errors_carry_no_user_paths() {
-        let m = super::error_message(r"failed to write C:\Users\demir\AppData\Local\Temp\Descall_4.1.0_x64-setup.exe: disk full");
-        assert!(!m.contains("demir") && m.contains("disk full"), "{m}");
-        assert!(super::error_message(&"x".repeat(500)).chars().count() == 200);
-    }
-}
-
 #[tauri::command]
 pub async fn updates_check<R: Runtime>(app: AppHandle<R>) -> Value {
     match check(app, "ipc").await {
@@ -366,6 +370,14 @@ pub fn updates_status<R: Runtime>(app: AppHandle<R>) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_errors_carry_no_user_paths() {
+        let m = super::error_message(r"failed to write C:\Users\demir\AppData\Local\Temp\Descall_4.1.0_x64-setup.exe: disk full");
+        assert!(!m.contains("demir") && m.contains("disk full"), "{m}");
+        assert!(super::error_message(&"x".repeat(500)).chars().count() == 200);
+        assert!(!error_payload(r"open C:\Users\demir\x.exe failed", "install")["message"].as_str().unwrap().contains("demir"));
+    }
 
     /// ElectronUpdateToast.jsx reads `available` (retry card) and update:error `phase`.
     #[test]

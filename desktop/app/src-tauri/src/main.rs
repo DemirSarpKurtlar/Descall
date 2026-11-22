@@ -189,7 +189,7 @@ fn main() {
                         commands::updates::reset_voice(&load_app);
                         // The mini call card goes with the call (Electron resetVoiceBusyFromLifecycle);
                         // a stale visible card also kept the update deferral "busy" for good.
-                        commands::overlay::overlay_hide(load_app.clone());
+                        commands::overlay::hide(&load_app);
                         commands::screen::stop_on_navigation(&load_app);
                         errors::detach();
                         boot::arm_paint_watchdog(&w);

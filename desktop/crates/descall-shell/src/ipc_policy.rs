@@ -57,6 +57,10 @@ const ADMIN: &[&str] = &[
     "activity_set_busy",
     "window_minimize",
     "window_toggle_maximize",
+    // Right-click on the title bar: the Windows window menu (T5); F12 with the support
+    // opt-in only (T8, the command checks webview::devtools_allowed).
+    "window_system_menu",
+    "window_toggle_devtools",
     "window_close",
     "window_content_box",
     "window_is_focused",
@@ -384,10 +388,39 @@ mod capability_tests {
         }
     }
 
+    /// The tauri `devtools` feature is on for the support opt-in (T8, webview::devtools_allowed);
+    /// without `.devtools(..)` a builder would default to an open inspector in release. So every
+    /// window builder sets it from the gate, and the gate is off in release without the opt-in.
     #[test]
     fn devtools_stay_off_in_release() {
         let cargo = include_str!("../../../app/src-tauri/Cargo.toml");
         let tauri_line = cargo.lines().find(|l| l.starts_with("tauri =")).expect("tauri dependency");
-        assert!(!tauri_line.contains("devtools"), "the devtools feature would open the inspector in release builds");
+        if !tauri_line.contains("devtools") {
+            return;
+        }
+        for (file, src) in [
+            ("main.rs", include_str!("../../../app/src-tauri/src/main.rs")),
+            ("admin.rs", include_str!("../../../app/src-tauri/src/admin.rs")),
+            ("tray_menu.rs", include_str!("../../../app/src-tauri/src/tray_menu.rs")),
+            ("commands/notify.rs", include_str!("../../../app/src-tauri/src/commands/notify.rs")),
+            ("commands/overlay.rs", include_str!("../../../app/src-tauri/src/commands/overlay.rs")),
+            ("premium/overlay.rs", include_str!("../../../app/src-tauri/src/premium/overlay.rs")),
+            ("premium/wins.rs", include_str!("../../../app/src-tauri/src/premium/wins.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+            ("multi_account.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_account.rs")),
+            ("quick_launcher.rs", include_str!("../../../app/src-tauri/src/premium/features/quick_launcher.rs")),
+        ] {
+            let mut rest = src;
+            while let Some(i) = rest.find("WebviewWindowBuilder::new(") {
+                let chain = &rest[i..];
+                let chain = &chain[..chain.find(".build()").unwrap_or(chain.len())];
+                assert!(chain.contains(".devtools(") && chain.contains("devtools_allowed("), "{file}: a window builder without .devtools(devtools_allowed(..)) opens the inspector in release builds");
+                rest = &rest[i + 1..];
+            }
+        }
+        let gate = include_str!("../../../app/src-tauri/src/webview.rs");
+        assert!(gate.contains("descall_shell::window_keys::devtools_allowed(cfg!(debug_assertions)"), "the gate is the window_keys rule");
+        assert!(!crate::window_keys::devtools_allowed(false, None, |_| true), "release build without a data folder: off");
+        assert!(!crate::window_keys::devtools_allowed(false, Some(std::path::Path::new("C:/data")), |_| false), "release build without the opt-in file: off");
     }
 }

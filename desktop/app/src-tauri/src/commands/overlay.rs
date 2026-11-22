@@ -215,6 +215,13 @@ pub async fn overlay_hide<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R
     if !from_main(&window) {
         return;
     }
+    hide(&app);
+}
+
+/// The card goes with the call: overlay_hide, and a new document in the main window (a reload
+/// drops the call, Electron resetVoiceBusyFromLifecycle).
+pub fn hide<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
     merge(&app, &Value::Null, &[("connected", Value::Bool(false))]);
     let Some((w, _)) = current(&app) else {
         app.state::<Overlay>().live.lock().unwrap().window = None;
