@@ -48,7 +48,7 @@ const electronMain = loadPreload("preload.cjs");
 const electronAdmin = loadPreload("adminPreload.cjs");
 
 // ---- the shim with a fake Tauri bridge -----------------------------------------------------------
-function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null } = {}) {
+function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, consoleImpl = null, label = boot.mode === "admin" ? "admin" : "main", session = null, local = null } = {}) {
   const invokes = [];
   const winListeners = new Map();
   const listeners = new Map();
@@ -83,7 +83,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const ctx = {
     window,
     document: { addEventListener: () => {}, documentElement: { classList: { _s: new Set(), add(c) { this._s.add(c); } } } },
-    localStorage: store(),
+    localStorage: local || store(),
     sessionStorage: session || store(),
     location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
     navigator: {},
@@ -238,6 +238,45 @@ for (const [path, args, cmd, expected] of CASES) {
   deq(s.invokes.map((c) => c[0]), [cmd], `${path} -> ${cmd}`);
   deq(s.invokes[0][1], expected, `${path} args`);
   called.add(cmd);
+}
+
+// One-time Electron localStorage import (boot.rs import_from_electron_once): applied once per
+// import, never again on a reload of the same window, and again for a later migration (the
+// user went back to Electron after a rollback, changed settings, then migrated again).
+{
+  const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
+  const local = mem();
+  const first = { importLocalStorage: { theme: "dark", "descall-sound": "on" }, importId: "mig-1@100" };
+  const a = loadShim({ boot: first, local });
+  assert.equal(local.getItem("theme"), "dark");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-1@100");
+  assert.equal(a.window.__DESCALL_BOOT__.importLocalStorage, undefined, "the import is not left on window");
+  assert.equal(a.window.__DESCALL_BOOT__.importId, undefined);
+  local.setItem("theme", "light"); // changed by the user in this run
+  loadShim({ boot: first, local }); // a reload: the window keeps the same init script
+  assert.equal(local.getItem("theme"), "light", "a reload never applies the same import again");
+  loadShim({ boot: { importLocalStorage: { theme: "midnight" }, importId: "mig-2@900" }, local });
+  assert.equal(local.getItem("theme"), "midnight", "a later migration's import is applied");
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // A profile marked by an earlier shell (timestamp marker) still takes a new import.
+  const old = mem();
+  old.setItem("__descall_import_v1", "1763700000000");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" }, importId: "mig-3@5" }, local: old });
+  assert.equal(old.getItem("theme"), "dark");
+  // Without an id (older shell): applied once, as before.
+  const legacy = mem();
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  legacy.setItem("theme", "light");
+  loadShim({ boot: { importLocalStorage: { theme: "dark" } }, local: legacy });
+  assert.equal(legacy.getItem("theme"), "light");
+  // No import on a normal start: the marker is left alone.
+  loadShim({ boot: { version: "4.1.0" }, local });
+  assert.equal(local.getItem("__descall_import_v1"), "mig-2@900");
+  // The shell sends the id (boot.rs Boot.import_id, ImportMarker::import_id).
+  const bootRs = readFileSync(join(here, "..", "src-tauri", "src", "boot.rs"), "utf8");
+  assert.match(bootRs, /import_id: imported\.map\(\|i\| i\.id\.as_str\(\)\)/);
+  assert.match(bootRs, /Imported \{ local_storage: h\.local_storage\.clone\(\), id: record\.import_id\(\) \}/);
+  assert.match(bootRs, /Imported \{ local_storage, id: import_id \}/, "extra-account windows too");
 }
 
 // Values answered locally (sync in Electron) and return shapes.

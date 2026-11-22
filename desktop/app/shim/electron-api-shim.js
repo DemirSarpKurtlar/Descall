@@ -98,11 +98,18 @@
   };
 
   // One-time Electron import of localStorage (descall://app -> https://tauri.localhost).
+  // The boot script carries it on the import start only, for the whole life of the window: the
+  // marker keeps a reload from writing it over settings changed since. The marker names the
+  // import (BOOT.importId): a later migration (after a rollback the user went on in Electron)
+  // imports again and must not be skipped because an earlier one already ran in this profile.
   try {
     const imp = BOOT.importLocalStorage;
-    if (imp && !localStorage.getItem("__descall_import_v1")) {
+    const IMPORT_KEY = "__descall_import_v1";
+    const id = typeof BOOT.importId === "string" && BOOT.importId ? BOOT.importId : "";
+    const prev = imp ? localStorage.getItem(IMPORT_KEY) : null;
+    if (imp && (id ? prev !== id : prev === null)) {
       for (const [k, v] of Object.entries(imp)) localStorage.setItem(k, v);
-      localStorage.setItem("__descall_import_v1", String(Date.now()));
+      localStorage.setItem(IMPORT_KEY, id || String(Date.now()));
     }
   } catch (_) { /* storage disabled */ }
 
@@ -120,7 +127,7 @@
   // script, after a sign-out, until the next start). Electron's preload never put it on window.
   if ("token" in BOOT || "importLocalStorage" in BOOT) {
     const rest = {};
-    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage") rest[k] = v;
+    for (const [k, v] of Object.entries(BOOT)) if (k !== "token" && k !== "importLocalStorage" && k !== "importId") rest[k] = v;
     try { Object.defineProperty(window, "__DESCALL_BOOT__", { value: Object.freeze(rest), writable: false, configurable: false, enumerable: false }); } catch (_) { /* not configurable */ }
   }
   // Signed out: the Descall+ desktop features (global hotkeys, push-to-talk input, tray
