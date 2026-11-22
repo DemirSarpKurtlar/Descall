@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
 import { isPublicMarketingPath } from "./site/marketingPaths";
-import { isCapacitorNativeShell, isDesktopShell, shouldBootMarketingShell } from "./lib/entryShell";
+import { isCapacitorNativeShell, isDesktopShell, isTauriShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken, hydrateSecureToken } from "./lib/storage";
 import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
@@ -287,7 +287,7 @@ async function bootApp() {
       import("./lib/appVisibility.js").then((m) => {
         m.installAppVisibility(); m.installIdlePause(); m.installPageHiddenPause();
         // Tauri only (lib/appVisibility.js installEntranceRelease): one-shot entrances finish under the pause classes.
-        if (window.electronAPI?.isTauri) m.installEntranceRelease();
+        if (isTauriShell()) m.installEntranceRelease();
       }).catch(() => {}),
       // Cosmetic loops (name effects, frames, shop previews) pause while scrolled out of view.
       import("./lib/cosmeticMotion.js").then((m) => m.installCosmeticMotion()).catch(() => {}),

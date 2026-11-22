@@ -88,5 +88,6 @@ assert.equal((listeners.animationstart || []).length, 0, "cleanup removes the li
 
 // Installed for the Tauri shell only (Electron, web and mobile keep the plain pause).
 const main = readFileSync(new URL("../main.jsx", import.meta.url), "utf8");
-assert.match(main, /if \(window\.electronAPI\?\.isTauri\) m\.installEntranceRelease\(\);/);
+assert.match(main, /if \(isTauriShell\(\)\) m\.installEntranceRelease\(\);/);
+assert.match(main, /import \{[^}]*\bisTauriShell\b[^}]*\} from "\.\/lib\/entryShell";/);
 console.log("appVisibilityEntrance.selftest ok");
