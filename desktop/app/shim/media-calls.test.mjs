@@ -211,7 +211,7 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   const main = stripRust(readFileSync(join(srcRoot, "main.rs"), "utf8"));
   const started = main.slice(main.indexOf("PageLoadEvent::Started"), main.indexOf("PageLoadEvent::Finished"));
   assert.match(started, /reset_voice\(/, "busy flags reset on reload");
-  assert.match(started, /overlay::overlay_hide\(/, "a stale card would stay on top and keep updates deferred");
+  assert.match(started, /overlay::(?:overlay_hide|hide)\(/, "a stale card would stay on top and keep updates deferred");
 }
 
 // ---- 3. CSP for the media pipeline --------------------------------------------------------------
