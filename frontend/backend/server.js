@@ -547,6 +547,8 @@ app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
 // Electron -> Tauri migration: signed plan + readiness/outcome reports (OFF by default).
 app.use("/api/desktop/migration", require("./routes/desktopMigration"));
+// Tauri updater feed: desktop-latest/latest.json with a cache; 204 = up to date, 503 = try GitHub.
+app.use("/api/desktop/tauri", require("./routes/desktopTauriUpdates"));
 app.use("/api/calls", callsRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
