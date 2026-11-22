@@ -70,9 +70,15 @@ fn client() -> Option<reqwest::Client> {
 
 /// POST JSON to the primary with the node key. (status, body); status 0 on a network error.
 pub async fn primary_post(base: &str, path: &str, key: &str, body: &Value) -> (u16, Value) {
+    primary_post_with(base, path, key, body, Duration::from_secs(10)).await
+}
+
+/// Same with its own timeout (the one-off setup call waits longer than the heartbeat). The
+/// body may carry secrets (POST /api/node/bootstrap): callers never log it.
+pub async fn primary_post_with(base: &str, path: &str, key: &str, body: &Value, timeout: Duration) -> (u16, Value) {
     let Some(c) = client() else { return (0, Value::Null) };
     let url = format!("{}{}", base.trim_end_matches('/'), path);
-    match c.post(url).bearer_auth(key).json(body).send().await {
+    match c.post(url).bearer_auth(key).timeout(timeout).json(body).send().await {
         Ok(r) => {
             let st = r.status().as_u16();
             let v = r.json::<Value>().await.unwrap_or(Value::Null);

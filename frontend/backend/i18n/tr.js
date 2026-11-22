@@ -125,6 +125,7 @@ module.exports = {
     nodesKvDown: "Ortak belleğe (Key Value) ulaşılamıyor; tek sunucu moduna geçildi.",
     nodesRender90: "Render belleği %{pct}; PC payını artır ya da yükü kontrol et.",
     nodesTest: "Deneme bildirimi: Sunucu Ağı uyarıları bu cihaza geliyor.",
+    nodesBootstrap: "PC kurulumu: gizli ayarlar alındı. Sen değilsen düğüm anahtarını hemen iptal et.",
     voicePlain: "Sesli mesaj",
     attachmentPlain: "Dosya gönderdi",
     incomingCall: "Gelen arama",

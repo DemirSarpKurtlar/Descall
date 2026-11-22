@@ -126,6 +126,7 @@ module.exports = {
     nodesKvDown: "Gemeinsamer Speicher (Key Value) ist nicht erreichbar; Einzelserver-Modus aktiv.",
     nodesRender90: "Render-Speicher bei {pct} %; PC-Anteil erhöhen oder Last prüfen.",
     nodesTest: "Testbenachrichtigung: Servernetz-Warnungen erreichen dieses Gerät.",
+    nodesBootstrap: "PC-Einrichtung: die geheimen Einstellungen wurden abgerufen. Warst du das nicht, widerrufe sofort den Knotenschlüssel.",
     // Web push + FCM (browser and Android notifications)
     voicePlain: "Sprachnachricht",
     attachmentPlain: "Hat einen Anhang gesendet",

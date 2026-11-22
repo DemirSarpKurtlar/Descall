@@ -57,27 +57,22 @@ fn main() {
         tunnel_ready: true,
     };
 
+    // The short form (primary, key, tunnel, Key Value) plus the environment from the primary.
+    let from_primary: Map<String, Value> = (0..41).map(|i| (format!("VAR_{i:02}"), json!("x"))).chain([("SUPABASE_URL".to_string(), json!("https://abcdefghijkl.supabase.co")), ("SUPABASE_SERVICE_ROLE_KEY".to_string(), json!("x")), ("JWT_SECRET".to_string(), json!("x"))]).collect();
+    let from_primary = Value::Object(from_primary).to_string();
     let all_set = |id: &str| -> Option<String> {
         match id {
             "primaryUrl" => Some("https://des-call.onrender.com".into()),
-            "supabaseUrl" => Some("https://abcdefghijkl.supabase.co".into()),
-            "livekitUrl" => Some("wss://descall.livekit.cloud".into()),
-            "publicUrl" | "redisUrl" => None,
-            "extraEnv" => Some("TOTP_ENC_KEY=x\nMEDIA_URL_SECRET=y\nWEB_PUSH_PRIVATE_KEY=z".into()),
-            _ => Some("set".into()),
-        }
-    };
-    let first_run = |id: &str| -> Option<String> {
-        match id {
-            "primaryUrl" => Some("https://des-call.onrender.com".into()),
-            "nodeKey" => Some("set".into()),
+            "nodeKey" | "tunnelToken" | "redisUrl" => Some("set".into()),
+            "bootstrapEnv" => Some(from_primary.clone()),
             _ => None,
         }
     };
+    let first_run = |_: &str| -> Option<String> { None };
 
     let mut out = Map::new();
     let mut put = |name: &str, s: Snapshot, setup: Value, extra: Value| {
-        let mut st = json!({ "view": build(&s), "strings": descall_node::i18n::strings(s.lang), "setup": setup, "autostart": true, "configuredOnce": true });
+        let mut st = json!({ "view": build(&s), "strings": descall_node::i18n::strings(s.lang), "setup": setup, "autostart": true, "configuredOnce": true, "bootstrap": { "at": NOW - 26 * 60_000, "skip": false } });
         if let (Some(o), Some(e)) = (st.as_object_mut(), extra.as_object()) {
             for (k, v) in e {
                 o.insert(k.clone(), v.clone());
@@ -123,7 +118,7 @@ fn main() {
     s.live = &none;
     s.ram_series = &[];
     s.tunnel_ready = false;
-    put("setup", s, secrets::status_json(&first_run), json!({ "configuredOnce": false, "openView": "setup" }));
+    put("setup", s, secrets::status_json(&first_run), json!({ "configuredOnce": false, "openView": "setup", "bootstrap": { "at": null, "skip": false } }));
 
     let logs: Vec<&str> = vec![
         "[2026-11-22 22:05:11.430] [warn] [app] game mode: full-screen game, share 3072 -> 1024 MB, draining 42 users",

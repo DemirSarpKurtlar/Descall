@@ -412,7 +412,7 @@ function describeEvent(event = {}, lang = "tr") {
   }
   // Sunucu Ağı (hybrid server): owner-only alert, kind + percent only (lib/webPush.js).
   if (type === "admin-nodes") {
-    const kinds = { pcDown: "nodesPcDown", kvFull: "nodesKvFull", kvDown: "nodesKvDown", render90: "nodesRender90", test: "nodesTest" };
+    const kinds = { pcDown: "nodesPcDown", kvFull: "nodesKvFull", kvDown: "nodesKvDown", render90: "nodesRender90", test: "nodesTest", bootstrap: "nodesBootstrap" };
     const key = kinds[String(event.kind || "")];
     if (!key) return null;
     const pct = Math.max(0, Math.min(100, Math.floor(Number(event.pct) || 0)));

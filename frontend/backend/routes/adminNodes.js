@@ -16,6 +16,9 @@
  *   GET  /nodes/keys                   node keys (never the secret)
  *   POST /nodes/keys                   { name } -> { key, secret } (secret once)
  *   POST /nodes/keys/:id/revoke        { reason, confirmName }
+ *   POST /nodes/keys/:id/bootstrap-window  { open: true | false } -> { key }   opens the PC
+ *                                      setup window (POST /api/node/bootstrap) for 30 min,
+ *                                      or closes it now; needs 20261122b_node_bootstrap.sql
  *   POST /nodes/alerts/test            a test alert to the owner's phone
  *
  * Every action writes an admin audit entry (system_node_*) and an event row; watchers of
@@ -54,6 +57,8 @@ const MSG = {
   NAME_REQUIRED: `Give the key a name (1-${M.KEY_NAME_MAX} characters).`,
   KEY_NOT_FOUND: "Node key not found.",
   KEY_REVOKED: "This node key is already revoked.",
+  BOOTSTRAP_UNAVAILABLE: "The setup window needs the database update 20261122b_node_bootstrap.sql.",
+  BAD_OPEN: "Say whether to open or close the setup window.",
   INTERNAL: "Internal server error.",
 };
 
@@ -340,6 +345,23 @@ router.post("/nodes/keys/:id/revoke", async (req, res) => {
     res.json({ key });
   } catch (e) {
     sendError(res, e, "key-revoke");
+  }
+});
+
+router.post("/nodes/keys/:id/bootstrap-window", async (req, res) => {
+  try {
+    if (!UUID_RE.test(String(req.params.id))) return fail(res, 404, "KEY_NOT_FOUND");
+    const open = req.body?.open;
+    if (typeof open !== "boolean") return fail(res, 400, "BAD_OPEN");
+    if (!(await store.available())) return fail(res, 503, "KEYS_UNAVAILABLE");
+    const key = await store.setBootstrapWindow(req.params.id, { open });
+    audit(req, open ? "system_node_key_bootstrap_open" : "system_node_key_bootstrap_close", `node_key:${key.id}`, { name: key.name, until: key.bootstrapUntil });
+    await service.logEvent(open ? "key_bootstrap_open" : "key_bootstrap_close", { name: key.name, masked: key.masked, until: key.bootstrapUntil }, actor(req));
+    pushLive(req);
+    res.set("Cache-Control", "no-store");
+    res.json({ key });
+  } catch (e) {
+    sendError(res, e, "key-bootstrap-window");
   }
 });
 

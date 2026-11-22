@@ -19,5 +19,6 @@ export const nodeApi = {
   keys: () => adminFetch("/nodes/keys"),
   createKey: (name) => send("/nodes/keys", "POST", { name }),
   revokeKey: (id, body) => send(`/nodes/keys/${enc(id)}/revoke`, "POST", body),
+  bootstrapWindow: (id, open) => send(`/nodes/keys/${enc(id)}/bootstrap-window`, "POST", { open: Boolean(open) }),
   testAlert: () => send("/nodes/alerts/test", "POST", {}),
 };

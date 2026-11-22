@@ -1,7 +1,14 @@
-//! The first-run setup form: which values the PC node needs, where each goes, how each is
-//! checked, and what the popover may show after saving. Every value is stored with DPAPI
+//! The setup form: which values the PC node needs, where each goes, how each is checked,
+//! and what the popover may show after saving. Every value is stored with DPAPI
 //! (CurrentUser) by the app, one sealed file per field; secret fields are never sent back to
 //! the page: it only learns "set" (and can replace or clear). URLs are not secret and are shown.
+//!
+//! The short form asks for four values (primary URL, node key, tunnel token, the Key Value
+//! external URL). Everything else the backend needs comes from the primary in one call
+//! (POST /api/node/bootstrap, [`crate::bootstrap`]) and is stored as `bootstrapEnv`; the
+//! "Gelişmiş (elle gir)" fields and extra `KEY=value` lines still exist and win over it.
+
+use std::collections::BTreeMap;
 
 use serde_json::{json, Value};
 
@@ -18,6 +25,8 @@ pub enum Check {
     /// Free text of at least `min` characters.
     Text { min: usize },
     EnvLines,
+    /// The environment the primary handed out: a JSON object of names to string values.
+    EnvJson,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,31 +37,49 @@ pub struct Field {
     pub required: bool,
     pub secret: bool,
     pub check: Check,
-    /// Popover group ("connection", "backend", "livekit", "advanced").
+    /// Popover group: "connection" (the short form), "advanced" (the "Gelişmiş (elle gir)"
+    /// section), "auto" (filled from the primary, never typed in the page).
     pub group: &'static str,
+    /// Shown in the empty input (and saved with the form) until the owner types another.
+    pub default: Option<&'static str>,
+}
+
+const fn f(id: &'static str, env: Option<&'static str>, required: bool, secret: bool, check: Check, group: &'static str) -> Field {
+    Field { id, env, required, secret, check, group, default: None }
 }
 
 pub const FIELDS: &[Field] = &[
-    Field { id: "primaryUrl", env: Some("DESCALL_NODE_PRIMARY_URL"), required: true, secret: false, check: Check::Url { https_only: true }, group: "connection" },
-    Field { id: "publicUrl", env: Some("DESCALL_NODE_PUBLIC_URL"), required: false, secret: false, check: Check::Url { https_only: true }, group: "connection" },
-    Field { id: "nodeKey", env: Some("DESCALL_NODE_KEY"), required: true, secret: true, check: Check::NodeKey, group: "connection" },
-    Field { id: "tunnelToken", env: None, required: true, secret: true, check: Check::TunnelToken, group: "connection" },
-    Field { id: "supabaseUrl", env: Some("SUPABASE_URL"), required: true, secret: false, check: Check::Url { https_only: true }, group: "backend" },
-    Field { id: "supabaseServiceKey", env: Some("SUPABASE_SERVICE_ROLE_KEY"), required: true, secret: true, check: Check::SupabaseKey, group: "backend" },
-    Field { id: "jwtSecret", env: Some("JWT_SECRET"), required: true, secret: true, check: Check::Text { min: 16 }, group: "backend" },
-    Field { id: "redisUrl", env: Some("REDIS_URL"), required: false, secret: true, check: Check::RedisUrl, group: "backend" },
-    Field { id: "livekitUrl", env: Some("LIVEKIT_URL"), required: true, secret: false, check: Check::LiveKitUrl, group: "livekit" },
-    Field { id: "livekitApiKey", env: Some("LIVEKIT_API_KEY"), required: true, secret: true, check: Check::Text { min: 6 }, group: "livekit" },
-    Field { id: "livekitApiSecret", env: Some("LIVEKIT_API_SECRET"), required: true, secret: true, check: Check::Text { min: 16 }, group: "livekit" },
-    Field { id: "extraEnv", env: None, required: false, secret: true, check: Check::EnvLines, group: "advanced" },
+    Field { default: Some(crate::DEFAULT_PRIMARY_URL), ..f("primaryUrl", Some("DESCALL_NODE_PRIMARY_URL"), true, false, Check::Url { https_only: true }, "connection") },
+    f("nodeKey", Some("DESCALL_NODE_KEY"), true, true, Check::NodeKey, "connection"),
+    f("tunnelToken", None, true, true, Check::TunnelToken, "connection"),
+    f("redisUrl", Some("REDIS_URL"), false, true, Check::RedisUrl, "connection"),
+    f("publicUrl", Some("DESCALL_NODE_PUBLIC_URL"), false, false, Check::Url { https_only: true }, "advanced"),
+    f("supabaseUrl", Some("SUPABASE_URL"), false, false, Check::Url { https_only: true }, "advanced"),
+    f("supabaseServiceKey", Some("SUPABASE_SERVICE_ROLE_KEY"), false, true, Check::SupabaseKey, "advanced"),
+    f("jwtSecret", Some("JWT_SECRET"), false, true, Check::Text { min: 16 }, "advanced"),
+    f("livekitUrl", Some("LIVEKIT_URL"), false, false, Check::LiveKitUrl, "advanced"),
+    f("livekitApiKey", Some("LIVEKIT_API_KEY"), false, true, Check::Text { min: 6 }, "advanced"),
+    f("livekitApiSecret", Some("LIVEKIT_API_SECRET"), false, true, Check::Text { min: 16 }, "advanced"),
+    f("extraEnv", None, false, true, Check::EnvLines, "advanced"),
+    f("bootstrapEnv", None, false, true, Check::EnvJson, "auto"),
 ];
+
+/// Fields the page may write; `bootstrapEnv` comes from the primary only.
+pub fn page_writable(id: &str) -> bool {
+    field(id).is_some_and(|f| f.group != "auto")
+}
+
+/// The backend does not start without these. Each comes from its advanced field, an extra
+/// line or the primary's environment, in that order of precedence.
+pub const REQUIRED_ENV: &[(&str, &str)] = &[("SUPABASE_URL", "supabaseUrl"), ("SUPABASE_SERVICE_ROLE_KEY", "supabaseServiceKey"), ("JWT_SECRET", "jwtSecret")];
 
 pub fn field(id: &str) -> Option<&'static Field> {
     FIELDS.iter().find(|f| f.id == id)
 }
 
-/// Max stored length of one value (the extra env block may hold a whole .env file).
-pub const MAX_VALUE: usize = 64 * 1024;
+/// Max stored length of one value (the extra env block may hold a whole .env file; the
+/// primary's environment is a few KB, PEM keys included).
+pub const MAX_VALUE: usize = 256 * 1024;
 
 fn b64_decode(s: &str) -> Option<Vec<u8>> {
     let mut out = Vec::with_capacity(s.len() * 3 / 4);
@@ -117,6 +144,7 @@ pub fn validate(id: &str, raw: &str) -> Result<String, &'static str> {
         Check::SupabaseKey => (v.starts_with("eyJ") && v.matches('.').count() == 2) || (v.starts_with("sb_secret_") && v.len() > 20),
         Check::Text { min } => v.chars().count() >= min && !v.contains(['\n', '\r']),
         Check::EnvLines => parse_env_lines(&v).errors.is_empty(),
+        Check::EnvJson => serde_json::from_str::<serde_json::Map<String, Value>>(&v).is_ok_and(|m| m.values().all(Value::is_string)),
     };
     if !ok {
         return Err(match f.check {
@@ -126,6 +154,7 @@ pub fn validate(id: &str, raw: &str) -> Result<String, &'static str> {
             Check::SupabaseKey => "setup.err.supabaseKey",
             Check::Text { .. } => "setup.err.short",
             Check::EnvLines => "setup.err.envLines",
+            Check::EnvJson => "setup.err.unknown",
         });
     }
     let v = match f.check {
@@ -179,13 +208,38 @@ pub fn parse_env_lines(text: &str) -> EnvLines {
     out
 }
 
-/// Required fields that are still missing.
-pub fn missing(is_set: &dyn Fn(&str) -> bool) -> Vec<&'static str> {
-    FIELDS.iter().filter(|f| f.required && !is_set(f.id)).map(|f| f.id).collect()
+/// The stored primary environment (`bootstrapEnv`), filtered again on the way out.
+pub fn parse_env_json(text: &str) -> BTreeMap<String, String> {
+    crate::bootstrap::from_json(text)
+}
+
+/// Is `env` provided by any source: its advanced field, an extra line or the primary?
+fn env_provided(get: &dyn Fn(&str) -> Option<String>, env: &str, field_id: &str) -> bool {
+    if get(field_id).is_some_and(|v| !v.is_empty()) {
+        return true;
+    }
+    if get("extraEnv").is_some_and(|t| parse_env_lines(&t).vars.iter().any(|(k, v)| k == env && !v.is_empty())) {
+        return true;
+    }
+    get("bootstrapEnv").is_some_and(|t| parse_env_json(&t).get(env).is_some_and(|v| !v.is_empty()))
+}
+
+/// What is still missing before the node can start: required fields that are not set, and
+/// required backend variables (Supabase, JWT) that no source provides (by their field id).
+pub fn missing(get: &dyn Fn(&str) -> Option<String>) -> Vec<&'static str> {
+    let set = |id: &str| get(id).is_some_and(|v| !v.is_empty());
+    let mut out: Vec<&'static str> = FIELDS.iter().filter(|f| f.required && !set(f.id)).map(|f| f.id).collect();
+    for (env, id) in REQUIRED_ENV {
+        if !env_provided(get, env, id) {
+            out.push(id);
+        }
+    }
+    out
 }
 
 /// What the setup form may know: per field, set or not, and the value only when not secret.
-/// The extra env block reports how many variables it holds.
+/// The extra env block and the primary's environment report how many variables they hold;
+/// `missing` lists what still blocks the start (field ids).
 pub fn status_json(get: &dyn Fn(&str) -> Option<String>) -> Value {
     let fields: Vec<Value> = FIELDS
         .iter()
@@ -195,14 +249,19 @@ pub fn status_json(get: &dyn Fn(&str) -> Option<String>) -> Value {
             if !f.secret {
                 o["value"] = json!(v.clone().unwrap_or_default());
             }
-            if f.check == Check::EnvLines {
-                o["count"] = json!(v.as_deref().map(|t| parse_env_lines(t).vars.len()).unwrap_or(0));
+            if let Some(d) = f.default {
+                o["default"] = json!(d);
+            }
+            match f.check {
+                Check::EnvLines => o["count"] = json!(v.as_deref().map(|t| parse_env_lines(t).vars.len()).unwrap_or(0)),
+                Check::EnvJson => o["count"] = json!(v.as_deref().map(|t| parse_env_json(t).len()).unwrap_or(0)),
+                _ => {}
             }
             o
         })
         .collect();
-    let complete = missing(&|id| get(id).is_some_and(|v| !v.is_empty())).is_empty();
-    json!({ "fields": fields, "complete": complete })
+    let missing = missing(get);
+    json!({ "fields": fields, "complete": missing.is_empty(), "missing": missing })
 }
 
 #[cfg(test)]
@@ -238,7 +297,8 @@ mod tests {
         assert_eq!(validate("livekitUrl", "wss://descall.livekit.cloud"), Ok("wss://descall.livekit.cloud".into()));
         assert_eq!(validate("redisUrl", "rediss://red-x:pw@oregon-keyvalue.render.com:6379"), Ok("rediss://red-x:pw@oregon-keyvalue.render.com:6379".into()));
         assert_eq!(validate("redisUrl", ""), Ok(String::new()), "optional");
-        assert_eq!(validate("supabaseUrl", ""), Err("setup.err.required"));
+        assert_eq!(validate("supabaseUrl", ""), Ok(String::new()), "comes from the primary");
+        assert_eq!(validate("primaryUrl", ""), Err("setup.err.required"));
         assert_eq!(validate("supabaseUrl", "https:// spaced.co"), Err("setup.err.url"));
     }
 
@@ -268,16 +328,63 @@ mod tests {
         m.insert("primaryUrl", "https://des-call.onrender.com".into());
         m.insert("nodeKey", KEY.into());
         m.insert("extraEnv", "A=1\nB=2".into());
+        m.insert("bootstrapEnv", r#"{"SUPABASE_URL":"https://x.supabase.co","JWT_SECRET":"jwt-value-0123456789"}"#.into());
         let get = |id: &str| m.get(id).cloned();
         let s = status_json(&get);
         let text = s.to_string();
-        assert!(!text.contains(KEY) && !text.contains("A=1"));
+        assert!(!text.contains(KEY) && !text.contains("A=1") && !text.contains("jwt-value"));
         let f = |id: &str| s["fields"].as_array().unwrap().iter().find(|x| x["id"] == id).unwrap().clone();
         assert_eq!(f("primaryUrl")["value"], "https://des-call.onrender.com");
+        assert_eq!(f("primaryUrl")["default"], crate::DEFAULT_PRIMARY_URL);
         assert_eq!(f("nodeKey")["set"], true);
         assert!(f("nodeKey").get("value").is_none());
         assert_eq!(f("extraEnv")["count"], 2);
+        assert_eq!(f("bootstrapEnv")["count"], 2);
+        assert_eq!(f("bootstrapEnv")["group"], "auto");
         assert_eq!(s["complete"], false);
-        assert!(missing(&|id| get(id).is_some()).contains(&"tunnelToken"));
+        let miss = missing(&get);
+        assert!(miss.contains(&"tunnelToken"));
+        assert_eq!(miss, vec!["tunnelToken", "supabaseServiceKey"], "Supabase URL and JWT come from the primary");
+    }
+
+    #[test]
+    fn short_form_and_optional_livekit() {
+        let required: Vec<&str> = FIELDS.iter().filter(|f| f.required).map(|f| f.id).collect();
+        assert_eq!(required, vec!["primaryUrl", "nodeKey", "tunnelToken"]);
+        let short: Vec<&str> = FIELDS.iter().filter(|f| f.group == "connection").map(|f| f.id).collect();
+        assert_eq!(short, vec!["primaryUrl", "nodeKey", "tunnelToken", "redisUrl"]);
+        for id in ["livekitUrl", "livekitApiKey", "livekitApiSecret"] {
+            assert!(!field(id).unwrap().required, "{id} is optional (Render has no LiveKit)");
+            assert_eq!(validate(id, ""), Ok(String::new()));
+        }
+        assert!(!page_writable("bootstrapEnv") && page_writable("extraEnv") && !page_writable("nope"));
+    }
+
+    #[test]
+    fn missing_counts_every_source() {
+        let full = r#"{"SUPABASE_URL":"https://x.supabase.co","SUPABASE_SERVICE_ROLE_KEY":"sb_secret_0123456789abcdef","JWT_SECRET":"jwt-value-0123456789"}"#;
+        let mut m: HashMap<&str, String> = HashMap::new();
+        m.insert("primaryUrl", "https://des-call.onrender.com".into());
+        m.insert("nodeKey", KEY.into());
+        m.insert("tunnelToken", TUNNEL.into());
+        fn miss(m: &HashMap<&str, String>) -> Vec<&'static str> {
+            missing(&|id: &str| m.get(id).cloned())
+        }
+        assert_eq!(miss(&m), vec!["supabaseUrl", "supabaseServiceKey", "jwtSecret"]);
+        m.insert("bootstrapEnv", full.into());
+        assert!(miss(&m).is_empty(), "the primary's environment is enough");
+        m.insert("bootstrapEnv", r#"{"SUPABASE_URL":"https://x.supabase.co"}"#.into());
+        m.insert("extraEnv", "SUPABASE_SERVICE_ROLE_KEY=sb_secret_0123456789abcdef".into());
+        m.insert("jwtSecret", "typed-by-hand-0123456789".into());
+        assert!(miss(&m).is_empty(), "advanced fields and extra lines count too");
+        m.insert("extraEnv", "SUPABASE_SERVICE_ROLE_KEY=".into());
+        assert_eq!(miss(&m), vec!["supabaseServiceKey"], "an empty value does not count");
+    }
+
+    #[test]
+    fn env_json_check() {
+        assert!(validate("bootstrapEnv", r#"{"A":"1"}"#).is_ok());
+        assert!(validate("bootstrapEnv", r#"{"A":1}"#).is_err());
+        assert!(validate("bootstrapEnv", "A=1").is_err());
     }
 }

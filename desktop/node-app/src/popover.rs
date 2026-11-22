@@ -5,11 +5,18 @@
 //! reports, and hides on blur or Esc.
 //!
 //! Commands check the window label. Setup values go in through `node_setup_save` (validated,
-//! sealed with DPAPI) and never come back: the page only sees "set" / "not set".
+//! sealed with DPAPI) and never come back: the page only sees "set" / "not set". The rest of
+//! the backend environment comes from the primary (POST /api/node/bootstrap) when the setup
+//! is saved for the first time or with a new key, and again on "Ayarları sunucudan yenile"
+//! (`node_setup_refresh`); the answer goes straight into the DPAPI store, never to the page
+//! or a log line (counts and status codes only).
 
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
+use descall_node::{bootstrap, secrets};
 use descall_node::placement::{self, Rect};
 use serde_json::{json, Map, Value};
 use tauri::utils::config::WindowEffectsConfig;
@@ -190,19 +197,56 @@ pub fn node_cfg(window: WebviewWindow, shared: tauri::State<'_, Arc<Shared>>, pa
     }
 }
 
+/// Fetch the primary's environment with the node key. The answer never reaches a log line:
+/// only the number of variables or the status and the i18n error key.
+async fn fetch_bootstrap(shared: &Shared, primary: &str, key: &str) -> Result<BTreeMap<String, String>, &'static str> {
+    let id = shared.beat.lock().map(|b| b.id.clone()).unwrap_or_default();
+    let id = if id.is_empty() { crate::settings::Settings::load().node_id() } else { id };
+    let body = bootstrap::request_body(&id, descall_node::SERVICE_VERSION);
+    let (status, reply) = crate::net::primary_post_with(primary, bootstrap::PATH, key, &body, Duration::from_secs(25)).await;
+    let out = bootstrap::parse_reply(status, &reply);
+    drop(reply);
+    match &out {
+        Ok(env) => log::info!("[setup] settings from the primary: {} variables", env.len()),
+        Err(code) => log::warn!("[setup] settings from the primary refused: HTTP {status} ({code})"),
+    }
+    out
+}
+
+/// Does the stored setup plus `overlay` still lack a backend variable the primary should
+/// have given (Supabase, JWT)?
+fn incomplete_after(env: &BTreeMap<String, String>, overlay: &[(&'static str, String)]) -> bool {
+    let env_json = bootstrap::to_json(env);
+    let get = |id: &str| -> Option<String> {
+        if id == "bootstrapEnv" {
+            return Some(env_json.clone());
+        }
+        match overlay.iter().find(|(k, _)| *k == id) {
+            Some((_, v)) if v.is_empty() => None,
+            Some((_, v)) => Some(v.clone()),
+            None => crate::store::get(id),
+        }
+    };
+    let ids: Vec<&str> = secrets::REQUIRED_ENV.iter().map(|(_, id)| *id).collect();
+    secrets::missing(&get).iter().any(|id| ids.contains(id))
+}
+
 /// Validate every given value first; store only when all are valid. `""` clears a field.
+/// On the first save (no environment from the primary yet), or when the node key or the
+/// primary URL changes, the primary's environment is fetched first; nothing is stored when
+/// that fails. `skipBootstrap` (the advanced switch) uses only what was typed by hand.
 #[tauri::command]
-pub fn node_setup_save(window: WebviewWindow, shared: tauri::State<'_, Arc<Shared>>, values: Map<String, Value>) -> Result<Value, String> {
+pub async fn node_setup_save(window: WebviewWindow, shared: tauri::State<'_, Arc<Shared>>, values: Map<String, Value>, skip_bootstrap: Option<bool>) -> Result<Value, String> {
     mine(&window)?;
     let mut ok_values: Vec<(&'static str, String)> = Vec::new();
     let mut errors = Map::new();
     for (id, v) in &values {
-        let Some(f) = descall_node::secrets::field(id) else {
+        let Some(f) = secrets::field(id).filter(|f| secrets::page_writable(f.id)) else {
             errors.insert(id.chars().take(32).collect(), json!("setup.err.unknown"));
             continue;
         };
         let raw = v.as_str().unwrap_or_default();
-        match descall_node::secrets::validate(f.id, raw) {
+        match secrets::validate(f.id, raw) {
             Ok(clean) => ok_values.push((f.id, clean)),
             Err(key) => {
                 errors.insert(f.id.into(), json!(key));
@@ -211,23 +255,52 @@ pub fn node_setup_save(window: WebviewWindow, shared: tauri::State<'_, Arc<Share
     }
     // A required field may not be cleared.
     for (id, v) in &ok_values {
-        if v.is_empty() && descall_node::secrets::field(id).is_some_and(|f| f.required) {
+        if v.is_empty() && secrets::field(id).is_some_and(|f| f.required) {
             errors.insert((*id).into(), json!("setup.err.required"));
         }
     }
     if !errors.is_empty() {
         return Ok(json!({ "ok": false, "errors": errors }));
     }
+    let typed = |id: &str| ok_values.iter().find(|(k, _)| *k == id).map(|(_, v)| v.clone()).filter(|v| !v.is_empty());
+    let primary = typed("primaryUrl").or_else(|| crate::store::get("primaryUrl"));
+    let key = typed("nodeKey").or_else(|| crate::store::get("nodeKey"));
+    let changed = ["primaryUrl", "nodeKey"].iter().any(|id| typed(id).is_some_and(|v| Some(v) != crate::store::get(id)));
+    let skip = skip_bootstrap.unwrap_or(false);
+    let mut fetched: Option<BTreeMap<String, String>> = None;
+    if !skip && (crate::store::get("bootstrapEnv").is_none() || changed) {
+        let (Some(primary), Some(key)) = (primary, key) else {
+            return Ok(json!({ "ok": false, "error": "setup.err.bootstrapNeeds" }));
+        };
+        match fetch_bootstrap(&shared, &primary, &key).await {
+            Ok(env) => {
+                if incomplete_after(&env, &ok_values) {
+                    return Ok(json!({ "ok": false, "error": "setup.err.bootstrapIncomplete" }));
+                }
+                fetched = Some(env);
+            }
+            Err(code) => return Ok(json!({ "ok": false, "error": code })),
+        }
+    }
     for (id, v) in &ok_values {
         if !crate::store::set(id, v) {
             return Ok(json!({ "ok": false, "error": "setup.err.store" }));
         }
     }
+    let count = fetched.as_ref().map(|e| e.len());
+    if let Some(env) = &fetched {
+        if !crate::store::set("bootstrapEnv", &bootstrap::to_json(env)) {
+            return Ok(json!({ "ok": false, "error": "setup.err.store" }));
+        }
+    } else if skip {
+        crate::store::set("bootstrapEnv", "");
+    }
     // Names only: values never reach the log.
     let names: Vec<&str> = ok_values.iter().map(|(id, _)| *id).collect();
-    log::info!("[setup] saved: {}", names.join(", "));
+    log::info!("[setup] saved: {}{}", names.join(", "), if count.is_some() { " + the primary's environment" } else { "" });
+    shared.send(Msg::BootstrapInfo { at: count.map(|_| now_ms()), skip });
     shared.send(Msg::SetupChanged);
-    Ok(json!({ "ok": true }))
+    Ok(json!({ "ok": true, "fetched": count }))
 }
 
 #[tauri::command]
@@ -235,6 +308,29 @@ pub fn node_setup_wipe(window: WebviewWindow, shared: tauri::State<'_, Arc<Share
     mine(&window)?;
     shared.send(Msg::Wipe);
     Ok(())
+}
+
+/// "Ayarları sunucudan yenile": fetch the primary's environment again with the stored key
+/// (the key's setup window must be open) and restart the node with it.
+#[tauri::command]
+pub async fn node_setup_refresh(window: WebviewWindow, shared: tauri::State<'_, Arc<Shared>>) -> Result<Value, String> {
+    mine(&window)?;
+    let (Some(primary), Some(key)) = (crate::store::get("primaryUrl"), crate::store::get("nodeKey")) else {
+        return Ok(json!({ "ok": false, "error": "setup.err.bootstrapNeeds" }));
+    };
+    let env = match fetch_bootstrap(&shared, &primary, &key).await {
+        Ok(env) => env,
+        Err(code) => return Ok(json!({ "ok": false, "error": code })),
+    };
+    if incomplete_after(&env, &[]) {
+        return Ok(json!({ "ok": false, "error": "setup.err.bootstrapIncomplete" }));
+    }
+    if !crate::store::set("bootstrapEnv", &bootstrap::to_json(&env)) {
+        return Ok(json!({ "ok": false, "error": "setup.err.store" }));
+    }
+    shared.send(Msg::BootstrapInfo { at: Some(now_ms()), skip: false });
+    shared.send(Msg::SetupChanged);
+    Ok(json!({ "ok": true, "fetched": env.len() }))
 }
 
 #[tauri::command]

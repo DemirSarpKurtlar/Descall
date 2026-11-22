@@ -990,6 +990,8 @@ export const API_TR = {
   "File is too large (max {max} MB).": "Dosya çok büyük (en fazla {max} MB).",
   "Invalid node key": "Geçersiz sunucu düğümü anahtarı",
   "Not the primary node": "Bu ana sunucu düğümü değil",
+  "Use the primary's own address": "Ana sunucunun kendi adresini kullan",
+  "The setup window of this node key is closed": "Bu düğüm anahtarının kurulum penceresi kapalı",
   "Invalid node id": "Geçersiz sunucu düğümü kimliği",
   "Invalid node url": "Geçersiz sunucu düğümü adresi",
   "Invalid node state": "Geçersiz sunucu düğümü durumu",

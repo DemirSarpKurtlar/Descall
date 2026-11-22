@@ -6,6 +6,7 @@
 //! Contract: HYBRID-CONTRACT (dc:cfg:pc shape, /api/node/register, node states). The local
 //! control endpoints between this app and its own backend process are in [`local_api`].
 
+pub mod bootstrap;
 pub mod capacity;
 pub mod cfg;
 pub mod env;

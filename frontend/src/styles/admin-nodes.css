@@ -203,6 +203,9 @@ button.anx-s { text-align: left; }
 .anx-key { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--atk-line); }
 .anx-key code { color: var(--atk-mu); }
 .anx-key.is-dead { opacity: 0.6; }
+.anx-keyacts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.anx-win { color: var(--atk-mu); }
+.anx-win.is-open { color: #9db2ff; font-weight: 600; }
 .anx-reveal { margin-bottom: 8px; }
 
 /* error / warning lines in the dialogs: icon and text on one row */

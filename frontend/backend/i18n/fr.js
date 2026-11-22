@@ -124,6 +124,7 @@ module.exports = {
     nodesKvDown: "La mémoire partagée (Key Value) est injoignable ; mode serveur unique.",
     nodesRender90: "La mémoire de Render est à {pct} % ; augmentez la part du PC ou vérifiez la charge.",
     nodesTest: "Notification de test : les alertes du réseau de serveurs arrivent sur cet appareil.",
+    nodesBootstrap: "Configuration du PC : les réglages secrets ont été récupérés. Si ce n'était pas toi, révoque tout de suite la clé du nœud.",
     voicePlain: "Message vocal",
     attachmentPlain: "A envoyé une pièce jointe",
     incomingCall: "Appel entrant",
