@@ -80,7 +80,7 @@ function createStore(cluster, C) {
   async function connsByNode() {
     const k = kv();
     if (!k) return { [cluster.nodeId]: state().socketToUser.size };
-    const [, keys] = await k.call("scan", "0", "MATCH", "dc:sockets:*", "COUNT", "1000");
+    const keys = await k.scanAll("dc:sockets:*");
     const out = {};
     for (const key of keys || []) {
       for (const m of (await k.call("smembers", key).catch(() => [])) || []) {
@@ -105,7 +105,7 @@ function createStore(cluster, C) {
   async function listKeyed(prefix, local) {
     const k = kv();
     if (!k) return [...local.entries()].map(([id, v]) => ({ id, value: v }));
-    const [, keys] = await k.call("scan", "0", "MATCH", `${prefix}*`, "COUNT", "1000");
+    const keys = await k.scanAll(`${prefix}*`);
     const out = [];
     for (const key of keys || []) {
       const wire = parse(await k.call("get", key).catch(() => null));

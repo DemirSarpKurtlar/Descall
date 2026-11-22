@@ -176,7 +176,12 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
     if (S.kind === "owned") return kv.fire("hset", ownHashKey(S), String(k), JSON.stringify(wire.v));
     if (st.type === "hash") return kv.fire("hset", st.key, String(k), JSON.stringify(wire));
     if (st.type === "keys") return kv.fire("set", st.prefix + k, JSON.stringify(wire), "PX", st.ttlMs || 12 * 3600 * 1000);
-    if (st.type === "set") return kv.fire("sadd", st.key, String(k));
+    if (st.type === "set") {
+      kv.fire("sadd", st.key, String(k));
+      // A sliding TTL keeps an add-only set from filling the 25 MB KV.
+      if (st.ttlMs) kv.fire("pexpire", st.key, st.ttlMs);
+      return undefined;
+    }
     return undefined;
   }
 
@@ -550,7 +555,7 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
         }
       }
     } else if (st.type === "keys") {
-      const [, keys] = await kv.call("scan", "0", "MATCH", `${st.prefix}*`, "COUNT", "1000");
+      const keys = await kv.scanAll(`${st.prefix}*`);
       const vals = await Promise.all((keys || []).map((key) => kv.call("get", key).catch(() => null)));
       (keys || []).forEach((key, i) => {
         if (!vals[i]) return;

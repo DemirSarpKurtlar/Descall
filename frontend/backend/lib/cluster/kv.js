@@ -164,6 +164,18 @@ function createKv({ url, factory = defaultFactory, log = console } = {}) {
     return { pub, sub: adapterSubRaw };
   }
 
+  /** Every key matching `pattern` (SCAN until the cursor wraps; KEYS would block the KV). */
+  async function scanAll(pattern, max = 50000) {
+    const out = [];
+    let cursor = "0";
+    do {
+      const [next, keys] = await call("scan", cursor, "MATCH", pattern, "COUNT", "500");
+      cursor = String(next);
+      for (const k of keys || []) out.push(k);
+    } while (cursor !== "0" && out.length < max);
+    return [...new Set(out)];
+  }
+
   async function close() {
     closed = true;
     up = false;
@@ -181,6 +193,7 @@ function createKv({ url, factory = defaultFactory, log = console } = {}) {
     events,
     call,
     fire,
+    scanAll,
     listen,
     publish,
     adapterClients,

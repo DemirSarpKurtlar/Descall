@@ -169,7 +169,8 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
     storage: { type: "hash", key: "dc:timeouts" },
   });
   replicator.register("revoked", state.revokedSessionIds, {
-    storage: { type: "set", key: "dc:revoked" },
+    // Session tokens live 7 days (JWT_EXPIRES_IN); the database keeps the durable list.
+    storage: { type: "set", key: "dc:revoked", ttlMs: 30 * 24 * 3600 * 1000 },
     onChange: ({ op, k }) => {
       if (op !== "set") return;
       const s = io();
@@ -352,7 +353,7 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
     }
     // Members left over from an earlier run of this node id.
     try {
-      const [, keys] = await kv.call("scan", "0", "MATCH", "dc:sockets:*", "COUNT", "1000");
+      const keys = await kv.scanAll("dc:sockets:*");
       for (const key of keys || []) {
         const members = await kv.call("smembers", key).catch(() => []);
         const uid = key.slice("dc:sockets:".length);

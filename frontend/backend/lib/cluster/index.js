@@ -261,7 +261,7 @@ function createCluster({ env = process.env, log = console } = {}) {
     const kv = C.kv;
     await kv.call("hset", NODES_KEY, n.id, JSON.stringify({ ...n, state: "down", downAt: Date.now() }));
     await kv.call("del", `dc:presence:${n.id}`);
-    const [, keys] = await kv.call("scan", "0", "MATCH", "dc:sockets:*", "COUNT", "1000");
+    const keys = await kv.scanAll("dc:sockets:*");
     for (const key of keys || []) {
       const members = await kv.call("smembers", key).catch(() => []);
       const dead = (members || []).filter((m) => String(m).startsWith(`${n.id}:`));
