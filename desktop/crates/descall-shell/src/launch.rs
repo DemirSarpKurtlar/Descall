@@ -65,16 +65,24 @@ pub fn is_fresh_relaunch_marker(mtime_ms: Option<i64>, now_ms: i64) -> bool {
 }
 
 pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<BackgroundMode>, updater_relaunch: bool) -> ColdStart {
+    // --updated alone is not enough: a manual launch that installs from the splash is
+    // relaunched with that flag, and a stale tray file must not hide it. The fresh marker
+    // (written right before a quiet install) decides, and before the auto-start flags: the
+    // Tauri updater relaunches with this run's own arguments (NSIS /ARGS), so a session that
+    // began at Windows login still carries --autostart --hidden after the update. A window
+    // that was on screen then came back hidden in the tray, as if the update had quit the app
+    // (Electron relaunched without those flags).
+    if updater_relaunch {
+        return match background {
+            Some(mode) => {
+                let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
+                ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch }
+            }
+            None => ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual },
+        };
+    }
     if is_autostart_launch(argv) {
         return ColdStart { action: StartAction::Hide, show_splash: false, reason: StartReason::Autostart };
-    }
-    // --updated alone is not enough: a manual launch that installs from the splash is
-    // relaunched with that flag, and a stale tray file must not hide it.
-    if updater_relaunch {
-        if let Some(mode) = background {
-            let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
-            return ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch };
-        }
     }
     ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
 }
@@ -167,6 +175,19 @@ mod tests {
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
         assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
         assert_eq!(decide_cold_start(&[EXE, "--updated"], None, true).action, StartAction::Show);
+    }
+
+    #[test]
+    fn update_relaunch_of_a_login_session_follows_the_marker() {
+        // The updater relaunches with the run's own arguments: a login session keeps
+        // --autostart --hidden. Shown before the install: shown again.
+        let login = [EXE, "--autostart", "--hidden"];
+        assert_eq!(decide_cold_start(&login, None, true).action, StartAction::Show);
+        assert_eq!(decide_cold_start(&login, Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
+        assert_eq!(decide_cold_start(&login, Some(BackgroundMode::Hidden), true).action, StartAction::Hide);
+        // No fresh marker: a real Windows login start stays in the tray.
+        assert_eq!(decide_cold_start(&login, None, false).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&login, Some(BackgroundMode::Minimized), false).action, StartAction::Hide);
     }
 
     #[test]
