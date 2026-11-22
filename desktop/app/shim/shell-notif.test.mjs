@@ -220,6 +220,13 @@ const codeOnly = (src) => src.split("\n").filter((l) => !l.trim().startsWith("//
   assert.match(platform, /ThumbBarUpdateButtons\(hw, &list\)\.is_err\(\)/, "update falls back to add");
   const tb = codeOnly(read("desktop/app/src-tauri/src/premium/features/taskbar_plus.rs"));
   assert.match(tb, /Bus::Focus\(l, true\) if l == "main" =>[\s\S]{0,120}set_badge/, "badge re-applied when the window comes back");
+  // A new taskbar button without the focus (shown from the tray while Windows refuses the
+  // foreground, Explorer restarted) also gets its badge back, not only on the next focus.
+  assert.match(proc, /ON_BUTTON_CREATED\.get\(\)\.copied\(\)[\s\S]{0,60}std::thread::spawn\(f\)/, "the subclass runs the hook on TaskbarButtonCreated");
+  assert.match(tb, /fn start\(&self, h: &Host\) \{\s*platform::on_taskbar_button_created\(on_button_created\);/, "taskbar_plus registers it");
+  assert.match(tb, /fn on_button_created\(\) \{\s*if let Some\(h\) = host\(\) \{\s*h\.bus\(Bus::Settings\("taskbar_plus"\.into\(\)\)\);/, "which re-applies badge and buttons");
+  const other = platform.length; // stub keeps the non-Windows build type-checking
+  assert.ok(other > 0 && /pub fn on_taskbar_button_created\(_f: fn\(\)\) \{\}/.test(read("desktop/app/src-tauri/src/premium/platform.rs")), "non-Windows stub");
 }
 
 // ---- 7: first close to the tray tells where Descall went (main.cjs 'close') ---------------------------

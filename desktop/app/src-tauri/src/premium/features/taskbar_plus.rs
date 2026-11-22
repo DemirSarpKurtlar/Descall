@@ -40,6 +40,14 @@ fn on_click(id: u32) {
     }
 }
 
+/// A new taskbar button (shown again from the tray without the focus, Explorer restarted) has
+/// no overlay icon: the badge goes on again (the thumbnail buttons come back in platform.rs).
+fn on_button_created() {
+    if let Some(h) = host() {
+        h.bus(Bus::Settings("taskbar_plus".into()));
+    }
+}
+
 fn apply_buttons(h: &Host, buttons: Vec<ThumbButton>) {
     let Some(w) = h.app.get_webview_window("main") else { return };
     let Some(hw) = wins::hwnd(&w) else { return };
@@ -102,6 +110,7 @@ impl Feature for F {
         &[]
     }
     fn start(&self, h: &Host) {
+        platform::on_taskbar_button_created(on_button_created);
         self.last_badge.store(-1, Ordering::Relaxed);
         self.set_badge(h);
         self.set_buttons(h, true);
