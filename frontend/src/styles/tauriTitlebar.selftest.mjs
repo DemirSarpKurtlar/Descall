@@ -73,6 +73,11 @@ assert.match(jsx, /return host \? createPortal\(bar, host\) : bar;/, "title bar 
 // Restore glyph while maximized (was the same square, smaller).
 assert.match(jsx, /isMaximized \? \([\s\S]{0,120}<svg className="win-restore-glyph"/, "restore glyph while maximized");
 
+// App lock bar: follows the window's maximized state (round 2; it always said "Maximize").
+assert.match(lock, /const maximized = useWindowMaximized\(locked\);/, "app lock subscribes to the maximized state while locked");
+assert.match(lock, /api\.onMaximizedChange\(\(v\) => setMaximized\(Boolean\(v\)\)\)/);
+assert.match(lock, /title=\{maximized \? t\("Restore"\) : t\("Maximize"\)\}[\s\S]{0,200}\{maximized \? \([\s\S]{0,80}<svg className="win-restore-glyph"/, "app lock bar: restore glyph and label while maximized");
+
 // titleBarDoubleClick: maximizes in Electron, does nothing in Tauri (the drag script did it).
 const { titleBarDoubleClick, inTauriShell } = await import("../lib/windowDrag.js");
 let calls = 0;
