@@ -1,4 +1,5 @@
 import { t } from '../i18n/runtime';
+import { hasDesktopBridge } from "./desktopShell.js";
 import { isChannelMuted } from './serverChannelMutes';
 import { displayText } from './profanity';
 import { brandIconUrl } from "../components/brand/brandIconUrl";
@@ -52,7 +53,7 @@ function isDndMuted({ allowDuringDnd = false } = {}) {
 
 class NotificationService {
   constructor() {
-    this.isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
+    this.isElectron = hasDesktopBridge();
     this.hasPermission = false;
     this.initialized = false;
     this.lastNotificationTime = 0;

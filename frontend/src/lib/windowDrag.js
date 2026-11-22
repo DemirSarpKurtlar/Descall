@@ -8,11 +8,13 @@
  * toggles maximize on the second mousedown.
  */
 
-/** True in the Tauri desktop shell (the shim sets electronAPI.isTauri and html.tauri-app). */
+import { isTauriShell } from "./desktopShell.js";
+
+/** True in the Tauri desktop shell (its globals, the shim's bridge, or html.tauri-app). */
 export function inTauriShell() {
   if (typeof window === "undefined") return false;
   try {
-    if (window.electronAPI?.isTauri) return true;
+    if (isTauriShell()) return true;
     return Boolean(document?.documentElement?.classList?.contains("tauri-app"));
   } catch {
     return false;

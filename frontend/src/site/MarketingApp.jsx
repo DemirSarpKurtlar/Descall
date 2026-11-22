@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useCallback, lazy, Suspense } from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   persistInviteRef,
@@ -216,7 +217,7 @@ function clearSeoAuthIntent() {
 export default function MarketingApp(props) {
   // Separate component so Electron can skip marketing hooks entirely
   // (Rules of Hooks). Logged-out desktop must show Giriş/Kayıt, not SEO.
-  if (typeof window !== "undefined" && window.electronAPI?.isElectron) {
+  if (isDesktopShell()) {
     return (
       <Suspense fallback={null}>
         <AuthView

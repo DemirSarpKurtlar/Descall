@@ -13,6 +13,7 @@
  */
 
 import { getToken } from "./storage.js";
+import { isDesktopRuntime } from "./desktopShell.js";
 import { API_BASE_URL } from "../config/api.js";
 
 const LANGS = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];
@@ -64,7 +65,7 @@ export function normLang(raw) {
 export function detectPlatform(win = typeof window !== "undefined" ? window : null) {
   if (!win) return "web";
   try {
-    if (win.electronAPI?.isElectron || /Electron/i.test(win.navigator?.userAgent || "")) return "desktop";
+    if (isDesktopRuntime(win, win.navigator?.userAgent || "")) return "desktop";
     const cap = win.Capacitor?.getPlatform?.();
     if (cap === "ios") return "ios";
     if (cap === "android") return "android";

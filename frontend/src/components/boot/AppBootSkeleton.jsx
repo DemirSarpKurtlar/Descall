@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isDesktopShell } from "../../lib/desktopShell.js";
 import { useT } from "../../context/localeContextInstance";
 import RouteLoadingScreen from "./RouteLoadingScreen";
 import { removeBootSplashNow } from "../../lib/bootSplashDirect.js";
@@ -15,7 +16,7 @@ function isMobileBootSurface() {
 function isNarrowBoot() {
   try {
     if (typeof window === "undefined") return false;
-    if (window.electronAPI?.isElectron) return false;
+    if (isDesktopShell()) return false;
     const width = window.innerWidth || 0;
     return width > 0 && width < 960;
   } catch {

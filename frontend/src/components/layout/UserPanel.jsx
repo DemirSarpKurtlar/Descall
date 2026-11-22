@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
+import { isDesktopShell } from "../../lib/desktopShell.js";
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -1087,7 +1088,7 @@ const UserPanel = forwardRef(function UserPanel({
   const micStreamRef = useRef(null);
   const micRafRef = useRef(null);
   const micCtxRef = useRef(null);
-  const electronApp = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  const electronApp = isDesktopShell();
   // The desktop app and the iOS / Android apps are not "this browser" (copy in Bildirimler and
   // Ses ve Görüntü).
   const appShell = electronApp || Boolean(nativeShellPlatform());

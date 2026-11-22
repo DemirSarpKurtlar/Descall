@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isDesktopShell } from "./lib/desktopShell.js";
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
@@ -3411,8 +3412,7 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
-    const isElectronDesktop =
-      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    const isElectronDesktop = isDesktopShell();
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
     // Electron must NOT hard-navigate: file:// + location.replace("/") leaves
@@ -5158,7 +5158,7 @@ export default function App() {
       if (kind === "vanity") setServerVanityAuthOpen(true);
       else if (kind === "group") setInviteAuthOpen(true);
       else setServerInviteAuthOpen(true);
-      const isElectronDesktop = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+      const isElectronDesktop = isDesktopShell();
       // Native / desktop render AuthView directly; the web site opens its
       // login / sign-up dialog from the route. The code waits in the pending slot.
       if (!Capacitor.isNativePlatform() && !isElectronDesktop) {
@@ -5282,8 +5282,7 @@ export default function App() {
 
   // Public marketing site for logged-out users (real SEO routes)
   if (!me) {
-    const isElectronDesktop =
-      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    const isElectronDesktop = isDesktopShell();
     const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
     // Token still present on an app deep-link (e.g. /friends): never dump to
     // marketing, keep the boot skeleton. Hard refresh used to Navigate → "/"

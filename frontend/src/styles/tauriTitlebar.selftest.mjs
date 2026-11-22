@@ -36,7 +36,7 @@ assert.match(css, /html\.tauri-app \[data-tauri-drag-region\],\s*html\.tauri-app
 {
   const at = stats.indexOf("export function openSignupStatsWindow");
   const body = stats.slice(at, at + 700);
-  assert.match(body, /const w = window\.open\(STATS_PATH, "descall-signup-stats"\);\s*(\/\/[^\n]*\n\s*)*if \(!w && window\.electronAPI\?\.isTauri\) return true;/, "Tauri: null from window.open means the native window opened");
+  assert.match(body, /const w = window\.open\(STATS_PATH, "descall-signup-stats"\);\s*(\/\/[^\n]*\n\s*)*if \(!w && isTauriShell\(\)\) return true;/, "Tauri: null from window.open means the native window opened");
 }
 // Scene themes give #root z-index 1: inside #root the bar sat under every <body> modal.
 // It renders into its own host, the first child of <body> (harness: elementFromPoint over a

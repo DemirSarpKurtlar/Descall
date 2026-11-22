@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { isDesktopShell } from "../lib/desktopShell.js";
 import { signupEmailError, SIGNUP_EMAIL_HINT } from "../lib/signupEmail";
 import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff, KeyRound } from "./ui/Icon.jsx";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
@@ -51,7 +52,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [birthDate, setBirthDate] = useState("");
   const [legalModal, setLegalModal] = useState(null); // "terms" | "privacy" | null
   const [inviteRef, setInviteRef] = useState(() => peekInviteRef());
-  const isElectron = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  const isElectron = isDesktopShell();
   // Native iOS/Android app: this is the standalone entry screen (no web landing),
   // so it scrolls within the safe areas and keeps the legal docs one tap away.
   const isNativeApp = !isElectron && isCapacitorNativeShell();

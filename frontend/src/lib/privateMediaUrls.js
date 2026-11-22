@@ -4,6 +4,7 @@
 // copy has been retired) are exchanged through POST /api/media/refresh, which only answers
 // for members of the conversation. Results are cached in memory, keyed by storage path.
 import { useCallback, useEffect, useState } from "react";
+import { isDesktopShell } from "./desktopShell.js";
 import { API_BASE_URL } from "../config/api.js";
 import { getToken } from "./storage.js";
 
@@ -104,7 +105,7 @@ export function refreshMediaUrl(url, { fetchImpl = globalThis.fetch } = {}) {
  */
 export function openFreshMediaUrl(rawUrl, { win = typeof window !== "undefined" ? window : undefined, refresh = refreshMediaUrl } = {}) {
   if (!win || typeof win.open !== "function") return Promise.resolve(null);
-  const desktop = Boolean(win.electronAPI?.isElectron);
+  const desktop = isDesktopShell(win);
   let popup = null;
   if (!desktop) {
     try {

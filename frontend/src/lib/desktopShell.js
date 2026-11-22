@@ -39,6 +39,17 @@ export function desktopBridge(win) {
   }
 }
 
+/**
+ * The desktop bridge is loaded (Electron preload or the Tauri shim): exactly the old
+ * `window.electronAPI?.isElectron` check. Use it where the code goes on to call bridge
+ * members (window buttons, overlay, voice busy, notifications); use isDesktopShell() where
+ * the question is only "is this the desktop app" (copy, platform tags, layout).
+ */
+export function hasDesktopBridge(win) {
+  const api = desktopBridge(win);
+  return Boolean(api && api.isElectron);
+}
+
 /** The Electron app proper (not the Tauri app that mirrors its bridge). */
 export function isElectronAppShell(win) {
   const api = desktopBridge(win);
