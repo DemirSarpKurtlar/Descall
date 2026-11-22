@@ -199,11 +199,38 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   }
 }
 
+// ---- 1c. stored media grants (Electron's setPermissionCheckHandler answered yes for media on every
+// check): a fresh WebView2 profile listed one unnamed camera in Settings until the first video call.
+{
+  const wv = stripRust(readFileSync(join(srcRoot, "webview.rs"), "utf8"));
+  const fn = wv.slice(wv.indexOf("pub fn install_permission_handler"), wv.indexOf("pub fn install_browser_guards"));
+  assert.match(fn, /clipboard::pregranted\(cfg!\(debug_assertions\)\)/, "grants come from descall_shell::clipboard::pregranted (Rust test)");
+  assert.match(fn, /ICoreWebView2Profile4/, "ICoreWebView2Profile4::SetPermissionState");
+  assert.match(fn, /SetPermissionState\(kind,[^;]*COREWEBVIEW2_PERMISSION_STATE_ALLOW/, "stored as allowed");
+  const clip = readFileSync(join(here, "..", "..", "crates", "descall-shell", "src", "clipboard.rs"), "utf8");
+  const body = clip.slice(clip.indexOf("pub fn pregranted"), clip.indexOf("pub fn permission_decision"));
+  assert.match(body, /\[PermissionKind::Microphone, PermissionKind::Camera\]/, "media only");
+  assert.doesNotMatch(body, /Notifications|ClipboardRead|Geolocation|Other/, "nothing outside the media grant");
+}
+
 // ---- 2a. the mini call card never takes focus (Electron: showInactive)
 {
   const ov = stripRust(readFileSync(join(srcRoot, "commands", "overlay.rs"), "utf8"));
   const chain = ov.slice(ov.indexOf("WebviewWindowBuilder::new("), ov.indexOf(".build()", ov.indexOf("WebviewWindowBuilder::new(")));
   assert.match(chain, /\.focusable\(false\)/, "show() would activate the card: keyboard / game focus lost when a call starts");
+  // Round 2: placed and remembered in physical px like the capsules (T6 flag). A logical spot
+  // was read back with the primary monitor's scale: on a mixed-DPI setup the dragged card
+  // came back on the wrong screen.
+  assert.match(ov, /last_pos:\s*Option<\(i32,\s*i32,\s*Instant\)>/, "remembered position is physical px");
+  assert.doesNotMatch(ov, /p\.x as f64 \/ s/, "no logical conversion of the dragged spot");
+  const built = ov.slice(ov.indexOf(".build();"), ov.indexOf("fn from_main"));
+  assert.match(built, /set_position\(PhysicalPosition::new\(target_px\.0, target_px\.1\)\)/, "placed in physical px once built");
+  assert.match(ov, /notif::corner_px\(/, "default corner computed in physical px (descall_shell::notif::corner_px, Rust test)");
+  assert.match(ov, /on_a_monitor\(/, "a spot on a monitor that went away falls back to the default corner");
+  // A card closed from outside (window menu > Close on its drag row) comes back on the next
+  // overlayShow, as in Electron; the dead label used to block it until the call ended.
+  const ens = ov.slice(ov.indexOf("fn ensure"), ov.indexOf("live.next += 1"));
+  assert.match(ens, /Some\(\(l, true\)\) if app\.get_webview_window\(l\)\.is_none\(\)[\s\S]*live\.window = None/, "closed card is forgotten");
 }
 
 // ---- 2b. a reload ends the call: the mini call card goes too (Electron resetVoiceBusyFromLifecycle)
@@ -243,6 +270,37 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.ok(at > 0, "the black-screen hint polls screen_share_stats");
   const body = ns.slice(at, ns.indexOf("}, 2000);", at));
   assert.match(body, /hinted = true;\s*(?:\/\/[^\n]*\n\s*)*clearInterval\(s\.hintTimer\);\s*s\.hintTimer = null;/, "polling stops once the hint was shown");
+}
+
+// ---- a stop for an ended session never ends the next share (Tauri runs async commands
+// concurrently: quality change = stop + start, the late stop ended the new share).
+{
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  const end = ns.slice(ns.indexOf("    end(reason, fromHost) {"), ns.indexOf("function decorate("));
+  assert.match(end, /invoke\("screen_share_stop", \{ id: this\.id \}\)/, "Session.end stops its own share only");
+  const screen = stripRust(readFileSync(join(srcRoot, "commands", "screen.rs"), "utf8"));
+  assert.match(screen, /pub async fn screen_share_stop<R: Runtime>\(app: AppHandle<R>, id: Option<u32>\)/, "command takes the id");
+  assert.match(screen, /h\.stop_id\(id,/, "host stops that id only");
+  const host = readFileSync(join(here, "..", "..", "crates", "descall-capture", "src", "host.rs"), "utf8");
+  assert.match(host, /pub fn stop_id\(&self, id: u32, reason: &str\) -> bool \{\s*stop_slot\(&self\.active, Some\(id\), reason\)/, "stop_slot with only_id");
+}
+
+// ---- screen share notices speak the app's 7 languages (were Turkish or English only) ----------
+{
+  const { createRequire } = await import("node:module");
+  const require = createRequire(import.meta.url);
+  const { noticeText, NOTICES } = require("./native-screen-share.js");
+  for (const key of ["black", "noAudio", "echoOff"]) {
+    for (const id of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+      assert.ok(NOTICES[key][id] && NOTICES[key][id].length > 20, `${key}: ${id}`);
+    }
+  }
+  assert.equal(noticeText("noAudio", "de"), NOTICES.noAudio.de, "German page, German notice");
+  assert.equal(noticeText("black", "pt"), NOTICES.black["pt-BR"]);
+  assert.equal(noticeText("echoOff", "fr-CA"), NOTICES.echoOff.fr);
+  assert.equal(noticeText("echoOff", "ja"), NOTICES.echoOff.en, "unknown language: English");
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  assert.doesNotMatch(ns, /notice\("[^"]{20,}"/, "no hard-coded notice text at the call sites");
 }
 
 console.log("media-calls.test: ok");

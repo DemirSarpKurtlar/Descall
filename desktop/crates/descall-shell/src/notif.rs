@@ -45,6 +45,21 @@ impl Anchor {
     }
 }
 
+/// Top-right corner spot of the in-call mini card (commands/overlay.rs) in physical screen px:
+/// `work_px` is the monitor work area in physical px (x, y, width, height), `window_w` the
+/// card window width and `inset` how far its edges sit from the work area's right and top
+/// edge, both in that monitor's logical px. The window keeps inside the work area on the left
+/// and top. Physical px for the same reason as Anchor::to_physical (T6 flag: the mini card
+/// was placed and remembered in logical px, so on a second monitor with another DPI the
+/// remembered spot was read with the wrong scale and the card came back on the wrong screen).
+pub fn corner_px(work_px: (i32, i32, u32, u32), scale: f64, window_w: f64, inset_x: f64, inset_y: f64) -> (i32, i32) {
+    let s = if scale > 0.0 { scale } else { 1.0 };
+    let (x, y, w, _) = work_px;
+    let right = x as i64 + w as i64 - ((window_w + inset_x) * s).round() as i64;
+    let top = y as i64 + (inset_y * s).round() as i64;
+    (right.max(x as i64) as i32, top.max(y as i64) as i32)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
@@ -217,5 +232,19 @@ mod tests {
         assert!((0..1400).contains(&card_top), "card y {card_top} (window y {py})");
         // The left edge of the area is the monitor origin.
         assert_eq!(second.to_physical(second.rect.x, second.rect.y), (1920, 0));
+    }
+
+    #[test]
+    fn mini_card_corner_is_in_physical_px_of_its_own_monitor() {
+        // overlay.rs: WIDTH 308, MARGIN 16, PAD 14 (inset x 2, y 2).
+        assert_eq!(corner_px((0, 0, 1920, 1040), 1.0, 308.0, 2.0, 2.0), (1920 - 310, 2));
+        // 150 % primary: the same logical layout in device px.
+        assert_eq!(corner_px((0, 0, 2560, 1400), 1.5, 308.0, 2.0, 2.0), (2560 - 465, 3));
+        // A monitor left of / above the primary (negative origin) keeps its own origin.
+        assert_eq!(corner_px((-2560, -200, 2560, 1400), 1.5, 308.0, 2.0, 2.0), (-465, -197));
+        // A work area narrower than the card: the card starts at its left edge.
+        assert_eq!(corner_px((100, 0, 200, 600), 1.0, 308.0, 2.0, 2.0), (100, 2));
+        // No scale reported: 100 %.
+        assert_eq!(corner_px((0, 0, 1920, 1040), 0.0, 308.0, 2.0, 2.0), (1610, 2));
     }
 }

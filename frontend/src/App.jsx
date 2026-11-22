@@ -76,7 +76,8 @@ import { API_BASE_URL } from "./config/api";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
 import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
-import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
+import { isPushToTalkRelease, matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
+import { createPttFocusGuard } from "./lib/pttFocusGuard.js";
 import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
 import { afterFirstScreen } from "./lib/afterFirstScreen.js";
@@ -893,20 +894,40 @@ export default function App() {
   useEffect(() => startNativeDeepLinks((path) => deepLinkNavigateRef.current(path)), []);
 
   useEffect(() => {
+    // Releases a held key when the window loses focus (the keyup goes to the other app and
+    // the mic stayed open), lib/pttFocusGuard.js.
+    const guard = createPttFocusGuard((detail) => {
+      window.dispatchEvent(new CustomEvent("descall:ptt", { detail }));
+    });
     const onKey = (event) => {
       const profile = readVoiceProfile();
       if (!profile.pushToTalk) return;
+      // Letting go of the letter or of a modifier first both end the hold.
+      if (guard.held && isPushToTalkRelease(event, profile.pttAccelerator)) {
+        if (matchPushToTalkEvent(event, profile.pttAccelerator)) event.preventDefault();
+        guard.key(false);
+        return;
+      }
       if (!matchPushToTalkEvent(event, profile.pttAccelerator)) return;
       event.preventDefault();
-      window.dispatchEvent(
-        new CustomEvent("descall:ptt", { detail: { down: event.type === "keydown" } })
-      );
+      guard.key(event.type === "keydown");
+    };
+    const onPtt = (event) => guard.observe(event.detail);
+    const onBlur = () => guard.lostFocus();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") guard.lostFocus();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
+    window.addEventListener("descall:ptt", onPtt);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKey);
+      window.removeEventListener("descall:ptt", onPtt);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
