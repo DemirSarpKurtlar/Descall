@@ -1,6 +1,6 @@
 # Rust (Tauri) uygulaması: ikinci tarama raporu (22 Kasım 2026)
 
-Dal: `ts2-integ` (PR henüz açılmadı)
+Sürüm: masaüstü 4.1.1
 
 ## Özet
 
