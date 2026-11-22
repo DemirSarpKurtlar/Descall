@@ -294,6 +294,45 @@ function attachSharedState({ cluster, replicator, state, getIo, log = console })
       .catch(() => {});
   });
 
+  // ---- a node died: its users' call seats -------------------------------------------------------
+  // Its users reconnect to a live node within seconds and resume their seats; whoever
+  // is still nowhere after the usual grace leaves the call (leader only, once).
+  const GHOST_CHECK_MS = 5000;
+  const GHOST_GRACE_MS = 45000;
+  function sweepGhosts() {
+    if (!cluster.isLeader()) return;
+    const s = io();
+    if (!s) return;
+    const present = (uid) => state.presence.has(String(uid));
+    try {
+      const gcl = require("../../socket/groupCallLifecycle");
+      for (const [gid, call] of state.activeGroupCalls) {
+        for (const uid of [...(call?.participants || [])]) if (!present(uid)) gcl.scheduleParticipantDisconnectGrace(s, gid, uid);
+      }
+    } catch (err) {
+      log.warn?.("[cluster] group call ghost sweep failed:", err?.message || err);
+    }
+    const seats = [];
+    for (const [cid, call] of state.activeServerVoiceCalls) {
+      for (const key of [...(call?.participants?.keys?.() || [])]) if (!present(key)) seats.push([cid, String(key)]);
+    }
+    if (!seats.length) return;
+    const t = setTimeout(() => {
+      if (!cluster.isLeader()) return;
+      try {
+        const { _internals } = require("../../socket/serverVoiceHandlers");
+        for (const [cid, uid] of seats) if (!present(uid)) _internals.removeFromVoice(io(), cid, uid);
+      } catch (err) {
+        log.warn?.("[cluster] voice ghost sweep failed:", err?.message || err);
+      }
+    }, GHOST_GRACE_MS);
+    t.unref?.();
+  }
+  cluster.on("nodeDown", () => {
+    const t = setTimeout(sweepGhosts, GHOST_CHECK_MS);
+    t.unref?.();
+  });
+
   // ---- after (re)connecting to the KV -----------------------------------------------------------
   async function resyncSockets() {
     const kv = cluster._internals.kv;

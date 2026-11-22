@@ -149,6 +149,7 @@ async function startNode({ id, role, clustered = true }) {
   const port = server.address().port;
   const mods = {
     moderation: require("../lib/moderation"),
+    rateLimit: require("../lib/rateLimit"),
     adminHandlers: require("../socket/adminHandlers"),
   };
   return {
@@ -244,6 +245,19 @@ async function run() {
     bob.s.emit("dm:send", { toUserId: USERS.alice.id, text: "after the restart", tempId: "t3" });
     await waitFor(() => got(alice, "dm:message", (m) => m?.text === "after the restart").length === 1, 3000, "DM after KV restart");
     assert(true, "cross-node DM works again after the restart");
+
+    console.log("3c. session revoked on A closes that session's socket on B; auth limits count on both");
+    const carol = await device(B, "carol");
+    const revoked = new Promise((resolve) => carol.s.once("session:revoked", resolve));
+    A.state.revokedSessionIds.add("s-carol");
+    const rv = await Promise.race([revoked, sleep(2000).then(() => null)]);
+    assert(rv && rv.sessionId === "s-carol", "carol's socket on B got session:revoked");
+    await waitFor(() => !carol.s.connected, 2000, "carol disconnected");
+    assert(B.state.revokedSessionIds.has("s-carol"), "revoked session id replicated to B");
+    for (let i = 0; i < 3; i++) A.mods.rateLimit.recordFailure("login:ip-1", { max: 3 });
+    await sleep(80);
+    const peekB = B.mods.rateLimit.peek("login:ip-1", { max: 3 });
+    assert(peekB.ok === false, "3 login failures on A lock the same key on B");
 
     console.log("4. ban on A disconnects the user's socket on B");
     const kicked = new Promise((resolve) => bob.s.once("system:kick", resolve));

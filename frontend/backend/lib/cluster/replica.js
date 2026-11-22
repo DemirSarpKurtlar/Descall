@@ -344,7 +344,7 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
     const { op, k } = msg;
     const target = S.target;
     if (S.kind !== "volatile") {
-      const ver = { t: Number(msg.t) || 0, n: msg.n };
+      const ver = { t: Number(msg.t) || 0, n: msg.vn || msg.n };
       const known = S.meta.get(k);
       if (known && !newer(ver, known)) {
         stats.stale += 1;
@@ -398,6 +398,10 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
     if (!S) return;
     try {
       if (S.kind === "owned") {
+        if (msg.op === "oreload") {
+          void reloadOwnedFrom(S, msg.n);
+          return;
+        }
         applyOwnedRemote(S, msg.n, msg.op, msg.k, decodeValue(msg.v));
       } else {
         applySharedRemote(S, msg);
@@ -585,14 +589,38 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
       const v = S.isSet ? 1 : encode(S, MapGet.call(S.target, k));
       if (S.watch) S.lastSent.set(k, JSON.stringify(v));
       persistSet(S, k, { t: local.t, n: local.n, v });
+      // Peers that resynced before us learn it too (versions decide).
+      publish(S, { op: "set", k, t: local.t, vn: local.n, v });
     }
     // Deletes we made while the KV was away.
     for (const [k, m] of S.meta) {
       if (m.del && stored.has(k)) {
         const wire = stored.get(k);
-        if (S.storage.type === "set" || newer(m, { t: Number(wire.t) || 0, n: wire.n || "" })) persistDelete(S, k);
+        if (S.storage.type === "set" || newer(m, { t: Number(wire.t) || 0, n: wire.n || "" })) {
+          persistDelete(S, k);
+          publish(S, { op: "del", k, t: m.t, vn: m.n });
+        }
       }
     }
+  }
+
+  /** Replace node n's contributions with what its KV hash holds now. */
+  async function reloadOwnedFrom(S, n) {
+    if (n === nodeId) return;
+    const all = await kv.call("hgetall", ownHashKey(S, n)).catch(() => null);
+    if (!all) return;
+    const seen = new Set();
+    for (const [k, raw] of Object.entries(all)) {
+      let v;
+      try {
+        v = decodeValue(JSON.parse(raw));
+      } catch {
+        continue;
+      }
+      seen.add(k);
+      applyOwnedRemote(S, n, "oset", k, v);
+    }
+    for (const [k, per] of [...S.remote]) if (per.has(n) && !seen.has(k)) applyOwnedRemote(S, n, "odel", k);
   }
 
   async function resyncOwned(S, peers) {
@@ -601,27 +629,11 @@ function createReplicator({ nodeId, kv, log = console, watchMs = 250, now = () =
     const flat = [];
     for (const [k, v] of S.own) flat.push(String(k), JSON.stringify(encode(S, v)));
     if (flat.length) await kv.call("hset", key, ...flat);
-    for (const n of peers) {
-      if (n === nodeId) continue;
-      const all = await kv.call("hgetall", ownHashKey(S, n)).catch(() => ({}));
-      const seen = new Set();
-      for (const [k, raw] of Object.entries(all || {})) {
-        let v;
-        try {
-          v = decodeValue(JSON.parse(raw));
-        } catch {
-          continue;
-        }
-        seen.add(k);
-        applyOwnedRemote(S, n, "oset", k, v);
-      }
-      for (const [k, per] of [...S.remote]) if (per.has(n) && !seen.has(k)) applyOwnedRemote(S, n, "odel", k);
-    }
-    // Contributions of nodes that are no longer peers.
-    const peerSet = new Set(peers);
-    for (const per of [...S.remote.values()]) {
-      for (const n of [...per.keys()]) if (!peerSet.has(n)) dropNode(n);
-    }
+    // Peers that came back before us reload our hash (the registry may still be empty).
+    publish(S, { op: "oreload" });
+    for (const n of peers) await reloadOwnedFrom(S, n);
+    // Nodes missing from `peers` are not dropped here: right after a KV restart the
+    // registry is still filling up. Dead nodes are dropped by the registry watch.
   }
 
   async function resync() {

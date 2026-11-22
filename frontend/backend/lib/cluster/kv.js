@@ -35,7 +35,10 @@ function createKv({ url, factory = defaultFactory, log = console } = {}) {
   const events = new EventEmitter();
   events.setMaxListeners(50);
   const cmd = factory(url, { ...BASE_OPTS, enableOfflineQueue: false, connectionName: "dc-cmd" });
-  const sub = factory(url, { ...BASE_OPTS, enableOfflineQueue: true, connectionName: "dc-sub" });
+  // Subscriber connections keep their (few) SUBSCRIBE commands queued until the KV
+  // is back instead of failing them (an unhandled rejection inside the adapter).
+  const SUB_OPTS = { ...BASE_OPTS, enableOfflineQueue: true, maxRetriesPerRequest: null };
+  const sub = factory(url, { ...SUB_OPTS, connectionName: "dc-sub" });
   let adapterPubRaw = null;
   let adapterSubRaw = null;
   let up = false;
@@ -125,7 +128,7 @@ function createKv({ url, factory = defaultFactory, log = console } = {}) {
   function adapterClients() {
     if (!adapterPubRaw) {
       adapterPubRaw = factory(url, { ...BASE_OPTS, enableOfflineQueue: false, connectionName: "dc-sio-pub" });
-      adapterSubRaw = factory(url, { ...BASE_OPTS, enableOfflineQueue: true, connectionName: "dc-sio-sub" });
+      adapterSubRaw = factory(url, { ...SUB_OPTS, connectionName: "dc-sio-sub" });
       adapterPubRaw.on("error", onError);
       adapterSubRaw.on("error", onError);
     }
