@@ -503,7 +503,7 @@ export default function Shop2Inventory() {
   );
   const sortMenu = (iconOnly) => (
     <Menu label={t("shop2.inv.sort")} button={({ toggle, props }) => (iconOnly ? (
-      <button type="button" className="s2-ibtn" onClick={toggle} {...props}><SortArrows size={16} /></button>
+      <button type="button" className="s2-ibtn" onClick={toggle} {...props} aria-label={t("shop2.inv.sort")}><SortArrows size={16} /></button>
     ) : (
       <button type="button" className="s2-iv-dd" onClick={toggle} {...props}><SortArrows size={14} /><span className="s2-iv-ddl">{t("shop2.inv.sort")}:</span><b>{t(`shop2.inv.sortBy.${sort}`)}</b><ChevronDown size={13} /></button>
     ))}>
@@ -715,7 +715,7 @@ export default function Shop2Inventory() {
           {search}
           {sortMenu(true)}
           <Menu label={t("shop2.inv.filters")} button={({ toggle, props }) => (
-            <button type="button" className={`s2-ibtn s2-iv-fb${rarity || setFilterKey ? " is-active" : ""}`} onClick={toggle} {...props}>
+            <button type="button" className={`s2-ibtn s2-iv-fb${rarity || setFilterKey ? " is-active" : ""}`} onClick={toggle} {...props} aria-label={t("shop2.inv.filters")}>
               <SlidersHorizontal size={16} />
               {rarity || setFilterKey ? <i className="s2-num">{Number(Boolean(rarity)) + Number(Boolean(setFilterKey))}</i> : null}
             </button>

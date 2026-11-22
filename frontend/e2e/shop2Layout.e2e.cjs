@@ -184,7 +184,7 @@ async function waitFor(page, label, fn, arg, ms = 30000) {
 async function shot(page, name) {
   if (!SHOTS) return;
   fs.mkdirSync(SHOTS, { recursive: true });
-  await page.screenshot({ path: path.join(SHOTS, `${name}.jpg`), type: 'jpeg', quality: 60 });
+  await page.screenshot({ path: path.join(SHOTS, `${name}.jpg`), type: 'jpeg', quality: DSF > 1 ? 88 : 60 });
 }
 const clickTab = (page, i) => page.evaluate((i) => {
   const bar = [...document.querySelectorAll('.s2-tabs, .s2-ptabs')].find((n) => n.getBoundingClientRect().width > 0);

@@ -299,7 +299,7 @@ export function LookTile({ look, user, on, pieces, meta, auto, busy, onWear, onP
           <b title={auto ? t("shop2.kasa.previousLook") : look.name}>{auto ? t("shop2.kasa.previousLook") : look.name}</b>
           {look.pinned ? <Pin size={12} className="s2-iv-lt-pin" /> : null}
           <Menu label={t("shop2.inv.lookMenu")} button={({ toggle, props }) => (
-            <button type="button" className="s2-iv-lt-more" onClick={toggle} {...props}><MoreHorizontal size={15} /></button>
+            <button type="button" className="s2-iv-lt-more" onClick={toggle} {...props} aria-label={t("shop2.inv.lookMenu")}><MoreHorizontal size={15} /></button>
           )}>
             {(close) => (
               <>
