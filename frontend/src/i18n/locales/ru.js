@@ -6609,6 +6609,8 @@ export const nested = {
     "subInstalling": "Descall откроется через несколько секунд",
     "titleError": "Не удалось загрузить обновление",
     "subError": "Проверь подключение и попробуй снова",
+    "titleInstallError": "Не удалось установить обновление",
+    "subInstallError": "Попробуй снова или скачай установщик",
     "retry": "Повторить",
     "downloadPage": "Страница загрузки",
     "titleDownloading": "Загрузка Descall {version}",

@@ -1,7 +1,7 @@
 // node src/lib/desktopUpdateState.selftest.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { hasDesktopUpdater, mergeCheck, startCheck, statusFromCheck, statusFromEvent, statusFromStatus } from "./desktopUpdateState.js";
+import { hasDesktopUpdater, mergeCheck, startCheck, statusFromCheck, statusFromEvent, statusFromStatus, toastStateAfterError, updateDownloadPage } from "./desktopUpdateState.js";
 
 // Check while a download runs: the shells answer "nothing new" (in flight); the download stays.
 {
@@ -58,6 +58,37 @@ for (const loc of ["en", "tr", "de", "es", "fr", "pt-BR", "ru"]) {
   const at = src.indexOf('"updateToast": {');
   const block = src.slice(at, src.indexOf("\n  },", at));
   for (const k of KEYS) assert.match(block, new RegExp(`"settings_${k}": "[^"]+"`), `${loc}: updateToast.settings_${k}`);
+}
+
+// Update card after update:error. Tauri sends phase "install" when the staged installer did
+// not start (the app keeps running, the update stays staged): the card used to vanish.
+{
+  assert.equal(toastStateAfterError("installing", "install"), "error");
+  assert.equal(toastStateAfterError("ready", "install"), "error");
+  assert.equal(toastStateAfterError("downloading", "download"), "error");
+  assert.equal(toastStateAfterError("downloading", "check"), "error");
+  assert.equal(toastStateAfterError("ready", "check"), "ready", "a quiet check failure keeps the chip");
+  assert.equal(toastStateAfterError(null, "check"), null, "a quiet check failure stays quiet");
+  assert.equal(toastStateAfterError("installing", "check"), null, "Electron behaviour kept for check errors");
+}
+
+// Download page: Electron keeps releases/latest; Tauri goes to its own desktop-v release
+// (desktop releases are prereleases, releases/latest is the Electron installer).
+{
+  assert.equal(updateDownloadPage({}), "https://github.com/DemirSarpKurtlar/Descall/releases/latest");
+  assert.equal(updateDownloadPage({ tauri: true, version: "4.2.0" }), "https://github.com/DemirSarpKurtlar/Descall/releases/tag/desktop-v4.2.0");
+  assert.equal(updateDownloadPage({ tauri: true, version: "v4.2.0" }), "https://github.com/DemirSarpKurtlar/Descall/releases/tag/desktop-v4.2.0");
+  assert.match(updateDownloadPage({ tauri: true, version: "../x" }), /releases\?q=desktop-v/);
+  assert.ok(!updateDownloadPage({ tauri: true }).endsWith("/latest"));
+  const toast = readFileSync(new URL("../components/ElectronUpdateToast.jsx", import.meta.url), "utf8");
+  assert.match(toast, /updateDownloadPage\(\{ tauri: isTauriShell\(\), version \}\)/);
+  assert.match(toast, /toastStateAfterError\(prev, phase\)/);
+  for (const loc of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+    const src = readFileSync(new URL(`../i18n/locales/${loc}.js`, import.meta.url), "utf8");
+    const at = src.indexOf('"updateToast": {');
+    const block = src.slice(at, src.indexOf("\n  },", at));
+    for (const k of ["titleInstallError", "subInstallError"]) assert.match(block, new RegExp(`"${k}": "[^"]+"`), `${loc}: updateToast.${k}`);
+  }
 }
 
 console.log("desktopUpdateState selftest: ok");

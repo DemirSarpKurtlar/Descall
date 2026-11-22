@@ -70,3 +70,28 @@ export function statusFromEvent(prev, type, payload = {}) {
       return prev;
   }
 }
+
+/**
+ * Update card (ElectronUpdateToast) after update:error. 'download' (or a failure while the
+ * download card shows) and 'install' (Tauri: the staged installer did not start; the app is
+ * still running and the update stays staged) show the error card with Retry; a quiet
+ * background 'check' failure never replaces what is on screen. The install case used to drop
+ * the card (prev "installing" -> null), so the "Install now" chip vanished without a word.
+ */
+export function toastStateAfterError(prev, phase) {
+  if (phase === "download" || phase === "install" || prev === "downloading") return "error";
+  return prev === "ready" ? prev : null;
+}
+
+const RELEASES = "https://github.com/DemirSarpKurtlar/Descall/releases";
+
+/**
+ * "Download page" on the error card. Electron: releases/latest (the Electron release). The
+ * Tauri app's releases are prereleases (desktop-vX.Y.Z, never "latest"), so releases/latest
+ * offered the Electron installer to a Tauri user; it goes to the desktop release instead.
+ */
+export function updateDownloadPage({ tauri = false, version = null } = {}) {
+  if (!tauri) return `${RELEASES}/latest`;
+  const v = cleanVersion(version);
+  return v ? `${RELEASES}/tag/desktop-v${v}` : `${RELEASES}?q=desktop-v&expanded=true`;
+}
