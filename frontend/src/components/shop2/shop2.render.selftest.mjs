@@ -32,10 +32,11 @@ import LookCardFromText from ${J("components/shop2/LookCard.jsx")};
 import Shop2Share from ${J("components/shop2/Shop2Share.jsx")};
 import { ItemDetail, SetQuickPanel } from ${J("components/shop2/Shop2Detail.jsx")};
 import Shop2Search from ${J("components/shop2/Shop2Search.jsx")};
+import ShopItemThumb from ${J("components/shop/ShopItemThumb.jsx")};
 import { firstChannels } from ${J("components/shop2/Shop2Stage.jsx")};
 import * as L from ${J("lib/shop2Logic.js")};
 export { L, firstChannels };
-const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout, detail: ItemDetail, setq: SetQuickPanel, search: Shop2Search };
+const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout, detail: ItemDetail, setq: SetQuickPanel, search: Shop2Search, thumb: ShopItemThumb };
 export function render(name, ctx, props = {}) {
   return renderToString(h(LocaleProvider, { meLanguage: "tr" }, h(Shop2Ctx.Provider, { value: ctx }, h(C[name], props))));
 }
@@ -229,6 +230,14 @@ for (const layout of ["desktop", "phone"]) {
   const chans = Array.from({ length: 8 }, (_, i) => ({ id: `c${i}`, name: `k${i}`, type: i === 7 ? "voice" : "text" }));
   assert.deepEqual(m.firstChannels(chans, chans[7]).map((x) => x.id), ["c0", "c1", "c2", "c3", "c4", "c7"], "stage keeps the voice channel");
   assert.equal(m.firstChannels(chans, chans[1]).length, 5, "stage: voice already listed");
+}
+{
+  // Aura / call overlay thumbnails of Market 2.0 items ({ tr, en } names) draw the name's first
+  // letter, not "[" from "[object Object]".
+  for (const cat of ["profile_aura", "call_overlay"]) {
+    const th = m.render("thumb", ctx("desktop"), { item: it("x", cat, 300, "Kutup Işığı", { effect_key: "k" }) });
+    assert.ok(/>K</.test(th) && !/>\[</.test(th), `${cat} thumb letter`);
+  }
 }
 const shell = m.renderMarket({ me: { id: "me", username: "d" }, balance: 2940, inventory: [], ownedItemIds: new Set(), allProducts: null });
 has(shell, "s2-root", "market shell renders");
