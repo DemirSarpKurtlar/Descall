@@ -38,10 +38,24 @@ pub enum BackgroundMode {
     Minimized,
 }
 
+/// True for an argument that is a URI (`descall:dm/x`, `descall://...`, `https://...`): what a
+/// web page or a document can make Windows start the app with. Drive paths (`C:\x`) are not.
+pub fn is_uri_arg(arg: &str) -> bool {
+    let arg = arg.trim().trim_matches('"');
+    if arg.contains("://") {
+        return true;
+    }
+    match arg.split_once(':') {
+        Some((scheme, _)) => scheme.len() >= 2 && scheme.starts_with(|c: char| c.is_ascii_alphabetic()) && scheme.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.')),
+        None => false,
+    }
+}
+
 pub fn has_arg<S: AsRef<str>>(argv: &[S], flag: &str) -> bool {
     // A URL argument (an OS link such as descall://... that a web page can start the app
-    // with) never carries launch flags, whatever text it holds.
-    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty() && !a.contains("://")).any(|raw| {
+    // with) never carries launch flags, whatever text it holds: `descall:x --hidden` (a link
+    // with raw spaces, which Windows hands over as one argument) used to start Descall hidden.
+    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty() && !is_uri_arg(a)).any(|raw| {
         if raw == flag {
             return true;
         }
@@ -120,6 +134,11 @@ mod tests {
     #[test]
     fn url_arguments_never_carry_flags() {
         assert!(!is_autostart_launch(&[EXE, "descall://open --autostart --hidden"]));
+        // Links without "//" (descall:whats-new is a valid deep link) carry no flags either.
+        assert!(!is_autostart_launch(&[EXE, "descall:x --hidden"]));
+        assert!(!is_autostart_launch(&[EXE, "\"DESCALL:dm/a --autostart\""]));
+        assert!(!is_autostart_launch(&[EXE, "mailto:a --hidden"]));
+        assert!(is_uri_arg("descall:whats-new") && is_uri_arg("https://descall.com") && !is_uri_arg(r"C:\Program Files\Descall\Descall.exe") && !is_uri_arg("--hidden") && !is_uri_arg("--migration-id=m-1"));
         assert!(!is_autostart_launch(&[EXE, "https://x.example/ --hidden"]));
         assert!(is_autostart_launch(&[EXE, "--autostart --hidden"]), "a joined flag string still counts");
         assert_eq!(decide_cold_start(&[EXE, "descall://x --hidden"], None, false).action, StartAction::Show);
