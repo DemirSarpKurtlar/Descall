@@ -342,7 +342,9 @@ mod capability_tests {
         let mut rest = shim;
         while let Some(i) = rest.find("winCmd(\"") {
             rest = &rest[i + 8..];
-            let second = rest.split(',').nth(1).unwrap_or_default().trim().trim_end_matches(')').trim_matches('"').to_string();
+            // Only inside this call's parentheses: a comment after it may hold commas too.
+            let call = rest.split(')').next().unwrap_or_default();
+            let second = call.split(',').nth(1).unwrap_or_default().trim().trim_matches('"').to_string();
             if !second.is_empty() && !second.contains('(') {
                 needed.push(("window".into(), second));
             }
