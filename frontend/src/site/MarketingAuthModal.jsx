@@ -7,6 +7,7 @@ import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { serverMessage } from "../i18n/serverText.js";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
@@ -69,6 +70,11 @@ function AuthModal({
   const [birthDate, setBirthDate] = useState("");
   const [deviceBlock, setDeviceBlock] = useState("");
   const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
+  // Turnstile solves in the background once sign-up typing starts (no wait on submit).
+  const signupStarted = Boolean(open && isRegistering && !forgotMode && (username || email || password));
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   const [legalModal, setLegalModal] = useState(null);
 
   // The shell's error stays set after "Back to login" / a mode switch: hide it there

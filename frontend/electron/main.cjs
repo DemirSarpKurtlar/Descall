@@ -15,6 +15,7 @@ const {
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
+const { keepsOwnCsp: keepsTurnstileCsp } = require('./turnstileFrames.cjs');
 const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
 const { WINDOW_STATE_FILE, parseWindowState, pickRestoreBounds, serializeWindowState } = require('./windowState.cjs');
 const {
@@ -1681,6 +1682,8 @@ function createMainWindow() {
   // session (notification and overlay files) keeps the pre-2.11.2 policy.
   const legacyCsp = buildElectronCsp(null);
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    // Turnstile's bridge and challenge frames keep their own CSP (turnstileFrames.cjs).
+    if (keepsTurnstileCsp(details)) return callback({});
     const isAppDocument = /^descall:\/\/app\//i.test(details.url || '');
     callback({
       responseHeaders: {

@@ -19,6 +19,7 @@ import PasswordStrength from "./auth/PasswordStrength";
 import useSignupFieldChecks from "./auth/useSignupFieldChecks";
 import SignupFieldMessage from "./auth/SignupFieldMessage";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
@@ -119,6 +120,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   }, [birthDate, mode, socialSignup, t]);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  // Cloudflare Turnstile solves in the background once sign-up typing starts, so the
+  // submit does not wait for it (lib/humanCheck/turnstileClient.js).
+  const signupStarted = mode === "register" && Boolean(username || email || password);
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   // As-you-type checks with the server's rules (lib/signupRules.js), register tab only.
   const checks = useSignupFieldChecks({ username, password, email, enabled: mode === "register" && !twoFa });
   const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);

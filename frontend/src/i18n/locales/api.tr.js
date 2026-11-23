@@ -8,6 +8,8 @@
  * Messages that were Turkish before keep their exact old wording.
  */
 export const API_TR = {
+  "Complete the security check to continue.": "Devam etmek için güvenlik doğrulamasını tamamla.",
+  "The security check could not be verified. Please try again.": "Güvenlik doğrulaması onaylanamadı. Lütfen tekrar dene.",
   "{count, plural, one {# log archived} other {# logs archived}} successfully": "{count} kayıt başarıyla arşivlendi",
   "{field} must be an image uploaded to Descall.": "{field} Descall'a yüklenmiş bir görsel olmalı.",
   "@everyone cannot be deleted.": "@everyone silinemez.",
