@@ -153,3 +153,14 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 .check-burst .disc path { stroke: #fff; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 3; }
 .check-burst .spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #9ef5cf; box-shadow: 0 0 8px #3fd49a; }
 
+
+/* Button states (color sweep, Nov 2026): every button had a resting look only;
+   no hover on primary / secondary / danger, no keyboard focus ring, no
+   disabled look. Same states as the app: lift on hover, press on active, the
+   logo-blue ring on focus, dimmed when disabled. */
+.btn { transition: filter .12s ease, background-color .12s ease, transform .12s ease; }
+.btn-primary:hover, .btn-danger:hover { filter: brightness(1.08); }
+.btn-secondary:hover { background: rgba(255,255,255,.11); }
+.btn:active { transform: translateY(1px); filter: brightness(.96); }
+.btn:focus-visible, .tb-btn:focus-visible, .link:focus-visible { outline: 2px solid #587af5; outline-offset: 2px; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
