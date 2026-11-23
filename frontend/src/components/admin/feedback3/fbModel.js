@@ -3,27 +3,28 @@ import { formatDate, formatList, formatNumber, lower, upper } from "../../../i18
 import { intlTag } from "../../../i18n/registry.js";
 import { APP_TIMEZONE } from "../../../lib/datetime.js";
 import { trGenitive } from "../../../lib/trSuffix.js";
+import { CHART, CHART_PAIRS, STATUS } from "../adminPalette.js";
 
 /** [catalog key, colour]; render the label with t(map[k][0]). */
 export const TYPES = {
-  bug: ["adminx.fb.type.bug", "#FF6B6B"],
-  feature: ["adminx.fb.type.feature", "#F5B942"],
-  improvement: ["adminx.fb.type.improvement", "#5AD19A"],
-  security: ["adminx.fb.type.security", "#FF9F43"],
-  general: ["adminx.fb.type.general", "#9AA3B8"],
-  other: ["adminx.fb.type.other", "#9AA3B8"],
+  bug: ["adminx.fb.type.bug", STATUS.bad],
+  feature: ["adminx.fb.type.feature", CHART[3]],
+  improvement: ["adminx.fb.type.improvement", CHART[1]],
+  security: ["adminx.fb.type.security", STATUS.warn],
+  general: ["adminx.fb.type.general", STATUS.neutral],
+  other: ["adminx.fb.type.other", STATUS.neutral],
 };
 export const PRIORITIES = {
-  low: ["adminx.fb.priority.low", "#5AD19A"],
-  medium: ["adminx.fb.priority.medium", "#7C9BFF"],
-  high: ["adminx.fb.priority.high", "#FF9F43"],
-  critical: ["adminx.fb.priority.critical", "#FF5C5C"],
+  low: ["adminx.fb.priority.low", STATUS.neutral],
+  medium: ["adminx.fb.priority.medium", STATUS.info],
+  high: ["adminx.fb.priority.high", STATUS.warn],
+  critical: ["adminx.fb.priority.critical", STATUS.bad],
 };
 export const STATUSES = {
-  new: ["adminx.fb.status.new", "#587AF6"],
-  in_progress: ["adminx.fb.status.in_progress", "#F5B942"],
-  resolved: ["adminx.fb.status.resolved", "#30D158"],
-  closed: ["adminx.fb.status.closed", "#8E93A6"],
+  new: ["adminx.fb.status.new", STATUS.info],
+  in_progress: ["adminx.fb.status.in_progress", STATUS.warn],
+  resolved: ["adminx.fb.status.resolved", STATUS.ok],
+  closed: ["adminx.fb.status.closed", STATUS.neutral],
 };
 /** Quick type chips beside the type / priority menus (the ones that need action). */
 export const QUICK_TYPES = ["bug", "security", "feature"];
@@ -31,10 +32,11 @@ export const SORTS = { newest: "adminx.fb.sort.newest", oldest: "adminx.fb.sort.
 const STATUS_RANK = { new: 0, in_progress: 1, resolved: 2, closed: 3 };
 const PRIORITY_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
 
-const AV_COLORS = { D: "#2E9E5B", A: "#C2556F", M: "#1F8A9E", Z: "#B08A1E", C: "#3B6CF6", E: "#D2691E", B: "#8B5CF6", K: "#5A8A6A", S: "#9E3B3B" };
+// Darker stops of the shared chart pairs: white initials stay readable.
+const AV_COLORS = Object.fromEntries("DAMZCEBKS".split("").map((L, i) => [L, CHART_PAIRS[i % CHART_PAIRS.length][1]]));
 export function avatarColor(name, locale) {
   const L = upper(String(name || "?").trim().charAt(0), locale);
-  return AV_COLORS[L] || "#555";
+  return AV_COLORS[L] || CHART_PAIRS[7][1];
 }
 
 const DAY_MONTH = { day: "numeric", month: "short", timeZone: APP_TIMEZONE };

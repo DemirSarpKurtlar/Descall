@@ -98,7 +98,7 @@ export function MaintenanceBanner({ m, now, t, locale, onDetails, onDismiss }) {
 export function MaintenanceEndedToast({ t, onClose }) {
   return (
     <div className="mt-banner mt-glass" role="status" style={{ background: "linear-gradient(165deg,rgba(30,64,42,.95),rgba(22,32,26,.97))", borderColor: "rgba(48,209,88,.4)" }}>
-      <div className="mt-banner-ico" style={{ background: "rgba(48,209,88,.2)", color: "#6fe28d", borderColor: "rgba(48,209,88,.4)" }}>
+      <div className="mt-banner-ico" style={{ background: "rgba(52,199,123,.2)", color: "#6fe0a3", borderColor: "rgba(52,199,123,.4)" }}>
         <CheckCircle size={18} strokeWidth={2} />
       </div>
       <div className="mt-banner-copy"><div className="mt-banner-title">{t("maint.endedToast")}</div></div>

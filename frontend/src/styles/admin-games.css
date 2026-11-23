@@ -87,8 +87,8 @@ html.glass-desktop :is(.agm, .agm-scrim) :is(button, input, textarea, select, a,
 .agm-btn:active:not(:disabled) { transform: translateY(1px); }
 .agm-btn.is-pressed { background: rgba(255, 255, 255, 0.16) !important; }
 .agm-btn.is-primary { background: linear-gradient(180deg, #6788ff, #587af5) !important; box-shadow: 0 6px 16px rgba(var(--agm-brand), 0.3); color: #fff; }
-.agm-btn.is-primary:hover:not(:disabled) { background: linear-gradient(180deg, #7896ff, #6584f7) !important; }
-.agm-btn.is-danger { background: linear-gradient(180deg, #ff6b6e, #e5383c) !important; box-shadow: 0 6px 16px rgba(var(--agm-red), 0.3); color: #fff; }
+.agm-btn.is-primary:hover:not(:disabled) { background: linear-gradient(180deg, #7896ff, #6283f7) !important; }
+.agm-btn.is-danger { background: linear-gradient(180deg, #f4555a, #e5383c) !important; box-shadow: 0 6px 16px rgba(var(--agm-red), 0.3); color: #fff; }
 .agm-btn.is-ban { color: #ff8a8d; }
 .agm-btn-lg { height: 40px; padding: 0 16px; border-radius: 13px; }
 .agm-btn.agm-wide { width: 100%; margin-top: 4px; }

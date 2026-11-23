@@ -5,10 +5,11 @@ import { formatNumber } from "../../../i18n/format.js";
  * Small hand-made SVG charts for Elde tutma / Ekonomi (3.7.5). One y-axis,
  * thin bars with a 2px gap, rounded data-end, recessive grid, hover tooltip
  * per column, legend for 2+ series (identity is never colour alone).
- * Colours: validated pair (dark surface) #3987e5 / #d95926.
+ * Colours: the shared admin chart palette (adminPalette.js): brand blue and
+ * orange, a colour-blind safe pair on the dark admin surface.
  */
-export const SERIES_A = "#3987e5";
-export const SERIES_B = "#d95926";
+export const SERIES_A = "#587af5"; // CHART[0]
+export const SERIES_B = "#d9823b"; // CHART[6]
 
 export function niceMax(v) {
   if (!(v > 0)) return 1;

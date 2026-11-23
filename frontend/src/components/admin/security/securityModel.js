@@ -3,6 +3,7 @@
  * pure helpers shared by the page, the lock dialog and the settings history drawer.
  * Tested in security.selftest.mjs.
  */
+import { STATUS } from "../adminPalette.js";
 
 export const FEED_FILTERS = Object.freeze(["all", "bruteForce", "failedLogin", "blockedIp", "rateLimit", "signupDenied"]);
 export const FILTER_TYPES = Object.freeze({
@@ -187,7 +188,7 @@ export function chartX(startIso, iso, now = Date.now()) {
 export const GRADE_TONE = Object.freeze({ excellent: "green", good: "green", fair: "amber", poor: "red" });
 
 export function ringStyle(score, grade) {
-  const color = { green: "#34c77b", amber: "#f2a93b", red: "#f23f43" }[GRADE_TONE[grade] || "green"];
+  const color = { green: STATUS.ok, amber: STATUS.warn, red: STATUS.bad }[GRADE_TONE[grade] || "green"];
   const pct = Math.max(0, Math.min(100, Number(score) || 0));
   return { background: `conic-gradient(${color} 0 ${pct}%, rgba(255,255,255,.08) ${pct}% 100%)` };
 }
