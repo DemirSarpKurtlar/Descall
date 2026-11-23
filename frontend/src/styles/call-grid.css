@@ -161,7 +161,7 @@
   height: 96px;
   border-radius: 50%;
   border: 1.5px solid rgba(206, 214, 255, 0.9);
-  box-shadow: 0 0 0 8px rgba(129, 140, 248, 0.14);
+  box-shadow: 0 0 0 8px var(--primary-soft);
   transform: translate(-50%, -50%);
   animation: call-ring-pulse 2.2s ease-out infinite;
   pointer-events: none;
@@ -191,8 +191,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #c4b5fd;
-  box-shadow: 0 0 8px rgba(196, 181, 253, 0.95);
+  background: color-mix(in srgb, var(--primary) 55%, #fff);
+  box-shadow: 0 0 8px var(--primary-glow);
   animation: call-ring-dot 1.3s ease-in-out infinite;
 }
 

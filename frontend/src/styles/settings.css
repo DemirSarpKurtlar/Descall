@@ -740,7 +740,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--on-primary, #fff);
   background: var(--primary);
   box-shadow: 0 0 0 3px var(--surface-0), 0 4px 10px rgba(0, 0, 0, 0.35);
   line-height: 0;
@@ -1297,7 +1297,7 @@
 
 .us-btn.primary {
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
 }
 /* White text needs 4.5:1: the default azure primary (#4F7CFF, 3.8:1) gets a deeper fill
    under the label (also the Descall+ filter chips); other themes keep their accent. */
@@ -1889,7 +1889,7 @@ button.us-row.g-privacy-link:hover {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--on-primary, #fff);
   background: var(--primary);
   box-shadow: 0 0 0 3px var(--surface-0), 0 4px 10px rgba(0, 0, 0, 0.35);
 }

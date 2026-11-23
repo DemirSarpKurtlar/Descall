@@ -12,7 +12,7 @@
           var theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
           if (theme) document.documentElement.setAttribute("data-theme", theme);
           var accent = settings.accentColor;
-          if (accent && !settings.premiumThemeKey && /^#[0-9A-Fa-f]{6}$/.test(String(accent))) {
+          if (accent && !settings.premiumThemeKey && /^#[0-9A-Fa-f]{6}$/.test(String(accent)) && !/^#587AF[56]$/i.test(String(accent))) {
             var root = document.documentElement.style;
             root.setProperty("--primary", accent);
             root.setProperty("--primary-2", accent);
@@ -714,7 +714,7 @@
         --seo-text: #f2f3f5;
         --seo-muted: #b4bcc8;
         --seo-link: #9eb6ff;
-        --seo-accent: #5865f2;
+        --seo-accent: #3a66ee;
         --seo-border: rgba(255, 255, 255, 0.1);
         --seo-surface: rgba(30, 31, 34, 0.72);
         color: var(--seo-text);
@@ -2163,7 +2163,7 @@
         font-size: 14px;
         font-weight: 700;
         color: #fff;
-        background: #5865f2;
+        background: #3a66ee;
         cursor: pointer;
       }
       @media (prefers-reduced-motion: reduce) {

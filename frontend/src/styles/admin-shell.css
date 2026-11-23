@@ -11,9 +11,10 @@
   --adm-hair: rgba(255, 255, 255, 0.075);
   --adm-hair2: rgba(255, 255, 255, 0.12);
   --adm-glass: rgba(26, 28, 40, 0.58);
-  --adm-ok: #34d399;
-  --adm-warn: #fbbf24;
-  --adm-bad: #f87171;
+  /* Status inks (text, icons, small dots); same values as adminPalette.js STATUS.*Ink. */
+  --adm-ok: #6fe0a3;
+  --adm-warn: #ffc773;
+  --adm-bad: #ff9a9c;
   position: relative;
   display: flex;
   flex-direction: column;

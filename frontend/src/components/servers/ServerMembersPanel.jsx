@@ -528,7 +528,7 @@ export default function ServerMembersPanel({
       </div>
       <div className="member-meta">
         <div className="member-name-row">
-          <span className="member-name" style={m._color ? { color: m._color } : undefined}>
+          <span className={m._color ? "member-name has-role-color" : "member-name"} style={m._color ? { color: m._color, "--role-color": m._color } : undefined}>
             {m._name}
           </span>
           <CountryBadge user={m.user || m} item={m.user?.equippedCountry || m.equippedCountry} compact />

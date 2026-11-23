@@ -24,9 +24,9 @@ const config: CapacitorConfig = {
     // all in contenteditable. The composer already handles real IME
     // composition (isComposing / keyCode 229, src/lib/composerGrow.js).
     captureInput: false,
-    // Same dark surface as the Android 12+ splash (values/colors.xml
-    // splash_background) and the in-app boot splash.
-    backgroundColor: "#1E1F22",
+    // Same dark surface as the Android 12+ splash and the window background
+    // (values/colors.xml splash_background = window_background).
+    backgroundColor: "#101118",
   },
   ios: {
     // Existing CSS already pads with env(safe-area-inset-*) — the WebView runs

@@ -82,7 +82,7 @@ body {
   overflow: hidden;
 }
 
-/* 🔠 Typography */
+/* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-weight: var(--weight-semibold);
   line-height: var(--line-tight);
@@ -107,7 +107,7 @@ a {
 }
 a:hover { text-decoration: underline; }
 
-/* 🔘 Buttons, Discord Style */
+/* Buttons, Discord Style */
 button {
   font: inherit;
   cursor: pointer;
@@ -142,7 +142,7 @@ button {
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, #fff);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-2);
@@ -200,7 +200,7 @@ button {
 .btn-icon.danger { color: var(--danger-text); }
 .btn-icon.danger:hover { background: var(--danger-soft); }
 
-/* 🔤 Inputs */
+/* Inputs */
 input, textarea, select {
   font: inherit;
   color: var(--text-1);
@@ -237,7 +237,7 @@ select {
   padding-right: 32px;
 }
 
-/* 📋 Scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -245,8 +245,27 @@ select {
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--surface-hover); }
+/* Firefox has no ::-webkit-scrollbar: same thin thumb instead of the OS grey bar.
+   Scoped so Chromium keeps the 6px rules above (scrollbar-color overrides them). */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+}
 
-/* 🔲 Focus Ring */
+/* Selected text: the accent tint on every platform (Android already had it),
+   not the browser's default system highlight. */
+::selection { background-color: color-mix(in srgb, var(--primary) 40%, transparent); }
+
+/* Autofilled fields keep the theme ink and their own background instead of
+   Chromium's pale yellow / light blue fill (auth-fields.css has its own rule). */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-1);
+  caret-color: var(--text-1);
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+/* Focus Ring */
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* Screen-reader-only text (live regions, channel type / state) and the skip link,
@@ -255,7 +274,7 @@ select {
 .a11y-skip { position: fixed; top: 8px; left: 8px; z-index: 2147483001; padding: 8px 14px; border-radius: 10px; background: #4562E0; color: #fff; font-size: var(--fs-13); font-weight: 600; text-decoration: none; }
 .a11y-skip:not(:focus) { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 
-/* 🏷️ Badge */
+/* Badge */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -271,14 +290,14 @@ select {
   line-height: 1;
 }
 
-/* 🛡️ Divider */
+/* Divider */
 .divider {
   height: 1px;
   background: var(--border-2);
   margin: var(--space-4) 0;
 }
 
-/* 💬 Tooltip */
+/* Tooltip */
 [data-tooltip] {
   position: relative;
 }
@@ -307,7 +326,7 @@ select {
   display: none !important;
 }
 
-/* 🧩 Skeleton */
+/* Skeleton */
 .skeleton,
 .skeleton-line {
   background: linear-gradient(90deg, var(--border-1), var(--border-2), var(--border-1));

@@ -77,7 +77,7 @@
 
 .call-btn.active {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, #fff);
 }
 
 .call-btn.success {
@@ -1153,7 +1153,7 @@ html.gd-lite .rail-tooltip {
 .conv-confirm-btn.primary {
   border: none;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
 }
 
 .conv-confirm-btn.danger {
@@ -2862,7 +2862,7 @@ button.header-avatar {
   border: none;
   border-radius: var(--r-md);
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -3019,7 +3019,7 @@ button.header-avatar {
   border-radius: var(--r-sm);
   border: none;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -3256,7 +3256,7 @@ button.header-avatar {
   padding: 0 3px;
   border-radius: var(--r-pill);
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
   font-size: 9.5px;
   font-weight: 700;
   line-height: 15px;
@@ -3365,6 +3365,18 @@ button.header-avatar {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Role colors are the server's choice; only their lightness is clamped so a
+   near-black role stays readable on dark glass and a pale one on light glass.
+   Hue and chroma are kept. Browsers without relative color keep the raw color. */
+@supports (color: oklch(from red l c h)) {
+  .member-name.has-role-color {
+    color: oklch(from var(--role-color) max(l, 0.62) c h) !important;
+  }
+  :root[data-theme="light"] .member-name.has-role-color {
+    color: oklch(from var(--role-color) min(l, 0.55) c h) !important;
+  }
 }
 
 .member-owner-badge {
@@ -4265,7 +4277,7 @@ button.header-avatar {
   border: none;
   border-radius: var(--r-sm);
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary, #fff);
   font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
@@ -4654,7 +4666,7 @@ button.header-avatar {
   border-radius: var(--r-sm);
   border: none;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, #fff);
   font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
@@ -4945,7 +4957,7 @@ button.header-avatar {
 
 .activity-suggestion-chip:hover {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, #fff);
   border-color: var(--primary);
 }
 
@@ -5000,7 +5012,7 @@ button.header-avatar {
   border-radius: var(--r-md);
   border: none;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, #fff);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

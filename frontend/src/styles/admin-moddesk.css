@@ -119,8 +119,8 @@ html.glass-desktop :is(.mdk, .mdk-queue) :is(button, input, textarea, select, a)
 .mdk-btn.is-ghost { flex: 0.5; }
 .mdk-btn.is-primary { color: #fff !important; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); }
 .mdk-btn.is-red,
-.mdk-btn.is-ban { color: #fff !important; background: linear-gradient(180deg, #ff6b6e, #e5383c); box-shadow: 0 6px 16px rgba(var(--mdk-red), 0.3); }
-.mdk-btn.is-timeout { color: #1a1205 !important; background: linear-gradient(180deg, #ffb35c, #f08a24); box-shadow: 0 6px 16px rgba(240, 138, 36, 0.28); }
+.mdk-btn.is-ban { color: #fff !important; background: linear-gradient(180deg, #f4555a, #e5383c); box-shadow: 0 6px 16px rgba(var(--mdk-red), 0.3); }
+.mdk-btn.is-timeout { color: #1a1205 !important; background: linear-gradient(180deg, #ffbd59, #f2a93b); box-shadow: 0 6px 16px rgba(240, 138, 36, 0.28); }
 .mdk-btn.is-kick { color: #fff !important; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); }
 .mdk-btn:is(.is-primary, .is-red, .is-ban, .is-timeout, .is-kick):hover:not(:disabled) { filter: brightness(1.06); }
 .mdk-btn.is-big { flex: 1; height: 42px; border-radius: 12px; }
@@ -190,7 +190,7 @@ html.glass-desktop :is(.mdk, .mdk-queue) :is(button, input, textarea, select, a)
 .mdk-empty { margin: 10px 2px; font-size: var(--fs-12); color: var(--mdk-t3); }
 .mdk-empty.is-lane { padding: 14px 6px; text-align: center; }
 .mdk-note { margin: 0 0 10px; padding: 9px 11px; border-radius: 11px; font-size: var(--fs-12); line-height: 1.45; color: #ffd2a1; background: rgba(240, 138, 36, 0.1); box-shadow: inset 0 0 0 1px rgba(240, 138, 36, 0.3); }
-.mdk-err { margin: 0; font-size: var(--fs-12); color: #fca5a5; }
+.mdk-err { margin: 0; font-size: var(--fs-12); color: #ff9a9c; }
 .mdk-banner { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; padding: 9px 12px; border-radius: 12px; font-size: var(--fs-12); }
 .mdk-banner > span { flex: 1; min-width: 0; }
 .mdk-banner.is-red { color: #ffb3b5; background: rgba(var(--mdk-red), 0.1); box-shadow: inset 0 0 0 1px rgba(var(--mdk-red), 0.32); }

@@ -143,11 +143,11 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #30D158;
+  background: var(--status-online, #23A55A);
   box-shadow: 0 0 0 4px rgba(24, 25, 36, 1);
 }
-.pfs-av-dot.is-idle { background: #FFD60A; }
-.pfs-av-dot.is-dnd { background: #FF453A; }
+.pfs-av-dot.is-idle { background: var(--status-idle, #FF9F0A); }
+.pfs-av-dot.is-dnd { background: var(--status-dnd, #DA373C); }
 .pfs-av-dot.is-off { background: #8E8E93; }
 .pfs-name {
   margin: 54px 4px 0;
@@ -157,8 +157,8 @@
   overflow-wrap: anywhere;
 }
 .pfs-h { margin: 2px 4px 12px; font-size: 15px; color: rgba(235, 238, 255, 0.55); overflow-wrap: anywhere; }
-.pfs-h b { color: #30D158; font-weight: 500; }
-.pfs-h b.is-idle { color: #FFD60A; }
+.pfs-h b { color: var(--success-text, #3DDC84); font-weight: 500; }
+.pfs-h b.is-idle { color: var(--status-idle, #FF9F0A); }
 .pfs-h b.is-dnd { color: var(--danger-text); }
 .pfs-h b.is-off { color: rgba(235, 238, 255, 0.55); }
 .pfs-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 12px; }
@@ -223,7 +223,9 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 .pfs-row .val { color: rgba(235, 238, 255, 0.5); font-size: 16px; white-space: nowrap; }
 .pfs-row .chev { width: 8px; height: 13px; flex: none; opacity: 0.32; }
 .pfs-row.is-red { color: var(--danger-text); }
-.pfs-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; background: #F0453A; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
+.pfs-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; background: var(--g-brand, var(--primary, #587AF5)); box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
+/* Red tiles only on destructive rows (report, block); Notifications uses the accent. */
+.pfs-row.is-red .pfs-ico { background: var(--danger, #DA373C); }
 .pfs-skel { display: inline-block; width: 64px; height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); }
 .pfs-err { margin: 10px 16px 0; font-size: 13px; color: #FF6961; line-height: 1.38; }
 
@@ -287,7 +289,7 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 .rps-field::placeholder { color: rgba(235, 238, 255, 0.4); }
 .rps-field:focus { box-shadow: 0 0 0 2px rgba(88, 122, 246, 0.85); }
 .rps-done { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 28px 26px 8px; }
-.rps-done .ck { width: 64px; height: 64px; border-radius: 50%; background: rgba(48, 209, 88, 0.18); color: #30D158; display: grid; place-items: center; margin-bottom: 14px; }
+.rps-done .ck { width: 64px; height: 64px; border-radius: 50%; background: var(--success-soft, rgba(35, 165, 90, 0.12)); color: var(--success-text, #3DDC84); display: grid; place-items: center; margin-bottom: 14px; }
 .rps-done h3 { margin: 0; font-size: 21px; font-weight: 700; }
 .rps-done p { margin: 6px 0 0; font-size: 15px; color: rgba(235, 238, 255, 0.6); line-height: 1.4; }
 .rps-alert-dim { position: fixed; inset: 0; z-index: 1; background: rgba(6, 7, 12, 0.6); display: grid; place-items: center; }
@@ -413,6 +415,12 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 :root[data-theme="light"] :is(.pfs-h, .pfs-sec, .pfs-foot, .pfs-row .val, .rps-head .sub, .rps-done p) { color: rgba(20, 24, 40, 0.55); }
 :root[data-theme="light"] .pfs-row + .pfs-row::before { background: rgba(0, 0, 0, 0.1); }
 :root[data-theme="light"] .pfs-row .chev path { stroke: #000; }
+/* Presence word under the name: the dark-glass inks (#30D158, idle orange,
+   55% white) were 1.4-1.9:1 on the light sheet. */
+:root[data-theme="light"] .pfs-h b { color: var(--success-text, #13703A); }
+:root[data-theme="light"] .pfs-h b.is-idle { color: var(--warning-text, #8A5A00); }
+:root[data-theme="light"] .pfs-h b.is-dnd { color: var(--danger-text, #B42318); }
+:root[data-theme="light"] .pfs-h b.is-off { color: rgba(20, 24, 40, 0.55); }
 :root[data-theme="light"] :is(.pfs-act, .pfs-nav .l, .pfs-nav .r, .rps-alert .bt > button) { color: #3E5BDB; }
 :root[data-theme="light"] .rps-alert .bt .red { color: #E5352B; }
 :root[data-theme="light"] .rps-field { color: rgba(10, 12, 24, 0.94); }
@@ -494,7 +502,7 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
   font-size: 14px; font-weight: 600; color: inherit;
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
-.rps-btn.is-danger { background: #FF453A; color: #fff; }
+.rps-btn.is-danger { background: var(--danger, #DA373C); color: #fff; }
 .rps-btn:disabled { opacity: 0.55; cursor: default; }
 .rps-btn:active:not(:disabled) { transform: scale(0.97); }
 .rps-head .handle { font-size: 13px; opacity: 0.6; margin-top: -2px; }

@@ -64,7 +64,7 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #d7dbff;
-  background: rgba(79, 124, 255, 0.22);
+  background: rgba(88, 122, 245, 0.22);
   border: 1px solid rgba(142, 172, 255, 0.4);
   border-radius: var(--r-pill);
   padding: 3px 9px;
@@ -99,7 +99,7 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   height: 48vw;
   top: -18%;
   left: 20%;
-  background: rgba(79, 124, 255, 0.38);
+  background: rgba(88, 122, 245, 0.38);
 }
 
 .mkt-orb-b {
@@ -353,8 +353,8 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(79, 124, 255, 0.35);
-  background: linear-gradient(135deg, rgba(79, 124, 255, 0.18), rgba(42, 212, 184, 0.08));
+  border: 1px solid rgba(88, 122, 245, 0.35);
+  background: linear-gradient(135deg, rgba(88, 122, 245, 0.18), rgba(42, 212, 184, 0.08));
   color: var(--mkt-text, #e8eaed);
   font-size: 13px;
   font-weight: 600;
@@ -559,7 +559,7 @@ a.mkt-feature-link {
   border-radius: var(--r-md);
   display: grid;
   place-items: center;
-  background: rgba(79, 124, 255, 0.18);
+  background: rgba(88, 122, 245, 0.18);
   color: var(--mkt-accent);
 }
 
@@ -1795,8 +1795,8 @@ a.mkt-feature-link {
 }
 
 .seo-pp-rail span.is-active {
-  background: linear-gradient(145deg, #8eacff, #4f7cff);
-  box-shadow: 0 0 18px rgba(79, 124, 255, 0.45);
+  background: linear-gradient(145deg, #8eacff, #587AF5);
+  box-shadow: 0 0 18px rgba(88, 122, 245, 0.45);
 }
 
 .seo-pp-list {
@@ -1848,7 +1848,7 @@ a.mkt-feature-link {
 .seo-pp-bubble.is-mine {
   align-self: flex-end;
   width: 46%;
-  background: rgba(79, 124, 255, 0.42);
+  background: rgba(88, 122, 245, 0.42);
 }
 
 .seo-pp-call {
@@ -2025,8 +2025,8 @@ a.mkt-feature-link {
 }
 
 .mkt-download-platform.is-active {
-  border-color: rgba(79, 124, 255, 0.6);
-  background: rgba(79, 124, 255, 0.16);
+  border-color: rgba(88, 122, 245, 0.6);
+  background: rgba(88, 122, 245, 0.16);
 }
 
 .mkt-download-platform strong {
@@ -2147,7 +2147,7 @@ a.mkt-feature-link {
 .seo-landing.seo-tone-voice .seo-hero {
   padding: 8px 18px 18px;
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, rgba(79, 124, 255, 0.1), transparent 60%);
+  background: linear-gradient(135deg, rgba(88, 122, 245, 0.1), transparent 60%);
 }
 
 .seo-landing.seo-tone-friends .seo-hero {

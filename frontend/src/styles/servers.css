@@ -165,12 +165,12 @@
   font-weight: 700;
   padding: 1px 5px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, #f59e0b 22%, transparent);
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: var(--warning-text);
 }
 
 .server-voice-user.is-priority-speaker .server-voice-speak-ring.is-active {
-  border-color: #f59e0b;
+  border-color: var(--warning);
 }
 
 .server-audit-filter select,
@@ -411,8 +411,8 @@
   border-radius: 7px;
   display: grid;
   place-items: center;
-  color: var(--primary, #5b6cff);
-  background: color-mix(in srgb, var(--primary, #5b6cff) 16%, transparent);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
 }
 
 /* 3.7.15 (owner report): under the glass theme the hint is part of the panel's glass,
@@ -2216,7 +2216,7 @@ html.glass-desktop .sidebar-secondary > input.server-hidden-file {
 }
 
 .sra-owner-icon {
-  color: #fee75c;
+  color: var(--warning-text);
 }
 
 .sra-mini-pills {
@@ -2293,8 +2293,8 @@ html.glass-desktop .sidebar-secondary > input.server-hidden-file {
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, #fee75c 12%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, #fee75c 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
   color: var(--text-1);
   font-size: 12.5px;
   line-height: 1.4;
@@ -3035,8 +3035,8 @@ button.member-row.server-member-row {
 }
 
 .server-voice-status.is-ok { color: var(--g-ok, #30D158); }
-html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
-.server-voice-status.is-wait { color: #f0b429; }
+html[data-theme="light"] .server-voice-status.is-ok { color: var(--success-text); }
+.server-voice-status.is-wait { color: var(--warning-text); }
 .server-voice-status.is-bad { color: var(--danger-text, #ed4245); }
 
 .server-voice-count-pill {
@@ -3057,8 +3057,8 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
   gap: 6px;
   padding: 4px 8px;
   border-radius: var(--r-pill);
-  background: rgba(255, 196, 0, 0.14);
-  color: #ffd27a;
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning-text);
   font-size: var(--fs-12);
   font-weight: 650;
 }
@@ -3386,9 +3386,11 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
 
 .server-voice-flag.is-speak { color: var(--g-ok, #30D158); }
 .server-voice-flag.is-muted,
-.server-voice-flag.is-deaf { color: #ff8a82; }
+.server-voice-flag.is-deaf { color: var(--danger-text); }
 .server-voice-flag.is-share,
-.server-voice-flag.is-cam { color: #8ec7ff; }
+.server-voice-flag.is-cam { color: color-mix(in srgb, var(--primary) 55%, #fff); }
+html[data-theme="light"] .server-voice-flag.is-share,
+html[data-theme="light"] .server-voice-flag.is-cam { color: var(--primary-2); }
 
 /* Connection quality: a small pill, never body-size text next to the 13 px name. */
 .server-voice-flag.is-net {
@@ -3401,15 +3403,16 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.server-voice-flag.is-net.is-fair { color: #ffd27a; background: rgba(255, 196, 0, 0.16); }
-.server-voice-flag.is-net.is-weak { color: #ff8a82; background: rgba(255, 69, 58, 0.18); }
+.server-voice-flag.is-net.is-fair { color: var(--warning-text); background: color-mix(in srgb, var(--warning) 16%, transparent); }
+.server-voice-flag.is-net.is-weak { color: var(--danger-text); background: color-mix(in srgb, var(--danger) 18%, transparent); }
 
 /* Server mute (moderator, AFK lock or no SPEAK): filled red chip, not the plain self-mute icon. */
 .server-voice-flag.is-muted.is-server {
   padding: 1px 3px;
   border-radius: 6px;
-  background: #e5484d;
-  color: #fff;
+  background: color-mix(in srgb, var(--danger) 24%, transparent);
+  color: var(--danger-text);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--danger) 45%, transparent);
 }
 
 .server-voice-tile-more {
@@ -4032,8 +4035,8 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
 }
 
 .server-stage-request-badge {
-  background: color-mix(in srgb, #fee75c 20%, transparent);
-  color: #b38600;
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  color: var(--warning-text);
 }
 
 .server-voice-btn:disabled {
@@ -4727,12 +4730,12 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
 
 .server-voice-menu-confirm-btn.danger {
   border-color: transparent;
-  background: #e5484d;
+  background: var(--danger);
   color: #fff;
 }
 
 .server-voice-menu-confirm-btn:focus-visible {
-  outline: 2px solid #587af5;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -5363,5 +5366,77 @@ html.glass-ui .server-members-panel .server-member-row-more {
 
 /* Light theme: darker ink for the amber / red voice chips. */
 html[data-theme="light"] .server-voice-afk-pill,
-html[data-theme="light"] .server-voice-flag.is-net.is-fair { color: #8a5a00; }
-html[data-theme="light"] .server-voice-flag.is-net.is-weak { color: #b42318; }
+
+/* Color pass (owner report: "the button back to the server list looks wrong").
+   Back to servers is the same round glass chip as the app's other back and
+   header buttons, with a chevron, in dark and light. The server menu (...) is
+   a plain tool inside the header pill, not a glowing brand CTA. */
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-header .server-back-btn,
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-header .sidebar-actions.is-phone-tools .icon-btn {
+  border-radius: 50% !important;
+}
+html.glass-ui[data-theme="light"] .app-root.g-shell .g-server-pane .server-shell-header .server-back-btn,
+html.glass-ui[data-theme="light"] .app-root.g-shell .g-server-pane .server-shell-header .sidebar-actions .icon-btn {
+  background: rgba(57, 60, 77, 0.08);
+  color: var(--g-t1);
+}
+
+html.glass-desktop .server-shell-header .server-back-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--gd-t1);
+  background: var(--gd-glass-fill);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+html.glass-desktop .server-shell-header .server-back-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+html.glass-desktop .server-shell-header .server-back-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+html.glass-desktop .server-shell-header .sidebar-actions::before {
+  width: 100%;
+}
+html.glass-desktop .server-shell-header .sidebar-actions .icon-btn.g-server-menu-btn:last-child {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  margin-right: 4px;
+  border-radius: var(--r-md);
+  background: transparent !important;
+  color: var(--gd-t1) !important;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.glass-desktop .server-shell-header .sidebar-actions .icon-btn.g-server-menu-btn:only-child {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--gd-glass-fill) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+html.glass-desktop .server-shell-header .sidebar-actions .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+html.glass-desktop[data-theme="light"] .server-shell-header .server-back-btn,
+html.glass-desktop[data-theme="light"] .server-shell-header .sidebar-actions::before,
+html.glass-desktop[data-theme="light"] .server-shell-header .sidebar-actions .icon-btn.g-server-menu-btn:only-child {
+  background: rgba(57, 60, 77, 0.07) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(57, 60, 77, 0.12);
+}
+html.glass-desktop[data-theme="light"] .server-shell-header .server-back-btn:hover,
+html.glass-desktop[data-theme="light"] .server-shell-header .sidebar-actions .icon-btn:hover {
+  background: rgba(57, 60, 77, 0.1) !important;
+}
+html.glass-desktop[data-theme="light"] .server-shell-header .sidebar-actions .icon-btn.g-server-menu-btn:last-child {
+  color: var(--g-t1) !important;
+}

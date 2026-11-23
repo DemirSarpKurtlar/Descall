@@ -40,7 +40,7 @@ for (const m of rules.matchAll(/([^{}]+)\{/g)) assert.match(m[1], /native-androi
 const res = join(here, "..", "..", "android", "app", "src", "main", "res", "values");
 const colors = readFileSync(join(res, "colors.xml"), "utf8");
 const styles = readFileSync(join(res, "styles.xml"), "utf8");
-assert.match(colors, /<color name="colorAccent">#587AF6<\/color>/, "accent is the glass brand blue");
+assert.match(colors, /<color name="colorAccent">#587AF5<\/color>/, "accent is the glass brand blue");
 const noActionBar = styles.slice(styles.indexOf('name="AppTheme.NoActionBar"'), styles.indexOf('name="AppTheme.NoActionBarLaunch"'));
 assert.match(noActionBar, /<item name="colorAccent">@color\/colorAccent<\/item>/, "the activity theme carries the accent");
 assert.match(noActionBar, /<item name="colorControlActivated">@color\/colorAccent<\/item>/);

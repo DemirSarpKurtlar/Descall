@@ -38,12 +38,12 @@ export function parseThemes(css) {
     const [, name, body] = m;
     const get = (k) => (new RegExp(`--${k}:\\s*([^;]+);`).exec(body) || [])[1]?.trim();
     const scheme = (/color-scheme:\s*(\w+)/.exec(body) || [])[1] || "dark";
-    out.push({ name, scheme, primary: get("primary"), primary2: get("primary-2"), surface0: get("surface-0"), surface1: get("surface-1"), text1: get("text-1"), link: get("text-link") });
+    out.push({ name, scheme, primary: get("primary"), primary2: get("primary-2"), surface0: get("surface-0"), surface1: get("surface-1"), text1: get("text-1"), link: get("text-link"), onPrimary: get("on-primary") });
   }
   return out;
 }
 
-const DARK_DEFAULT = { primary: "#4F7CFF", primary2: "#3B63E6" };
+const DARK_DEFAULT = { primary: "#587AF5", primary2: "#4A68E0" };
 
 export function themeBlock(t, scope = "html.glass-ui") {
   const brand = hexToRgb(t.primary) || hexToRgb(DARK_DEFAULT.primary);
@@ -104,7 +104,7 @@ export function themeBlock(t, scope = "html.glass-ui") {
   --g-tint-base: rgba(${rgb(s1)},0.22);
   --g-heavy-base: rgba(${rgb(mix(s1, [0, 0, 0], 0.15))},0.62);
   --g-solid: ${hex(mix(s1, [0, 0, 0], 0.05))}; --g-solid-heavy: ${hex(s1)};
-  --g-cta-top: rgba(${rgb(mix(brand, [255, 255, 255], 0.2))},0.95); --g-cta-bot: rgba(${rgb(mix(brand, [0, 0, 0], 0.05))},0.95);
+  --g-cta-top: rgba(${rgb(mix(brand, [255, 255, 255], 0.2))},0.95); --g-cta-bot: rgba(${rgb(mix(brand, [0, 0, 0], 0.05))},0.95);${hexToRgb(t.onPrimary) ? `\n  --g-on-brand: ${t.onPrimary};` : ""}
 }`;
 }
 

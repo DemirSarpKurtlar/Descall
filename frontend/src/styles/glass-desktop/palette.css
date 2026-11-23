@@ -4,13 +4,13 @@
 
 html.glass-desktop[data-theme="light"] {
   --g-scheme: light;
-  --g-brand: #4F7CFF;
-  --g-brand-rgb: 79,124,255;
-  --g-brand-hi: #006CE7;
-  --g-brand2-rgb: 67,105,217;
-  --g-deep: #EBEEF5;
-  --g-edge-rgb: 235,238,245; --g-ring: #F9F9FA;
-  --g-base-0: #F6F8FF;
+  --g-brand: #3A66EE;
+  --g-brand-rgb: 58,102,238;
+  --g-brand-hi: #0058C4;
+  --g-brand2-rgb: 47,87,214;
+  --g-deep: #EBEDF5;
+  --g-edge-rgb: 235,237,245; --g-ring: #F9F9FA;
+  --g-base-0: #F5F7FE;
   --g-base-1: #F9F9FA;
   --g-base-2: #EBECEE;
   --g-amb-a: 0.22; --g-amb-b: 0.16; --g-amb-c: 0.10; --g-amb-d: 0.14; --g-glow: 0.26;
@@ -31,7 +31,7 @@ html.glass-desktop[data-theme="light"] {
   --g-solid: #FBFBFC; --g-solid-heavy: #FFFFFF;
   --g-contrast-border: rgba(0,0,0,0.55);
   --g-on-brand: #fff;
-  --g-cta-top: rgba(114,150,255,0.97); --g-cta-bot: rgba(75,118,242,0.97);
+  --g-cta-top: rgba(97,133,241,0.97); --g-cta-bot: rgba(55,97,226,0.97);
 }
 
 html.glass-desktop[data-theme="midnight"] {
@@ -86,6 +86,7 @@ html.glass-desktop[data-theme="ocean"] {
   --g-heavy-base: rgba(10,26,31,0.62);
   --g-solid: #0B1D23; --g-solid-heavy: #0C1F25;
   --g-cta-top: rgba(78,210,222,0.95); --g-cta-bot: rgba(32,189,203,0.95);
+  --g-on-brand: #061418;
 }
 
 html.glass-desktop[data-theme="emerald"] {
@@ -104,6 +105,7 @@ html.glass-desktop[data-theme="emerald"] {
   --g-heavy-base: rgba(12,31,22,0.62);
   --g-solid: #0D2319; --g-solid-heavy: #0E251A;
   --g-cta-top: rgba(87,203,141,0.95); --g-cta-bot: rgba(43,181,106,0.95);
+  --g-on-brand: #08160F;
 }
 
 html.glass-desktop[data-theme="sakura"] {
@@ -122,6 +124,7 @@ html.glass-desktop[data-theme="sakura"] {
   --g-heavy-base: rgba(30,14,19,0.62);
   --g-solid: #210F15; --g-solid-heavy: #231016;
   --g-cta-top: rgba(248,148,181,0.95); --g-cta-bot: rgba(234,115,155,0.95);
+  --g-on-brand: #15090D;
 }
 
 html.glass-desktop[data-theme="solar"] {
@@ -140,13 +143,14 @@ html.glass-desktop[data-theme="solar"] {
   --g-heavy-base: rgba(31,22,13,0.62);
   --g-solid: #22190E; --g-solid-heavy: #241A0F;
   --g-cta-top: rgba(248,185,90,0.95); --g-cta-bot: rgba(234,160,47,0.95);
+  --g-on-brand: #161009;
 }
 
 html.glass-desktop[data-theme="aurora"] {
   --g-scheme: dark;
   --g-brand: #A96AF0;
   --g-brand-rgb: 169,106,240;
-  --g-brand-hi: #B47BF4;
+  --g-brand-hi: #BE8CF6;
   --g-brand2-rgb: 139,55,235;
   --g-deep: #070F11;
   --g-edge-rgb: 7,15,17; --g-ring: #0C1A1D;
@@ -176,6 +180,7 @@ html.glass-desktop[data-theme="sunset"] {
   --g-heavy-base: rgba(31,13,27,0.62);
   --g-solid: #220E1E; --g-solid-heavy: #240F20;
   --g-cta-top: rgba(247,168,108,0.95); --g-cta-bot: rgba(233,139,67,0.95);
+  --g-on-brand: #150913;
 }
 
 html.glass-desktop[data-theme="cottoncandy"] {
@@ -194,6 +199,7 @@ html.glass-desktop[data-theme="cottoncandy"] {
   --g-heavy-base: rgba(25,14,30,0.62);
   --g-solid: #1C0F21; --g-solid-heavy: #1D1023;
   --g-cta-top: rgba(243,169,243,0.95); --g-cta-bot: rgba(228,141,228,0.95);
+  --g-on-brand: #110A15;
 }
 
 html.glass-desktop[data-theme="peach"] {
@@ -212,6 +218,7 @@ html.glass-desktop[data-theme="peach"] {
   --g-heavy-base: rgba(31,15,13,0.62);
   --g-solid: #22110E; --g-solid-heavy: #24120F;
   --g-cta-top: rgba(247,167,133,0.95); --g-cta-bot: rgba(233,138,97,0.95);
+  --g-on-brand: #160B09;
 }
 
 html.glass-desktop[data-theme="lavender"] {
@@ -230,6 +237,7 @@ html.glass-desktop[data-theme="lavender"] {
   --g-heavy-base: rgba(20,14,29,0.62);
   --g-solid: #161020; --g-solid-heavy: #171122;
   --g-cta-top: rgba(193,166,238,0.95); --g-cta-bot: rgba(168,137,222,0.95);
+  --g-on-brand: #0E0A15;
 }
 
 html.glass-desktop[data-theme="mint"] {
@@ -248,6 +256,7 @@ html.glass-desktop[data-theme="mint"] {
   --g-heavy-base: rgba(14,30,29,0.62);
   --g-solid: #0F2120; --g-solid-heavy: #102322;
   --g-cta-top: rgba(125,230,202,0.95); --g-cta-bot: rgba(87,213,180,0.95);
+  --g-on-brand: #091514;
 }
 
 html.glass-desktop[data-theme="rosegold"] {
@@ -266,6 +275,7 @@ html.glass-desktop[data-theme="rosegold"] {
   --g-heavy-base: rgba(29,20,14,0.62);
   --g-solid: #201610; --g-solid-heavy: #221711;
   --g-cta-top: rgba(237,155,143,0.95); --g-cta-bot: rgba(220,124,109,0.95);
+  --g-on-brand: #150E0A;
 }
 
 html.glass-desktop[data-theme="deepspace"] {
@@ -320,6 +330,7 @@ html.glass-desktop[data-theme="cyberpunk"] {
   --g-heavy-base: rgba(27,16,27,0.62);
   --g-solid: #1E121E; --g-solid-heavy: #201320;
   --g-cta-top: rgba(253,231,85,0.95); --g-cta-bot: rgba(240,214,41,0.95);
+  --g-on-brand: #130C13;
 }
 
 html.glass-desktop[data-theme="vaporwave"] {
@@ -338,6 +349,7 @@ html.glass-desktop[data-theme="vaporwave"] {
   --g-heavy-base: rgba(27,16,27,0.62);
   --g-solid: #1E121E; --g-solid-heavy: #201320;
   --g-cta-top: rgba(106,225,249,0.95); --g-cta-bot: rgba(66,207,235,0.95);
+  --g-on-brand: #130B13;
 }
 
 html.glass-desktop[data-theme="neonjungle"] {
@@ -356,6 +368,7 @@ html.glass-desktop[data-theme="neonjungle"] {
   --g-heavy-base: rgba(17,26,19,0.62);
   --g-solid: #131D15; --g-solid-heavy: #141F16;
   --g-cta-top: rgba(116,248,83,0.95); --g-cta-bot: rgba(77,234,38,0.95);
+  --g-on-brand: #0C130D;
 }
 
 html.glass-desktop[data-theme="electricviolet"] {
@@ -392,6 +405,7 @@ html.glass-desktop[data-theme="toxicgreen"] {
   --g-heavy-base: rgba(21,26,17,0.62);
   --g-solid: #181D13; --g-solid-heavy: #191F14;
   --g-cta-top: rgba(155,251,71,0.95); --g-cta-bot: rgba(124,238,24,0.95);
+  --g-on-brand: #0F120C;
 }
 
 html.glass-desktop[data-theme="neonblaze"] {
@@ -428,6 +442,7 @@ html.glass-desktop[data-theme="hyperdrive"] {
   --g-heavy-base: rgba(16,20,27,0.62);
   --g-solid: #12161E; --g-solid-heavy: #131720;
   --g-cta-top: rgba(95,179,252,0.95); --g-cta-bot: rgba(52,152,238,0.95);
+  --g-on-brand: #0C0E13;
 }
 
 html.glass-desktop[data-theme="phoenixfire"] {
@@ -464,6 +479,7 @@ html.glass-desktop[data-theme="frostbite"] {
   --g-heavy-base: rgba(13,25,31,0.62);
   --g-solid: #0E1C22; --g-solid-heavy: #0F1D24;
   --g-cta-top: rgba(125,214,247,0.95); --g-cta-bot: rgba(87,194,233,0.95);
+  --g-on-brand: #091115;
 }
 
 html.glass-desktop[data-theme="voidwalker"] {
@@ -500,6 +516,7 @@ html.glass-desktop[data-theme="starlight"] {
   --g-heavy-base: rgba(13,15,31,0.62);
   --g-solid: #0E1122; --g-solid-heavy: #0F1224;
   --g-cta-top: rgba(248,219,123,0.95); --g-cta-bot: rgba(234,200,86,0.95);
+  --g-on-brand: #090B16;
 }
 
 html.glass-desktop[data-theme="plasmastorm"] {
@@ -554,6 +571,7 @@ html.glass-desktop[data-theme="goldenhour"] {
   --g-heavy-base: rgba(31,21,13,0.62);
   --g-solid: #22180E; --g-solid-heavy: #24190F;
   --g-cta-top: rgba(241,199,114,0.95); --g-cta-bot: rgba(226,176,75,0.95);
+  --g-on-brand: #150F09;
 }
 
 html.glass-desktop[data-theme="desertbloom"] {

@@ -222,7 +222,7 @@ html.glass-desktop .user-profile-actions .user-profile-friend {
   padding: 0 14px !important;
   border-radius: var(--r-lg) !important;
   background: rgba(255, 255, 255, 0.08) !important;
-  color: #7ee2a0 !important;
+  color: var(--success-text, #3DDC84) !important;
   line-height: 1;
 }
 
@@ -275,4 +275,9 @@ html.glass-desktop .user-profile-safety-row {
   display: flex;
   gap: 8px;
   margin-top: 16px;
+}
+
+/* Light theme: the white 8% tile vanished on the white sheet. */
+html.glass-desktop[data-theme="light"] .user-profile-actions .user-profile-friend {
+  background: rgba(0, 0, 0, 0.05) !important;
 }

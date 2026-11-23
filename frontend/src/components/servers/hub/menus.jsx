@@ -87,18 +87,18 @@ export function VoiceMemberMenu({ mode, menu, presence, channels, canMute, canDe
         <Av user={user} s={46} dot={PRESENCE_DOT[presence] || null} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-          <div style={{ fontSize: 13, color: "rgba(235,238,255,.55)" }}>{f(micOff ? "vInChannelMuted" : "vInChannel", { channel: current?.name || "" })}</div>
+          <div style={{ fontSize: 13, color: "var(--svh-t3)" }}>{f(micOff ? "vInChannelMuted" : "vInChannel", { channel: current?.name || "" })}</div>
         </div>
       </div>
       {!isSelf && onVolume ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 18px 16px", color: "rgba(235,238,255,.7)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 18px 16px", color: "var(--svh-t2)" }}>
           <I n="volume" s={18} />
           <VolumeSlider value={volume} onChange={onVolume} label={s.vVolume} />
           <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{pctLabel}</span>
         </div>
       ) : null}
       {!isSelf && screen?.show ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 18px 16px", color: "rgba(235,238,255,.7)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 18px 16px", color: "var(--svh-t2)" }}>
           <I n="win" s={18} />
           <VolumeSlider value={screen.value} onChange={screen.onChange} label={s.vScreen} />
           <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{formatNumber((Number(screen.value) || 0) / 100, locale, { style: "percent", maximumFractionDigits: 0 })}</span>
@@ -199,7 +199,7 @@ export function ServerLongPressMenu({ rect, server, unread, online, folders, can
       <Sq server={server} s={40} />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 650, fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{server?.name}</div>
-        <div style={{ fontSize: 13, color: "rgba(235,238,255,.55)" }}>{online == null ? f("listMetaNoOnline", { members: server?.memberCount || 1 }) : f("listMeta", { members: server?.memberCount || 1, online })}</div>
+        <div style={{ fontSize: 13, color: "var(--svh-t3)" }}>{online == null ? f("listMetaNoOnline", { members: server?.memberCount || 1 }) : f("listMeta", { members: server?.memberCount || 1, online })}</div>
       </div>
       {unread ? <span className="svh-badge" style={{ marginLeft: "auto", background: "#FF453A", color: "#fff" }}>{unread > 99 ? "99+" : unread}</span> : null}
     </div>

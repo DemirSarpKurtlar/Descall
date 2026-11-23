@@ -21,6 +21,7 @@ import {
   isUnread, replyCount, counts as countAll, applyFilters, fileName, formatBytes,
 } from "./fbModel.js";
 import "../../../styles/admin-feedback-v3.css";
+import { STATUS } from "../adminPalette.js";
 
 /** The 10 sections the mockup sidebar lists, then "+N more sections". [id, label key, icon]. */
 export const FB3_NAV = [
@@ -63,7 +64,7 @@ function Av({ name, url, size }) {
 
 function Tag({ map, k, dot }) {
   const { t } = useLocale();
-  const [label, c] = map[k] || map.general || [null, "#9AA3B8"];
+  const [label, c] = map[k] || map.general || [null, STATUS.neutral];
   return (
     <span className="tg" style={{ background: `color-mix(in srgb,${c} 17%,transparent)`, color: `color-mix(in srgb,${c} 80%,#fff)` }}>
       {dot ? <em style={{ background: c }} /> : null}
@@ -144,7 +145,7 @@ function Attachment({ url, device, onZoom }) {
       <div className="f">
         <b>{fileName(url, t)}</b><br />
         {[size, device].filter(Boolean).join(" · ") || t("adminx.fb.attachment")}<br />
-        {isImg ? <><button type="button" onClick={() => onZoom(url)}>{t("adminx.fb.zoom")}</button><span style={{ color: "#8FA6FF" }}> · </span></> : null}
+        {isImg ? <><button type="button" onClick={() => onZoom(url)}>{t("adminx.fb.zoom")}</button><span style={{ color: STATUS.infoInk }}> · </span></> : null}
         <a href={url} target="_blank" rel="noreferrer noopener" download>{t("adminx.fb.download")}</a>
       </div>
     </div>
@@ -581,8 +582,8 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
               <span className="l"><button type="button" onClick={() => setPushed(false)}><I name="chevl" size={22} stroke={2.4} /><span>{t("adminx.fb.nav.feedback")}</span></button></span>
               <span />
               <span className="r" style={{ gap: 16 }}>
-                <button type="button" aria-label={t("adminx.fb.status.resolved")} style={{ color: "#7CF0A0" }} onClick={() => patch({ status: "resolved" })}><I name="check" size={20} stroke={2.6} /></button>
-                <button type="button" aria-label={t("adminx.fb.delete")} style={{ color: "#FF7A70" }} onClick={askDelete}><I name="trash" size={20} stroke={2.1} /></button>
+                <button type="button" aria-label={t("adminx.fb.status.resolved")} style={{ color: STATUS.okInk }} onClick={() => patch({ status: "resolved" })}><I name="check" size={20} stroke={2.6} /></button>
+                <button type="button" aria-label={t("adminx.fb.delete")} style={{ color: STATUS.badInk }} onClick={askDelete}><I name="trash" size={20} stroke={2.1} /></button>
               </span>
             </div>
             <div className="fb3-det" style={{ flex: 1 }}>{detail}</div>

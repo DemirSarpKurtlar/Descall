@@ -70,19 +70,26 @@ export function clearInlineAccent(root) {
   for (const prop of GLASS_ACCENT_PROPS) root.style.removeProperty(prop);
 }
 
+/** The default accent (logo blue) is the stylesheet's own --primary: #587AF5 on
+    dark, a deeper #3A66EE on light so white button text stays AA. Pinning it
+    inline would override that light value, so it clears instead. */
+export function isDefaultAccent(hex) {
+  const h = String(hex || "").toUpperCase();
+  return h === DEFAULT_GLASS_BRAND || h === "#587AF5";
+}
+
 export function applyInlineAccent(root, accentColor, theme) {
   if (!root?.style || !accentColor) return;
+  if (isDefaultAccent(accentColor)) {
+    clearInlineAccent(root);
+    return;
+  }
   root.style.setProperty("--primary", accentColor);
   root.style.setProperty("--primary-2", accentColor);
   root.style.setProperty("--primary-soft", hexToRgba(accentColor, 0.12));
   root.style.setProperty("--primary-glow", hexToRgba(accentColor, 0.35));
   root.style.setProperty("--shadow-glow-primary", `0 0 16px ${hexToRgba(accentColor, 0.24)}`);
   root.style.setProperty("--accent", accentColor);
-  // The default accent keeps the stylesheet glass tokens (exact per-theme values).
-  if (String(accentColor).toUpperCase() === DEFAULT_GLASS_BRAND) {
-    for (const prop of GLASS_ACCENT_PROPS) root.style.removeProperty(prop);
-    return;
-  }
   for (const [prop, value] of Object.entries(glassAccentTokens(accentColor, { light: theme === "light" }))) root.style.setProperty(prop, value);
 }
 

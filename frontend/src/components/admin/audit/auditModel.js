@@ -7,6 +7,7 @@
  * Tested by audit.selftest.mjs.
  */
 import { trAccusative, trDative, trGenitive } from "../../../lib/trSuffix.js";
+import { CHART, CHART_OTHER, CHART_PAIRS } from "../adminPalette.js";
 
 export const CATEGORIES = ["sanctions", "content", "account", "economy", "system", "agent", "denied", "other"];
 export const SEVERITIES = ["critical", "high", "medium", "low"];
@@ -735,18 +736,7 @@ export function parseEntryLink(hash) {
 }
 
 /** Avatar initial + gradient from a name (stable). */
-const AV = [
-  ["#4f7cff", "#3654c9"],
-  ["#e0569b", "#a8336f"],
-  ["#f0932b", "#b9631a"],
-  ["#2fbf8f", "#1d8a66"],
-  ["#ff9a5c", "#c75a26"],
-  ["#5ac8d8", "#2f8f9c"],
-  ["#9b5de5", "#6a3bb0"],
-  ["#ff6f91", "#c0435f"],
-  ["#c9a227", "#8f7212"],
-  ["#6fd36f", "#3e9a3e"],
-];
+const AV = CHART_PAIRS;
 export function avatarStyle(name) {
   const s = String(name || "?");
   let h = 0;
@@ -755,9 +745,9 @@ export function avatarStyle(name) {
   return { background: `linear-gradient(145deg, ${a}, ${b})` };
 }
 
-/** Series colours of the activity chart (draft: blue, pink, orange, green; others gray). */
-export const SERIES_COLORS = ["#587af5", "#e0569b", "#f0932b", "#2fbf8f"];
-export const OTHER_COLOR = "rgba(160, 166, 190, 0.45)";
+/** Series colours of the activity chart: the shared admin chart palette; others gray. */
+export const SERIES_COLORS = CHART.slice(0, 4);
+export const OTHER_COLOR = CHART_OTHER;
 
 /** Bar height (%) of the tallest stacked bucket = 100. */
 export function chartScale(buckets) {

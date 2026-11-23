@@ -207,7 +207,7 @@ html.bp-stacked .g-profile-sheet{transform-origin:50% 0;transform:scale(.93) tra
 .bs-preview{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
 .bs-preview-line{display:flex;align-items:center;gap:6px;font-size:14px}
 .bs-preview-line b{font-weight:650;color:#f4f6fb}
-.bs-preview-line time{font-size:11.5px;color:rgba(235,238,255,.45);margin-left:4px}
+.bs-preview-line time{font-size:11.5px;color:rgba(235,238,255,.62);margin-left:4px}
 .bs-preview-body p{margin:3px 0 0;font-size:13.5px;color:rgba(235,238,255,.82)}
 .bs-count{margin-left:6px;opacity:.6}
 .bs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}

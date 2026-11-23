@@ -43,6 +43,7 @@ import {
 } from "./statsModel.js";
 import "../../../styles/admin-signup-stats.css";
 import { titleBarDoubleClick } from "../../../lib/windowDrag.js";
+import { CHART, CHART_PAIRS, STATUS } from "../adminPalette.js";
 
 export const STATS_PATH = "/admin/signup-stats";
 const WIN_W = 1240;
@@ -156,10 +157,10 @@ function TrendChart({ series, granularity, W, H }) {
           width={bw * 0.64}
           height={ch - (y(s.count) - pt)}
           rx="3"
-          fill={i === hi ? "#8FA6FF" : "rgba(88,122,246,.55)"}
+          fill={i === hi ? CHART_PAIRS[0][0] : "rgba(88,122,245,.55)"}
         />
       ))}
-      <path d={line} fill="none" stroke="#FFD60A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".9" />
+      <path d={line} fill="none" stroke={CHART[6]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".9" />
       {cur ? (
         <g pointerEvents="none">
           <line x1={tx} x2={tx} y1={pt} y2={pt + ch} stroke="rgba(143,166,255,.35)" strokeDasharray="3 3" />
@@ -219,7 +220,7 @@ function Bars({ rows, total }) {
         {r.label}
       </span>
       <span className="tr">
-        <i style={{ width: `${total ? (r.count / total) * 100 : 0}%`, background: r.muted ? "rgba(255,255,255,.22)" : r.color || "#587AF6" }} />
+        <i style={{ width: `${total ? (r.count / total) * 100 : 0}%`, background: r.muted ? "rgba(255,255,255,.22)" : r.color || CHART[0] }} />
       </span>
       <span className="v">
         {num(r.count, locale)}
@@ -300,7 +301,7 @@ function StatsContent({ data, W, controls }) {
             {unitLabel}
           </span>
           <span>
-            <i style={{ background: "#FFD60A", height: 3, verticalAlign: 2 }} />
+            <i style={{ background: CHART[6], height: 3, verticalAlign: 2 }} />
             {avgLabel}
           </span>
         </span>
@@ -368,12 +369,12 @@ function StatsContent({ data, W, controls }) {
     <Card title={t("adminx.sst.retention")} extra={<span className="mut">{cap}</span>}>
       <div className="st-ret">
         <div>
-          <Ring p={d1} color="#587AF6" />
+          <Ring p={d1} color={CHART[0]} />
           <div className="t">{t("adminx.sst.d1")}</div>
           <div className="s">{t("adminx.sst.cameBack", { returned: n(r.d1.returned), eligible: n(r.d1.eligible) })}</div>
         </div>
         <div>
-          <Ring p={d7} color="#30D158" />
+          <Ring p={d7} color={CHART[1]} />
           <div className="t">{t("adminx.sst.d7")}</div>
           <div className="s">{t("adminx.sst.stillActive", { returned: n(r.d7.returned), eligible: n(r.d7.eligible) })}</div>
         </div>
@@ -411,7 +412,7 @@ function StatsContent({ data, W, controls }) {
       {fails.total ? (
         <>
           <div className="st-sub">{t("sgx.admin.failCount", { value: n(fails.total) })}</div>
-          <Bars rows={fails.rows.slice(0, 8).map((row) => ({ ...row, label: failLabel(row.key, t), color: "#FF6B6B" }))} total={fails.total} />
+          <Bars rows={fails.rows.slice(0, 8).map((row) => ({ ...row, label: failLabel(row.key, t), color: STATUS.bad }))} total={fails.total} />
           {fails.detailed < fails.total ? (
             <div className="st-note">
               <I n="bolt" s={13} w={2} />
@@ -444,7 +445,7 @@ function StatsContent({ data, W, controls }) {
     <Card title={t("sgx.admin.inviteTitle")} extra={<span className="mut">{cap}</span>}>
       <div className="st-sub">{t("sgx.admin.inviteCount", { value: n(inv.total), total: n(inv.signups) })}</div>
       <Bars
-        rows={["server", "vanity", "group", "friend"].map((key) => ({ key, label: t(`sgx.admin.invite.${key}`), count: inv.byKind?.[key] || 0, color: "#30D158" }))}
+        rows={["server", "vanity", "group", "friend"].map((key) => ({ key, label: t(`sgx.admin.invite.${key}`), count: inv.byKind?.[key] || 0, color: CHART[1] }))}
         total={inv.signups}
       />
     </Card>

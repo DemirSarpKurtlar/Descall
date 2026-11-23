@@ -259,7 +259,7 @@
 }
 .un-btn.primary {
   background: var(--primary, #587af5);
-  color: #fff;
+  color: var(--on-primary, #fff);
 }
 .un-btn.primary:hover:not(:disabled) {
   filter: brightness(1.08);

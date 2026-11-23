@@ -20,7 +20,7 @@ assert.match(tokens, /--gd-glass-fill:[\s\S]*var\(--g-tint-top\)[\s\S]*var\(--g-
 assert.match(tokens, /--gd-main-fill:\s*var\(--gd-glass-fill\)/);
 assert.match(tokens, /--gd-aurora:[\s\S]*var\(--g-brand-rgb\)[\s\S]*var\(--g-amb-a\)/);
 assert.match(tokens, /--gd-cta:\s*linear-gradient\(180deg, var\(--g-cta-top\), var\(--g-cta-bot\)\)/);
-assert.match(tokens, /--g-brand: #587AF6/);
+assert.match(tokens, /--g-brand: #587AF5/);
 assert.match(tokens, /--gd-deep:\s*#0D0E13/);
 assert.match(tokens, /--gd-heavy-base:\s*var\(--g-heavy-base\)/);
 assert.match(tokens, /--gd-panel-tint:\s*var\(--g-tint-base\)/);
