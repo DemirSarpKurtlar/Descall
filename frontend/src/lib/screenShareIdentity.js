@@ -7,6 +7,8 @@
  * or transceiver mid. Arrival order and "a share is expected" never promote
  * a camera into the screen stage.
  */
+import { liveKitScreenEncoding } from "./screenShareCodec.js";
+import { screenEncoderFor } from "./screenShareEncoder.js";
 
 export const ROLE_SCREEN = "screen";
 export const ROLE_SCREEN_AUDIO = "screen-audio";
@@ -210,8 +212,14 @@ export function guardDisplayCapture(stream) {
   return stream;
 }
 
-export function liveKitScreenVideoPublishOptions() {
+/**
+ * LiveKit screen publish. With `encoding` ({ family, contentHint, maxBitrate, fps }) the
+ * codec (AV1 / VP9 with a VP8 backup, or VP8), L1T3 for SVC, the degradation preference
+ * and the bitrate ceiling come from screenShareCodec.liveKitScreenEncoding.
+ */
+export function liveKitScreenVideoPublishOptions(encoding = null) {
   return {
+    ...(encoding ? liveKitScreenEncoding(encoding) : {}),
     source: LIVEKIT_SOURCE.screen,
     name: TRACK_NAME.screen,
     simulcast: false,
@@ -274,18 +282,33 @@ export function addDedicatedSender(pc, track, stream) {
       const init = { direction: "sendonly" };
       if (stream) init.streams = [stream];
       const transceiver = pc.addTransceiver(track, init);
-      if (transceiver?.sender) return transceiver.sender;
+      if (transceiver?.sender) return withScreenEncoder(pc, track, transceiver.sender, transceiver);
     } catch {
       /* older Safari rejects the streams init member */
     }
     try {
       const transceiver = pc.addTransceiver(track, { direction: "sendonly" });
-      if (transceiver?.sender) return transceiver.sender;
+      if (transceiver?.sender) return withScreenEncoder(pc, track, transceiver.sender, transceiver);
     } catch {
       /* fall through to addTrack */
     }
   }
-  return pc.addTrack(track, stream);
+  return withScreenEncoder(pc, track, pc.addTrack(track, stream), null);
+}
+
+/**
+ * Screen video sender: order its codecs AV1 > VP9 > browser default before the offer and
+ * put it under the CPU watch (screenShareEncoder.js). Every screen sender of every call
+ * type is created here, so no path can miss it. Other tracks pass through untouched.
+ */
+function withScreenEncoder(pc, track, sender, transceiver) {
+  if (!sender || track?.kind !== "video" || readLocalRole(track) !== ROLE_SCREEN) return sender;
+  try {
+    screenEncoderFor(track)?.attach(pc, sender, { transceiver });
+  } catch {
+    /* codec order is an optimisation: the share works with browser defaults */
+  }
+  return sender;
 }
 
 export function stopDedicatedSender(pc, sender) {

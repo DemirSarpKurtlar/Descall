@@ -6,6 +6,14 @@ import { isDesktopShell } from "./desktopShell.js";
 import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
 import { t } from "../i18n/runtime.js";
 import { processScreenShareAudio } from "../premium/audio/streamAudio.js";
+import { screenMaxBitrate } from "./screenShareCodec.js";
+import {
+  applyScreenCodecPreferences,
+  encoderConfigFromQuality,
+  screenEncoderFor,
+  transceiverOf,
+  tuneScreenSender,
+} from "./screenShareEncoder.js";
 
 export const GROUP_SCREEN_DEFAULT_QUALITY = {
   resolution: "720p",
@@ -580,32 +588,29 @@ export function resolveScreenCaptureSize(quality = {}, opts = {}) {
   const key = quality.resolution || "720p";
   const size = RESOLUTION_MAP[key] || RESOLUTION_MAP["720p"];
   const peerCount = Math.max(1, opts.peerCount || 1);
-  // DM can sustain 60 FPS; group mesh caps lower to protect encode budget
-  const hardCap = opts.maxFps ?? (peerCount <= 2 ? 60 : 24);
+  // 1:1 and SFU: 60 FPS. A mesh of 3+ encodes one copy per viewer, so it tops out at 30
+  // (screenShareCodec.screenShareLimits, the same for every user).
+  const hardCap = opts.maxFps ?? (peerCount <= 2 ? 60 : 30);
   const fps = Math.min(Math.max(Number(quality.fps) || (peerCount <= 2 ? 30 : 20), 10), hardCap);
   return { ...size, fps };
 }
 
-export function screenBitrateForPeerCount(peerCount, resolution = "720p") {
-  const n = Math.max(1, peerCount || 1);
-  let base = 2_200_000;
-  if (resolution === "480p") base = 900_000;
-  else if (resolution === "720p") base = n <= 2 ? 2_200_000 : 1_400_000;
-  else if (resolution === "1080p") base = n <= 2 ? 3_500_000 : 2_200_000;
-  else if (resolution === "1440p") base = n <= 2 ? 6_000_000 : 3_000_000;
-  else if (resolution === "2160p") base = n <= 2 ? 10_000_000 : 4_000_000;
-
-  if (n >= 5) return Math.min(base, 900_000);
-  if (n >= 3) return Math.min(base, 1_600_000);
-  return base;
+/**
+ * Encoder bitrate ceiling for one screen sender (screenShareCodec.screenMaxBitrate). Same
+ * for every user; a mesh of 3+ viewers caps each copy because the sharer uploads one each.
+ */
+export function screenBitrateForPeerCount(peerCount, resolution = "720p", fps = 30, transport = "mesh") {
+  return screenMaxBitrate({ resolution, fps, peerCount, transport });
 }
 
-/** Human-readable Mbps estimate for the quality panel. */
+/** Human-readable Mbps ceiling for the quality panel. */
 export function estimateScreenShareMbps(quality = {}, peerCount = 2) {
-  const bps = screenBitrateForPeerCount(peerCount, quality.resolution || "720p");
-  const fpsBoost = Math.min(1.35, Math.max(0.75, (Number(quality.fps) || 24) / 24));
-  const detailBoost = quality.contentHint === "detail" || quality.contentHint === "text" ? 1.1 : 1;
-  return Math.round((bps * fpsBoost * detailBoost) / 100_000) / 10;
+  const bps = screenMaxBitrate({
+    resolution: quality.resolution || "720p",
+    fps: Number(quality.fps) || 24,
+    peerCount,
+  });
+  return Math.round(bps / 100_000) / 10;
 }
 
 export function matchScreenQualityPreset(quality = {}) {
@@ -627,18 +632,26 @@ export function matchScreenQualityPreset(quality = {}) {
 /**
  * Soft post-capture tuning. Never force hard W×H after getDisplayMedia —
  * that freezes orientation when a phone rotates into landscape video.
+ *
+ * Also prepares the encoder session of this track (screenShareEncoder.js): the content
+ * mode, the size and how many encodes run, and whether AV1 is worth it on this device
+ * (hardware probe + CPU budget). addDedicatedSender then orders the codecs from it.
  */
-export async function optimizeScreenShareTrack(track, { fps, contentHint = "motion" } = {}) {
+export async function optimizeScreenShareTrack(
+  track,
+  { fps, contentHint = "motion", resolution, peerCount = 1, transport = "mesh" } = {}
+) {
   if (!track || track.kind !== "video") return;
   try {
     if ("contentHint" in track) {
-      // Prefer "text" when requested (sharp UI/code); fall back to detail/motion
+      // "text" for code / slides (sharpest), "detail" for apps, "motion" for games / video.
       if (contentHint === "text") {
         try {
           track.contentHint = "text";
         } catch {
           track.contentHint = "detail";
         }
+        if (track.contentHint !== "text") track.contentHint = "detail";
       } else if (contentHint === "detail") {
         track.contentHint = "detail";
       } else {
@@ -652,6 +665,14 @@ export async function optimizeScreenShareTrack(track, { fps, contentHint = "moti
   if (track.readyState !== "live") return;
 
   try {
+    const session = screenEncoderFor(track);
+    session?.configure(encoderConfigFromQuality({ resolution, fps, contentHint }, { fps, peerCount, transport }));
+    await session?.prepare();
+  } catch {
+    /* no encoder session: browser defaults */
+  }
+
+  try {
     await track.applyConstraints({ frameRate: { ideal: fps, max: fps } });
   } catch {
     try {
@@ -662,59 +683,60 @@ export async function optimizeScreenShareTrack(track, { fps, contentHint = "moti
   }
 }
 
+/**
+ * Bitrate / frame-rate ceiling, degradation preference by content (text keeps resolution,
+ * games balance) for one screen sender. Pass `pc` to also make sure the codec order is set
+ * (addDedicatedSender already does it for every screen sender).
+ */
 export async function optimizeScreenShareSender(
   sender,
-  { maxBitrate = 2_200_000, maxFramerate = 30 } = {}
+  { maxBitrate = 2_200_000, maxFramerate = 30, pc = null, transport = "mesh" } = {}
 ) {
   if (!sender) return;
-  try {
-    const params = sender.getParameters();
-    if (!params.encodings || params.encodings.length === 0) {
-      params.encodings = [{}];
-    }
-    const enc = params.encodings[0];
-    enc.maxBitrate = maxBitrate;
-    enc.maxFramerate = maxFramerate;
-    // Prefer resolution under congestion for screen text; motion content still OK
-    params.degradationPreference = "maintain-resolution";
-    await sender.setParameters(params);
-  } catch (err) {
-    console.warn("[ScreenShare] setParameters failed:", err?.message || err);
-  }
-
-  // Prefer modern codecs when the transceiver API allows it
-  try {
-    const transceiver = sender.track
-      ? sender // may not expose transceiver directly
-      : null;
-    void transceiver;
-    if (typeof RTCRtpSender !== "undefined" && sender.track) {
-      // Find transceiver via peer connection is caller responsibility, see preferScreenCodecs
-    }
-  } catch {
-    /* ignore */
-  }
+  const track = sender.track || null;
+  const session = track && track.kind === "video" ? screenEncoderFor(track) : null;
+  if (session && pc && !session.senders().includes(sender)) session.attach(pc, sender);
+  const ok = await tuneScreenSender(sender, {
+    maxBitrate,
+    maxFramerate,
+    contentHint: session?.config?.contentHint || track?.contentHint || "motion",
+    transport,
+  });
+  if (!ok) console.warn("[ScreenShare] setParameters failed");
 }
 
-/** Prefer VP9/AV1 for screen share on a transceiver (best-effort). */
+/**
+ * Sender added for a viewer that joined mid-share (or after a glare rollback): same
+ * ceiling as the others, from the share's encoder session (quality pick, fps, transport).
+ */
+export function tuneLateScreenSender(pc, sender, peerCount = 1) {
+  const track = sender?.track || null;
+  if (!track || track.kind !== "video") return Promise.resolve();
+  const cfg = screenEncoderFor(track)?.config || {};
+  return optimizeScreenShareSender(sender, {
+    maxBitrate: screenMaxBitrate({
+      resolution: cfg.resolution || "1080p",
+      fps: cfg.fps || 30,
+      peerCount: Math.max(1, peerCount),
+      transport: cfg.transport || "mesh",
+    }),
+    maxFramerate: cfg.fps || 30,
+    pc,
+    transport: cfg.transport || "mesh",
+  }).catch(() => {});
+}
+
+/** Prefer AV1 > VP9 > browser default for screen share on this sender's transceiver. */
 export function preferScreenCodecs(pc, sender) {
-  if (!pc || !sender || typeof RTCRtpSender === "undefined") return;
-  try {
-    const transceiver = pc.getTransceivers?.().find((t) => t.sender === sender);
-    if (!transceiver?.setCodecPreferences || !RTCRtpSender.getCapabilities) return;
-    const caps = RTCRtpSender.getCapabilities("video");
-    if (!caps?.codecs?.length) return;
-    const preferred = [];
-    const rest = [];
-    for (const c of caps.codecs) {
-      const mime = (c.mimeType || "").toLowerCase();
-      if (mime.includes("vp9") || mime.includes("av1")) preferred.push(c);
-      else if (!mime.includes("rtx") && !mime.includes("red") && !mime.includes("ulpfec")) rest.push(c);
-    }
-    if (preferred.length) transceiver.setCodecPreferences([...preferred, ...rest]);
-  } catch (err) {
-    console.warn("[ScreenShare] setCodecPreferences failed:", err?.message || err);
-  }
+  if (!pc || !sender) return null;
+  const track = sender.track || null;
+  const session = track ? screenEncoderFor(track) : null;
+  const transceiver = transceiverOf(pc, sender);
+  if (!transceiver) return null;
+  return applyScreenCodecPreferences(transceiver, {
+    blocked: session?.blocked || [],
+    av1Allowed: session ? session.av1Ok() : true,
+  });
 }
 
 /**
