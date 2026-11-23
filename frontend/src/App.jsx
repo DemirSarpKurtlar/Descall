@@ -93,6 +93,7 @@ import { attachPremiumSocket } from "./premium/usePremium.js";
 import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
+import { useNativeIntents } from "./hooks/useNativeIntents";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -5237,6 +5238,22 @@ export default function App() {
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
   // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
   useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
+  // 4.2: Siri / Shortcuts / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows).
+  useNativeIntents({
+    me,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    navigate,
+    setStatus: handleStatusChange,
+    myStatus,
+    friends,
+    dmLastActivity,
+    locale,
+    pathname: location.pathname,
+    t,
+  });
 
   if (bootError && !me) {
     return (

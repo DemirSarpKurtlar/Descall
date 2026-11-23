@@ -7,6 +7,8 @@ import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palett
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
+import VoiceShortcutsPane from "../settings/VoiceShortcutsPane";
+import { nativePlatform } from "../../lib/nativeIntents.js";
 import { hasDesktopUpdater } from "../../lib/desktopUpdateState.js";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
 import { isTabletLayout, readStoredSettings } from "../../lib/appearancePrefs";
@@ -343,6 +345,8 @@ const NAV_GROUPS_DEF = [
     items: [
       { id: "appearance", labelKey: "settings.appearance", icon: Palette, hintKey: "settings.appearanceHint" },
       { id: "notifications", labelKey: "settings.notifications", icon: Bell, hintKey: "settings.notificationsHint" },
+      // 4.2: Siri / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows Electron).
+      { id: "shortcuts", labelKey: "vsc.navTitle", icon: Mic, hintKey: "vsc.navHint" },
       { id: "language", labelKey: "settings.language", icon: Globe, hintKey: "settings.languageHint" },
       { id: "licenses", labelKey: "settings.licenses", icon: FileText, hintKey: "settings.licensesHint" },
       // Desktop shells only (Electron, Tauri): version and "Check for updates".
@@ -381,6 +385,7 @@ const S3_NAV_TILES = {
   language: ["globe", "blue"],
   licenses: ["book", "gray"],
   desktop: ["win", "blue"],
+  shortcuts: ["bolt", "brand"],
   voice: ["volume", "green"],
   sound: ["music", "teal"],
   premium: ["sparkle", "purple"],
@@ -417,6 +422,7 @@ const TAB_TITLE_KEYS = {
   language: "settings.language",
   licenses: "settings.licenses",
   desktop: "updateToast.settings_title",
+  shortcuts: "vsc.navTitle",
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
@@ -503,17 +509,23 @@ const UserPanel = forwardRef(function UserPanel({
   const premiumPlan = useSyncExternalStore(subscribePremium, () => getPremiumState().plan, () => getPremiumState().plan);
   const hidePremiumNav = isNativeIOS() && !premiumPlan;
   const showDesktopNav = useMemo(() => hasDesktopUpdater(typeof window !== "undefined" ? window.electronAPI : null), []);
+  const showShortcutsNav = useMemo(
+    () => Boolean(nativePlatform()) || (typeof window !== "undefined" && typeof window.electronAPI?.setJumpList === "function"),
+    []
+  );
   const navGroups = useMemo(
     () =>
       NAV_GROUPS_DEF.map((g) => ({
         label: t(g.labelKey),
-        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav) && !(item.id === "desktop" && !showDesktopNav)).map((item) => ({
+        items: g.items
+          .filter((item) => !(item.id === "premium" && hidePremiumNav) && !(item.id === "desktop" && !showDesktopNav) && !(item.id === "shortcuts" && !showShortcutsNav))
+          .map((item) => ({
           ...item,
           label: t(item.labelKey),
           hint: t(item.hintKey),
         })),
       })),
-    [t, hidePremiumNav, showDesktopNav]
+    [t, hidePremiumNav, showDesktopNav, showShortcutsNav]
   );
 
   const tabTitles = useMemo(() => {
@@ -2731,6 +2743,9 @@ const UserPanel = forwardRef(function UserPanel({
 
       case "desktop":
         return <DesktopUpdatePane />;
+
+      case "shortcuts":
+        return <VoiceShortcutsPane />;
 
       case "licenses":
         return (

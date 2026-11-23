@@ -18,6 +18,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
+import { VSC_PT_BR } from "./vsc.pt-BR.js";
 import { LX_PT_BR } from "./lx.pt-BR.js";
 import { USET_PT_BR } from "./uset.pt-BR.js";
 import { SVOICE_PT_BR } from "./svoice.pt-BR.js";
@@ -70,6 +71,7 @@ export const nested = {
   "dir": DIR_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
+  "vsc": VSC_PT_BR,
   "lx": LX_PT_BR,
   "uset": USET_PT_BR,
   "svoice": SVOICE_PT_BR,
