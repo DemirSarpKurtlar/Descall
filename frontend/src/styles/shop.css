@@ -1111,7 +1111,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   display: grid;
   place-items: center;
   background: var(--g-brand, #587AF6);
-  color: #fff;
+  color: var(--on-primary, #fff);
   box-shadow: none;
 }
 
