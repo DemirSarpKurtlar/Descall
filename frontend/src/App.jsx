@@ -3047,6 +3047,10 @@ export default function App() {
     socket.on("shop:inventory:changed", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
     });
+    // Passkeys added / removed / suspended on another device: Settings > Security reloads its list.
+    socket.on("passkeys:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:passkeys-changed", { detail: payload })); } catch { /* ignore */ }
+    });
     // Market 2.0: daily storefront reset / refresh and received gifts reach an open shop live.
     socket.on("shop2:storefront", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop2-storefront", { detail: payload })); } catch { /* ignore */ }
@@ -3290,6 +3294,23 @@ export default function App() {
       throw error;
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // Passkey sign-in (components/passkeys/PasskeySignInButton.jsx, web autofill): the server
+  // body is the same as POST /login; AuthView handles requires2fa itself.
+  const handlePasskeyLogin = async (data) => {
+    if (!data?.token) return;
+    setAuthError("");
+    transportFallbackStepRef.current = 0;
+    setToken(data.token);
+    commitSessionUser(data.user);
+    try {
+      const { Funnel, identifyUser } = await import("./site/analytics");
+      identifyUser(data.user);
+      Funnel.loginComplete({ method: "passkey" });
+    } catch {
+      /* analytics optional */
     }
   };
 
@@ -5367,6 +5388,8 @@ export default function App() {
             onGoogleLogin={handleGoogleLogin}
             onAppleLogin={handleAppleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             loading={authLoading}
             error={authError}
           />
@@ -5386,6 +5409,8 @@ export default function App() {
             onRegister={handleRegister}
             onGoogleLogin={handleGoogleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             authLoading={authLoading}
             authError={authError}
           />

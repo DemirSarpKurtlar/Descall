@@ -1,4 +1,5 @@
 import { AUTHX_DE } from "./authx.de.js";
+import { PASSKEY_DE } from "./passkey.de.js";
 import { API_DE } from "./api.de.js";
 import { PREMIUM_STORY_DE } from "./premiumStory.de.js";
 import { UAH_DE } from "./uah.de.js";
@@ -46,6 +47,7 @@ import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   authx: AUTHX_DE,
+  passkey: PASSKEY_DE,
   "premiumStory": PREMIUM_STORY_DE,
   "amp": AMP_DE,
   "msg4": MSG4_DE,

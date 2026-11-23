@@ -424,6 +424,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/passkey/desktop",
+      "destination": "/index.html"
+    },
+    {
       "source": "/login",
       "destination": "/index.html"
     },

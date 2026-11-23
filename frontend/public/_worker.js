@@ -47,6 +47,8 @@ const SPA_PREFIXES = [
   "/tr/register",
   "/i",
   "/s",
+  // Desktop passkey handoff page (components/passkeys/PasskeyDesktopPage.jsx).
+  "/passkey/desktop",
 ];
 
 /** Permanent marketing moves (kept in sync with _redirects). */
