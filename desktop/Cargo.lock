@@ -1017,6 +1017,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "descall-passkey"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "serde_json",
+ "windows",
+ "windows-core",
+]
+
+[[package]]
 name = "descall-premium-logic"
 version = "0.1.0"
 dependencies = [
