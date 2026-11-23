@@ -204,11 +204,11 @@ html.glass-ui .app-root.g-shell .dm-avatar .g-st-off {
   box-shadow: 0 0 0 2.5px var(--g-ring);
 }
 
-html.glass-ui .app-root.g-shell .dm-avatar .status-online { background: var(--g-ok) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-online { background: var(--status-online, #23A55A) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-idle,
 html.glass-ui .app-root.g-shell .dm-avatar .status-away { background: var(--g-idle) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-dnd,
-html.glass-ui .app-root.g-shell .dm-avatar .status-busy { background: var(--g-dnd) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-busy { background: var(--status-dnd, #DA373C) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-offline,
 html.glass-ui .app-root.g-shell .dm-avatar .g-st-off { background: var(--g-off) !important; }
 
@@ -410,7 +410,7 @@ html.glass-ui .app-root.g-shell .group-swipe-btn.unread svg { background: #587AF
 html.glass-ui .app-root.g-shell .group-swipe-btn.close svg,
 html.glass-ui .app-root.g-shell .group-swipe-btn.leave svg { background: #ff453a; }
 html.glass-ui .app-root.g-shell .group-swipe-btn.invite svg { background: #587AF6; }
-html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: #30D158; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: var(--success, #23A55A); }
 html.glass-ui .app-root.g-shell .group-swipe-btn.rename svg { background: #ff9f0a; color: #fff; }
 
 /* ── Conversation header capsule (03) ──
@@ -526,7 +526,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   box-shadow: 0 0 0 2.5px var(--g-ring, var(--surface-1, #1e1f22));
 }
 
-html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-online { background: var(--g-ok, var(--success)) !important; }
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-online { background: var(--status-online, var(--success)) !important; }
 
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon {
   border-radius: 30%;
@@ -569,7 +569,7 @@ html.glass-ui .app-root.g-shell.in-conversation .g-peer-name {
 html.glass-ui .app-root.g-shell.in-conversation .g-peer-status {
   font-size: 12px;
   line-height: 15px;
-  color: var(--g-ok);
+  color: var(--success-text, #3DDC84);
   font-weight: 500;
 }
 
