@@ -935,6 +935,7 @@ dependencies = [
  "base64 0.22.1",
  "descall-capture",
  "descall-migrate",
+ "descall-passkey",
  "descall-shell",
  "futures-util",
  "getrandom 0.3.4",
