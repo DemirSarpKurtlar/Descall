@@ -87,7 +87,7 @@ eq(DescallDeepLink.dm(username: "ayşe")?.absoluteString, "descall://dm/ay%C5%9F
 eq(DescallDeepLink.server("s1", channel: "c1")?.absoluteString, "descall://server/s1/c1", "channel link")
 eq(DescallDeepLink.dm(username: "a/b")?.absoluteString, "descall://dm/a%2Fb", "slash encoded")
 eq(DescallDeepLink.group("")?.absoluteString, nil, "empty id refused")
-let place = try? JSONDecoder().decode(DescallDestination.self, from: Data(#"{"id":"channel:c1","kind":"channel","title":"#genel","serverId":"s1","channelId":"c1"}"#.utf8))
+let place = try? JSONDecoder().decode(DescallDestination.self, from: Data(##"{"id":"channel:c1","kind":"channel","title":"#genel","serverId":"s1","channelId":"c1"}"##.utf8))
 eq(place?.deepLink?.absoluteString, "descall://server/s1/c1", "destination link")
 eq(DescallText.initials(of: "@ili_kaya"), "İK", "Turkish upper case")
 
