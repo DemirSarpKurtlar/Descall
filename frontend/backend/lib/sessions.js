@@ -48,7 +48,13 @@ function clientIp(req) {
  * instant revocation is layered on top via an in-memory set (see
  * runtime/sharedState.revokedSessionIds) checked on every request.
  */
-async function createSession(userId, { userAgent, ip, deviceId } = {}) {
+const SIGN_IN_METHODS = new Set(["password", "passkey", "google", "apple", "2fa_totp", "2fa_recovery", "2fa_email", "register"]);
+
+/**
+ * @param {string} [opts.method] how this session signed in (shown in Settings > Sessions,
+ *   e.g. "passkey"); unknown values are dropped.
+ */
+async function createSession(userId, { userAgent, ip, deviceId, method } = {}) {
   // 3.5.0: keyed hash of the app's device id, so an admin can ban this device
   // (lib/accessBans.js). Never sent back to clients (routes/auth.js strips it).
   let deviceHash = null;
@@ -63,6 +69,7 @@ async function createSession(userId, { userAgent, ip, deviceId } = {}) {
     ip: ip || "unknown",
     ...(deviceHash ? { deviceHash } : {}),
     userAgent: String(userAgent || "").slice(0, 300),
+    ...(SIGN_IN_METHODS.has(method) ? { method } : {}),
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
   };

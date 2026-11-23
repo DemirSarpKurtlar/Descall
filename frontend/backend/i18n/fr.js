@@ -216,6 +216,12 @@ module.exports = {
     passwordChangedBody: "Le mot de passe de ton compte Descall vient d'être modifié. Si ce n'était pas toi, contacte le support.",
     emailChangeSubject: "Changement d'e-mail Descall",
     emailChangeBody: "Une demande de changement de l'adresse e-mail de ton compte Descall a été faite. Si ce n'était pas toi, change ton mot de passe tout de suite et contacte le support.",
+    passkeyAddedSubject: "Une nouvelle clé d'accès a été ajoutée à ton compte Descall",
+    passkeyAddedBody: "Une nouvelle clé d'accès nommée \"{name}\" a été ajoutée à ton compte Descall. Si ce n'était pas toi, supprime-la dans Paramètres > Sécurité, change ton mot de passe et contacte {support}.",
+    passkeyRemovedSubject: "Une clé d'accès a été supprimée de ton compte Descall",
+    passkeyRemovedBody: "La clé d'accès nommée \"{name}\" a été supprimée de ton compte Descall. Si ce n'était pas toi, change ton mot de passe et contacte {support}.",
+    passkeyClonedSubject: "Une de tes clés d'accès Descall a été désactivée",
+    passkeyClonedBody: "La clé d'accès nommée \"{name}\" a été désactivée car elle a peut-être été copiée. Connecte-toi avec ton mot de passe, supprime-la dans Paramètres > Sécurité et ajoutes-en une nouvelle. En cas de doute, contacte {support}.",
   },
 
   dataExport: {
