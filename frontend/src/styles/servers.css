@@ -3289,8 +3289,8 @@ html[data-theme="light"] .server-voice-status.is-ok { color: var(--success-text)
 }
 
 .server-voice-tile.is-speaking {
-  border-color: var(--success);
-  box-shadow: inset 0 0 0 1px var(--success);
+  border-color: var(--speaking);
+  box-shadow: inset 0 0 0 1px var(--speaking);
 }
 
 .server-voice-tile.is-compact {
@@ -3384,7 +3384,7 @@ html[data-theme="light"] .server-voice-status.is-ok { color: var(--success-text)
   color: #fff;
 }
 
-.server-voice-flag.is-speak { color: var(--g-ok, #30D158); }
+.server-voice-flag.is-speak { color: var(--speaking); }
 .server-voice-flag.is-muted,
 .server-voice-flag.is-deaf { color: var(--danger-text); }
 .server-voice-flag.is-share,
@@ -4240,10 +4240,10 @@ html[data-theme="light"] .server-voice-flag.is-cam { color: var(--primary-2); }
   white-space: normal !important;
   /* Colours are constant (green), only opacity fades. Fading the border
      to transparent at the same time made the ring flash dark on release. */
-  border-color: var(--success);
+  border-color: var(--speaking);
   box-shadow:
-    0 0 0 1px rgba(35, 165, 89, 0.35),
-    0 0 10px rgba(35, 165, 89, 0.45);
+    0 0 0 1px color-mix(in srgb, var(--speaking) 35%, transparent),
+    0 0 10px color-mix(in srgb, var(--speaking) 45%, transparent);
   transition: opacity 0.2s ease;
   /* Always attached, paused while silent: speaking resumes the loop instead
      of restarting it, so VAD flapping can't snap / blink the ring. */
@@ -4254,8 +4254,8 @@ html[data-theme="light"] .server-voice-flag.is-cam { color: var(--primary-2); }
 .server-voice-speak-ring.ring-b {
   inset: -6px;
   border-width: 2px;
-  border-color: rgba(35, 165, 89, 0.45);
-  box-shadow: 0 0 14px rgba(35, 165, 89, 0.28);
+  border-color: color-mix(in srgb, var(--speaking) 45%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--speaking) 28%, transparent);
   /* Negative delay = phase offset with no different first frame. */
   animation-delay: -0.12s;
 }
@@ -4317,7 +4317,7 @@ html[data-theme="light"] .server-voice-flag.is-cam { color: var(--primary-2); }
 
 .server-voice-user.is-speaking {
   color: #f2f3f5;
-  background: color-mix(in srgb, var(--success) 10%, transparent);
+  background: color-mix(in srgb, var(--speaking) 10%, transparent);
 }
 
 .server-voice-user.is-speaking .server-voice-user-name {
@@ -4335,9 +4335,9 @@ html[data-theme="light"] .server-voice-flag.is-cam { color: var(--primary-2); }
 .server-voice-user.is-speaking .ui-avatar-inner,
 .server-voice-member.is-speaking .ui-avatar-inner {
   box-shadow:
-    0 0 0 2px var(--success),
-    0 0 0 5px rgba(35, 165, 89, 0.28),
-    0 0 12px rgba(35, 165, 89, 0.5);
+    0 0 0 2px var(--speaking),
+    0 0 0 5px color-mix(in srgb, var(--speaking) 28%, transparent),
+    0 0 12px color-mix(in srgb, var(--speaking) 50%, transparent);
 }
 
 .server-voice-member.is-speaking {

@@ -89,7 +89,7 @@ html.glass-desktop .main-panel .server-voice-tile.vt2-on.is-speaking,
 .call-participant-grid .participant-tile.vt2-on.is-speaking,
 .participant-tile--avatar-only.vt2-on.is-speaking {
   border-color: transparent;
-  box-shadow: 0 0 0 1px var(--vt-ring, #30d158), 0 0 26px var(--vt-glow, rgba(48, 209, 88, 0.3)), 0 14px 34px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px var(--vt-ring, var(--speaking)), 0 0 26px var(--vt-glow, color-mix(in srgb, var(--speaking) 40%, transparent)), 0 14px 34px rgba(0, 0, 0, 0.3);
 }
 
 /* ---------- motion ---------- */
@@ -211,7 +211,7 @@ html.gd-lite:not(.electron-app) .vt2-skin > .vt2-fx {
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2.5px var(--vt-ring, #30d158);
+  box-shadow: 0 0 0 2.5px var(--vt-ring, var(--speaking));
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -243,7 +243,7 @@ html.gd-lite:not(.electron-app) .vt2-skin > .vt2-fx {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--vt-ring, #30d158);
+  background: var(--vt-ring, var(--speaking));
   flex: none;
 }
 

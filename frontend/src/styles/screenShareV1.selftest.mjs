@@ -40,7 +40,7 @@ assert.ok(layout.includes('if (!ids.length && shareLayout !== "stage") setShareL
 const tile = overlay.slice(overlay.indexOf("function ParticipantTile"), overlay.indexOf("function localTileMirror"));
 assert.ok(tile.includes('className="ss-tile-identity"') && tile.includes('className="ss-tile-badges"'), "badges sit with the name");
 assert.ok(tile.includes("!small && !shareRow && (muted || deafened") || tile.includes("small && !shareRow && (muted || deafened"), "no floating status cluster");
-assert.ok(css.includes(".ss-tile.is-speaking .participant-tile-avatar-core::after"), "blue speaking ring");
+assert.ok(css.includes(".ss-tile.is-speaking .participant-tile-avatar-core::after"), "speaking ring outside the avatar");
 assert.ok(css.includes("#4F7CFF"), "logo blue");
 
 // One capsule: End moves inside while sharing.
