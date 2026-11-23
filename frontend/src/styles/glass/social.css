@@ -1618,3 +1618,12 @@ html.glass-ui.a11y-solid .g-server-pane {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* Presence dots: one palette on iPhone / glass. Rows, the profile sheet and
+   the "me" avatar already paint --g-ok / --g-idle / --g-dnd (#30D158 /
+   #FF9F0A / #FF453A); the shared StatusBadge fell back to the desktop
+   --success / --danger (#23A55A / #DA373C), so the Activity panel and other
+   StatusBadge spots showed a duller green and red than the list next to them. */
+html.glass-ui .status-badge.status-online { background: var(--g-ok); }
+html.glass-ui .status-badge.status-idle { background: var(--g-idle); }
+html.glass-ui .status-badge.status-dnd { background: var(--g-dnd); }
