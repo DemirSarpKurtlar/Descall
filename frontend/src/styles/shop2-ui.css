@@ -11,8 +11,10 @@
 .s2-toasts {
   --s2-ink: rgba(255, 255, 255, 0.95);
   --s2-dim: rgba(235, 238, 255, 0.68);
-  --s2-mute: rgba(235, 238, 255, 0.5);
-  --s2-faint: rgba(235, 238, 255, 0.38);
+  /* Small grey ink on the market tiles (#25252a): 0.5 / 0.38 / 0.45 eyebrows measured
+     4.4 / 3.0 / 3.9:1. 0.58 is >= 5:1, 0.52 (timestamps, struck prices) about 4.6:1. */
+  --s2-mute: rgba(235, 238, 255, 0.58);
+  --s2-faint: rgba(235, 238, 255, 0.52);
   --s2-line: rgba(255, 255, 255, 0.07);
   --s2-line2: rgba(255, 255, 255, 0.11);
   --s2-tile: rgba(255, 255, 255, 0.04);
@@ -20,6 +22,10 @@
   --s2-brand: #587af5;
   --s2-brand2: #6d8cff;
   --s2-brand-ink: #b6c4ff;
+  /* Filled brand control under white text: >= 4.5:1 (the flat #587af5 is 3.8:1, the old
+     #6d8cff top stop 3.1:1). Same depth as the settings primary button (#4562E0). */
+  --s2-fill: linear-gradient(180deg, #5273ee, #4562e0);
+  --s2-fill-hover: linear-gradient(180deg, #5a7af2, #4a68e6);
   --s2-gold: #ffd76a;
   --s2-gold2: #f5b73a;
   --s2-green: #6fe0a3;
@@ -231,11 +237,17 @@
   opacity: 0.45;
 }
 .s2-btn.is-primary {
-  background: linear-gradient(180deg, var(--s2-brand2), var(--s2-brand));
+  background: var(--s2-fill, linear-gradient(180deg, #5273ee, #4562e0));
   box-shadow: 0 8px 20px rgba(88, 122, 245, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
+/* `.s2-root button { color: inherit }` outranks `.s2-btn`, so a primary inside a dimmed
+   block (the empty states) took the grey ink: 2.0:1 on the blue fill. */
+.s2-root .s2-btn.is-primary,
+.s2-layer .s2-btn.is-primary {
+  color: #fff;
+}
 .s2-btn.is-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #7b97ff, #6080f7);
+  background: var(--s2-fill-hover, linear-gradient(180deg, #5a7af2, #4a68e6));
 }
 .s2-btn.is-gold {
   color: #2a1d02;
@@ -339,7 +351,7 @@
   color: #fff;
 }
 .s2-ibtn.is-buy.is-on {
-  background: linear-gradient(180deg, var(--s2-brand2), var(--s2-brand));
+  background: var(--s2-fill, linear-gradient(180deg, #5273ee, #4562e0));
   color: #fff;
   box-shadow: 0 6px 16px rgba(88, 122, 245, 0.35);
 }
@@ -448,7 +460,7 @@
   font: 700 var(--fs-11) Inter, sans-serif;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgba(235, 238, 255, 0.45);
+  color: var(--s2-mute, rgba(235, 238, 255, 0.58));
 }
 .s2-eyebrow.is-plain {
   text-transform: none;
@@ -1003,7 +1015,7 @@ button.s2-tile:hover:not(:disabled) {
   font: 700 var(--fs-11) Inter, sans-serif;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgba(235, 238, 255, 0.45);
+  color: var(--s2-mute, rgba(235, 238, 255, 0.58));
 }
 .s2-tile-v {
   display: flex;
@@ -1059,7 +1071,8 @@ button.s2-tile:hover:not(:disabled) {
   padding: 0 8px 0 12px;
   border-radius: 10px;
   font: 700 var(--fs-13) Inter, sans-serif;
-  background: linear-gradient(180deg, #a47bff, #7c4dea);
+  /* White label >= 4.6:1 (the #a47bff top stop was 3.1:1). */
+  background: linear-gradient(180deg, #8257ee, #6d3fdb);
   box-shadow: 0 8px 20px rgba(124, 77, 234, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   letter-spacing: 0;
 }
@@ -6167,6 +6180,7 @@ html.kb-open .s2-layer.is-sheet .s2-layer-panel {
   color: #fff;
 }
 .s2-empty p {
+  color: inherit; /* not the app's global p ink: dark grey on this dark panel in the light theme */
   max-width: 420px;
   font-size: var(--fs-13);
 }
@@ -9031,7 +9045,7 @@ html[data-theme="light"] :is(.s2-root, .s2-layer) :is(h1, h2, h3, h4) {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: linear-gradient(180deg, var(--s2-brand2), var(--s2-brand));
+  background: var(--s2-fill, linear-gradient(180deg, #5273ee, #4562e0));
   font: 800 var(--fs-15) "Inter Display", Inter, sans-serif;
 }
 .s2-iv-pbar-diff {

@@ -28,8 +28,9 @@
 .ccs-card {
   --ccs-ink: rgba(255, 255, 255, 0.95);
   --ccs-dim: rgba(235, 238, 255, 0.68);
-  --ccs-mute: rgba(235, 238, 255, 0.5);
-  --ccs-faint: rgba(235, 238, 255, 0.42);
+  /* 0.5 / 0.42 measured 4.4 / 3.7:1 on the card tiles; these clear 4.5:1. */
+  --ccs-mute: rgba(235, 238, 255, 0.58);
+  --ccs-faint: rgba(235, 238, 255, 0.54);
   --ccs-gold: #ffd76a;
   --ccs-brand: #587af5;
   --ccs-bg: #1b1c28;
@@ -425,7 +426,7 @@ html.glass-desktop .ccs-card :focus-visible {
   font-style: normal;
   font-size: var(--fs-12);
   font-weight: 600;
-  color: rgba(235, 238, 255, 0.45);
+  color: var(--ccs-mute);
   letter-spacing: 0;
 }
 .ccs-bb-ar {
@@ -526,7 +527,7 @@ html.glass-desktop .ccs-card :focus-visible {
   font-size: var(--fs-12);
   font-weight: 700;
   color: #fff;
-  background: #e5383c;
+  background: var(--danger, #da373c);
   box-shadow: 0 4px 10px rgba(229, 56, 60, 0.4);
 }
 .ccs-feat-i {
@@ -545,6 +546,9 @@ html.glass-desktop .ccs-card :focus-visible {
 }
 .ccs-feat h3 {
   margin: 0;
+  /* The card is always dark; the app's global h3 ink (--text-0) made the item name
+     near-black on it in the light theme. */
+  color: var(--ccs-ink, #fff);
   font-size: var(--fs-15);
   font-weight: 700;
   white-space: nowrap;
@@ -559,7 +563,7 @@ html.glass-desktop .ccs-card :focus-visible {
   margin-top: auto;
 }
 .ccs-pr s {
-  color: rgba(235, 238, 255, 0.4);
+  color: var(--ccs-faint);
   font-size: var(--fs-13);
 }
 .ccs-pr b {
@@ -624,7 +628,8 @@ html.glass-desktop .ccs-card :focus-visible {
   transform: scale(0.97);
 }
 .ccs-btn.is-blue {
-  background: linear-gradient(180deg, #6d8cff, #587af5);
+  /* White label >= 4.5:1 (the #6d8cff top stop was 3.1:1), same fill as the market's primary. */
+  background: linear-gradient(180deg, #5273ee, #4562e0);
   box-shadow: 0 8px 20px rgba(88, 122, 245, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .ccs-btn.is-gold {
@@ -1265,7 +1270,7 @@ html[data-theme="light"] .ccset-skel i {
   font-weight: 700;
 }
 .ccset-muted {
-  color: var(--text-secondary, rgba(235, 238, 255, 0.5));
+  color: var(--text-secondary, rgba(235, 238, 255, 0.6));
   font-weight: 500;
   font-size: var(--fs-12);
 }
@@ -1378,7 +1383,7 @@ html[data-theme="light"] .ccset-skel i {
 .ccset-foot {
   margin: 12px 0 0;
   font-size: var(--fs-12);
-  color: var(--text-secondary, rgba(235, 238, 255, 0.5));
+  color: var(--text-secondary, rgba(235, 238, 255, 0.6));
 }
 .ccset-lab {
   display: flex;
@@ -1607,7 +1612,7 @@ html[data-theme="light"] .ccset-seg button {
 html[data-theme="light"] .ccset-seg button.on {
   color: #fff;
 }
-html[data-theme="light"] .ccset .ccs-chip {
+html[data-theme="light"] .ccset .ccs-chip:not(.ccset-pvw .ccs-chip) {
   color: rgba(30, 34, 52, 0.82);
   background: rgba(16, 18, 28, 0.06);
   box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.08);
@@ -1616,7 +1621,7 @@ html[data-theme="light"] .ccset-track {
   background: rgba(16, 18, 28, 0.08);
 }
 html[data-theme="light"] .ccset-lab-r,
-html[data-theme="light"] .ccset .ccs-link {
+html[data-theme="light"] .ccset .ccs-link:not(.ccset-pvw .ccs-link) {
   color: #3d5bd9;
 }
 html[data-theme="light"] .ccset-play {

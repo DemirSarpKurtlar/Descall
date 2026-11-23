@@ -92,7 +92,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-nav-ico {
   height: 30px;
   border-radius: var(--r-sm);
   background: var(--g-brand);
-  color: #fff;
+  color: var(--on-primary, #fff);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-nav-label {
@@ -336,16 +336,18 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item:only-of-type {
   border-radius: var(--r-xl);
 }
 
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="overview"] .us-nav-ico { background: #587af6; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="profile"] .us-nav-ico { background: #0a84ff; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="security"] .us-nav-ico { background: #30d158; }
+/* Same tile palette and mapping as the desktop settings sidebar (S3_NAV_TILES and .s3 .c-*
+   in settings-v3.css); the old iOS system blue #0a84ff and gold tiles did not match it. */
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="overview"] .us-nav-ico { background: var(--brand, #587af5); }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="profile"] .us-nav-ico { background: #3e7bfa; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="security"] .us-nav-ico { background: #30b458; }
 html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="privacy"] .us-nav-ico { background: #5e5ce6; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="appearance"] .us-nav-ico { background: #bf5af2; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="notifications"] .us-nav-ico { background: #ff453a; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="language"] .us-nav-ico { background: #64d2ff; color: #073044; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="voice"] .us-nav-ico { background: #0a84ff; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="sound"] .us-nav-ico { background: #ff9f0a; }
-html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="shop"] .us-nav-ico { background: #f0b232; color: #3a2a08; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="appearance"] .us-nav-ico { background: var(--brand, #587af5); }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="notifications"] .us-nav-ico { background: #f0453a; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="language"] .us-nav-ico { background: #3e7bfa; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="voice"] .us-nav-ico { background: #30b458; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="sound"] .us-nav-ico { background: #1aa6b7; }
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item[data-nav="shop"] .us-nav-ico { background: #9b5de5; }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-nav-value {
   font-size: 15px;
