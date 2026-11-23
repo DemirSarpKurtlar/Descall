@@ -580,6 +580,8 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 // 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
 app.use("/api/watch", require("./routes/watch"));
+// 4.2: Siri / Shortcuts / widgets / Android shortcuts glance data, routes/native.js.
+app.use("/api/native", require("./routes/native"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));

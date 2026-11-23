@@ -83,6 +83,13 @@ jobs:
           swiftc -o "$RUNNER_TEMP/bl" App/App/DescallScreenBroadcastLogic.swift selftest/broadcast/main.swift
           "$RUNNER_TEMP/bl"
 
+      - name: DescallKit selftest (Swift, shared session / API client for intents and extensions)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/kit" App/DescallKit/*.swift selftest/kit/main.swift
+          "$RUNNER_TEMP/kit"
+
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
           set -euo pipefail
@@ -142,6 +149,14 @@ jobs:
             test "$ID" = "com.descall.app.$EXT"
           done
           /usr/libexec/PlistBuddy -c 'Print :NSUserActivityTypes' "$APP/Info.plist" | grep -q INSendMessageIntent
+          # 4.2: App Intents metadata (Siri / Shortcuts / Spotlight) and the phrases in every language.
+          test -d "$APP/Metadata.appintents" || { echo "::error::Metadata.appintents missing (App Intents not extracted)"; exit 1; }
+          ls "$APP/Metadata.appintents"
+          for L in en tr de es fr pt-BR ru; do
+            for T in AppShortcuts Localizable Intents; do
+              test -f "$APP/$L.lproj/$T.strings" || { echo "::error::$L.lproj/$T.strings missing"; exit 1; }
+            done
+          done
           # iOS whole-screen sharing: ReplayKit broadcast upload extension (docs/ios-screen-share.md).
           BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
           test -d "$BAPPEX" || { echo "::error::DescallBroadcast.appex not embedded"; exit 1; }

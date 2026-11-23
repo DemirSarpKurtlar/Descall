@@ -14,6 +14,7 @@ import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { VSC_TR } from "./vsc.tr.js";
 import { LX_TR } from "./lx.tr.js";
 import { USET_TR } from "./uset.tr.js";
 import { SVOICE_TR } from "./svoice.tr.js";
@@ -99,6 +100,7 @@ export const nested = {
   dir: DIR_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
+  vsc: VSC_TR,
   lx: LX_TR,
   uset: USET_TR,
   svoice: SVOICE_TR,

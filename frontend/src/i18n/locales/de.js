@@ -18,6 +18,7 @@ import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
+import { VSC_DE } from "./vsc.de.js";
 import { LX_DE } from "./lx.de.js";
 import { USET_DE } from "./uset.de.js";
 import { SVOICE_DE } from "./svoice.de.js";
@@ -70,6 +71,7 @@ export const nested = {
   "dir": DIR_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
+  "vsc": VSC_DE,
   "lx": LX_DE,
   "uset": USET_DE,
   "svoice": SVOICE_DE,

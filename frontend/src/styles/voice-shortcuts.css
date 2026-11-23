@@ -1,0 +1,93 @@
+/* Settings > Sesli kısayollar (components/settings/VoiceShortcutsPane.jsx). Rows are the
+   settings card (us-card / us-row); this adds the accent glyph tile, the phrase line and the
+   section titles. Dark first, light theme through the same tokens. */
+.vsc-pane .vsc-title {
+  margin: 4px 2px 0;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vsc-pane .vsc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vsc-pane .vsc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.vsc-pane .vsc-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--primary), color-mix(in srgb, var(--primary) 70%, #1b2a6b));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.vsc-pane .vsc-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.vsc-pane .vsc-phrase {
+  font-size: var(--fs-13);
+  line-height: 1.35;
+  color: var(--text-1, var(--text-muted));
+  overflow-wrap: anywhere;
+  quotes: "\201C" "\201D";
+}
+
+.vsc-pane .vsc-more {
+  flex: 0 0 auto;
+  max-width: 34%;
+  font-size: var(--fs-11);
+  font-weight: 600;
+  color: var(--primary);
+  text-align: right;
+}
+
+.vsc-pane .vsc-siri {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
+.vsc-pane .vsc-pin {
+  flex: 0 0 auto;
+  min-height: 36px;
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+
+.vsc-pane .vsc-pin:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.vsc-pane .vsc-error {
+  color: var(--danger-text, #ff8a8f);
+}
+
+html[data-theme="light"] .vsc-pane .vsc-pin {
+  color: #3550c8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vsc-pane .vsc-pin,
+  .vsc-pane .vsc-siri {
+    transition: background 0.15s ease, filter 0.15s ease;
+  }
+}
