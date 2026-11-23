@@ -182,7 +182,7 @@ export function Field({ value, onChange, placeholder, pre, icon, autoFocus, righ
   return (
     <label className={cx("svh-field", empty && icon && "ph")} style={style}>
       {icon ? <I n={icon} s={17} /> : null}
-      {pre ? <span className="pre" style={{ color: "rgba(235,238,255,.45)" }}>{pre}</span> : null}
+      {pre ? <span className="pre" style={{ color: "var(--svh-t4)" }}>{pre}</span> : null}
       {multiline ? (
         <textarea {...common} rows={rows || 4} />
       ) : (
@@ -361,18 +361,18 @@ export function ActionSheet({ title, sub, actions, cancel: cancelProp, onCancel,
         transition={reduced ? fadeT : framerSpring(SPRINGS.sheet)}>
         <div className="grp svh-heavy">
           <div style={{ textAlign: "center", padding: "16px 20px 12px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: "rgba(235,238,255,.7)" }}>{title}</div>
-            {sub ? <div style={{ fontSize: 13, color: "rgba(235,238,255,.5)", marginTop: 3 }}>{sub}</div> : null}
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--svh-t2)" }}>{title}</div>
+            {sub ? <div style={{ fontSize: 13, color: "var(--svh-t4)", marginTop: 3 }}>{sub}</div> : null}
           </div>
           {actions.map((a) => (
             <button key={a.t} type="button" className="svh-tap" data-press-scale="1" onClick={a.onClick} disabled={a.disabled}
-              style={{ height: 56, width: "100%", display: "grid", placeItems: "center", fontSize: 19, color: a.color || "#8FA6FF", borderTop: ".5px solid rgba(255,255,255,.12)" }}>
+              style={{ height: 56, width: "100%", display: "grid", placeItems: "center", fontSize: 19, color: a.color || "var(--svh-link)", borderTop: ".5px solid rgba(255,255,255,.12)" }}>
               {a.t}
             </button>
           ))}
         </div>
         <button type="button" className="grp svh-heavy svh-tap" data-press-scale="1" onClick={onCancel}
-          style={{ height: 56, display: "grid", placeItems: "center", fontSize: 19, fontWeight: 600, color: "#8FA6FF" }}>
+          style={{ height: 56, display: "grid", placeItems: "center", fontSize: 19, fontWeight: 600, color: "var(--svh-link)" }}>
           {cancel}
         </button>
       </motion.div>

@@ -111,7 +111,7 @@ export function OverviewPage({ route }) {
           <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} aria-label={s.changeIcon} style={{ borderRadius: 22, position: "relative" }}>
             <Sq server={preview} s={72} />
           </button>
-          <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} aria-label={uploading === "icon" ? s.uploading : s.changeIcon} style={{ paddingBottom: 4, color: "#8FA6FF", fontSize: 15, fontWeight: 500 }}>
+          <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} aria-label={uploading === "icon" ? s.uploading : s.changeIcon} style={{ paddingBottom: 4, color: "var(--svh-link)", fontSize: 15, fontWeight: 500 }}>
             {uploading === "icon" ? s.uploading : s.changeIcon}
           </button>
         </div>
@@ -218,7 +218,7 @@ export function CommunityPage({ route }) {
         <Sq server={server} s={48} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 650 }}>{server?.name}</div>
-          <div style={{ fontSize: 13, color: "rgba(235,238,255,.55)" }}>{server?.description ? f("previewMeta", { desc: server.description, n: members }) : f("previewMetaNoDesc", { n: members })}</div>
+          <div style={{ fontSize: 13, color: "var(--svh-t3)" }}>{server?.description ? f("previewMeta", { desc: server.description, n: members }) : f("previewMetaNoDesc", { n: members })}</div>
         </div>
       </div>
       {/* Public web directory (item 8): own opt-in and Save, owner / administrator only. */}
