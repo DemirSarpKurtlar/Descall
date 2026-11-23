@@ -63,3 +63,6 @@ frontend/dist-tauri-e2e/
 
 # Tauri sidecar copied in by the desktop workflows (descall-capture-host-<triple>.exe)
 /desktop/app/src-tauri/binaries/
+
+# Lighthouse CI local runs (frontend/scripts/lhci)
+.lighthouseci/
