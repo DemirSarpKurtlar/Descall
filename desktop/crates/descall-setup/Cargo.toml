@@ -2,7 +2,7 @@
 name = "descall-setup"
 description = "Descall-Setup.exe: per-user installer, updater and Electron-to-Tauri migration window for the Descall desktop app (draft B UI)."
 # Shown in the setup window, its log and its User-Agent: the app version it installs.
-version = "4.1.1"
+version = "4.1.2"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
