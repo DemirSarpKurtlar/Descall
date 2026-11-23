@@ -76,9 +76,34 @@ html.glass-ui .app-root.g-shell .message-bubble.own:not(.cosmetic-chat-bubble):n
   color: var(--dbub-in-ink);
 }
 
+/* Incoming bubble: links and @mentions use the theme's readable accent ink
+   (--g-brand-hi: #8FA6FF dark, #006CE7 light, derived for custom accents).
+   Plain --primary measured 3.3:1 on the dark bubble and 4.0:1 on white. */
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble:not(.own):not(.cosmetic-chat-bubble) .msg-link,
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble:not(.own):not(.cosmetic-chat-bubble) .msg-mention {
+  color: var(--g-brand-hi);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble:not(.own):not(.cosmetic-chat-bubble) .msg-mention {
+  background: rgba(var(--g-brand-rgb, 79, 124, 255), 0.16);
+}
+/* Code inside an own (accent) bubble: a white-on-tint chip instead of the
+   grey surface chip (white text on #D4D7DC was 1.4:1 in the light theme). */
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-inline-code {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-code-block {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-code-block code {
+  color: #fff;
+}
+
 /* Editing / pressed states keep their own ring on top of the sheen. */
 html.glass-ui .app-root.g-shell .message-bubble.is-editing:not(.cosmetic-chat-bubble) {
-  box-shadow: inset 0 0 0 1.5px rgba(143, 166, 255, 0.9), var(--dbub-lift);
+  box-shadow: inset 0 0 0 1.5px var(--g-brand-hi, #8FA6FF), var(--dbub-lift);
 }
 html.glass-ui .app-root.g-shell .message-bubble.own.is-editing:not(.cosmetic-chat-bubble) {
   box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.8), var(--dbub-lift);
