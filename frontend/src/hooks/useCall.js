@@ -52,6 +52,8 @@ import { getUser } from "../lib/storage";
 import { drainNativeTelemetry, getNativeCallSnapshot } from "../lib/iosNativeCall";
 import { nativeOfferVerdict } from "../lib/iosNativeCallState";
 import useConnectionStats from "./useConnectionStats";
+import useScreenShareStats from "./useScreenShareStats";
+import { screenEncoderFor } from "../lib/screenShareEncoder";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
@@ -345,6 +347,21 @@ export function useCall(socket, callOccupancyRef = null) {
   const iceRestartAttemptedRef = useRef(false);
   const iceRecoveryTimerRef = useRef(null);
   const negotiateRef = useRef(null);
+  // Codec / resolution / fps of the screen share for the connection card (both directions).
+  const screenStats = useScreenShareStats({
+    active: mode === "active" && (screenSharing || remoteScreenSharing),
+    getTargets: () => {
+      const pc = pcRef.current;
+      const remoteVideo = remoteScreenStreamRef.current?.getVideoTracks?.()[0] || null;
+      let receiver = null;
+      try {
+        receiver = remoteVideo ? pc?.getReceivers?.().find((r) => r.track === remoteVideo) || null : null;
+      } catch {
+        receiver = null;
+      }
+      return { sender: screenSenderRef.current, receiver };
+    },
+  });
   // Link recovery (lib/callConnectionMachine.js) for the current pc.
   const recoveryRef = useRef(null);
   // An ICE restart that could not be offered yet (socket down / not stable).
@@ -2138,6 +2155,15 @@ export function useCall(socket, callOccupancyRef = null) {
         height,
         fps,
         contentHint: effectiveQuality.contentHint || "motion",
+        resolution: effectiveQuality.resolution,
+        peerCount: 1,
+        transport: "mesh",
+      });
+      // CPU fallback (AV1 -> VP9 -> default) on engines that cannot switch the codec of a
+      // live sender: one more serialized offer with the new codec order.
+      screenEncoderFor(screenTrack)?.setRenegotiator(async () => {
+        negotiationQueuedRef.current = true;
+        await negotiateRef.current?.();
       });
       if (screenTrack.readyState !== "live") {
         screenStream.getTracks().forEach((t) => t.stop());
@@ -2173,8 +2199,9 @@ export function useCall(socket, callOccupancyRef = null) {
         if (screenAudioTrack) {
           screenAudioSenderRef.current = addDedicatedSender(pc, screenAudioTrack, screenStream);
         }
+        // Same ceiling as every other 1:1 share (was a flat 1.5 Mbps for all resolutions).
         await optimizeScreenShareSender(screenSender, {
-          maxBitrate: 1_500_000,
+          maxBitrate: screenBitrateForPeerCount(1, effectiveQuality.resolution || "1080p", fps),
           maxFramerate: fps,
         });
         screenStreamRef.current = screenStream;
@@ -2675,6 +2702,7 @@ export function useCall(socket, callOccupancyRef = null) {
     durationStoppedAt,
     connectionQuality,
     networkStats,
+    screenStats,
     peerConnectionState,
     remoteMediaReady,
     mediaFlow,
