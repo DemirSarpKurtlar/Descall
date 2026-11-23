@@ -1167,12 +1167,13 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   font-size: 13px;
   font-weight: 650;
   cursor: pointer;
-  background: var(--g-brand, #587AF6);
+  /* A step deeper than the accent so the white label clears 4.5:1 (flat #587AF6 is 3.6:1). */
+  background: color-mix(in srgb, var(--g-brand, #587AF6) 84%, #000);
   color: #fff;
   transition: background-color 120ms ease, transform 120ms ease;
 }
 .descoin-daily-claim svg { color: #F5C451; }
-.descoin-daily-claim:hover:not(:disabled) { background: color-mix(in srgb, var(--g-brand, #587AF6) 88%, #000); }
+.descoin-daily-claim:hover:not(:disabled) { background: color-mix(in srgb, var(--g-brand, #587AF6) 76%, #000); }
 .descoin-daily-claim:active:not(:disabled) { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) {
   .descoin-daily-claim:active:not(:disabled) { transform: none; }
@@ -1245,7 +1246,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   cursor: default;
 }
 .invite-card-btn.primary {
-  background: #587af5;
+  background: var(--brand-2, #4a68e0); /* white label >= 4.8:1 (#587af5 was 3.8:1) */
   color: #fff;
 }
 .invite-card-btn:not(.primary) {
