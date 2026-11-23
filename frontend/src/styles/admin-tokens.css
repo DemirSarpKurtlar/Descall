@@ -272,7 +272,7 @@ html.glass-desktop :is(.atk, .atk-scrim) :is(button, input, textarea, a, [tabind
 .atk-split-l { display: flex; justify-content: space-between; color: var(--atk-mu); font-size: var(--fs-12); }
 .atk-split { display: flex; height: 6px; border-radius: 4px; overflow: hidden; margin: 6px 0 12px; background: rgba(255, 255, 255, 0.06); }
 .atk-split i { display: block; height: 100%; }
-.atk-split i.is-mcp { background: #a78bfa; }
+.atk-split i.is-mcp { background: #9b5de5; }
 .atk-split i.is-rest { background: #38c7e8; }
 .atk-b24 { display: flex; gap: 8px; height: 120px; }
 .atk-b24-y { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--fs-11); color: var(--atk-di); width: 30px; text-align: right; flex: none; }

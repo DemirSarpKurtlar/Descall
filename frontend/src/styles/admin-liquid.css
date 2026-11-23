@@ -107,7 +107,7 @@
 .admin-shell .admin-close:hover,
 .admin-shell .admin-close:focus-visible {
   color: #fff;
-  background: linear-gradient(180deg, rgba(255, 69, 58, 0.46), rgba(255, 69, 58, 0.24));
+  background: linear-gradient(180deg, rgba(242, 63, 67, 0.46), rgba(242, 63, 67, 0.24));
   box-shadow:
     inset 0 0 0 1px rgba(255, 180, 174, 0.45),
     0 6px 16px rgba(0, 0, 0, 0.18);
@@ -284,14 +284,14 @@
 
 .admin-shell .admin-op.is-add {
   color: #d8ffe4;
-  background: linear-gradient(180deg, rgba(48, 209, 88, 0.36), rgba(48, 209, 88, 0.16));
-  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.45);
+  background: linear-gradient(180deg, rgba(52, 199, 123, 0.36), rgba(52, 199, 123, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(52, 199, 123, 0.45);
 }
 
 .admin-shell .admin-op.is-remove {
   color: #ffe4e1;
-  background: linear-gradient(180deg, rgba(255, 69, 58, 0.36), rgba(255, 69, 58, 0.16));
-  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.45);
+  background: linear-gradient(180deg, rgba(242, 63, 67, 0.36), rgba(242, 63, 67, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(242, 63, 67, 0.45);
 }
 
 .admin-shell .admin-system-switch,
@@ -400,16 +400,16 @@
 .admin-shell .ripple-btn.admin-btn-green,
 .admin-shell .admin-btn-green {
   color: #eafff1 !important;
-  background: linear-gradient(180deg, rgba(48, 209, 88, 0.42), rgba(48, 209, 88, 0.18)) !important;
-  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.42);
+  background: linear-gradient(180deg, rgba(52, 199, 123, 0.42), rgba(52, 199, 123, 0.18)) !important;
+  box-shadow: inset 0 0 0 1px rgba(52, 199, 123, 0.42);
 }
 
 .admin-shell .ripple-btn.admin-btn-red,
 .admin-shell .admin-btn-red,
 .admin-shell .ripple-btn.danger {
   color: #ffe8e6 !important;
-  background: linear-gradient(180deg, rgba(255, 69, 58, 0.42), rgba(255, 69, 58, 0.16)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.4);
+  background: linear-gradient(180deg, rgba(242, 63, 67, 0.42), rgba(242, 63, 67, 0.16)) !important;
+  box-shadow: inset 0 0 0 1px rgba(242, 63, 67, 0.4);
 }
 
 .admin-shell .refresh-btn {

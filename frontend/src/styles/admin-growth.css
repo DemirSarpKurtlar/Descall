@@ -16,7 +16,7 @@
 .agr-kpi span { font-size: 12px; color: var(--adm-t2, rgba(244, 246, 251, 0.64)); }
 .agr-kpi strong { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .agr-kpi em { font-style: normal; font-size: 11.5px; color: var(--adm-t3, rgba(244, 246, 251, 0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agr-kpi.is-warn strong { color: #fbbf24; }
+.agr-kpi.is-warn strong { color: #ffc773; }
 
 .agr-card { padding: 14px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); min-width: 0; }
 .agr-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 650; }

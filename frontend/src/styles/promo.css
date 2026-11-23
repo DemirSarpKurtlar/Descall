@@ -45,7 +45,7 @@ table.mt-h th.r,table.mt-h td.r{text-align:right}
 .pc-rw-ic{color:rgba(244,246,251,.6)}
 .pc-rw-ic.dc{color:#ffcf5c}
 .pc-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:5px;margin-left:auto;width:72px;overflow:hidden}
-.pc-bar i{display:block;height:100%;background:#0a84ff;border-radius:2px}
+.pc-bar i{display:block;height:100%;background:#587af5;border-radius:2px}
 .pc-uses{list-style:none;margin:0;padding:0}
 .pc-uses li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06);font-size:12.5px}
 .pc-uses li:first-child{border-top:0}

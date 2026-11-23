@@ -117,7 +117,7 @@ html.glass-desktop :is(.dsr, .dsr-page, .dsr-scrim, .dsr-menu) :is(button, input
 .dsr-chip.c-gray { background: rgba(255, 255, 255, 0.08); color: rgba(235, 238, 255, 0.72); }
 .dsr-muted { color: var(--dsr-t3); }
 .dsr-hint { margin: 0; font-size: var(--fs-12); line-height: 1.45; color: var(--dsr-t3); }
-.dsr-err { margin: 0; font-size: var(--fs-13); color: #fca5a5; }
+.dsr-err { margin: 0; font-size: var(--fs-13); color: #ff9a9c; }
 .dsr .pos, .dsr-scrim .pos { color: #6fe0a3; font-weight: 700; }
 .dsr .neg, .dsr-scrim .neg { color: #ff8a8d; font-weight: 700; }
 
