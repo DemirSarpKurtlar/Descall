@@ -163,7 +163,8 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
         }
         let credential = authorization.credential
         if let reg = credential as? ASAuthorizationPublicKeyCredentialRegistration {
-            guard let attestation = reg.rawAttestationObject else {
+            let attestationObject: Data? = reg.rawAttestationObject
+            guard let attestation = attestationObject else {
                 call.reject("The passkey returned no attestation.", "failed")
                 return
             }
@@ -177,7 +178,11 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
             return
         }
         if let assertion = credential as? ASAuthorizationPublicKeyCredentialAssertion {
-            guard let authData = assertion.rawAuthenticatorData, let signature = assertion.signature else {
+            // Data or Data! depending on the SDK: read through optionals either way.
+            let authDataOpt: Data? = assertion.rawAuthenticatorData
+            let signatureOpt: Data? = assertion.signature
+            let userHandle: Data? = assertion.userID
+            guard let authData = authDataOpt, let signature = signatureOpt else {
                 call.reject("The passkey returned no signature.", "failed")
                 return
             }
@@ -186,7 +191,7 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
                 clientDataJSON: assertion.rawClientDataJSON,
                 authenticatorData: authData,
                 signature: signature,
-                userHandle: assertion.userID,
+                userHandle: userHandle,
                 attachment: attachmentName(credential)
             )
             call.resolve(["response": json])
