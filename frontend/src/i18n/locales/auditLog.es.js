@@ -581,6 +581,8 @@ export const AUDIT_LOG_ES = {
     "feedback_delete": "Borró un comentario",
     "2fa_totp_enabled": "Activó 2FA",
     "2fa_recovery_regenerated": "Renovó códigos de recuperación",
+    "passkey_added": "Añadió una llave de acceso",
+    "passkey_removed": "Quitó una llave de acceso",
     "descoin_grant": "Dio DesCoin",
     "descoin_reconcile_run": "Ejecutó conciliación",
     "descoin_reconcile_fix": "Corrigió saldo",

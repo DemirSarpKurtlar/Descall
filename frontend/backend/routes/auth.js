@@ -832,6 +832,7 @@ router.post("/register", async (req, res) => {
         userAgent: req.headers["user-agent"],
         ip: clientIp(req),
         deviceId: req.get("x-descall-device"),
+        method: "register",
       });
       token = signToken({ id: newUser.id, username: newUser.username, sid: session.id });
       sessionId = session.id;
@@ -935,6 +936,7 @@ router.post("/login", async (req, res) => {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
+      method: "password",
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
 
@@ -1040,6 +1042,7 @@ router.post("/2fa/verify-login", async (req, res) => {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
+      method: verdict.via ? `2fa_${verdict.via}` : "2fa_email",
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -1335,6 +1338,7 @@ router.post("/google", async (req, res) => {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
+      method: "google",
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -1580,6 +1584,7 @@ router.post("/apple", async (req, res) => {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
+      method: "apple",
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -2733,3 +2738,16 @@ router.use(require("./twoFactor"));
 router.use(require("./authBan"));
 
 module.exports = router;
+// Passkey sign-in (routes/passkeys.js) runs the same gates as /login and /2fa/verify-login.
+module.exports.passkeyKit = {
+  rejectIfBanned,
+  rejectIfChildAccount,
+  accessGate,
+  secondFactorGate,
+  hasSecondFactor,
+  authUserPayload,
+  resolveEquippedExtra,
+  judgeCode,
+  codeLockedBody,
+  USER_BAN_COLS,
+};

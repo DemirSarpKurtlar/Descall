@@ -525,6 +525,8 @@ app.get("*", (req, res, next) => {
   app.use("/mcp", mcpRoutes.parseErrorHandler);
 }
 
+// Passkeys (WebAuthn, routes/passkeys.js): before the auth router so /auth/passkeys/* lands here.
+app.use(["/api/auth/passkeys", "/auth/passkeys"], require("./routes/passkeys"));
 // Register main routes (both with and without /api prefix)
 app.use("/auth", authRoutes);
 // DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.

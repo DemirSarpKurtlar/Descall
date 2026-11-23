@@ -581,6 +581,8 @@ export const AUDIT_LOG_RU = {
     "feedback_delete": "Удалил(а) отзыв",
     "2fa_totp_enabled": "Включил(а) 2FA",
     "2fa_recovery_regenerated": "Обновил(а) коды восстановления",
+    "passkey_added": "Добавил(а) ключ доступа",
+    "passkey_removed": "Удалил(а) ключ доступа",
     "descoin_grant": "Выдал(а) DesCoin",
     "descoin_reconcile_run": "Запустил(а) сверку",
     "descoin_reconcile_fix": "Исправил(а) баланс",

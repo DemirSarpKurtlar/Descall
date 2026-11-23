@@ -359,6 +359,15 @@
     // link until the page takes it, and announces new ones while the page runs.
     takeDeepLink: ADMIN ? () => Promise.resolve(null) : () => invoke("deep_link_take").then((u) => (typeof u === "string" && u ? u : null), () => null),
     onDeepLink: ADMIN ? () => noop : (cb) => on("app:deep-link", cb, () => undefined),
+    // Passkeys (frontend/src/lib/passkeys, path "tauri"): webauthn.dll with rp id descall.com
+    // (src-tauri/src/commands/passkey.rs). Options and results are WebAuthn JSON strings;
+    // errors reject with a code (canceled, no_credential, already_registered, busy, ...).
+    passkeyAvailable: ADMIN
+      ? () => Promise.resolve({ available: false, reason: "admin_window" })
+      : () => invoke("passkey_available").catch(() => ({ available: false, reason: "command_missing" })),
+    passkeyCreate: ADMIN ? () => Promise.reject("unsupported") : (options) => invoke("passkey_create", { options: String(options || "") }),
+    passkeyGet: ADMIN ? () => Promise.reject("unsupported") : (options) => invoke("passkey_get", { options: String(options || "") }),
+    passkeyCancel: ADMIN ? noop : () => fire("passkey_cancel"),
   };
   for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
 

@@ -154,6 +154,26 @@ assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable fl
   await tick();
   deq(admin.invokes, [], "admin windows never take links");
 }
+// Passkeys (src-tauri/src/commands/passkey.rs): non-enumerable extras, JSON strings in and out.
+{
+  const s = loadShim({ responses: { passkey_available: { available: true, apiVersion: 4 }, passkey_get: '{"id":"x"}', passkey_create: '{"id":"y"}' } });
+  assert.ok(!Object.keys(s.api).includes("passkeyGet"), "extras keep the Electron key set equal");
+  deq(await s.api.passkeyAvailable(), { available: true, apiVersion: 4 });
+  assert.equal(await s.api.passkeyGet('{"rpId":"descall.com"}'), '{"id":"x"}');
+  deq(s.invokes.at(-1), ["passkey_get", { options: '{"rpId":"descall.com"}' }]);
+  assert.equal(await s.api.passkeyCreate("{}"), '{"id":"y"}');
+  deq(s.invokes.at(-1), ["passkey_create", { options: "{}" }]);
+  s.api.passkeyCancel();
+  await tick();
+  deq(s.invokes.at(-1), ["passkey_cancel", undefined]);
+  const old = loadShim({ fail: ["passkey_available"] });
+  deq(await old.api.passkeyAvailable(), { available: false, reason: "command_missing" }, "an older shell without the command hides passkeys");
+  const admin = loadShim({ boot: { mode: "admin" } });
+  deq(await admin.api.passkeyAvailable(), { available: false, reason: "admin_window" });
+  await assert.rejects(admin.api.passkeyGet("{}"));
+  await tick();
+  deq(admin.invokes, [], "admin windows never run a passkey ceremony");
+}
 // Installer hooks: the Start Menu shortcut gets the toast activator CLSID (installer.nsh
 // Descall_SetToastClsid), the same CLSID as src/premium/toast.rs and the Electron installer.
 {

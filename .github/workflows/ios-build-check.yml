@@ -89,6 +89,12 @@ jobs:
           set -euo pipefail
           swiftc -o "$RUNNER_TEMP/kit" App/DescallKit/*.swift selftest/kit/main.swift
           "$RUNNER_TEMP/kit"
+      - name: Passkey logic selftest (Swift)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/pk" App/App/DescallPasskeyLogic.swift selftest/passkey/main.swift
+          "$RUNNER_TEMP/pk"
 
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
@@ -157,6 +163,9 @@ jobs:
               test -f "$APP/$L.lproj/$T.strings" || { echo "::error::$L.lproj/$T.strings missing"; exit 1; }
             done
           done
+          # Passkeys: the associated domain for webcredentials is in both entitlement files.
+          grep -q "webcredentials:descall.com" App/App.release.entitlements
+          grep -q "webcredentials:descall.com" App/App.debug.entitlements
           # iOS whole-screen sharing: ReplayKit broadcast upload extension (docs/ios-screen-share.md).
           BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
           test -d "$BAPPEX" || { echo "::error::DescallBroadcast.appex not embedded"; exit 1; }

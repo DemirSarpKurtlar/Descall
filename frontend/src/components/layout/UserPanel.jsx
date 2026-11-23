@@ -66,6 +66,7 @@ import { nativeShellPlatform } from "../../lib/glassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
+import PasskeysCard from "../settings/PasskeysCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import { serverMessage } from "../../i18n/serverText.js";
 import LegalContentModal from "../legal/LazyLegalContentModal";
@@ -2443,6 +2444,14 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
+            {/* Passkeys (owner item 9): an extra way in, the password stays. */}
+            <section className="us-section" id="settings-passkeys">
+              <h4 className="us-section-label">{t("passkey.settings.title")}</h4>
+              <div className="us-card stack">
+                <PasskeysCard />
+              </div>
+            </section>
+
             <section className="us-section">
               <div className="us-section-label-row">
                 <h4 className="us-section-label">{t("Active sessions")}</h4>
@@ -2466,6 +2475,7 @@ const UserPanel = forwardRef(function UserPanel({
                         <span className="us-row-title">
                           {session.device}
                           {session.current && <em className="us-current-tag"> · {t("This device")}</em>}
+                          {session.method === "passkey" && <em className="us-current-tag"> · {t("passkey.settings.sessionMethod")}</em>}
                         </span>
                         <span className="us-row-desc">
                           {session.ip} • {t("Last active")}{" "}

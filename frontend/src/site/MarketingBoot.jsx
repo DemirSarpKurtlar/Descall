@@ -192,6 +192,19 @@ export default function MarketingBoot() {
     [enterApp, fail]
   );
 
+  // Passkey sign-in (button and browser autofill): same session body as POST /login.
+  const onPasskeyLogin = useCallback(
+    async (res) => {
+      if (!res?.token) return;
+      setAuthError("");
+      setToken(res.token);
+      if (res.user) setUser(res.user);
+      enterApp();
+    },
+    [enterApp]
+  );
+  const onPasskeyError = useCallback((err) => fail(err, "Something went wrong"), [fail]);
+
   return (
     <>
       <MarketingApp
@@ -199,6 +212,8 @@ export default function MarketingBoot() {
         onRegister={onRegister}
         onGoogleLogin={onGoogleLogin}
         onVerify2fa={onVerify2fa}
+        onPasskeyLogin={onPasskeyLogin}
+        onPasskeyError={onPasskeyError}
         authLoading={authLoading}
         authError={authError}
       />

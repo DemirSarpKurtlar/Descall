@@ -15,12 +15,13 @@ members = [
   "crates/descall-setup",
   "crates/descall-node",
   "crates/descall-shell",
+  "crates/descall-passkey",
   "tools/descall-capture-bench",
   "premium-logic",
   "app/src-tauri",
   "node-app",
 ]
-default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-setup", "crates/descall-node", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
+default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-setup", "crates/descall-node", "crates/descall-shell", "crates/descall-passkey", "tools/descall-capture-bench", "premium-logic"]
 
 [workspace.package]
 edition = "2021"

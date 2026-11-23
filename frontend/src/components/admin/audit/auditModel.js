@@ -97,6 +97,8 @@ const ACT = {
   feedback_delete: ["trash", "red"],
   "2fa_totp_enabled": ["key", "blue"],
   "2fa_recovery_regenerated": ["key", "blue"],
+  passkey_added: ["key", "blue"],
+  passkey_removed: ["key", "blue"],
   descoin_grant: ["coin", "green"],
   descoin_reconcile_run: ["scale", "green"],
   descoin_reconcile_fix: ["scale", "green"],

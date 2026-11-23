@@ -1,0 +1,18 @@
+[package]
+name = "descall-passkey"
+description = "Passkeys (WebAuthn) for the Tauri desktop app: rp id descall.com through the Windows WebAuthn API (webauthn.dll, Windows 10 1903+), loaded at run time. The JSON / clientDataJSON rules are platform independent and unit-tested on any host."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+base64 = "0.22"
+
+[target.'cfg(windows)'.dependencies]
+windows-core.workspace = true
+windows = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_Networking_WindowsWebServices",
+  "Win32_System_LibraryLoader",
+] }
