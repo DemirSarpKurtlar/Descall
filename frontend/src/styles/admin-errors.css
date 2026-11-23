@@ -4,7 +4,7 @@
 .aer { display: flex; flex-direction: column; gap: 12px; color: var(--adm-t1, #f4f6fb); }
 :where(.aer, .aer-drawer) button { font: inherit; color: inherit; cursor: pointer; }
 :where(.aer, .aer-drawer) button:disabled { opacity: 0.5; cursor: default; }
-:where(.aer, .aer-drawer) :is(button, input, select, textarea):focus-visible { outline: 2px solid rgba(var(--adm-brand, 99, 102, 241), 0.8); outline-offset: 2px; }
+:where(.aer, .aer-drawer) :is(button, input, select, textarea):focus-visible { outline: 2px solid rgba(var(--adm-brand, 88, 122, 245), 0.8); outline-offset: 2px; }
 
 .aer-head { display: flex; align-items: center; gap: 12px; }
 .aer-head > div { flex: 1; min-width: 0; }

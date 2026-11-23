@@ -119,8 +119,8 @@ html.glass-desktop :is(.mdk, .mdk-queue) :is(button, input, textarea, select, a)
 .mdk-btn.is-ghost { flex: 0.5; }
 .mdk-btn.is-primary { color: #fff !important; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); }
 .mdk-btn.is-red,
-.mdk-btn.is-ban { color: #fff !important; background: linear-gradient(180deg, #ff6b6e, #e5383c); box-shadow: 0 6px 16px rgba(var(--mdk-red), 0.3); }
-.mdk-btn.is-timeout { color: #1a1205 !important; background: linear-gradient(180deg, #ffb35c, #f08a24); box-shadow: 0 6px 16px rgba(240, 138, 36, 0.28); }
+.mdk-btn.is-ban { color: #fff !important; background: linear-gradient(180deg, #f4555a, #e5383c); box-shadow: 0 6px 16px rgba(var(--mdk-red), 0.3); }
+.mdk-btn.is-timeout { color: #1a1205 !important; background: linear-gradient(180deg, #ffbd59, #f2a93b); box-shadow: 0 6px 16px rgba(240, 138, 36, 0.28); }
 .mdk-btn.is-kick { color: #fff !important; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); }
 .mdk-btn:is(.is-primary, .is-red, .is-ban, .is-timeout, .is-kick):hover:not(:disabled) { filter: brightness(1.06); }
 .mdk-btn.is-big { flex: 1; height: 42px; border-radius: 12px; }

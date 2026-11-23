@@ -69,4 +69,19 @@ for (const f of files) {
 }
 assert.deepEqual(hits, [], `off-palette colours in admin:\n${hits.join("\n")}`);
 
+// Buttons: one gradient per role (primary, primary hover, danger, danger hover, amber, green),
+// and focus-ring fallbacks are the logo blue (not Tailwind indigo or Discord blurple).
+const BTN_OK = new Set(["#6788ff, #587af5", "#7896ff, #6283f7", "#f4555a, #e5383c", "#f8676b, #ec4549", "#ffbd59, #f2a93b", "#28a862, #1e9655"]);
+const btnHits = [];
+for (const f of cssFiles) {
+  readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+    if (/99, 102, 241|88, 101, 242/.test(line)) btnHits.push(`${f}:${i + 1} focus fallback`);
+    if (!/btn|button/.test(line) || /spark|bar-fill|revbar|tl-now/.test(line)) return;
+    for (const m of line.matchAll(/linear-gradient\(180deg, (#[0-9a-f]{6}, #[0-9a-f]{6})\)/gi)) {
+      if (!BTN_OK.has(m[1].toLowerCase())) btnHits.push(`${f}:${i + 1} ${m[1]}`);
+    }
+  });
+}
+assert.deepEqual(btnHits, [], `admin button colours outside the set:\n${btnHits.join("\n")}`);
+
 console.log("adminPalette selftest ok");

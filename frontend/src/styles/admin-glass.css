@@ -1850,8 +1850,8 @@
 }
 
 .mod-cat-chip.active {
-  background: rgba(99, 102, 241, 0.22);
-  border-color: rgba(99, 102, 241, 0.55);
+  background: rgba(88, 122, 245, 0.22);
+  border-color: rgba(88, 122, 245, 0.55);
   color: #fff;
 }
 
@@ -3839,7 +3839,7 @@ button.overview-kpi:hover {
 .ssb-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.05); }
 .ssb-row:active:not(:disabled) { transform: scale(0.995); }
 .ssb-row:disabled { cursor: default; }
-.ssb-row:focus-visible { outline: 2px solid rgba(var(--g-brand-rgb, 88, 101, 242), 0.7); outline-offset: 1px; }
+.ssb-row:focus-visible { outline: 2px solid rgba(var(--g-brand-rgb, 88, 122, 245), 0.7); outline-offset: 1px; }
 .ssb-sub-row { grid-template-columns: minmax(140px, 1.3fr) 92px minmax(80px, 2fr) 48px 56px 14px; padding-left: 32px; font-size: 0.82rem; color: rgba(244, 246, 251, 0.74); }
 .ssb-static-row { grid-template-columns: minmax(160px, 1.3fr) minmax(80px, 2fr) 48px 56px; cursor: default; }
 .ssb-dot { width: 10px; height: 10px; border-radius: 50%; background: hsl(var(--ssb-hue) 85% 62%); box-shadow: 0 0 10px hsl(var(--ssb-hue) 85% 62% / 0.45); }

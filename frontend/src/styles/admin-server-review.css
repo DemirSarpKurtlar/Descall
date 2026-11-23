@@ -78,7 +78,7 @@
 .asr-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
 .asr-btn:active:not(:disabled) { transform: scale(0.98); }
 .asr-btn.is-sm { height: 28px; padding: 0 9px; font-size: var(--fs-12); border-radius: 8px; }
-.asr-btn.is-primary { color: #fff; background: linear-gradient(180deg, #6a8bff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+.asr-btn.is-primary { color: #fff; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
 .asr-btn.is-warn { color: #1a1306; background: #ffb84a; box-shadow: none; }
 .asr-btn.is-bad { color: #fff; background: #d93a3f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
 .asr-btn.is-bad:hover:not(:disabled) { background: #e5484d; }
@@ -358,7 +358,7 @@ textarea.asr-input { min-height: 74px; }
 .asr-scrim .asr-btn { color: var(--asr-t1); background: var(--asr-field); box-shadow: inset 0 0 0 1px var(--asr-line); }
 .asr-scrim .asr-btn.is-warn { color: #1a1306; background: #ffb84a; box-shadow: none; }
 .asr-scrim .asr-btn.is-bad { color: #fff; background: #d93a3f; box-shadow: none; }
-.asr-scrim .asr-btn.is-primary { color: #fff; background: linear-gradient(180deg, #6a8bff, #587af5); box-shadow: none; }
+.asr-scrim .asr-btn.is-primary { color: #fff; background: linear-gradient(180deg, #6788ff, #587af5); box-shadow: none; }
 
 .asr-drawer {
   width: min(720px, 100%);

@@ -67,10 +67,10 @@ html.glass-desktop :is(.alg, .alg-scrim, .alg-drawer-wrap, .alg-menu) :is(button
 .alg-btn:active:not(:disabled) { transform: translateY(1px); }
 .alg-btn.is-ghost { background: rgba(255, 255, 255, 0.05) !important; }
 .alg-btn.is-brand { background: linear-gradient(180deg, #6788ff, #587af5) !important; box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); color: #fff !important; }
-.alg-btn.is-red { background: linear-gradient(180deg, #ff6b6e, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff !important; }
-.alg-btn.is-amber { background: linear-gradient(180deg, #ffb35c, #f08a24) !important; box-shadow: 0 6px 16px rgba(240, 138, 36, 0.25); color: #1a1205 !important; }
-.alg-btn.is-brand:hover:not(:disabled) { background: linear-gradient(180deg, #7895ff, #6283f7) !important; }
-.alg-btn.is-red:hover:not(:disabled) { background: linear-gradient(180deg, #ff7c7f, #ec4549) !important; }
+.alg-btn.is-red { background: linear-gradient(180deg, #f4555a, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff !important; }
+.alg-btn.is-amber { background: linear-gradient(180deg, #ffbd59, #f2a93b) !important; box-shadow: 0 6px 16px rgba(240, 138, 36, 0.25); color: #1a1205 !important; }
+.alg-btn.is-brand:hover:not(:disabled) { background: linear-gradient(180deg, #7896ff, #6283f7) !important; }
+.alg-btn.is-red:hover:not(:disabled) { background: linear-gradient(180deg, #f8676b, #ec4549) !important; }
 
 .alg-live {
   display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 12px; white-space: nowrap;
