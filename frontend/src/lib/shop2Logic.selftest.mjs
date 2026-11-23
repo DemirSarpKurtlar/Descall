@@ -340,3 +340,141 @@ console.log(`shop2Logic.selftest ok (${enKeys.length} strings x ${LOCALES.length
   assert.match(ml, /isLookText\(message\.text\)/, "chat renders look cards");
   console.log("shop2Look ok");
 }
+
+// ---------- inventory "Stüdyo" (lib/shop2Inventory.js) ----------
+{
+  const V = await import(pathToFileURL(join(src, "lib/shop2Inventory.js")).href);
+  const NOW = Date.parse("2026-11-22T21:00:00Z");
+  const D = 86400000;
+  const mk = (id, category, extra = {}) => ({ id, sku: `s2-${category}-${id}`, category, rarity: "epic", price_descoin: 500, name: { tr: id }, ...extra });
+  const rows = [
+    { itemId: "f1", item: mk("f1", "avatar_frame", { set_key: "mercan", rarity: "epic" }), acquiredVia: "purchase", acquiredAt: new Date(NOW - D).toISOString() },
+    { itemId: "f2", item: mk("f2", "avatar_frame", { rarity: "rare", price_descoin: 640 }), acquiredVia: "purchase", acquiredAt: new Date(NOW - 12 * D).toISOString() },
+    { itemId: "f3", item: mk("f3", "avatar_frame", { set_key: "galaksi", rarity: "legendary", price_descoin: 2400 }), acquiredVia: "gift", acquiredAt: new Date(NOW - 2 * D).toISOString() },
+    { itemId: "b1", item: mk("b1", "banner", { set_key: "mercan" }), acquiredVia: "purchase", acquiredAt: new Date(NOW - 14 * D).toISOString() },
+    { itemId: "e1", item: mk("e1", "avatar_effect", { set_key: "mercan" }), acquiredAt: new Date(NOW - 14 * D).toISOString() },
+    { itemId: "e2", item: mk("e2", "avatar_effect", { set_key: "galaksi" }), acquiredAt: new Date(NOW - 3 * 3600e3).toISOString() },
+    { itemId: "tr", item: { id: "tr", sku: "flag-tr", category: "countries", name: "Türkiye", price_descoin: 0 }, acquiredAt: new Date(NOW - 40 * D).toISOString() },
+    { itemId: "old", item: { id: "old", sku: "banner-aurora", category: "banner", name: "Aurora", active: false, price_descoin: 300 }, acquiredAt: new Date(NOW - 200 * D).toISOString() },
+    { itemId: "f1", item: mk("f1", "avatar_frame") }, // duplicate row counts once
+  ];
+  const inv = V.buildInventory(rows, { now: NOW, seen: new Set(["e2"]) });
+  assert.equal(inv.total, 8, "every owned item counts once, country flags included");
+  assert.deepEqual(inv.retired.map((e) => e.id), ["old"], "retired = no longer sold");
+  assert.deepEqual(inv.extras, ["countries"], "flag slot listed after the 9");
+  assert.equal(inv.newCount, 2, "new: last 7 days, not seen yet (f1, f3)");
+  assert.equal(inv.giftCount, 1);
+  assert.equal(inv.value, 500 + 640 + 2400 + 500 + 500 + 500 + 0 + 300, "inventory value");
+
+  // Pending changes: try, try back, take off, merge, prune, effective look.
+  const worn = { avatar_frame: "f2", banner: "b1", avatar_effect: "e1" };
+  let p = V.setPending({}, worn, "avatar_frame", "f1");
+  p = V.setPending(p, worn, "avatar_effect", "e2");
+  assert.deepEqual(V.pendingChanges(worn, p), [{ category: "avatar_frame", from: "f2", to: "f1" }, { category: "avatar_effect", from: "e1", to: "e2" }]);
+  assert.deepEqual(V.setPending(p, worn, "avatar_frame", "f2"), { avatar_effect: "e2" }, "trying the worn item drops the change");
+  assert.deepEqual(V.setPending({}, worn, "banner", null), { banner: null }, "take off is a change");
+  assert.deepEqual(V.effectiveLook(worn, p), { avatar_frame: "f1", banner: "b1", avatar_effect: "e2" });
+  assert.deepEqual(V.mergePending({}, worn, { avatar_frame: "f2", banner: "b1", avatar_effect: "e2" }), { avatar_effect: "e2" }, "merge keeps only real changes");
+  assert.deepEqual(V.prunePending({ avatar_frame: "gone", banner: null, avatar_effect: "e2" }, new Set(["e2"])), { banner: null, avatar_effect: "e2" });
+  // Undo stack ("Geri al") is the component's list of previous pending maps: popping restores.
+  const stack = [{}, { avatar_frame: "f1" }];
+  assert.deepEqual(stack.pop(), { avatar_frame: "f1" });
+
+  // Filters, counts, sort, search.
+  const frames = inv.byCat.avatar_frame;
+  const counts = V.slotCounts(frames, { equippedId: "f2" });
+  assert.deepEqual({ all: counts.all, new: counts.new, gift: counts.gift, eq: counts.equipped, epic: counts.rarity.epic, legendary: counts.rarity.legendary }, { all: 3, new: 2, gift: 1, eq: 1, epic: 1, legendary: 1 });
+  const nameOf = (i) => (typeof i.name === "object" ? i.name.tr : i.name);
+  const ids = (o) => V.filterSlotItems(frames, { nameOf, equippedId: "f2", ...o }).map((e) => e.id);
+  assert.deepEqual(ids({}), ["f1", "f3", "f2"], "newest first");
+  assert.deepEqual(ids({ sort: "rarity" }), ["f3", "f1", "f2"]);
+  assert.deepEqual(ids({ sort: "value" }), ["f3", "f2", "f1"]);
+  assert.deepEqual(ids({ sort: "name" }), ["f1", "f2", "f3"]);
+  assert.deepEqual(ids({ filter: "new" }), ["f1", "f3"]);
+  assert.deepEqual(ids({ filter: "gift" }), ["f3"]);
+  assert.deepEqual(ids({ filter: "equipped" }), ["f2"]);
+  assert.deepEqual(ids({ rarity: "rare" }), ["f2"]);
+  assert.deepEqual(ids({ set: "none" }), ["f2"]);
+  assert.deepEqual(ids({ set: "galaksi" }), ["f3"]);
+  assert.deepEqual(ids({ query: "F3" }), ["f3"], "search ignores case");
+  assert.deepEqual(V.filterSlotItems(frames, { nameOf, query: "kozmik", setNameOf: (k) => (k === "galaksi" ? "Kozmik Galaksi" : "") }).map((e) => e.id), ["f3"], "search matches the set name");
+  assert.deepEqual(V.slotSets(frames), { keys: ["mercan", "galaksi"], none: true });
+
+  // Palette score + "Uyumluya çevir".
+  const sets = { mercan: { key: "mercan", palette: ["#ff6f91", "#ffb36b", "#ff7a5c", "#3a1a12"] }, galaksi: { key: "galaksi", palette: ["#587af5", "#c07bff", "#4b5cff", "#f3c8ff"] } };
+  const byId = Object.fromEntries(inv.entries.map((e) => [e.id, e.item]));
+  const lookItems = (look) => Object.fromEntries(Object.entries(look).map(([c, id]) => [c, byId[id]]));
+  const ownedByCat = { avatar_frame: frames.map((e) => e.item), avatar_effect: inv.byCat.avatar_effect.map((e) => e.item), banner: [byId.b1] };
+  const rep = V.paletteReport(lookItems({ avatar_frame: "f1", banner: "b1", avatar_effect: "e2" }), sets, ownedByCat);
+  assert.equal(rep.setKey, "mercan", "dominant set = most worn pieces");
+  assert.ok(rep.score < 100 && rep.score > 0, `mixed look scores below 100 (${rep.score})`);
+  assert.equal(rep.weakest.category, "avatar_effect", "the galaxy effect is off the coral palette");
+  assert.equal(rep.swatches.find((s) => s.off).category, "avatar_effect");
+  assert.equal(rep.suggestion.item.id, "e1", "suggests the owned piece of the dominant set");
+  assert.ok(rep.suggestion.score > rep.score);
+  const full = V.paletteReport(lookItems({ avatar_frame: "f1", banner: "b1", avatar_effect: "e1" }), sets, ownedByCat);
+  assert.equal(full.score, 100);
+  assert.equal(full.weakest, null);
+  assert.equal(V.paletteReport(lookItems({ avatar_frame: "f2" }), sets, ownedByCat), null, "no set colour: no score");
+
+  // Random combo: locked slots stay, only owned items, deterministic with a seed, not the same look.
+  const combo = V.randomCombo({ ownedByCat, current: worn, locks: ["banner"], rng: V.seededRandom(7) });
+  assert.ok(!("banner" in combo), "locked slot untouched");
+  for (const [c, id] of Object.entries(combo)) assert.ok(ownedByCat[c].some((i) => String(i.id) === id), `${c}: owned item`);
+  assert.deepEqual(Object.keys(combo).sort(), ["avatar_effect", "avatar_frame"], "only slots with owned items");
+  assert.deepEqual(combo, V.randomCombo({ ownedByCat, current: worn, locks: ["banner"], rng: V.seededRandom(7) }), "same seed, same combo");
+  assert.ok(Object.entries(combo).some(([c, id]) => worn[c] !== id), "a different look");
+  assert.deepEqual(V.randomCombo({ ownedByCat, locks: ["avatar_frame", "avatar_effect", "banner"] }), {}, "everything locked");
+
+  // Set progress + missing piece hint ("vitrinde 450 D").
+  const prog = V.setProgressList([{ key: "a", ownedCount: 8, pieceCount: 9 }, { key: "b", ownedCount: 0, pieceCount: 9 }, { key: "c", ownedCount: 9, pieceCount: 9 }, { key: "d", ownedCount: 4, pieceCount: 9 }]);
+  assert.deepEqual(prog.map((s) => s.key), ["a", "d", "c"], "owned sets, most complete first, complete last");
+  assert.equal(prog[0].left, 1);
+  const detail = { key: "a", pieces: [{ item: { id: "x1", price_descoin: 500 }, owned: true }, { item: { id: "x2", price_descoin: 520 }, owned: false, priceNow: 480 }, { item: { id: "x3", price_descoin: 600 }, owned: false }] };
+  assert.deepEqual(V.missingPiece(detail, [{ item: { id: "x3" }, price: 450 }]), { setKey: "a", left: 2, item: detail.pieces[2].item, price: 450, inStorefront: true }, "storefront price first");
+  assert.equal(V.missingPiece(detail, []).price, 480, "else the set page price");
+  assert.equal(V.missingPiece({ key: "c", pieces: [{ item: { id: "y" }, owned: true }] }), null);
+
+  // Saved looks: one automatic look only (the duplicate "Önceki görünüm" bug), pins first, match.
+  const looks = V.arrangeLooks([
+    { id: "p1", kind: "previous", look: { avatar_frame: "f1" }, createdAt: new Date(NOW - 2 * D).toISOString() },
+    { id: "s1", name: "Gece", look: { avatar_frame: "f2", banner: "b1" }, createdAt: new Date(NOW - 5 * D).toISOString() },
+    { id: "p2", kind: "previous", look: { avatar_frame: "f3" }, createdAt: new Date(NOW - D).toISOString() },
+    { id: "s2", name: "Mor", look: {}, pinned: true, createdAt: new Date(NOW - 9 * D).toISOString() },
+    { id: "s3", name: "Yeni", look: {}, createdAt: new Date(NOW - 1 * D).toISOString() },
+  ]);
+  assert.deepEqual(looks.map((o) => o.id), ["s2", "s3", "s1", "p2"], "pinned first, newest saved, one automatic look (the newest)");
+  assert.equal(looks.filter((o) => o.auto).length, 1);
+  assert.deepEqual(V.arrangeLooks(looks, { pinnedFirst: false }).map((o) => o.id), ["s3", "s1", "s2", "p2"]);
+  assert.equal(V.lookMatches({ avatar_frame: "f2", banner: "b1" }, worn), true);
+  assert.equal(V.lookMatches({ avatar_frame: "f1" }, worn), false);
+  assert.equal(V.lookMatches({}, worn), false, "an empty look is never 'worn'");
+  assert.equal(V.lookPieceCount({ a: "1", b: null, c: "2" }), 2);
+
+  // Equip history: rows, titles, "Geri dön" only with owned items.
+  const hist = V.normalizeEquipHistory({ total: 3, entries: [
+    { id: "h1", at: new Date(NOW - 60e3).toISOString(), kind: "look_apply", source: "single", changes: [{ category: "banner", from: "b0", to: "b1" }] },
+    { id: "h2", at: new Date(NOW - 2 * D).toISOString(), kind: "outfit_apply", outfitName: "Gece", changes: [{ category: "avatar_frame", from: "f1", to: "f2" }, { category: "avatar_effect", from: null, to: "e1" }] },
+    { id: "h3", at: new Date(NOW - D).toISOString(), kind: "look_apply", source: "random", changes: [] },
+  ], items: { b1: { id: "b1" } } });
+  assert.deepEqual(hist.entries.map((e) => e.id), ["h1", "h2"], "newest first, empty rows dropped");
+  assert.equal(hist.items.get("b1").id, "b1");
+  assert.equal(V.historyKind(hist.entries[0]), "slot");
+  assert.equal(V.historyKind(hist.entries[1]), "outfit");
+  assert.equal(V.historyKind({ kind: "look_apply", source: "random", changes: [1, 2] }), "random");
+  assert.equal(V.historyKind({ kind: "equip", changes: [1] }), "set");
+  assert.deepEqual(V.revertLook(hist.entries[1], new Set(["f1"])), { avatar_frame: "f1", avatar_effect: null }, "back to the old frame, the effect comes off");
+  assert.deepEqual(V.revertLook(hist.entries[0], new Set()), {}, "an item no longer owned is not put back");
+
+  // Keyboard: 1-9 switch slots, never while typing.
+  assert.equal(V.slotForKey("1"), "avatar_frame");
+  assert.equal(V.slotForKey("9"), "join_sound");
+  assert.equal(V.slotForKey("0"), null);
+  assert.equal(V.slotForKey("a"), null);
+  assert.equal(V.isTypingTarget({ tagName: "INPUT" }), true);
+  assert.equal(V.isTypingTarget({ tagName: "DIV", isContentEditable: true }), true);
+  assert.equal(V.isTypingTarget({ tagName: "BUTTON" }), false);
+  assert.deepEqual(V.ageOf(NOW - 3 * D, NOW), { unit: "day", n: 3 });
+  assert.deepEqual(V.ageOf(NOW - 14 * D, NOW), { unit: "week", n: 2 });
+  console.log("shop2Inventory ok");
+}

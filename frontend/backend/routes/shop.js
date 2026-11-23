@@ -286,7 +286,10 @@ router.post("/equip", requireAuth, async (req, res) => {
         }
       }
     }
+    // The slot's previous item, for the inventory's equip history ("Kuşanma geçmişi").
+    const fromId = await require("../lib/shop2/people").equippedSnapshot(req.user.id).then((l) => l[category] ?? null, () => undefined);
     await shop.equipItem(req.user.id, category, itemId || null);
+    if (fromId !== undefined) await require("../lib/shop2/looks").logSingle(req.user.id, category, fromId, itemId || null);
 
     const io = req.app.get("io");
     if (io) {

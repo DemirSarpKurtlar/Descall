@@ -35,7 +35,8 @@ import Shop2Search from ${J("components/shop2/Shop2Search.jsx")};
 import ShopItemThumb from ${J("components/shop/ShopItemThumb.jsx")};
 import { firstChannels } from ${J("components/shop2/Shop2Stage.jsx")};
 import * as L from ${J("lib/shop2Logic.js")};
-export { L, firstChannels };
+import * as L2 from ${J("lib/shop2Inventory.js")};
+export { L, L2, firstChannels };
 const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout, detail: ItemDetail, setq: SetQuickPanel, search: Shop2Search, thumb: ShopItemThumb };
 export function render(name, ctx, props = {}) {
   return renderToString(h(LocaleProvider, { meLanguage: "tr" }, h(Shop2Ctx.Provider, { value: ctx }, h(C[name], props))));
@@ -86,7 +87,7 @@ console.error = (...a) => {
 };
 
 const m = await import(pathToFileURL(file).href);
-const { L } = m;
+const { L, L2 } = m;
 const NOW = Date.now();
 const it = (id, category, price, tr, extra = {}) => ({ id, sku: `s2-${category}-${id}`, category, price_descoin: price, rarity: "epic", name: { tr, en: tr }, ...extra });
 const ORDER = L.SET_PIECE_ORDER;
@@ -119,7 +120,7 @@ const noop = () => {};
 const actions = new Proxy({}, { get: () => async () => null });
 const inventory = [
   ...set.pieces.filter((p) => p.owned).map((p) => ({ itemId: p.item.id, item: p.item })),
-  { itemId: "old1", item: { id: "old1", sku: "banner-aurora", category: "banner", name: "Aurora" } },
+  { itemId: "old1", item: { id: "old1", sku: "banner-aurora", category: "banner", name: "Aurora", active: false } },
 ];
 const ctx = (layout) => ({
   me: { id: "me", username: "deniz.aksoy", displayName: "Deniz Aksoy" },
@@ -183,7 +184,12 @@ for (const layout of ["desktop", "phone"]) {
   for (const x of ["shop2.gifts.onBirthday", "shop2.gifts.filter.birthday", "shop2.gifts.bday", "s2-friend-bday"]) assert.ok(!g.includes(x), `${layout} gifts: no birthday ${x}`);
   const inv = m.render("inv", c);
   has(inv, "Aurora", "retired item listed");
-  has(inv, "is-retired", "Eski koleksiyon section");
+  has(inv, "s2-iv-legacy", "Eski koleksiyon strip");
+  if (layout === "desktop") {
+    for (const x of ["s2-iv-prev", "s2-iv-rail", "s2-iv-grid", "s2-iv-looks", "s2-iv-hist", "s2-iv-setp", "s2-iv-shuf", "s2-iv-places"]) has(inv, x, `desktop inventory ${x}`);
+  } else {
+    for (const x of ["s2-iv-pp", "s2-iv-pslots", "s2-iv-pchips", "s2-iv-plooks", "shop2.inv.emptySlotTitle"]) has(inv, x, `phone inventory ${x}`);
+  }
   has(m.render("wish", c), "Kuzey Işığı");
   const co = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", pieceIds: null }, onClose: noop });
   has(co, "s2-hold", "hold-to-confirm");
@@ -245,6 +251,59 @@ for (const layout of ["desktop", "phone"]) {
   const chans = Array.from({ length: 8 }, (_, i) => ({ id: `c${i}`, name: `k${i}`, type: i === 7 ? "voice" : "text" }));
   assert.deepEqual(m.firstChannels(chans, chans[7]).map((x) => x.id), ["c0", "c1", "c2", "c3", "c4", "c7"], "stage keeps the voice channel");
   assert.equal(m.firstChannels(chans, chans[1]).length, 5, "stage: voice already listed");
+}
+{
+  // Inventory "Stüdyo": 9 slots (1-9), every owned item counted (flags too), worn card glows,
+  // set chip, filter chips with counts, one automatic look only, equip history with "Geri dön",
+  // palette score from the worn set pieces, the wishlist owned check with mixed id types.
+  const pieces = set.pieces.map((p) => ({ ...p, item: { ...p.item, set_key: "gece-limani" } }));
+  const worn = { avatar_frame: pieces[0].item.id, banner: pieces[1].item.id };
+  const invRows = [
+    ...pieces.slice(0, 3).map((p, i) => ({ itemId: p.item.id, item: p.item, acquiredVia: i === 2 ? "gift" : "purchase", acquiredAt: new Date(NOW - (i + 1) * 864e5).toISOString() })),
+    { itemId: "fx", item: it("fx", "avatar_frame", 640, "Sis Halesi", { rarity: "rare" }), acquiredAt: new Date(NOW - 20 * 864e5).toISOString() },
+    { itemId: "tr", item: { id: "tr", sku: "flag-tr", category: "countries", name: "Türkiye" }, acquiredAt: new Date(NOW - 40 * 864e5).toISOString() },
+    { itemId: "old1", item: { id: "old1", sku: "banner-aurora", category: "banner", name: "Aurora", active: false } },
+  ];
+  const base = ctx("desktop");
+  const c = {
+    ...base,
+    me: { ...base.me, equippedAvatarFrame: pieces[0].item, equippedBanner: pieces[1].item },
+    inventory: invRows,
+    owned: new Set(invRows.map((r) => r.itemId)),
+    width: 1400,
+    equippedIdFor: (cat) => worn[cat] ?? null,
+    data: {
+      ...base.data,
+      sets: [{ ...set, ownedCount: 3 }],
+      outfits: [
+        { id: "a1", kind: "previous", look: { avatar_frame: "fx" }, createdAt: new Date(NOW - 864e5).toISOString() },
+        { id: "a2", kind: "previous", look: { avatar_frame: pieces[0].item.id }, createdAt: new Date(NOW - 2 * 864e5).toISOString() },
+        { id: "s1", name: "Gece Resifi", pinned: true, look: worn, createdAt: new Date(NOW - 14 * 864e5).toISOString() },
+      ],
+      equipHistory: L2.normalizeEquipHistory({ total: 1, entries: [{ id: "h1", at: new Date(NOW - 3600e3).toISOString(), kind: "look_apply", source: "single", changes: [{ category: "avatar_frame", from: "fx", to: pieces[0].item.id }] }] }),
+      prefs: {},
+    },
+  };
+  const html = m.render("inv", c);
+  assert.equal((html.match(/class="s2-iv-slot[ "]/g) || []).length, 10, "9 slots + the flag slot");
+  has(html, "shop2.inv.count", "item count chip");
+  assert.match(html, /data-item="[^"]*p0"[^>]*>|s2-iv-card[^"]*is-eq/, "worn card");
+  has(html, "s2-iv-card is-r-epic is-eq", "worn card glows");
+  has(html, "s2-iv-setchip", "set chip with progress");
+  has(html, "Gece Limanı", "set name on the chip / progress");
+  assert.equal((html.match(/shop2\.kasa\.previousLook/g) || []).length >= 1, true, "automatic look shown");
+  assert.equal((html.match(/data-look="a\d"/g) || []).length, 1, "only one automatic look (no duplicate 'Önceki görünüm')");
+  has(html, 'data-look="s1"', "named look");
+  has(html, "shop2.inv.wearing", "the worn look says Giyiliyor");
+  has(html, "shop2.inv.revert", "history row with Geri dön");
+  has(html, "Sis Halesi", "history from item");
+  has(html, "s2-iv-ring", "palette score ring");
+  has(html, "shop2.inv.searchIn.avatar_frame", "search placeholder per slot");
+  has(html, "shop2.inv.filter.gift", "gift filter chip");
+  has(html, "shop2.inv.missingSet", "missing piece hint");
+  assert.ok(!html.includes("s2-iv-pbar"), "no pending bar while nothing is tried");
+  const wish = m.render("wish", { ...c, owned: new Set([123]), data: { ...c.data, wishlist: [it("123", "banner", 300, "Numara")] } });
+  has(wish, "shop2.common.owned", "wishlist owned check matches a numeric owned id");
 }
 {
   // Aura / call overlay thumbnails of Market 2.0 items ({ tr, en } names) draw the name's first
