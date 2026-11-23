@@ -339,8 +339,8 @@ html[data-theme="borealis"] .app-boot-skeleton {
 }
 
 .route-loading__logo {
-  width: 88px;
-  height: 88px;
+  width: 116px;
+  height: 116px;
   border-radius: var(--r-xl);
   object-fit: cover;
   box-shadow: 0 18px 40px rgba(88, 122, 245, 0.28);
@@ -348,7 +348,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 }
 
 .route-loading__bar {
-  width: 72px;
+  width: 96px;
   height: 3px;
   border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.1);
