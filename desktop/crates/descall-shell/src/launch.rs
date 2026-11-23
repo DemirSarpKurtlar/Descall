@@ -31,6 +31,21 @@ pub struct ColdStart {
     pub reason: StartReason,
 }
 
+/// A minimized start (StartAction::Minimize) shows the window with ShowWindow(SW_SHOWMINNOACTIVE)
+/// itself, so that it takes no focus; tao, which keeps its own record of the window, is told
+/// afterwards. Minimized first: tao rewrites the window style when it learns the window is
+/// visible, and on a window it does not know is minimized that drops WS_MINIMIZE from a
+/// minimized window, which Windows then cannot restore. Without the update at all, tao took the
+/// window for hidden for the whole run and its next style change (the title bar minimize) hid
+/// it from the taskbar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaoSync {
+    Minimized,
+    Visible,
+}
+
+pub const MINIMIZED_START_SYNC: [TaoSync; 2] = [TaoSync::Minimized, TaoSync::Visible];
+
 /// Saved "start in background" mode of the previous run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackgroundMode {
@@ -148,6 +163,12 @@ pub fn run_command(exe: &str) -> String {
 mod tests {
     //! launchVisibility.selftest.mjs.
     use super::*;
+
+    #[test]
+    fn a_minimized_start_tells_tao_minimized_before_visible() {
+        assert_eq!(MINIMIZED_START_SYNC, [TaoSync::Minimized, TaoSync::Visible]);
+    }
+
     const EXE: &str = r"C:\Program Files\Descall\Descall.exe";
 
     #[test]
