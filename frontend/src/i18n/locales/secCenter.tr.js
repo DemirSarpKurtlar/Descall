@@ -50,9 +50,9 @@ export const SEC_CENTER_TR = {
   "check": {
     "humanCheck": {
       "name": "Kayıtta insan doğrulaması",
-      "ok": "Kayıtta insan doğrulaması açık",
-      "fail": "Kayıtta insan doğrulaması kapalı",
-      "why": "Bot kayıtlarını kayıt anında durdurmak için bir insan doğrulama servisi (ör. Cloudflare Turnstile) gerekir. Bu servis henüz kurulu değil; kurulana kadar kayıt dondurma ve tek kullanımlık e-posta engeli bot dalgalarına karşı korur."
+      "ok": "Kayıtta insan doğrulaması açık (Cloudflare Turnstile)",
+      "fail": "Kayıtta insan doğrulaması zorunlu değil",
+      "why": "Cloudflare Turnstile kayıt, şifre sıfırlama ve art arda hatalı girişlerden sonraki girişte bot olmadığını doğrular; çoğu kişi hiçbir şey görmez. Anahtar GitHub'daki \"Cloudflare Turnstile\" iş akışıyla otomatik kurulur. Kuruluysa ve mod \"İzle\" ya da \"Kapalı\" ise öneriyi uygulamak onu yeniden zorunlu yapar."
     },
     "admin2fa": {
       "name": "Yöneticilerde 2FA",
@@ -323,7 +323,8 @@ export const SEC_CENTER_TR = {
     "signup_denied": {
       "title": "Kayıt reddedildi",
       "lineDisposable": "{email} · tek kullanımlık e-posta",
-      "lineClosed": "Kayıtlar kapalıyken {method} ile kayıt · {n} deneme"
+      "lineClosed": "Kayıtlar kapalıyken {method} ile kayıt · {n} deneme",
+      "lineHumanCheck": "{method} kaydı insan doğrulamasında durduruldu · {n} deneme"
     },
     "admin_step_up": {
       "title": "Yönetici adım doğrulaması",
@@ -424,6 +425,7 @@ export const SEC_CENTER_TR = {
     }
   },
   "setting": {
+    "turnstileMode": "İnsan doğrulaması (Turnstile)",
     "registrationEnabled": "Kayıtlar",
     "dmEnabled": "Doğrudan mesajlar",
     "readOnlyMode": "Salt okunur mod",
@@ -503,5 +505,87 @@ export const SEC_CENTER_TR = {
     "until": "Yaklaşık {time} açılacak.",
     "soon": "En kısa sürede açılacak.",
     "dismiss": "Bandı gizle"
+  },
+  "human": {
+    "title": "İnsan doğrulaması",
+    "window": "Cloudflare Turnstile · son 24 saat",
+    "status": {
+      "enforcing": "Zorunlu",
+      "monitor": "Yalnız izleniyor",
+      "off": "Kapalı",
+      "notSetUp": "Kurulmadı",
+      "tableMissing": "Tablo eksik",
+      "badSecret": "Anahtar hatalı",
+      "unknown": "Bilinmiyor"
+    },
+    "kpi": {
+      "pass": "Geçen",
+      "refused": "Durdurulan",
+      "fallback": "Doğrulamasız kabul",
+      "failOpen": "Cloudflare yanıtsız"
+    },
+    "sub": {
+      "rate": "%{rate} geçti",
+      "noData": "Henüz kontrol yok",
+      "refused": "Geçersiz veya eksik doğrulama",
+      "fallback": "Pencere açılamadı, yedek kural",
+      "failOpen": "Kesinti, kullanıcı engellenmedi"
+    },
+    "legend": {
+      "pass": "Geçen",
+      "refused": "Durdurulan",
+      "let": "Doğrulamasız geçen"
+    },
+    "chartAria": "Son 24 saatte saat saat insan doğrulaması sonuçları",
+    "hourTip": "{time}: {pass} geçti, {refused} durduruldu, {let} doğrulamasız",
+    "actions": "Nerede soruluyor",
+    "action": {
+      "register": "Kayıt",
+      "social_signup": "Google / Apple ile kayıt",
+      "password_reset": "Şifre sıfırlama",
+      "login": "Giriş (hatalı denemelerden sonra)"
+    },
+    "col": {
+      "pass": "Geçen",
+      "refused": "Durdurulan",
+      "let": "Doğrulamasız"
+    },
+    "challenged": "{n} kez soruldu",
+    "modeTitle": "Mod",
+    "mode": {
+      "enforce": "Zorunlu",
+      "monitor": "İzle",
+      "off": "Kapalı"
+    },
+    "modeHint": {
+      "enforce": "Geçersiz veya eksik doğrulama reddedilir; Cloudflare kesintisinde kullanıcılar engellenmez.",
+      "monitor": "Doğrulama yapılır ve sayılır ama kimse reddedilmez.",
+      "off": "Doğrulama hiç sorulmaz."
+    },
+    "monitorTitle": "Yalnız izlemeye al",
+    "monitorBody": "Doğrulama sürer ama başarısız olanlar da kayıt olabilir. Botlar yeniden içeri girebilir.",
+    "offTitle": "İnsan doğrulamasını kapat",
+    "offBody": "Kayıt, şifre sıfırlama ve girişte doğrulama tamamen durur. Bir sorun yaşanıyorsa geçici olarak kullan.",
+    "modeGo": "Uygula",
+    "envLocked": "Render'daki TURNSTILE_ENFORCE ortam değişkeni modu sabitliyor.",
+    "setup": "Kurulum otomatik: GitHub › Actions › Cloudflare Turnstile › apply. Anahtar bir dakika içinde devreye girer, yeniden yayın gerekmez.",
+    "notes": {
+      "noteSetup": "Turnstile anahtarı yok; doğrulama atlanıyor, kayıtlar eskisi gibi çalışıyor.",
+      "noteTable": "turnstile_config tablosu yok: 20261124t_turnstile.sql taşıması uygulanmalı.",
+      "noteBadSecret": "Cloudflare gizli anahtarı reddediyor; kullanıcılar engellenmiyor. İş akışını rotate ile çalıştır.",
+      "noteUnreachable": "Son 24 saatte Cloudflare'a ulaşılamayan anlar oldu; o isteklere izin verildi.",
+      "noteEnv": "Mod ortam değişkeniyle sabit: {mode}.",
+      "noteTestKeys": "Cloudflare test anahtarları kullanılıyor; gerçek koruma yok.",
+      "noteBudgetFull": "Doğrulamasız kabul sınırı bu saat doldu ({n}); pencereyi açamayan kullanıcılar bir saat bekleyecek."
+    },
+    "meta": {
+      "sourceDb": "Kaynak: GitHub iş akışı",
+      "sourceEnv": "Kaynak: ortam değişkeni",
+      "siteKey": "Site anahtarı {key}",
+      "hosts": "{n, plural, one {# alan adı} other {# alan adı}}",
+      "updated": "Güncellendi {time}",
+      "budget": "Doğrulamasız kabul bu saat: {used}/{max} · IP başına {perIp}"
+    },
+    "saved": "İnsan doğrulaması modu kaydedildi"
   }
 };

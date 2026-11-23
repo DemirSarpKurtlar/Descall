@@ -19,6 +19,8 @@ import { useAdminPerms } from "../dossier/adminPerms.js";
 import BanDialog from "../BanDialog.jsx";
 import { securityApi } from "./securityApi.js";
 import { FeedCard, LockCard, ScoreCard, SourcesCard, ThreatCard } from "./SecurityCards.jsx";
+import HumanCheckCard from "./HumanCheckCard.jsx";
+import { humanModeNeedsReason } from "./humanCheckModel.js";
 import LockDialog from "./LockDialog.jsx";
 import HistoryDrawer from "./HistoryDrawer.jsx";
 import { AlertsPopover, EventDrawer, ExplainPopover, FixPopover, LockDetailPopover, ReasonPopover, SourceBanDialog } from "./SecurityDialogs.jsx";
@@ -237,6 +239,21 @@ export default function SecurityCenter({ socket = null, onNavigate, onOpenUser }
     else openPop("lift", el, { modes: [mode] });
   };
 
+  // İnsan doğrulaması (Turnstile) mode: back to "enforce" in one click, down needs a reason.
+  const onHumanMode = async (mode, el) => {
+    if (humanModeNeedsReason(mode)) {
+      openPop("humanMode", el, { mode });
+      return;
+    }
+    setBusyKey("turnstileMode");
+    try {
+      await applyPatch({ turnstileMode: mode }, { message: t("secCenter.human.saved") });
+    } catch (err) {
+      say(errText(err), "err");
+    } finally {
+      setBusyKey(null);
+    }
+  };
   const onToggleSetting = async (key, on, el) => {
     const patch = { [key]: on };
     if (patchNeedsReason(patch)) {
@@ -439,6 +456,7 @@ export default function SecurityCenter({ socket = null, onNavigate, onOpenUser }
             setExpanded(true);
           }}
         />
+        <HumanCheckCard t={t} locale={locale} hc={ov?.humanCheck} now={now} loading={loading} busy={busyKey === "turnstileMode"} onMode={onHumanMode} />
       </div>
 
       <LockDialog
@@ -565,6 +583,25 @@ export default function SecurityCenter({ socket = null, onNavigate, onOpenUser }
           setBusyKey(pop.key);
           try {
             await applyPatch({ [pop.key]: false }, { reason, message: t("secCenter.toast.saved") });
+          } finally {
+            setBusyKey(null);
+          }
+        }}
+      />
+      <ReasonPopover
+        open={pop?.type === "humanMode"}
+        anchorRef={popAnchor}
+        onClose={closePop}
+        t={t}
+        testId="sc-human-pop"
+        title={pop?.mode === "off" ? t("secCenter.human.offTitle") : t("secCenter.human.monitorTitle")}
+        text={pop?.mode === "off" ? t("secCenter.human.offBody") : t("secCenter.human.monitorBody")}
+        confirmLabel={t("secCenter.human.modeGo")}
+        tone={pop?.mode === "off" ? "r" : "p"}
+        onConfirm={async (reason) => {
+          setBusyKey("turnstileMode");
+          try {
+            await applyPatch({ turnstileMode: pop.mode }, { reason, message: t("secCenter.human.saved") });
           } finally {
             setBusyKey(null);
           }
