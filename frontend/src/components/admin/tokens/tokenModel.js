@@ -5,6 +5,7 @@
  * the MCP URL, destructive-call detection, alert copy and the typed confirmations.
  * Tested by adminTokens.selftest.mjs.
  */
+import { CHART } from "../adminPalette.js";
 
 export const STATUSES = Object.freeze(["active", "paused", "expired", "revoked"]);
 export const EXPIRY_OPTIONS = Object.freeze(["1h", "1d", "7d", "30d", "90d", "never"]);
@@ -29,7 +30,7 @@ export const PLACEHOLDER = "<TOKEN>";
 export const PANIC_WORD = "T\u00dcM\u00dcN\u00dc \u0130PTAL ET";
 
 // Red stays for danger (destructive marks, revoke), so no token is drawn red.
-const PALETTE = ["#587af5", "#f2a33c", "#3ccf91", "#a78bfa", "#38c7e8", "#ec6bb5", "#4fd1c5", "#f59e6b", "#7d96ff"];
+const PALETTE = CHART;
 
 /* ---------- small utilities ---------- */
 

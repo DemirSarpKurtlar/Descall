@@ -6,6 +6,7 @@
  * the weekly hour grid <-> schedule slots, event lines, error keys, the PC config draft.
  * Tested by adminNodes.selftest.mjs.
  */
+import { STATUS } from "../adminPalette.js";
 
 export const RAM_MIN_MB = 512;
 export const RAM_MAX_MB = 8192;
@@ -29,9 +30,9 @@ export const WINDOW_MS = 60 * 60 * 1000;
 export const STEP_MS = 10 * 1000;
 export const ACCENT = "#587af5";
 export const PC_COLOR = "#b47cff";
-export const OK = "#3ccf91";
-export const WARN = "#f2b13c";
-export const BAD = "#f25562";
+export const OK = STATUS.ok;
+export const WARN = STATUS.warn;
+export const BAD = STATUS.bad;
 /** Monday first, like the draft's heat map; values are Date.getDay() (0 = Sunday). */
 export const DAY_ORDER = Object.freeze([1, 2, 3, 4, 5, 6, 0]);
 export const ALERT_KINDS = Object.freeze(["pcDown", "kvFull", "render90"]);

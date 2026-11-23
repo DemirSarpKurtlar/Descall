@@ -15,6 +15,7 @@ import { refreshAdminBadgeOverview } from "./promoBridge.jsx";
 import { formatDate, formatTime, lower } from "../../i18n/format";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
+import { CHART, STATUS } from "../admin/adminPalette.js";
 
 const errKey = (err) => {
   const code = String(err?.message || "");
@@ -314,10 +315,10 @@ export default function SpecialBadgesAdminTab({ me }) {
   const row = rows.find((b) => b.id === sel) || null;
   const k = data?.kpis || {};
   const kpis = [
-    { label: t("badges.kpiCatalog"), value: t("badges.kpiCatalogV", { n: num(k.catalog ?? rows.length) }), color: "#bf5af2" },
-    { label: t("badges.kpiGranted"), value: num(k.granted), color: "#0a84ff" },
-    { label: t("badges.kpiEquipped"), value: num(k.equipped), color: "#30d158" },
-    { label: t("badges.kpiCodes"), value: num(k.activeCodes), color: "#ffb340" },
+    { label: t("badges.kpiCatalog"), value: t("badges.kpiCatalogV", { n: num(k.catalog ?? rows.length) }), color: CHART[3] },
+    { label: t("badges.kpiGranted"), value: num(k.granted), color: STATUS.info },
+    { label: t("badges.kpiEquipped"), value: num(k.equipped), color: STATUS.ok },
+    { label: t("badges.kpiCodes"), value: num(k.activeCodes), color: STATUS.warn },
   ];
   if (failed && !data) {
     return (
