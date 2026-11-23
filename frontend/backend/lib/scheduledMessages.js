@@ -196,7 +196,8 @@ function createScheduledMessages(deps = {}) {
         if (r?.error) return false; // unsure: keep the file
         if ((r?.data || []).length) return false;
       }
-      const { error } = await db.storage.from(pm.PRIVATE_BUCKET).remove([parsed.path]);
+      // withVariantPaths: the AVIF sibling of a still image goes with it (lib/imageVariants).
+      const { error } = await db.storage.from(pm.PRIVATE_BUCKET).remove(require("./imageVariants").withVariantPaths([parsed.path]));
       if (error) {
         log.warn?.("[scheduled] upload delete failed:", error.message || error);
         return false;

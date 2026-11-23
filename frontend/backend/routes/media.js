@@ -11,6 +11,7 @@ const voiceTranscode = require("../lib/voiceTranscode");
 const { safeExtension, uploadConcurrencyGate } = require("../lib/uploadGuard");
 const { apiError, templatedError } = require("../lib/apiError");
 const { applyGifCrop } = require("../lib/gifCrop");
+const imageVariants = require("../lib/imageVariants");
 const QRCode = require("qrcode");
 
 const router = express.Router();
@@ -67,12 +68,25 @@ const upload = multer({
 // GET /api/media/f/<images|files>/<name>?e=&s= : private attachment behind a short-lived HMAC
 // URL (issued only inside payloads for members of the conversation). No bearer header: <img>
 // and <video> cannot send one. Redirects to a 10-minute Supabase signed URL.
+// AVIF: a still chat image stored with the "-av1" mark has a smaller AVIF sibling. An <img>
+// load whose Accept lists image/avif is sent to that sibling when it exists; everything else
+// (older iOS, downloads via fetch, "open in new tab") gets the original (lib/imageVariants).
 router.get(/^\/f\/(.+)$/, async (req, res) => {
   const path = req.params[0];
   res.setHeader("Cache-Control", "private, no-store");
   res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Vary", "Accept");
   if (!privateMedia.verifySignature(path, req.query.e, req.query.s)) {
     return res.status(403).json({ error: "expired", code: "MEDIA_URL_EXPIRED" });
+  }
+  const sibling = path.startsWith("quarantine/") ? null : imageVariants.avifSiblingPath(path);
+  if (sibling && imageVariants.acceptsAvif(req.headers) && !imageVariants.knownMissing(sibling)) {
+    try {
+      const target = await privateMedia.supabaseSignedUrl(supabase, sibling);
+      return res.redirect(302, target);
+    } catch {
+      imageVariants.noteMissing(sibling); // not encoded (yet): serve the original
+    }
   }
   try {
     const target = await privateMedia.supabaseSignedUrl(supabase, path);
@@ -168,10 +182,11 @@ router.post("/voice-compat", express.json({ limit: "16kb" }), async (req, res) =
   }
 });
 
-// Upload file to Supabase Storage
-async function uploadPrivate(file, folder) {
+// Upload file to Supabase Storage. `name` (optional) is a ready storage file name
+// (imageVariants.uploadName); by default the extension comes from the client's file name.
+async function uploadPrivate(file, folder, { name } = {}) {
   const ext = safeExtension(file.originalname);
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+  const filename = name || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const filePath = `${folder}/${filename}`;
   const { error } = await supabase.storage
     .from(privateMedia.PRIVATE_BUCKET)
@@ -180,9 +195,9 @@ async function uploadPrivate(file, folder) {
   return { ref: privateMedia.refForPath(filePath), url: privateMedia.signedUrlForPath(filePath), path: filePath };
 }
 
-async function uploadToSupabase(file, folder = "files") {
+async function uploadToSupabase(file, folder = "files", { name } = {}) {
   const ext = safeExtension(file.originalname);
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+  const filename = name || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const filePath = `${folder}/${filename}`;
 
   const { data, error } = await supabase.storage
@@ -199,6 +214,60 @@ async function uploadToSupabase(file, folder = "files") {
     .getPublicUrl(filePath);
 
   return { url: publicUrl, path: filePath };
+}
+
+/**
+ * Public still image (avatar, banner, group photo, server icon): encode the AVIF first and
+ * store it, then store the original under the "-av1" name, so a client that sees the mark
+ * can always load the sibling. Any AVIF problem (busy, not smaller, store failed) falls back
+ * to the plain upload, byte for byte what it was before.
+ */
+async function uploadPublicImage(file, folder, profile) {
+  const ext = imageVariants.extForMime(file.mimetype);
+  if (!ext || !imageVariants.isAvifEligible(file)) return uploadToSupabase(file, folder);
+  const avif = await imageVariants.encodeAvif(file.buffer, { profile, waitMs: 1500, timeoutS: 8 });
+  if (!avif) return uploadToSupabase(file, folder);
+  const name = imageVariants.uploadName(ext, { avif: true });
+  const siblingPath = `${folder}/${imageVariants.avifSiblingPath(name)}`;
+  const { error } = await supabase.storage
+    .from(privateMedia.PUBLIC_BUCKET)
+    .upload(siblingPath, avif.buffer, { contentType: imageVariants.AVIF_MIME, upsert: false });
+  if (error) {
+    console.warn("[MEDIA] AVIF sibling upload failed:", error.message || error);
+    return uploadToSupabase(file, folder);
+  }
+  return uploadToSupabase(file, folder, { name });
+}
+
+/**
+ * Private chat image: the original goes up at once under the "-av1" name and the upload
+ * answers; the AVIF is encoded afterwards (GET /f checks that it exists before using it).
+ * Returns { name, encodeLater } or {} when this file gets no AVIF.
+ */
+function planPrivateAvif(file) {
+  const ext = imageVariants.extForMime(file.mimetype);
+  if (!ext || !imageVariants.enabled() || !imageVariants.isAvifEligible(file) || !imageVariants.loadSharp()) return {};
+  const name = imageVariants.uploadName(ext, { avif: true });
+  const buffer = file.buffer;
+  const encodeLater = (folder) => {
+    const siblingPath = `${folder}/${imageVariants.avifSiblingPath(name)}`;
+    return imageVariants
+      .encodeAvif(buffer, { profile: "image", waitMs: 60_000, timeoutS: 30 })
+      .then(async (avif) => {
+        if (!avif) return false;
+        const { error } = await supabase.storage
+          .from(privateMedia.PRIVATE_BUCKET)
+          .upload(siblingPath, avif.buffer, { contentType: imageVariants.AVIF_MIME, upsert: false });
+        if (error) throw error;
+        imageVariants.forgetMissing(siblingPath);
+        return true;
+      })
+      .catch((err) => {
+        console.warn("[MEDIA] chat AVIF failed:", err?.message || err);
+        return false;
+      });
+  };
+  return { name, encodeLater };
 }
 
 router.post("/upload", uploadGate, upload.single("file"), async (req, res) => {
@@ -222,7 +291,13 @@ router.post("/upload", uploadGate, upload.single("file"), async (req, res) => {
     // purpose=message (2.11.2+ clients): chat attachment → private bucket, signed URL.
     // Anything else (group photo, server icon, feedback, pre-2.11.2 clients) stays public;
     // older clients' chat attachments are copied to private when the message is sent.
-    const stored = isPrivate ? await uploadPrivate(file, folder) : await uploadToSupabase(file, folder);
+    // Still images also get an AVIF sibling (lib/imageVariants): private ones after the
+    // upload answers, public ones before their URL is handed out.
+    const avifPlan = isPrivate && mediaType === "image" ? planPrivateAvif(file) : {};
+    let stored;
+    if (isPrivate) stored = await uploadPrivate(file, folder, { name: avifPlan.name });
+    else if (mediaType === "image") stored = await uploadPublicImage(file, folder, "image");
+    else stored = await uploadToSupabase(file, folder);
     const { url, path: storagePath } = stored;
 
     await supabase.from("media_uploads").insert({
@@ -242,6 +317,7 @@ router.post("/upload", uploadGate, upload.single("file"), async (req, res) => {
       size: file.size,
       originalName: file.originalname,
     });
+    if (avifPlan.encodeLater) avifPlan.encodeLater(folder); // background; never rejects
   } catch (err) {
     console.error("[MEDIA] Upload error:", err);
     res.status(500).json({ error: "Upload failed." });
@@ -264,7 +340,7 @@ router.post("/avatar", uploadGate, upload.single("avatar"), async (req, res) => 
     await applyGifCrop(req.file, req.body?.crop, "avatar");
 
     const userId = req.user.id;
-    const { url } = await uploadToSupabase(req.file, "avatars");
+    const { url } = await uploadPublicImage(req.file, "avatars", "avatar");
 
     const { error } = await supabase
       .from("users")
@@ -300,7 +376,7 @@ router.post("/banner", uploadGate, upload.single("banner"), async (req, res) => 
     }
 
     const userId = req.user.id;
-    const { url } = await uploadToSupabase(req.file, "banners");
+    const { url } = await uploadPublicImage(req.file, "banners", "banner");
 
     const { error } = await supabase
       .from("users")
@@ -331,7 +407,7 @@ router.post("/banner-image", uploadGate, upload.single("banner"), async (req, re
       return res.status(400).json({ error: "too_large" });
     }
     await applyGifCrop(req.file, req.body?.crop, "banner");
-    const { url, path: storagePath } = await uploadToSupabase(req.file, "banners");
+    const { url, path: storagePath } = await uploadPublicImage(req.file, "banners", "banner");
     await supabase.from("media_uploads").insert({
       uploader_id: req.user.id,
       storage_path: storagePath,
@@ -366,3 +442,5 @@ router.use((err, _req, res, next) => {
 });
 
 module.exports = router;
+module.exports._uploadPublicImage = uploadPublicImage;
+module.exports._planPrivateAvif = planPrivateAvif;
