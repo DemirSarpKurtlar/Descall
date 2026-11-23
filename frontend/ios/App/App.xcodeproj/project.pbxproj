@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C42A110000022F80000100D3 /* DescallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000012F80000100D3 /* DescallModels.swift */; };
+		C42A110000042F80000100D3 /* DescallKitLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000032F80000100D3 /* DescallKitLogic.swift */; };
+		C42A110000062F80000100D3 /* DescallSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000052F80000100D3 /* DescallSessionStore.swift */; };
+		C42A110000082F80000100D3 /* DescallAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000072F80000100D3 /* DescallAPIClient.swift */; };
+		C42A1100000A2F80000100D3 /* DescallIntentsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */; };
+		C42A1100000C2F80000100D3 /* DescallAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A1100000B2F80000100D3 /* DescallAppIntents.swift */; };
+		C42A1100000E2F80000100D3 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A1100000D2F80000100D3 /* AppShortcuts.strings */; };
+		C42A110000172F80000100D3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A110000162F80000100D3 /* Localizable.strings */; };
+		C42A110000202F80000100D3 /* Intents.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A1100001F2F80000100D3 /* Intents.strings */; };
 		17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
 		180E56F40F10884135FBA4AC /* WatchStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */; };
 		1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7994526A639F65B4026ADD5B /* WatchTheme.swift */; };
@@ -134,6 +143,33 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C42A110000012F80000100D3 /* DescallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallModels.swift; sourceTree = "<group>"; };
+		C42A110000032F80000100D3 /* DescallKitLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKitLogic.swift; sourceTree = "<group>"; };
+		C42A110000052F80000100D3 /* DescallSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallSessionStore.swift; sourceTree = "<group>"; };
+		C42A110000072F80000100D3 /* DescallAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallAPIClient.swift; sourceTree = "<group>"; };
+		C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallIntentsPlugin.swift; sourceTree = "<group>"; };
+		C42A1100000B2F80000100D3 /* DescallAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallAppIntents.swift; sourceTree = "<group>"; };
+		C42A1100000F2F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000102F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000112F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000122F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000132F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000142F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
+		C42A110000152F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000182F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A110000192F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001A2F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001B2F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001C2F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001D2F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		C42A1100001E2F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A110000212F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000222F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000232F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000242F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000252F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000262F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Intents.strings"; sourceTree = "<group>"; };
+		C42A110000272F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Intents.strings; sourceTree = "<group>"; };
 		0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchBridge.swift; sourceTree = "<group>"; };
 		18774A888EB07821106CB30A /* ru */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		2B22216975C41339FCCC8CFC /* fr */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -254,6 +290,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C42A110000282F80000100D3 /* DescallKit */ = {
+			isa = PBXGroup;
+			children = (
+				C42A110000012F80000100D3 /* DescallModels.swift */,
+				C42A110000032F80000100D3 /* DescallKitLogic.swift */,
+				C42A110000052F80000100D3 /* DescallSessionStore.swift */,
+				C42A110000072F80000100D3 /* DescallAPIClient.swift */,
+			);
+			path = DescallKit;
+			sourceTree = "<group>";
+		};
 		0C3862DAC280D8158D852050 /* watchOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -290,6 +337,7 @@
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				A4A0001C2F60000100D35C0A /* NotifyShared */,
+				C42A110000282F80000100D3 /* DescallKit */,
 				A4A0001D2F60000100D35C0A /* NotificationService */,
 				A4A0001E2F60000100D35C0A /* NotificationContent */,
 				B7A5000B2F70000100D35C0A /* DescallBroadcast */,
@@ -349,6 +397,11 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 				0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */,
+				C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */,
+				C42A1100000B2F80000100D3 /* DescallAppIntents.swift */,
+				C42A1100000D2F80000100D3 /* AppShortcuts.strings */,
+				C42A110000162F80000100D3 /* Localizable.strings */,
+				C42A1100001F2F80000100D3 /* Intents.strings */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -583,6 +636,9 @@
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				D35C0A0E2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy in Resources */,
 				F1A2B3C41FED79650016851F /* InfoPlist.strings in Resources */,
+				C42A1100000E2F80000100D3 /* AppShortcuts.strings in Resources */,
+				C42A110000172F80000100D3 /* Localizable.strings in Resources */,
+				C42A110000202F80000100D3 /* Intents.strings in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
@@ -652,6 +708,12 @@
 				B7A500182F70000100D35C0A /* DescallScreenBroadcastLogic.swift in Sources */,
 				F80D42F5B066C951C7D8449D /* DescallWatchBridge.swift in Sources */,
 				D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */,
+				C42A110000022F80000100D3 /* DescallModels.swift in Sources */,
+				C42A110000042F80000100D3 /* DescallKitLogic.swift in Sources */,
+				C42A110000062F80000100D3 /* DescallSessionStore.swift in Sources */,
+				C42A110000082F80000100D3 /* DescallAPIClient.swift in Sources */,
+				C42A1100000A2F80000100D3 /* DescallIntentsPlugin.swift in Sources */,
+				C42A1100000C2F80000100D3 /* DescallAppIntents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -731,6 +793,48 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		C42A1100000D2F80000100D3 /* AppShortcuts.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A1100000F2F80000100D3 /* en */,
+				C42A110000102F80000100D3 /* tr */,
+				C42A110000112F80000100D3 /* de */,
+				C42A110000122F80000100D3 /* es */,
+				C42A110000132F80000100D3 /* fr */,
+				C42A110000142F80000100D3 /* pt-BR */,
+				C42A110000152F80000100D3 /* ru */,
+			);
+			name = AppShortcuts.strings;
+			sourceTree = "<group>";
+		};
+		C42A110000162F80000100D3 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A110000182F80000100D3 /* en */,
+				C42A110000192F80000100D3 /* tr */,
+				C42A1100001A2F80000100D3 /* de */,
+				C42A1100001B2F80000100D3 /* es */,
+				C42A1100001C2F80000100D3 /* fr */,
+				C42A1100001D2F80000100D3 /* pt-BR */,
+				C42A1100001E2F80000100D3 /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		C42A1100001F2F80000100D3 /* Intents.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A110000212F80000100D3 /* en */,
+				C42A110000222F80000100D3 /* tr */,
+				C42A110000232F80000100D3 /* de */,
+				C42A110000242F80000100D3 /* es */,
+				C42A110000252F80000100D3 /* fr */,
+				C42A110000262F80000100D3 /* pt-BR */,
+				C42A110000272F80000100D3 /* ru */,
+			);
+			name = Intents.strings;
+			sourceTree = "<group>";
+		};
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (

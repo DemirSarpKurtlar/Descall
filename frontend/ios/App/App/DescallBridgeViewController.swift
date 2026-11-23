@@ -137,6 +137,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(DescallToastPlugin())
         bridge?.registerPluginInstance(DescallDeepLinkPlugin())
         bridge?.registerPluginInstance(DescallScreenBroadcastPlugin())
+        bridge?.registerPluginInstance(DescallIntentsPlugin())
         // After Capacitor set its notification delegate (3.0.0, A4).
         DescallNotificationDelegateProxy.install()
     }
