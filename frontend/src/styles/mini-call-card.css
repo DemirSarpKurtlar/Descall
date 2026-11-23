@@ -46,7 +46,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 2px solid #30d158;
+  border: 2px solid var(--speaking);
   opacity: 0;
   transform: scale(0.94);
   transition: opacity 0.18s ease, transform 0.18s ease;
@@ -55,7 +55,7 @@
 .mcc-avatar.is-speaking::after {
   opacity: calc(0.55 + var(--mcc-level, 0) * 0.45);
   transform: scale(calc(1 + var(--mcc-level, 0) * 0.06));
-  box-shadow: 0 0 12px rgba(48, 209, 88, 0.45);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--speaking) 45%, transparent);
 }
 .mcc-group {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
@@ -87,7 +87,7 @@
   background: rgba(235, 235, 245, 0.35); transform-origin: center;
   transition: transform 0.09s linear;
 }
-.mcc-wave.is-active i { background: #30d158; }
+.mcc-wave.is-active i { background: var(--speaking); }
 
 .mcc-dots { display: inline-flex; gap: 3px; flex: none; }
 .mcc-dots i {

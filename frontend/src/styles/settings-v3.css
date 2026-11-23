@@ -58,10 +58,11 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #f0453a; color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
 .s3-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
 .s3-ico svg { width: 18px; height: 18px; }
-.s3 .c-blue { background: #3e7bfa; } .s3 .c-brand { background: #587af6; } .s3 .c-indigo { background: #5e5ce6; }
-.s3 .c-purple { background: #9b5de5; } .s3 .c-green { background: #30b458; } .s3 .c-teal { background: #1aa6b7; }
-.s3 .c-orange { background: #f08a24; } .s3 .c-yellow { background: #e9b10c; } .s3 .c-red { background: #f0453a; }
-.s3 .c-pink { background: #e8457a; } .s3 .c-gray { background: #6b6f80; } .s3 .c-mint { background: #22b59a; }
+/* Tile colours: --tile-* in design-tokens.css (white glyph >= 3:1). */
+.s3 .c-blue { background: var(--tile-blue); } .s3 .c-brand { background: var(--tile-brand); } .s3 .c-indigo { background: var(--tile-indigo); }
+.s3 .c-purple { background: var(--tile-purple); } .s3 .c-green { background: var(--tile-green); } .s3 .c-teal { background: var(--tile-teal); }
+.s3 .c-orange { background: var(--tile-orange); } .s3 .c-yellow { background: var(--tile-yellow); } .s3 .c-red { background: var(--tile-red); }
+.s3 .c-pink { background: var(--tile-pink); } .s3 .c-gray { background: var(--tile-gray); } .s3 .c-mint { background: var(--tile-mint); }
 .s3-tg { width: 51px; height: 31px; border-radius: 16px; background: rgba(120, 120, 128, 0.36); position: relative; flex: none; border: 0; padding: 0; cursor: pointer; transition: background 0.2s ease; }
 .s3-tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); transition: left 0.22s cubic-bezier(0.3, 1.3, 0.5, 1); }
 .s3-tg.on { background: var(--brand, #587af5); }

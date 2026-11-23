@@ -12,7 +12,7 @@ export default function RouteLoadingScreen({ label } = {}) {
     <div className="route-loading" role="status" aria-busy="true" aria-label={text}>
       <div className="route-loading__aurora" aria-hidden="true" />
       <div className="route-loading__card">
-        <img className="route-loading__logo" src={logo} alt="" width={88} height={88} />
+        <img className="route-loading__logo" src={logo} alt="" width={116} height={116} />
         <div className="route-loading__bar" aria-hidden="true">
           <i />
         </div>

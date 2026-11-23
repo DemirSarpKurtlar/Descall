@@ -173,9 +173,9 @@ html.glass-ui .g-call .participant-tile--avatar-only {
 
 html.glass-ui .g-call .participant-tile.is-speaking {
   box-shadow:
-    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
-    0 0 0 1px rgba(48, 209, 88, 0.4),
-    0 0 32px rgba(48, 209, 88, 0.30) !important;
+    inset 0 0 0 3px var(--speaking),
+    0 0 0 1px color-mix(in srgb, var(--speaking) 52%, transparent),
+    0 0 32px color-mix(in srgb, var(--speaking) 42%, transparent) !important;
 }
 
 html.glass-ui .g-call .participant-tile-identity,
@@ -217,8 +217,8 @@ html.glass-ui .g-call .participant-tile-label .speaking-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--g-ok);
-  box-shadow: 0 0 8px rgba(48, 209, 88, 0.9);
+  background: var(--speaking);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--speaking) 90%, transparent);
   flex-shrink: 0;
 }
 
@@ -382,11 +382,13 @@ html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring {
   transform: translate(-50%, -50%) scale(calc(1 + var(--speak-level, 0) * 0.08)) !important;
   transition: opacity 0.16s ease, transform 0.12s linear, box-shadow 0.12s linear;
   border-radius: 50%;
-  border: 1.5px solid rgba(48, 209, 88, 0.95);
+  /* 2px --speaking ring plus a level-driven halo: #23A55A is deeper than the
+     old iOS green, so the ring is half a pixel wider and the halo a bit denser. */
+  border: 2px solid var(--speaking);
   box-shadow:
     0 0 0 4px transparent,
-    0 0 0 5.5px rgba(48, 209, 88, calc(0.28 + var(--speak-level, 0) * 0.55)),
-    0 0 calc(8px + var(--speak-level, 0) * 18px) rgba(48, 209, 88, calc(0.25 + var(--speak-level, 0) * 0.45));
+    0 0 0 5.5px color-mix(in srgb, var(--speaking) calc(36% + var(--speak-level, 0) * 52%), transparent),
+    0 0 calc(8px + var(--speak-level, 0) * 18px) color-mix(in srgb, var(--speaking) calc(34% + var(--speak-level, 0) * 46%), transparent);
   background: transparent;
   pointer-events: none;
   z-index: 3;

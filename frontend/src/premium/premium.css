@@ -161,10 +161,11 @@ html.descall-popout .app-main-slot { grid-column: 1 / -1; width: 100%; max-width
 }
 
 /* ---- Ayarlar > Descall+ control center (approved draft A) ---- */
+/* Tile colours: --tile-* in design-tokens.css (white glyph >= 3:1). */
 .pp-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
-.pp-ico.c-blue { background: #3e7bfa; } .pp-ico.c-indigo { background: #5e5ce6; } .pp-ico.c-red { background: #f0453a; }
-.pp-ico.c-green { background: #30b458; } .pp-ico.c-orange { background: #f08a24; } .pp-ico.c-teal { background: #1aa6b7; }
-.pp-ico.c-purple { background: #9b5de5; } .pp-ico.c-pink { background: #e8457a; } .pp-ico.c-gray { background: #6b6f80; }
+.pp-ico.c-blue { background: var(--tile-blue); } .pp-ico.c-indigo { background: var(--tile-indigo); } .pp-ico.c-red { background: var(--tile-red); }
+.pp-ico.c-green { background: var(--tile-green); } .pp-ico.c-orange { background: var(--tile-orange); } .pp-ico.c-teal { background: var(--tile-teal); }
+.pp-ico.c-purple { background: var(--tile-purple); } .pp-ico.c-pink { background: var(--tile-pink); } .pp-ico.c-gray { background: var(--tile-gray); }
 
 .pp-hero2 {
   display: grid;

@@ -288,7 +288,7 @@
 .spm-root .spm-call { position: absolute; inset: 12px; border-radius: var(--r-md); overflow: hidden; background: #0b0c12; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 .spm-root .spm-call .spm-tiles { position: absolute; inset: 12px 12px 58px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .spm-root .spm-call .spm-tl { position: relative; border-radius: var(--r-md); display: grid; place-items: center; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); backdrop-filter: blur(6px); }
-.spm-root .spm-call .spm-tl.speak { box-shadow: inset 0 0 0 2px #4ade80, 0 0 18px rgba(74,222,128,.25); }
+.spm-root .spm-call .spm-tl.speak { box-shadow: inset 0 0 0 2px var(--speaking), 0 0 18px color-mix(in srgb, var(--speaking) 25%, transparent); }
 .spm-root .spm-call .spm-tl .spm-av { width: 58px; height: 58px; font-size: 23px; }
 .spm-root .compact .spm-call .spm-tl .spm-av { width: 46px; height: 46px; font-size: 18px; }
 .spm-root .spm-call .spm-tl .spm-tag { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border-radius: var(--r-pill); background: rgba(0,0,0,.45); font: 650 10.5px/1 var(--spm-font); color: #fff; }

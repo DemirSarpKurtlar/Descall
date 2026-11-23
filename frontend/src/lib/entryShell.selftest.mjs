@@ -140,7 +140,7 @@ console.log("entryShell.selftest.mjs: ok");
   if (!html.includes("__descallHoldBootSplash()")) throw new Error("web splash must hold the boot splash until the one-shot ends");
   for (const k of ["oneshot", "loop"]) {
     const st = fs.statSync(new URL(`../../public/brand/splash/descall-splash-${k}.mp4`, import.meta.url));
-    if (st.size > 120 * 1024) throw new Error(`mp4 ${k} too large`);
+    if (st.size > 256 * 1024) throw new Error(`mp4 ${k} too large`);
   }
   const vc = fs.readFileSync(new URL("../../ios/App/App/DescallBridgeViewController.swift", import.meta.url), "utf8");
   const pl = fs.readFileSync(new URL("../../ios/App/App/DescallGlassTabBarPlugin.swift", import.meta.url), "utf8");

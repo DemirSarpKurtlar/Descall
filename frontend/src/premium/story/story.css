@@ -156,7 +156,7 @@
 .ps-pv.is-xs .pinb { width: 9px; height: 9px; }
 .ps-pv.is-xs .pinb svg { display: none; }
 .pv-av { display: inline-grid; place-items: center; aspect-ratio: 1; border-radius: 50%; color: #fff; font-weight: 700; font-size: var(--fs-11); width: 22px; flex: none; }
-.pv-av.is-talk { box-shadow: 0 0 0 2px #30d158; }
+.pv-av.is-talk { box-shadow: 0 0 0 2px var(--speaking); }
 .ps-pv.is-xs .pv-av { width: 12px; font-size: 0; }
 .pv-call { position: absolute; width: 42%; min-width: 0; max-width: 200px; z-index: 6; padding: 6% 6%; border-radius: 12px; background: rgba(32, 35, 48, 0.62); backdrop-filter: blur(12px) saturate(1.4); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.16); display: flex; flex-direction: column; gap: 7px; transition: left 0.25s, right 0.25s, top 0.25s, bottom 0.25s; }
 .pv-call .cc-top { display: flex; align-items: center; gap: 7px; min-width: 0; }
@@ -252,7 +252,7 @@
 .pv-monitor .pv-bars { width: 34%; justify-content: center; }
 .pv-vam .ppl { position: absolute; inset: 8% 6%; display: grid; grid-template-columns: 1fr 1fr; gap: 6%; }
 .pv-vam .p { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
-.pv-vam .p.talk { box-shadow: inset 0 0 0 1.5px rgba(48, 209, 88, 0.6); }
+.pv-vam .p.talk { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--speaking) 60%, transparent); }
 .pv-vam .p b { width: 40%; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.35); }
 .pv-vam .lv { width: 64%; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .pv-vam .lv i { display: block; height: 100%; background: #30c46c; transform-origin: left center; animation: ps-lv 1.4s ease-in-out infinite alternate; }
