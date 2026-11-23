@@ -40,8 +40,16 @@ assert.match(sheet, /:is\(html\[data-theme="light"\], html\.theme-light\) :is\(\
 
 // One presence palette on iPhone glass
 for (const s of ["online", "idle", "dnd"]) {
-  assert.match(glassSocial, new RegExp(`html\\.glass-ui \\.status-badge\\.status-${s} \\{ background: var\\(--g-`), `StatusBadge ${s} uses the glass presence color`);
+  assert.match(glassSocial, new RegExp(`html\\.glass-ui \\.status-badge\\.status-${s} \\{ background: var\\(--status-${s}`), `StatusBadge ${s} uses the shared presence token`);
 }
+const tokens = read("./design-tokens.css");
+assert.match(tokens, /--status-online: var\(--success\);\s*--status-dnd: var\(--danger\);/, "one presence palette: semantic success / danger");
+for (const [name, css] of [["glass/chat.css", glassChat], ["glass/social.css", glassSocial], ["ProfileSheet.css", profile], ["user-hover-card.css", hoverCard]]) {
+  assert.ok(!/status-online[^}]*background: var\(--g-ok\)/.test(css) && !/background: #30D158/i.test(css), `${name}: no iOS-only presence green`);
+}
+assert.match(profile, /\.pfs-row\.is-red \.pfs-ico \{ background: var\(--danger/, "red icon tiles only on destructive profile rows");
+assert.match(glassSocial, /\.g-ib\.ok \{\s*color: var\(--success-text/, "friend accept glyph uses the success ink");
+assert.match(read("./messages.css"), /html\[data-theme="light"\] \.msg-jump-dock \.msg-jump-btn\.msg-jump-btn \{/, "jump button is light in the light theme");
 assert.ok(!/#FFD60A/i.test(profile), "idle presence word is the app idle orange, not yellow");
 assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b \{ color: var\(--success-text/, "profile presence word is readable in the light theme");
 assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b\.is-dnd \{ color: var\(--danger-text/, "light dnd keeps red, not the online green");
