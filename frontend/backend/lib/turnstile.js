@@ -44,6 +44,7 @@
 
 const crypto = require("crypto");
 const stats = require("./turnstileStats");
+const { apiError } = require("./apiError");
 
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const VERIFY_TIMEOUT_MS = 5000;
@@ -387,7 +388,7 @@ async function gate(req, { action, ip, config } = {}) {
       ok: false,
       outcome: "fail",
       status: 403,
-      body: { error: "The security check could not be verified. Please try again.", code: "turnstile_failed", turnstile: { action, retry: true } },
+      body: apiError("The security check could not be verified. Please try again.", null, { code: "turnstile_failed", turnstile: { action, retry: true } }),
     };
   }
 
@@ -416,7 +417,7 @@ async function gate(req, { action, ip, config } = {}) {
 }
 
 function requiredBody(action, { retry = true } = {}) {
-  return { error: "Complete the security check to continue.", code: "turnstile_required", turnstile: { action, retry } };
+  return apiError("Complete the security check to continue.", null, { code: "turnstile_required", turnstile: { action, retry } });
 }
 
 /** Sends the refusal and returns true when the gate said no. */

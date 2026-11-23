@@ -25,7 +25,7 @@
  */
 import { httpRequest } from "../../api/http";
 import { getLocale } from "../../i18n/runtime.js";
-import { humanCheckStrings, turnstileLanguage } from "./humanCheckText.js";
+import { humanCheckStrings, turnstileLanguage } from "../../i18n/humanCheckText.js";
 
 export const SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 export const WEB_HOSTS = Object.freeze(["descall.com", "www.descall.com"]);

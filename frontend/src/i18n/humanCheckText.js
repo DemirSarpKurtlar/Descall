@@ -1,5 +1,5 @@
 /**
- * Strings of the human check card (lib/humanCheck/turnstileClient.js). The card is plain
+ * Catalog of the human check card (lib/humanCheck/turnstileClient.js). The card is plain
  * DOM shown by the app and by the marketing sign-in shell, which do not share a catalog
  * loader, so its few strings live here in all seven app languages.
  */

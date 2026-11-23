@@ -18,7 +18,7 @@ const out = mkdtempSync(join(tmpdir(), "hc-"));
 const J = (p) => JSON.stringify(join(src, p));
 const entry = `
 export * as hc from ${J("lib/humanCheck/turnstileClient.js")};
-export * as text from ${J("lib/humanCheck/humanCheckText.js")};
+export * as text from ${J("i18n/humanCheckText.js")};
 export * as auth from ${J("api/auth.js")};
 export { setRuntimeLocale } from ${J("i18n/runtime.js")};
 `;
