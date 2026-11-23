@@ -240,7 +240,8 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
   place-items: center;
   cursor: pointer;
   color: #fff;
-  background: #5b6cff;
+  /* Was #5b6cff (a stray blurple); the Descall send fill, white glyph >= 4.8:1. */
+  background: var(--brand-2, #4a68e0);
 }
 .uhc3-msg button:disabled { opacity: 0.35; cursor: default; background: rgba(255, 255, 255, 0.12); }
 
