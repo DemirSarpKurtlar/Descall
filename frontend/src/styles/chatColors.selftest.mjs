@@ -13,6 +13,8 @@ const glassChat = read("./glass/chat.css");
 const glassSocial = read("./glass/social.css");
 const sheet = read("../components/chat/EmojiPickerSheet.css");
 const groupInfo = read("../components/groups/GroupInfoSheet.css");
+const profile = read("../components/social/ProfileSheet.css");
+const hoverCard = read("./user-hover-card.css");
 
 // Bubble ink
 assert.match(bubble, /\.message-bubble:not\(\.own\):not\(\.cosmetic-chat-bubble\) \.msg-link,[^{]*\.msg-mention \{\s*color: var\(--g-brand-hi\);/s, "incoming links and mentions use the readable accent ink");
@@ -40,4 +42,8 @@ assert.match(sheet, /:is\(html\[data-theme="light"\], html\.theme-light\) :is\(\
 for (const s of ["online", "idle", "dnd"]) {
   assert.match(glassSocial, new RegExp(`html\\.glass-ui \\.status-badge\\.status-${s} \\{ background: var\\(--g-`), `StatusBadge ${s} uses the glass presence color`);
 }
+assert.ok(!/#FFD60A/i.test(profile), "idle presence word is the app idle orange, not yellow");
+assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b \{ color: var\(--success-text/, "profile presence word is readable in the light theme");
+assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b\.is-dnd \{ color: var\(--danger-text/, "light dnd keeps red, not the online green");
+assert.ok(!/#5b6cff/i.test(hoverCard), "hover card send button uses the accent, not a blurple");
 console.log("chatColors selftest ok");

@@ -146,7 +146,7 @@
   background: #30D158;
   box-shadow: 0 0 0 4px rgba(24, 25, 36, 1);
 }
-.pfs-av-dot.is-idle { background: #FFD60A; }
+.pfs-av-dot.is-idle { background: var(--status-idle, #FF9F0A); }
 .pfs-av-dot.is-dnd { background: #FF453A; }
 .pfs-av-dot.is-off { background: #8E8E93; }
 .pfs-name {
@@ -158,7 +158,7 @@
 }
 .pfs-h { margin: 2px 4px 12px; font-size: 15px; color: rgba(235, 238, 255, 0.55); overflow-wrap: anywhere; }
 .pfs-h b { color: #30D158; font-weight: 500; }
-.pfs-h b.is-idle { color: #FFD60A; }
+.pfs-h b.is-idle { color: var(--status-idle, #FF9F0A); }
 .pfs-h b.is-dnd { color: var(--danger-text); }
 .pfs-h b.is-off { color: rgba(235, 238, 255, 0.55); }
 .pfs-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 12px; }
@@ -413,6 +413,12 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 :root[data-theme="light"] :is(.pfs-h, .pfs-sec, .pfs-foot, .pfs-row .val, .rps-head .sub, .rps-done p) { color: rgba(20, 24, 40, 0.55); }
 :root[data-theme="light"] .pfs-row + .pfs-row::before { background: rgba(0, 0, 0, 0.1); }
 :root[data-theme="light"] .pfs-row .chev path { stroke: #000; }
+/* Presence word under the name: the dark-glass inks (#30D158, idle orange,
+   55% white) were 1.4-1.9:1 on the light sheet. */
+:root[data-theme="light"] .pfs-h b { color: var(--success-text, #13703A); }
+:root[data-theme="light"] .pfs-h b.is-idle { color: var(--warning-text, #8A5A00); }
+:root[data-theme="light"] .pfs-h b.is-dnd { color: var(--danger-text, #B42318); }
+:root[data-theme="light"] .pfs-h b.is-off { color: rgba(20, 24, 40, 0.55); }
 :root[data-theme="light"] :is(.pfs-act, .pfs-nav .l, .pfs-nav .r, .rps-alert .bt > button) { color: #3E5BDB; }
 :root[data-theme="light"] .rps-alert .bt .red { color: #E5352B; }
 :root[data-theme="light"] .rps-field { color: rgba(10, 12, 24, 0.94); }
