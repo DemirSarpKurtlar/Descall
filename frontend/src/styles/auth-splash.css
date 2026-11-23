@@ -549,7 +549,7 @@
 }
 
 .apple-signin-error {
-  color: #f87171;
+  color: var(--danger-text, #ff7b7b);
   margin: 0;
 }
 
