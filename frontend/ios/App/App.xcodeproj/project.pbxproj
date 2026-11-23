@@ -51,6 +51,8 @@
 		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
 		D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */; };
 		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
+		C9A7E1012F80000100D35C0A /* DescallPasskeyPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */; };
+		C9A7E1032F80000100D35C0A /* DescallPasskeyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */; };
 		D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */; };
 		D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
 		D8A21F0275ACCE30B3C432E1 /* WatchAdminViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */; };
@@ -192,6 +194,8 @@
 		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
 		D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarView.swift; sourceTree = "<group>"; };
 		D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKeychainPlugin.swift; sourceTree = "<group>"; };
+		C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallPasskeyPlugin.swift; sourceTree = "<group>"; };
+		C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallPasskeyLogic.swift; sourceTree = "<group>"; };
 		D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarPlugin.swift; sourceTree = "<group>"; };
 		D832932F076545664848648E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
@@ -322,6 +326,8 @@
 				D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */,
 				D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */,
 				D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */,
+				C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */,
+				C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */,
 				E7C41A022F5B000100D35C0A /* DescallCallManager.swift */,
 				E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */,
 				E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */,
@@ -633,6 +639,8 @@
 				D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */,
 				D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */,
 				D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */,
+				C9A7E1012F80000100D35C0A /* DescallPasskeyPlugin.swift in Sources */,
+				C9A7E1032F80000100D35C0A /* DescallPasskeyLogic.swift in Sources */,
 				E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */,
 				E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */,
 				E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */,

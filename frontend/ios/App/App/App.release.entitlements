@@ -7,6 +7,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:descall.com</string>
+		<string>webcredentials:descall.com</string>
 	</array>
 	<key>com.apple.developer.applesignin</key>
 	<array>
