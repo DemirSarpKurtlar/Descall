@@ -17,6 +17,24 @@
   --dir-accent: var(--primary, #587af5);
   --dir-card-bg: rgba(255, 255, 255, 0.045);
   --dir-ring: rgb(30, 31, 44);
+  /* Topic colours, defined once (owner decision Nov 2026). One curated set: the same
+     OKLCH lightness (~0.62) and a calm chroma (~0.14) for every topic, hues spread
+     around the wheel, so no topic shouts (the old neon pink #ff5c8a / #e96bd8 did)
+     and the set sits with the logo blue on dark glass. Each one gives a white glyph
+     >= 3.2:1 and stays >= 3:1 as an icon on the light chips (selftest checks). */
+  --dir-cat-gaming-minecraft: #399D57;
+  --dir-cat-gaming-fps: #CC6349;
+  --dir-cat-gaming-cs2: #A87600;
+  --dir-cat-gaming-lol: #0090B7;
+  --dir-cat-gaming-other: #A06CC4;
+  --dir-cat-study: #4D86D9;
+  --dir-cat-music: #CB5E73;
+  --dir-cat-art: #C36D19;
+  --dir-cat-tech: #009883;
+  --dir-cat-anime: #BC61A0;
+  --dir-cat-sports: #739425;
+  --dir-cat-chat-friends: #8675D4;
+  --dir-cat-other: #808693;
   width: min(820px, 100%);
   max-height: min(800px, calc(100vh - 48px));
   display: flex;
@@ -206,6 +224,11 @@ html.glass-desktop .server-modal.dir-modal .dir-search input {
   background: var(--dir-fill-2);
   color: var(--dir-ink);
 }
+/* Topic chips: the icon carries the topic colour (lifted toward white on dark glass)
+   so a chip and its cards read as one; the selected chip stays accent + white. */
+.dir-modal .dir-chip[data-cat]:not(.is-on) svg {
+  color: color-mix(in srgb, var(--cat) 55%, #fff);
+}
 .dir-modal .dir-chip.is-on {
   background: var(--dir-accent);
   color: #fff;
@@ -232,8 +255,7 @@ html.glass-desktop .server-modal.dir-modal .dir-search input {
   gap: 12px;
 }
 .dir-modal .dir-card {
-  --cat-a: #6d8cff;
-  --cat-b: #4a5fd6;
+  --cat: var(--dir-cat-other);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -248,24 +270,30 @@ html.glass-desktop .server-modal.dir-modal .dir-search input {
   background: rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 28px rgba(0, 0, 0, 0.3);
 }
-.dir-modal .dir-card[data-cat="gaming-minecraft"] { --cat-a: #3fae5a; --cat-b: #1f7a3a; }
-.dir-modal .dir-card[data-cat="gaming-fps"] { --cat-a: #f0703e; --cat-b: #b23a1f; }
-.dir-modal .dir-card[data-cat="gaming-cs2"] { --cat-a: #f2a93b; --cat-b: #b86d14; }
-.dir-modal .dir-card[data-cat="gaming-lol"] { --cat-a: #3fb7d9; --cat-b: #1d6f9c; }
-.dir-modal .dir-card[data-cat="gaming-other"] { --cat-a: #9b5de5; --cat-b: #5b2fa8; }
-.dir-modal .dir-card[data-cat="study"] { --cat-a: #4f7cff; --cat-b: #2c4fc4; }
-.dir-modal .dir-card[data-cat="music"] { --cat-a: #ff5c8a; --cat-b: #b8285a; }
-.dir-modal .dir-card[data-cat="art"] { --cat-a: #ff9a5c; --cat-b: #c75a26; }
-.dir-modal .dir-card[data-cat="tech"] { --cat-a: #22c3a6; --cat-b: #118070; }
-.dir-modal .dir-card[data-cat="anime"] { --cat-a: #e96bd8; --cat-b: #9b3393; }
-.dir-modal .dir-card[data-cat="sports"] { --cat-a: #5cc95c; --cat-b: #2d8a2d; }
-.dir-modal .dir-card[data-cat="chat-friends"] { --cat-a: #6d8cff; --cat-b: #4a5fd6; }
-.dir-modal .dir-card[data-cat="other"] { --cat-a: #8a8fa3; --cat-b: #555a6e; }
+/* Every topic reads its colour from the palette above (cards and chips). */
+.dir-modal [data-cat="gaming-minecraft"] { --cat: var(--dir-cat-gaming-minecraft); }
+.dir-modal [data-cat="gaming-fps"] { --cat: var(--dir-cat-gaming-fps); }
+.dir-modal [data-cat="gaming-cs2"] { --cat: var(--dir-cat-gaming-cs2); }
+.dir-modal [data-cat="gaming-lol"] { --cat: var(--dir-cat-gaming-lol); }
+.dir-modal [data-cat="gaming-other"] { --cat: var(--dir-cat-gaming-other); }
+.dir-modal [data-cat="study"] { --cat: var(--dir-cat-study); }
+.dir-modal [data-cat="music"] { --cat: var(--dir-cat-music); }
+.dir-modal [data-cat="art"] { --cat: var(--dir-cat-art); }
+.dir-modal [data-cat="tech"] { --cat: var(--dir-cat-tech); }
+.dir-modal [data-cat="anime"] { --cat: var(--dir-cat-anime); }
+.dir-modal [data-cat="sports"] { --cat: var(--dir-cat-sports); }
+.dir-modal [data-cat="chat-friends"] { --cat: var(--dir-cat-chat-friends); }
+.dir-modal [data-cat="other"] { --cat: var(--dir-cat-other); }
 .dir-modal .dir-card-banner {
   position: relative;
   height: 64px;
   flex: none;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--cat-a) 80%, transparent), color-mix(in srgb, var(--cat-b) 55%, transparent));
+  /* Topic colour into a deeper shade of the same hue (no second hand-picked colour). */
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--cat) 82%, transparent),
+    color-mix(in srgb, color-mix(in oklab, var(--cat) 62%, #000) 55%, transparent)
+  );
 }
 .dir-modal .dir-card-banner svg {
   position: absolute;
@@ -601,7 +629,7 @@ html.glass-desktop .server-modal.dir-modal .dir-search input {
 html[data-theme="light"] .server-modal.dir-modal {
   --dir-ink: rgba(16, 18, 30, 0.95);
   --dir-ink-2: rgba(20, 24, 40, 0.74);
-  --dir-ink-3: rgba(20, 24, 40, 0.58);
+  --dir-ink-3: rgba(20, 24, 40, 0.64);
   --dir-fill: rgba(20, 24, 40, 0.045);
   --dir-fill-2: rgba(20, 24, 40, 0.07);
   --dir-line: rgba(20, 24, 40, 0.09);
@@ -624,8 +652,16 @@ html[data-theme="light"] .dir-modal .dir-sort button.is-on {
 html[data-theme="light"] .dir-modal .dir-chip svg {
   color: var(--dir-accent);
 }
+html[data-theme="light"] .dir-modal .dir-chip[data-cat]:not(.is-on) svg {
+  color: var(--cat);
+}
 html[data-theme="light"] .dir-modal .dir-chip.is-on svg {
   color: #fff;
+}
+/* Light glass: the deep stop fades to a tint of the same hue; a black-mixed stop over
+   white turned muddy grey. */
+html[data-theme="light"] .dir-modal .dir-card:not(.dir-card--skeleton) .dir-card-banner {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--cat) 86%, transparent), color-mix(in srgb, var(--cat) 38%, transparent));
 }
 html[data-theme="light"] .dir-modal .dir-card:not(.dir-card--skeleton):hover {
   background: #fff;

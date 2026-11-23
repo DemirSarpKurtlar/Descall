@@ -9,7 +9,7 @@
 .ctc-live:before{content:"";width:7px;height:7px;border-radius:50%;background:#30D158;box-shadow:0 0 0 3px rgba(48,209,88,.25)}
 .ctc-avs{display:flex;justify-content:center;margin:16px 0 10px}
 .ctc-avs .w{margin:0 -6px;border-radius:50%;padding:3px;background:rgba(22,24,36,1);position:relative;display:flex}
-.ctc-avs .w.sp{box-shadow:0 0 0 2.5px #30D158}
+.ctc-avs .w.sp{box-shadow:0 0 0 2.5px var(--speaking)}
 .ctc-avs .w i{position:absolute;right:0;bottom:0;width:20px;height:20px;border-radius:50%;background:#FF453A;display:grid;place-items:center;box-shadow:0 0 0 2px rgba(22,24,36,1)}
 .ctc-more{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);font-weight:650;font-size:17px}
 .ctc-t{text-align:center;font-size:21px;font-weight:700}

@@ -52,18 +52,18 @@
 .speaking-rings-glow {
   inset: 0;
   box-shadow:
-    0 0 0 3px #23a55a,
-    0 0 14px rgba(35, 165, 90, 0.45);
+    0 0 0 3px var(--speaking),
+    0 0 14px color-mix(in srgb, var(--speaking) 45%, transparent);
   animation-name: speakingRingsGlow;
 }
 
 /* Outer ring, sits on the avatar shell edge. */
 .speaking-rings-ring.ring-a {
   inset: -19px;
-  border: 2px solid #23a55a;
+  border: 2px solid var(--speaking);
   box-shadow:
-    0 0 0 2px rgba(35, 165, 90, 0.55),
-    0 0 18px rgba(35, 165, 90, 0.35);
+    0 0 0 2px color-mix(in srgb, var(--speaking) 55%, transparent),
+    0 0 18px color-mix(in srgb, var(--speaking) 35%, transparent);
   animation-name: speakingRingsWave;
   scale: calc(1 + var(--speak-level, 0) * 0.12);
   transition: scale 0.16s ease-out;
@@ -72,7 +72,7 @@
 /* Inner concentric ring. */
 .speaking-rings-ring.ring-b {
   inset: -10px;
-  border: 1px solid rgba(35, 165, 90, 0.45);
+  border: 1px solid color-mix(in srgb, var(--speaking) 45%, transparent);
   animation-name: speakingRingsWave;
   /* Negative delay: phase offset without a different first frame. */
   animation-delay: -0.4s;
@@ -82,13 +82,13 @@
 
 .participant-tile.small .speaking-rings-glow {
   box-shadow:
-    0 0 0 2px #23a55a,
-    0 0 8px rgba(35, 165, 90, 0.4);
+    0 0 0 2px var(--speaking),
+    0 0 8px color-mix(in srgb, var(--speaking) 40%, transparent);
 }
 .participant-tile.small .speaking-rings-ring.ring-a {
   inset: -7px;
   border-width: 1px;
-  box-shadow: 0 0 8px rgba(35, 165, 90, 0.28);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--speaking) 28%, transparent);
 }
 .participant-tile.small .speaking-rings-ring.ring-b {
   inset: -4px;

@@ -162,13 +162,13 @@
   will-change: left, top;
 }
 .w3d-tag.is-talk {
-  box-shadow: 0 0 0 2px var(--w3d-ok), 0 0 18px rgba(61, 220, 132, 0.55);
+  box-shadow: 0 0 0 2px var(--speaking), 0 0 18px color-mix(in srgb, var(--speaking) 55%, transparent);
 }
 .w3d-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--w3d-ok);
+  background: var(--speaking);
 }
 .w3d-tag-act {
   font-weight: 700;

@@ -331,9 +331,23 @@
         transform: translate(-50%, -50%);
         pointer-events: none;
       }
+      /* Desktop and phone web: the tile is a whole number of pixels (--boot-tile)
+         and the video box too (--boot-anim = tile x 600/440, same parity), placed
+         without a translate, so the 720 px frame lands on the pixel grid. */
+      html:not(.native-app) #boot-splash .boot-mark--anim .boot-anim {
+        left: calc((var(--boot-tile) - var(--boot-anim)) / 2);
+        top: calc((var(--boot-tile) - var(--boot-anim)) / 2);
+        width: var(--boot-anim);
+        height: var(--boot-anim);
+        transform: none;
+      }
       #boot-splash .boot-mark--anim .boot-anim[hidden] { display: none; }
-      /* Safari / iOS: opaque MP4, clipped to the glass tile (73.3% of the frame). */
+      /* Safari / iOS: opaque MP4 on the splash colour #1B1D26, clipped to the glass
+         tile (440 of 600 px = 73.3% of the frame, corner 98.8 px = 16.5%). The
+         halo would tint the page around the tile, so the MP4 path drops it and
+         the video background is the page itself. */
       #boot-splash .boot-mark--mp4 .boot-anim { clip-path: inset(13.4% round 16.5%); }
+      html:not(.native-app) #boot-splash:has(.boot-mark--mp4)::before { display: none; }
       @media (prefers-reduced-motion: reduce) {
         #boot-splash .boot-anim { display: none !important; }
       }
@@ -483,35 +497,43 @@
       /* Phone web (not the native launch screen): full-bleed glass aurora,
          the original mark, a short bar, and a visible status line. Native
          keeps the #1E1F22 launch tile above. */
+      /* Phone web tile: 116 px (was 88), video box 158 px (= 116 x 600/440, same
+         parity), bar 96 px: the same proportions, whole pixels. */
       html.boot-mobile:not(.native-app) #boot-splash,
       html.boot-mobile:not(.native-app) .descall-boot-splash {
+        --boot-tile: 116px;
+        --boot-anim: 158px;
         background: #1B1D26;
+      }
+      html.boot-mobile:not(.native-app) #boot-splash .boot-card,
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-card {
+        gap: 14px;
       }
       html.boot-mobile:not(.native-app) #boot-splash .boot-mark,
       html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark {
-        width: 88px;
-        height: 88px;
-        border-radius: 22px;
+        width: var(--boot-tile);
+        height: var(--boot-tile);
+        border-radius: 29px;
         background: none;
         overflow: hidden;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
         animation: boot-mark-pulse 2.6s ease-in-out infinite;
       }
-      html.boot-mobile:not(.native-app) #boot-splash .boot-mark img,
-      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark img {
+      html.boot-mobile:not(.native-app) #boot-splash .boot-mark img:not(.boot-symbol),
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark img:not(.boot-symbol) {
         display: block;
-        width: 88px;
-        height: 88px;
-        border-radius: 22px;
+        width: var(--boot-tile);
+        height: var(--boot-tile);
+        border-radius: 29px;
       }
       html.boot-mobile:not(.native-app) #boot-splash .boot-bar,
       html.boot-mobile:not(.native-app) .descall-boot-splash .boot-bar {
         position: static;
         left: auto;
         top: auto;
-        width: 72px;
+        width: 96px;
         height: 3px;
-        margin: 2px 0 0;
+        margin: 4px 0 0;
         opacity: 1;
         animation: none;
       }
@@ -2176,8 +2198,88 @@
          with the logo-final symbol, wordmark, thin brand capsule, a status line
          only after 4 s, and the error state. Phones keep the launch tile above. */
       .boot-spec, .boot-sheen, .boot-symbol, .boot-wordmark, .boot-slow { display: none; }
+      /* Splash size (Nov 2026, "too small and blurry"): the tile is 160 px
+         (152 on 720-800 px tall screens, 128 in a small window, 184 on 1440p,
+         224 on 4K at 100%); wordmark, gaps and bar keep the approved 120 px
+         proportions. Every value is a whole pixel and widths share parity, so
+         the centred pieces land on the pixel grid. --boot-anim = tile x 600/440
+         (the video frame around the tile, see .boot-anim). */
       html:not(.boot-mobile) #boot-splash {
+        --boot-tile: 160px;
+        --boot-radius: 42px;
+        --boot-symbol: 86px;
+        --boot-anim: 218px;
+        --boot-wm-w: 160px;
+        --boot-wm-h: 37px;
+        --boot-wm-gap: 24px;
+        --boot-bar-w: 176px;
+        --boot-bar-h: 4px;
+        --boot-bar-gap: 29px;
+        --boot-cap: 54px;
+        --boot-halo: 560px;
         background: #1B1D26;
+      }
+      @media (max-height: 820px) {
+        html:not(.boot-mobile) #boot-splash {
+          --boot-tile: 152px;
+          --boot-radius: 40px;
+          --boot-symbol: 82px;
+          --boot-anim: 208px;
+          --boot-wm-w: 156px;
+          --boot-wm-h: 36px;
+          --boot-wm-gap: 22px;
+          --boot-bar-w: 168px;
+          --boot-bar-gap: 28px;
+          --boot-cap: 50px;
+          --boot-halo: 532px;
+        }
+      }
+      @media (max-height: 600px), (max-width: 600px) {
+        html:not(.boot-mobile) #boot-splash {
+          --boot-tile: 128px;
+          --boot-radius: 34px;
+          --boot-symbol: 68px;
+          --boot-anim: 174px;
+          --boot-wm-w: 130px;
+          --boot-wm-h: 30px;
+          --boot-wm-gap: 19px;
+          --boot-bar-w: 140px;
+          --boot-bar-h: 3px;
+          --boot-bar-gap: 24px;
+          --boot-cap: 44px;
+          --boot-halo: 448px;
+        }
+      }
+      @media (min-width: 2200px) and (min-height: 1300px) {
+        html:not(.boot-mobile) #boot-splash {
+          --boot-tile: 184px;
+          --boot-radius: 48px;
+          --boot-symbol: 98px;
+          --boot-anim: 250px;
+          --boot-wm-w: 186px;
+          --boot-wm-h: 43px;
+          --boot-wm-gap: 28px;
+          --boot-bar-w: 202px;
+          --boot-bar-gap: 33px;
+          --boot-cap: 62px;
+          --boot-halo: 644px;
+        }
+      }
+      @media (min-width: 3200px) and (min-height: 1900px) {
+        html:not(.boot-mobile) #boot-splash {
+          --boot-tile: 224px;
+          --boot-radius: 60px;
+          --boot-symbol: 120px;
+          --boot-anim: 306px;
+          --boot-wm-w: 224px;
+          --boot-wm-h: 52px;
+          --boot-wm-gap: 34px;
+          --boot-bar-w: 246px;
+          --boot-bar-h: 5px;
+          --boot-bar-gap: 41px;
+          --boot-cap: 74px;
+          --boot-halo: 784px;
+        }
       }
       /* UI audit #1: no colour orbs; one faint #587AF5 halo behind the tile. */
       html:not(.native-app) #boot-splash .boot-orb { display: none; }
@@ -2186,29 +2288,38 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 420px;
-        height: 420px;
-        margin: -230px 0 0 -210px;
+        width: var(--boot-halo);
+        height: var(--boot-halo);
+        margin: calc(var(--boot-halo) / -2 - var(--boot-tile) / 6) 0 0 calc(var(--boot-halo) / -2);
         border-radius: 50%;
         background: radial-gradient(closest-side, rgba(88, 122, 245, 0.12), rgba(88, 122, 245, 0) 100%);
         pointer-events: none;
       }
+      /* The 10 px lift is a layout offset, not a transform, and the entry
+         animation only fills backwards: at rest the card and the wordmark have no
+         transform at all, so they are painted on whole pixels, not a resampled layer. */
       html:not(.boot-mobile) #boot-splash .boot-card {
+        top: -10px;
         gap: 0;
         padding: 0;
-        transform: translateY(-10px);
-        animation: boot-tile-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        transform: none;
+        animation: boot-card-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
       }
-      @keyframes boot-tile-in {
-        from { opacity: 0; transform: translateY(-10px) scale(0.96); }
-        to { opacity: 1; transform: translateY(-10px) scale(1); }
+      @keyframes boot-card-in {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: none; }
+      }
+      html:not(.boot-mobile) #boot-splash .boot-mark {
+        width: var(--boot-tile);
+        height: var(--boot-tile);
+        border-radius: var(--boot-radius);
       }
       html:not(.boot-mobile) #boot-splash .boot-mark:has(.boot-symbol) {
         position: relative;
         isolation: isolate;
-        width: 120px;
-        height: 120px;
-        border-radius: 32px;
+        width: var(--boot-tile);
+        height: var(--boot-tile);
+        border-radius: var(--boot-radius);
         overflow: hidden;
         background:
           linear-gradient(160deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 46%, rgba(255, 255, 255, 0.03) 100%),
@@ -2247,8 +2358,8 @@
         display: block;
         position: relative;
         z-index: 2;
-        width: 64px;
-        height: 64px;
+        width: var(--boot-symbol);
+        height: var(--boot-symbol);
         border-radius: 0;
         object-fit: contain;
         filter: drop-shadow(0 2px 6px rgba(20, 40, 140, 0.45));
@@ -2256,29 +2367,29 @@
       html:not(.boot-mobile) #boot-splash .boot-card:has(.boot-wordmark) .boot-title { display: none; }
       html:not(.boot-mobile) #boot-splash .boot-wordmark {
         display: block;
-        width: auto;
-        height: 28px;
-        margin-top: 18px;
+        width: var(--boot-wm-w);
+        height: var(--boot-wm-h);
+        margin-top: var(--boot-wm-gap);
         opacity: 0.94;
-        animation: boot-tile-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) 0.06s both;
+        animation: boot-card-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) 0.06s backwards;
       }
       html:not(.boot-mobile) #boot-splash .boot-bar {
         position: relative;
-        width: 132px;
-        height: 3px;
-        margin-top: 22px;
+        width: var(--boot-bar-w);
+        height: var(--boot-bar-h);
+        margin-top: var(--boot-bar-gap);
         background: rgba(255, 255, 255, 0.10);
         box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
       }
       html:not(.boot-mobile) #boot-splash .boot-bar > i {
-        width: 40px;
+        width: var(--boot-cap);
         background: linear-gradient(90deg, rgba(110, 140, 255, 0), #a0b6ff 50%, rgba(110, 140, 255, 0));
         box-shadow: 0 0 8px rgba(110, 140, 255, 0.6);
         animation: boot-capsule 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
       @keyframes boot-capsule {
-        0% { transform: translateX(-40px); }
-        100% { transform: translateX(132px); }
+        0% { transform: translateX(calc(var(--boot-cap) * -1)); }
+        100% { transform: translateX(var(--boot-bar-w)); }
       }
       html:not(.boot-mobile) #boot-splash .boot-slow {
         display: block;
@@ -2337,7 +2448,7 @@
         }
         html:not(.boot-mobile) #boot-splash .boot-wordmark,
         html:not(.boot-mobile) #boot-splash .boot-slow { animation-duration: 0.2s; }
-        html:not(.boot-mobile) #boot-splash .boot-card { animation: boot-fade-in 0.2s ease both; transform: translateY(-10px); }
+        html:not(.boot-mobile) #boot-splash .boot-card { animation: boot-fade-in 0.2s ease both; transform: none; }
         html:not(.boot-mobile) #boot-splash.boot-splash--hide .boot-mark { transform: none; filter: none; }
       }
       @keyframes boot-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -2622,9 +2733,9 @@
       <div class="boot-orb boot-orb--a" aria-hidden="true"></div>
       <div class="boot-orb boot-orb--b" aria-hidden="true"></div>
       <div class="boot-card">
-        <div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"><span class="boot-spec"></span><span class="boot-sheen"></span><img class="boot-symbol" src="/brand/descall-symbol-gradient.svg" alt="" width="64" height="64"></div>
+        <div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"><span class="boot-spec"></span><span class="boot-sheen"></span><img class="boot-symbol" src="/brand/descall-symbol-gradient.svg" alt="" width="86" height="86"></div>
         <div class="boot-title">Descall</div>
-        <img class="boot-wordmark" src="/brand/descall-wordmark-white.svg" alt="" width="121" height="28">
+        <img class="boot-wordmark" src="/brand/descall-wordmark-white.svg" alt="" width="160" height="37">
         <div class="boot-bar" aria-hidden="true"><i></i></div>
         <p class="boot-slow" id="boot-slow" aria-hidden="true">Connecting to Descall…</p>
         <p class="boot-status" id="boot-status">Starting</p>

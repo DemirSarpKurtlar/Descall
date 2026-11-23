@@ -96,7 +96,7 @@ assert.match(splash, /query\.get\("theme"\) === "light"/);
 assert.match(win, /query\.theme = nativeTheme\.shouldUseDarkColors \? 'dark' : 'light'/);
 for (const k of ["oneshot", "loop"]) {
   const webm = readFileSync(join(here, "splash", `descall-splash-${k}.webm`));
-  assert.ok(webm.length < 120 * 1024, `${k} webm stays small`);
+  assert.ok(webm.length < 256 * 1024, `${k} webm stays small (720 px, 60 fps)`);
   assert.deepEqual(webm, readFileSync(join(here, "../public/brand/splash", `descall-splash-${k}.webm`)), `${k} same file on web`);
 }
 assert.doesNotMatch(splash, /\.apng|lottie/i);

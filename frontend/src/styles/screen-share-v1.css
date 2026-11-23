@@ -216,8 +216,8 @@
   transition: border-color 200ms ease, background-color 200ms ease;
 }
 .ss-v1 .participant-tile.ss-tile.is-speaking {
-  border-color: rgba(var(--ss-accent-rgb), 0.7);
-  background: linear-gradient(180deg, rgba(var(--ss-accent-rgb), 0.16), var(--ss-tile));
+  border-color: color-mix(in srgb, var(--speaking) 70%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--speaking) 16%, transparent), var(--ss-tile));
 }
 .ss-v1 .ss-tile .participant-tile-avatar-stack {
   display: flex;
@@ -231,7 +231,7 @@
 .ss-v1 .ss-tile .participant-tile-avatar-shell { flex: none; }
 .ss-v1 .ss-tile .participant-tile-avatar-core { position: relative; }
 
-/* Speaking ring: one blue ring outside the avatar (and outside any
+/* Speaking ring: one --speaking ring outside the avatar (and outside any
    decoration frame), never the old floating halos. */
 .ss-v1 .ss-tile .speaking-rings,
 .ss-v1 .ss-tile .g-speak-ring { display: none; }
@@ -240,7 +240,7 @@
   position: absolute;
   inset: -5px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2.5px var(--ss-accent), 0 0 18px rgba(var(--ss-accent-rgb), 0.55);
+  box-shadow: 0 0 0 3px var(--speaking), 0 0 18px color-mix(in srgb, var(--speaking) 55%, transparent);
   opacity: 0;
   transform: scale(0.94);
   transition: opacity 180ms ease, transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
