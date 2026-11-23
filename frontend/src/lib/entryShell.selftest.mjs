@@ -106,7 +106,7 @@ assert(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*html\.native-app #boot-
 assert(existsSync(join(here, "..", "..", "public", "brand", "splash-aurora-bg.jpg")), "aurora background asset must ship");
 const capConfig = readFileSync(join(here, "..", "..", "capacitor.config.ts"), "utf8");
 assert(/ios:\s*\{[\s\S]*?backgroundColor: "#0D1030"/.test(capConfig), "iOS WebView background must be the aurora base color");
-assert(/android:\s*\{[\s\S]*?backgroundColor: "#1E1F22"/.test(capConfig), "Android keeps its own splash surface");
+assert(/android:\s*\{[\s\S]*?backgroundColor: "#101118"/.test(capConfig), "Android WebView background = splash = window background");
 const launchStoryboard = readFileSync(join(here, "..", "..", "ios", "App", "App", "Base.lproj", "LaunchScreen.storyboard"), "utf8");
 // 3.7.29 animated splash: the launch screen is the plain first frame of the splash video.
 assert(/<color key="backgroundColor" name="SplashBackground"\/>/.test(launchStoryboard), "LaunchScreen is the SplashBackground color (first video frame)");

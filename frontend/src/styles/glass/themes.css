@@ -5,13 +5,13 @@
 
 html.glass-ui[data-theme="light"] {
   --g-scheme: light;
-  --g-brand: #4F7CFF;
-  --g-brand-rgb: 79,124,255;
+  --g-brand: #3A66EE;
+  --g-brand-rgb: 58,102,238;
   --g-brand-hi: #0058C4;
-  --g-brand2-rgb: 67,105,217;
-  --g-deep: #EBEEF5;
-  --g-edge-rgb: 235,238,245; --g-ring: #F9F9FA;
-  --g-base-0: #F6F8FF;
+  --g-brand2-rgb: 47,87,214;
+  --g-deep: #EBEDF5;
+  --g-edge-rgb: 235,237,245; --g-ring: #F9F9FA;
+  --g-base-0: #F5F7FE;
   --g-base-1: #F9F9FA;
   --g-base-2: #EBECEE;
   --g-amb-a: 0.22; --g-amb-b: 0.16; --g-amb-c: 0.10; --g-amb-d: 0.14; --g-glow: 0.26;
@@ -32,7 +32,7 @@ html.glass-ui[data-theme="light"] {
   --g-solid: #FBFBFC; --g-solid-heavy: #FFFFFF;
   --g-contrast-border: rgba(0,0,0,0.55);
   --g-on-brand: #fff;
-  --g-cta-top: rgba(114,150,255,0.97); --g-cta-bot: rgba(75,118,242,0.97);
+  --g-cta-top: rgba(97,133,241,0.97); --g-cta-bot: rgba(55,97,226,0.97);
 }
 
 html.glass-ui[data-theme="midnight"] {

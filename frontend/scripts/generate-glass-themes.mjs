@@ -43,7 +43,7 @@ export function parseThemes(css) {
   return out;
 }
 
-const DARK_DEFAULT = { primary: "#4F7CFF", primary2: "#3B63E6" };
+const DARK_DEFAULT = { primary: "#587AF5", primary2: "#4A68E0" };
 
 export function themeBlock(t, scope = "html.glass-ui") {
   const brand = hexToRgb(t.primary) || hexToRgb(DARK_DEFAULT.primary);

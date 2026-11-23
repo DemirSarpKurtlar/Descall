@@ -12,7 +12,7 @@
           var theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
           if (theme) document.documentElement.setAttribute("data-theme", theme);
           var accent = settings.accentColor;
-          if (accent && !settings.premiumThemeKey && /^#[0-9A-Fa-f]{6}$/.test(String(accent))) {
+          if (accent && !settings.premiumThemeKey && /^#[0-9A-Fa-f]{6}$/.test(String(accent)) && !/^#587AF[56]$/i.test(String(accent))) {
             var root = document.documentElement.style;
             root.setProperty("--primary", accent);
             root.setProperty("--primary-2", accent);

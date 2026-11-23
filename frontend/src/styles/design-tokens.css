@@ -14,12 +14,13 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* 🎨 Core Palette, Descall azure + signal teal (not Discord blurple) */
-  --primary: #4F7CFF;
-  --primary-2: #3B63E6;
-  --primary-3: #2F52C9;
-  --primary-glow: rgba(79, 124, 255, 0.38);
-  --primary-soft: rgba(79, 124, 255, 0.14);
+  /* Core palette: the logo blue is the accent (owner decision, Nov 2026),
+     plus signal teal. Not Discord blurple. */
+  --primary: #587AF5;
+  --primary-2: #4A68E0;
+  --primary-3: #3B56C4;
+  --primary-glow: rgba(88, 122, 245, 0.38);
+  --primary-soft: rgba(88, 122, 245, 0.14);
   /* Ink for text and glyphs on a --primary fill (buttons, active pills).
      White by default; premium themes with a light accent (mint, solar,
      cyberpunk...) set a dark ink, since white is below 3:1 there. */
@@ -47,7 +48,7 @@
   --success-text: #3DDC84;
   --warning-text: #F0B232;
 
-  /* 🏗️ Surface Colors, Premium dark gray theme */
+  /* Surface Colors, Premium dark gray theme */
   --surface-0: #111214;
   --surface-1: #1E1F22;
   --surface-2: #2B2D31;
@@ -55,7 +56,7 @@
   --surface-hover: #3C3F45;
   --surface-active: #4E5058;
 
-  /* ⚪ Text Colors */
+  /* Text Colors */
   --text-0: #FFFFFF;
   --text-1: #F2F3F5;
   --text-2: #DBDEE1;
@@ -63,21 +64,21 @@
   --text-muted: #C5CDD8;
   --text-link: #7EB6FF;
 
-  /* 🔲 Border */
+  /* Border */
   --border-0: rgba(255, 255, 255, 0.0);
   --border-1: rgba(255, 255, 255, 0.04);
   --border-2: rgba(255, 255, 255, 0.08);
   --border-3: rgba(255, 255, 255, 0.12);
   --border-4: rgba(255, 255, 255, 0.20);
 
-  /* 🕳️ Shadows */
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.32);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.40);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.56);
-  --shadow-glow-primary: 0 0 16px rgba(79, 124, 255, 0.28);
+  --shadow-glow-primary: 0 0 16px rgba(88, 122, 245, 0.28);
 
-  /* 📐 Spacing, Modern spacing scale */
+  /* Spacing, Modern spacing scale */
   --space-0: 0px;
   --space-1: 2px;
   --space-2: 4px;
@@ -93,7 +94,7 @@
   --space-20: 40px;
   --space-24: 48px;
 
-  /* 📏 Border Radius */
+  /* Border Radius */
   --radius-sm: 3px;
   /* Corner radius: five tokens (approved 2026-10-19, ai-look 03-radius-tokens).
      4, 6, 8 -> sm · 10, 12, 14 -> md · 16, 17, 18, 20 -> lg · 22, 24, 26, 28 -> xl.
@@ -110,7 +111,7 @@
   --radius-3xl: var(--r-lg);
   --radius-full: var(--r-pill);
 
-  /* 🔠 Typography */
+  /* Typography */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
   --font-code: "JetBrains Mono", "Consolas", "Courier New", monospace;
   --font-heading: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
@@ -147,14 +148,14 @@
   --line-normal: 1.4;
   --line-relaxed: 1.6;
 
-  /* 📦 Sizing, Discord-inspired dimensions */
+  /* Sizing, Discord-inspired dimensions */
   --nav-rail-width: 76px;
   --sidebar-width: 280px;
   --sidebar-collapsed: 0px;
   --header-height: 52px;
   --composer-height: 64px;
 
-  /* 🪟 Navigation glass */
+  /* Navigation glass */
   --nav-glass-bg: rgba(22, 24, 30, 0.72);
   --nav-glass-bg-strong: rgba(18, 20, 26, 0.82);
   --nav-glass-border: rgba(255, 255, 255, 0.08);
@@ -163,7 +164,7 @@
   --nav-glass-saturate: 1.35;
   --nav-active-bg: linear-gradient(
     160deg,
-    rgba(79, 124, 255, 0.52) 0%,
+    rgba(88, 122, 245, 0.52) 0%,
     rgba(42, 212, 184, 0.22) 100%
   );
   --nav-active-shadow:
@@ -174,22 +175,20 @@
   --nav-active-border: rgba(170, 190, 255, 0.42);
   --nav-active-glow: drop-shadow(0 0 8px rgba(140, 165, 255, 0.65));
 
-  /* ✨ Transitions, Smooth animations */
+  /* Transitions, Smooth animations */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: 100ms var(--ease-out);
   --transition-normal: 150ms var(--ease-out);
   --transition-slow: 250ms var(--ease-out);
 
-  /* 🔧 Legacy compatibility */
+  /* Legacy compatibility */
   --bg: var(--surface-0);
   --bg-soft: var(--surface-1);
   --panel: var(--surface-1);
   --panel-2: var(--surface-2);
   --text: var(--text-1);
   --muted: var(--text-muted);
-  --accent: var(--primary);
-  --accent-2: var(--primary-2);
   --ok: var(--success);
   --warn: var(--warning);
   --border: var(--border-2);
@@ -200,6 +199,15 @@
 /* ─── Light Theme ─── */
 [data-theme="light"] {
   color-scheme: light;
+
+  /* Logo blue one step deeper: white button text stays AA (4.87:1) and the
+     accent stays >= 3:1 as a glyph on every light surface. */
+  --primary: #3A66EE;
+  --primary-2: #2F57D6;
+  --primary-3: #2649BC;
+  --primary-glow: rgba(58, 102, 238, 0.3);
+  --primary-soft: rgba(58, 102, 238, 0.12);
+  --shadow-glow-primary: 0 0 16px rgba(58, 102, 238, 0.24);
 
   --surface-0: #F2F3F5;
   --surface-1: #FFFFFF;
@@ -237,16 +245,16 @@
   --nav-glass-highlight: rgba(255, 255, 255, 0.55);
   --nav-active-bg: linear-gradient(
     160deg,
-    rgba(79, 124, 255, 0.28) 0%,
+    rgba(88, 122, 245, 0.28) 0%,
     rgba(42, 212, 184, 0.12) 100%
   );
   --nav-active-shadow:
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 0 0 1px rgba(79, 124, 255, 0.18),
-    0 0 16px rgba(79, 124, 255, 0.22),
+    0 0 0 1px rgba(88, 122, 245, 0.18),
+    0 0 16px rgba(88, 122, 245, 0.22),
     0 8px 20px rgba(42, 212, 184, 0.12);
-  --nav-active-border: rgba(79, 124, 255, 0.4);
-  --nav-active-glow: drop-shadow(0 0 6px rgba(79, 124, 255, 0.4));
+  --nav-active-border: rgba(88, 122, 245, 0.4);
+  --nav-active-glow: drop-shadow(0 0 6px rgba(88, 122, 245, 0.4));
 
   --bg: var(--surface-0);
   --bg-soft: var(--surface-1);

@@ -61,7 +61,7 @@ assert.equal(readFileSync(join(here, "themes.css"), "utf8"), generate(tokensCss)
 // Mockup-exact dark defaults (final/src/glass.css).
 const tokens = readFileSync(join(here, "tokens.css"), "utf8");
 for (const exact of [
-  "--g-brand: #587AF6",
+  "--g-brand: #587AF5",
   "--g-brand-hi: #8FA6FF",
   "--g-deep: #0D0E13",
   "--g-t1: rgba(255,255,255,0.96)",

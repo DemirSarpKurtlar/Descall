@@ -54,6 +54,12 @@ for (const p of GLASS_ACCENT_PROPS) assert.equal(r.props.has(p), false, `catalog
 r = fakeRoot();
 applyDocumentTheme(r, "dark", { accentColor: "#587AF6" });
 assert.equal(r.props.has("--g-brand"), false, "default accent keeps the stylesheet glass tokens");
+// ...and the stylesheet --primary too (logo blue on dark, AA-deep blue on light).
+r = fakeRoot();
+applyDocumentTheme(r, "light", { accentColor: "#30B05A" });
+applyDocumentTheme(r, "light", { accentColor: "#587AF6" });
+assert.equal(r.props.has("--primary"), false, "default accent clears the inline --primary");
+assert.match(readFileSync(join(here, "../../index.html"), "utf8"), /!\/\^#587AF\[56\]\$\/i\.test/, "boot script skips the default accent");
 assert.notEqual(glassAccentTokens("#30B05A", { light: true })["--g-brand-hi"], green["--g-brand-hi"]);
 const html = readFileSync(join(here, "../../index.html"), "utf8");
 assert.match(html, /premiumThemeKey \|\| \(settings\.darkMode === false \? "light" : "dark"\)/);
