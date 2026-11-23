@@ -183,6 +183,16 @@ sertifikası" altındaki **SHA-256** değerleri.
 
 ### 10. App Links doğrulaması (assetlinks.json)
 
+**Önerilen yol (passkey ile birlikte, dosya commitlemeden):** iki SHA-256 değerini (Play
+uygulama imzalama anahtarı + yükleme anahtarı) virgülle ayırıp GitHub depo değişkeni
+`ANDROID_CERT_SHA256` olarak (Settings > Secrets and variables > Actions > Variables, secret
+değil: parmak izleri herkese açıktır) ve aynı listeyi Render'da `PASSKEY_ANDROID_CERT_SHA256`
+olarak gir. Web derlemesi (`scripts/write-assetlinks.mjs`) dosyayı App Links ve passkey
+(`delegate_permission/common.get_login_creds`) ilişkileriyle kendisi üretir; Vercel'in Git
+entegrasyonu kullanılıyorsa aynı değişkeni Vercel projesine de ekle. `android-build.yml`
+yükleme anahtarının parmak izini iş özetine yazar ve değişkende yoksa uyarır. Aşağıdaki elle
+kopyalama yolu da çalışır (ikisini birden kullanma).
+
 Davet bağlantılarının tarayıcı yerine doğrudan uygulamada açılması için:
 
 1. `assetlinks.template.json` dosyasını `frontend/public/.well-known/assetlinks.json` olarak
