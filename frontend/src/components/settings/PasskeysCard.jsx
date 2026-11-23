@@ -23,6 +23,8 @@ import {
   isAvailable,
   listPasskeys,
   register,
+  prepareRegister,
+  prepareReauth,
   renamePasskey,
   removePasskey,
   reauthWithSecret,
@@ -59,6 +61,11 @@ export default function PasskeysCard() {
   const [confirm, setConfirm] = useState(null); // passkey to remove
   const [removing, setRemoving] = useState(false);
   const reauthRef = useRef({ token: "", at: 0 });
+  // Web only: options fetched before the click that opens the browser's passkey sheet
+  // (Safari needs a fresh click). prepared = { options, at, reauthToken } for "create",
+  // reauthPrepared for "confirm with an existing passkey".
+  const [prepared, setPrepared] = useState(null);
+  const [reauthPrepared, setReauthPrepared] = useState(null);
   const ctlRef = useRef(null);
 
   const errText = useCallback((err) => {
@@ -105,6 +112,8 @@ export default function PasskeysCard() {
 
   const resetAdd = () => {
     setAdding(false);
+    setPrepared(null);
+    setReauthPrepared(null);
     setName("");
     setSecret("");
     setError("");
@@ -129,7 +138,7 @@ export default function PasskeysCard() {
     const cached = freshReauth();
     if (cached) return cached;
     const token = withPasskey
-      ? await reauthWithPasskey()
+      ? await reauthWithPasskey({ prepared: reauthPrepared })
       : await reauthWithSecret(usesCode ? { code: secret.trim() } : { password: secret });
     reauthRef.current = { token, at: Date.now() };
     return token;
@@ -143,15 +152,26 @@ export default function PasskeysCard() {
     const ctl = new AbortController();
     ctlRef.current = ctl;
     try {
+      if (prepared) {
+        // Web, second click: straight to the browser's passkey sheet.
+        const res = await register(name, { reauthToken: prepared.reauthToken, prepared, signal: ctl.signal });
+        finishAdd(res);
+        return;
+      }
       const reauthToken = await obtainReauth({ withPasskey });
       setSecret("");
+      if (avail.path === "web") {
+        const p = await prepareRegister(reauthToken);
+        if (p) {
+          setPrepared({ ...p, reauthToken });
+          return;
+        }
+      }
       const res = await register(name, { reauthToken, signal: ctl.signal, onHandoff: setHandoff });
-      toast(t("passkey.settings.added"), "success");
-      resetAdd();
-      if (res?.passkey) setData((d) => (d ? { ...d, passkeys: [res.passkey, ...(d.passkeys || []).filter((p) => p.id !== res.passkey.id)] } : d));
-      load();
+      finishAdd(res);
     } catch (err) {
       const e = normalizePasskeyError(err);
+      setPrepared(null);
       if (e.serverCode === "REAUTH_REQUIRED") reauthRef.current = { token: "", at: 0 };
       if (!isSilentPasskeyError(e) && !ctl.signal.aborted) setError(errText(e));
     } finally {
@@ -160,6 +180,23 @@ export default function PasskeysCard() {
       setHandoff(null);
     }
   };
+
+  function finishAdd(res) {
+    toast(t("passkey.settings.added"), "success");
+    resetAdd();
+    if (res?.passkey) setData((d) => (d ? { ...d, passkeys: [res.passkey, ...(d.passkeys || []).filter((p) => p.id !== res.passkey.id)] } : d));
+    load();
+  }
+
+  // Web: re-auth options ready when the add panel opens and an existing passkey can confirm.
+  useEffect(() => {
+    if (!adding || avail.path !== "web" || !methods.includes("passkey")) return undefined;
+    let alive = true;
+    prepareReauth().then((p) => alive && setReauthPrepared(p));
+    return () => {
+      alive = false;
+    };
+  }, [adding, avail.path, methods]);
 
   const saveName = async () => {
     if (!editing) return;
@@ -251,6 +288,7 @@ export default function PasskeysCard() {
                   <p className="pk-item-meta">
                     {p.provider && p.provider !== p.name ? <span>{p.provider}</span> : null}
                     {p.platform ? <span>{t(`passkey.settings.platform.${p.platform}`)}</span> : null}
+                    {p.device && p.device !== p.provider ? <span>{p.device}</span> : null}
                     <span className="pk-badge">
                       {p.synced ? <Cloud size={12} aria-hidden="true" /> : null}
                       {p.synced ? t("passkey.settings.synced") : t("passkey.settings.thisDevice")}
@@ -392,8 +430,13 @@ export default function PasskeysCard() {
             >
               {t("passkey.settings.cancel")}
             </button>
-            <button type="button" className="us-btn primary" onClick={() => add()} disabled={busy || (needsReauth && !secret) || (needsReauth && usesCode && secret.length !== 6)}>
-              {busy ? t("passkey.signIn.busy") : t("passkey.reauth.continue")}
+            <button
+              type="button"
+              className="us-btn primary"
+              onClick={() => add()}
+              disabled={busy || (!prepared && needsReauth && !secret) || (!prepared && needsReauth && usesCode && secret.length !== 6)}
+            >
+              {busy ? t("passkey.signIn.busy") : prepared ? t("passkey.desktop.registerButton") : t("passkey.reauth.continue")}
             </button>
           </div>
         </div>

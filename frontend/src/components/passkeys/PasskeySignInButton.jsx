@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { KeyRound, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
-import { isAvailable, signIn, normalizePasskeyError, isSilentPasskeyError, passkeyErrorKey } from "../../lib/passkeys/index.js";
+import { isAvailable, signIn, prepareSignIn, normalizePasskeyError, isSilentPasskeyError, passkeyErrorKey } from "../../lib/passkeys/index.js";
 import "../../styles/passkeys.css";
 
 /** Server codes the passkey UI explains itself; anything else goes to the parent. */
@@ -65,6 +65,19 @@ export default function PasskeySignInButton({ onSignedIn, onError, disabled = fa
 
   useEffect(() => () => ctlRef.current?.abort(), []);
 
+  // Web: options ready before the click (Safari needs a fresh click for the passkey sheet);
+  // renewed before the 5 minute challenge expires.
+  useEffect(() => {
+    if (!avail.available || avail.path !== "web") return undefined;
+    let timer = null;
+    const prepare = () => {
+      prepareSignIn();
+      timer = setTimeout(prepare, 4 * 60 * 1000 - 5000);
+    };
+    prepare();
+    return () => clearTimeout(timer);
+  }, [avail.available, avail.path]);
+
   const start = useCallback(async () => {
     if (busy || disabled) return;
     const ctl = new AbortController();
@@ -88,8 +101,9 @@ export default function PasskeySignInButton({ onSignedIn, onError, disabled = fa
       if (ctlRef.current === ctl) ctlRef.current = null;
       setBusy(false);
       setHandoff(null);
+      if (avail.path === "web") prepareSignIn();
     }
-  }, [busy, disabled, onSignedIn, onError, t]);
+  }, [busy, disabled, onSignedIn, onError, t, avail.path]);
 
   const cancel = () => ctlRef.current?.abort();
 

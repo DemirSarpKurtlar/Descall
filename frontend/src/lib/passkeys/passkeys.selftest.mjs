@@ -209,6 +209,31 @@ const nativeResponse = (id) => JSON.stringify({ id, rawId: id, type: "public-key
   assert.ok(log.some((l) => l[0] === "navigator.get" && l[1] === "conditional"), "conditional mediation on the username field");
 }
 
+// Web: options fetched ahead of the click are used once (Safari's fresh-click rule).
+{
+  const log = [];
+  const buf = (a) => new Uint8Array(a).buffer;
+  const win = webWin("descall.com", {
+    navigator: { credentials: { get: async () => ({ id: "pre", rawId: buf([1]), type: "public-key", response: { clientDataJSON: buf([1]), authenticatorData: buf([1]), signature: buf([1]), userHandle: buf([1]) } }) } },
+  });
+  pk.__setPasskeyEnvForTests({ win: () => win, api: fakeApi(log) });
+  assert.equal(await pk.prepareSignIn(), true);
+  assert.equal(log.filter((l) => l[0] === "authOptions").length, 1);
+  await pk.signIn();
+  assert.equal(log.filter((l) => l[0] === "authOptions").length, 1, "the click used the prefetched options");
+  await pk.signIn();
+  assert.equal(log.filter((l) => l[0] === "authOptions").length, 2, "prefetched options are single use");
+  const prepared = await pk.prepareRegister("rt");
+  assert.ok(prepared?.options?.challenge);
+  const before = log.filter((l) => l[0] === "registerOptions").length;
+  win.navigator.credentials.create = async () => ({ id: "n", rawId: buf([2]), type: "public-key", response: { clientDataJSON: buf([1]), attestationObject: buf([1]) } });
+  await pk.register("x", { reauthToken: "rt", prepared });
+  assert.equal(log.filter((l) => l[0] === "registerOptions").length, before, "register used the prepared options");
+  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi([]), plugin: async () => ({ isAvailable: async () => ({ available: true }) }) });
+  assert.equal(await pk.prepareSignIn(), false, "native paths need no prefetch");
+  assert.equal(await pk.prepareRegister("rt"), null);
+}
+
 // Web: unknown credential tells the browser to drop it (Signal API).
 {
   const log = [];

@@ -30,6 +30,9 @@ export default function PasskeyDesktopPage() {
   const [state, setState] = useState(code ? "loading" : "nocode"); // loading | ready | busy | done | expired | nocode | unsupported
   const [error, setError] = useState("");
   const started = useRef(false);
+  // Options fetched as soon as the link is known, so the click opens the passkey sheet at once
+  // (Safari only allows it while the click is fresh).
+  const optionsRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -47,7 +50,13 @@ export default function PasskeyDesktopPage() {
     let alive = true;
     passkeyApi
       .handoffInfo(code)
-      .then((res) => {
+      .then(async (res) => {
+        if (!alive) return;
+        try {
+          optionsRef.current = res.kind === "register" ? await passkeyApi.handoffRegisterOptions(code) : await passkeyApi.handoffAuthOptions(code);
+        } catch {
+          optionsRef.current = null; // fetched again on click
+        }
         if (!alive) return;
         setInfo(res);
         setState("ready");
@@ -64,12 +73,14 @@ export default function PasskeyDesktopPage() {
     setState("busy");
     setError("");
     try {
+      const ready = optionsRef.current;
+      optionsRef.current = null; // single use
       if (info.kind === "register") {
-        const options = await passkeyApi.handoffRegisterOptions(code);
+        const options = ready || (await passkeyApi.handoffRegisterOptions(code));
         const cred = await navigator.credentials.create({ publicKey: toCreationOptions(options) });
         await passkeyApi.handoffRegisterVerify(code, registrationToJSON(cred));
       } else {
-        const options = await passkeyApi.handoffAuthOptions(code);
+        const options = ready || (await passkeyApi.handoffAuthOptions(code));
         const cred = await navigator.credentials.get({ publicKey: toRequestOptions(options) });
         await passkeyApi.handoffAuthVerify(code, authenticationToJSON(cred));
       }
@@ -81,6 +92,12 @@ export default function PasskeyDesktopPage() {
         return;
       }
       setState("ready");
+      // Fresh options for the next click.
+      (info.kind === "register" ? passkeyApi.handoffRegisterOptions(code) : passkeyApi.handoffAuthOptions(code))
+        .then((o) => {
+          optionsRef.current = o;
+        })
+        .catch(() => {});
       if (!isSilentPasskeyError(e)) {
         const key = passkeyErrorKey(e);
         if (key) setError(t(key));

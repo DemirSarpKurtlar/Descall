@@ -48,7 +48,9 @@ const BASIC_USER_COLS =
   "id, username, display_name, email, email_confirmed_at, password_hash, two_factor_enabled, is_admin, reauthentication_token, reauthentication_sent_at";
 
 const LIMITS = {
-  options: { max: 60 },
+  // Every call stores a challenge row; generous for shared addresses (schools, carriers):
+  // a sign-in page asks twice per view (autofill + the button's prefetch).
+  options: { max: 300 },
   verifyIp: { max: 40 },
   verifyCred: { max: 30 },
   reauth: { max: 10 },

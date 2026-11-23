@@ -227,15 +227,44 @@ async function verifySignIn(response, platform, signal) {
  * Sign in with a passkey (no username).
  * @param {object} [o] { signal, onHandoff({ matchCode, reopen }) for the desktop browser path }
  */
+/*
+ * Safari only opens the passkey sheet while the click that asked for it is fresh, and a
+ * network round trip between the click and navigator.credentials can use that up. On the web
+ * the options are fetched ahead (prepareSignIn when the button shows, prepareRegister after
+ * the re-auth step), so the click goes straight to the browser.
+ */
+const PREFETCH_TTL_MS = 4 * 60 * 1000; // challenges live 5 minutes
+let prefetchedSignIn = null; // { options, at }
+
+/** Web: fetch sign-in options ahead of the click. Resolves true when they are ready. */
+export async function prepareSignIn() {
+  const path = await effectivePath();
+  if (path !== "web") return false;
+  if (prefetchedSignIn && Date.now() - prefetchedSignIn.at < PREFETCH_TTL_MS) return true;
+  try {
+    prefetchedSignIn = { options: await (await api()).authOptions("web"), at: Date.now() };
+    return true;
+  } catch {
+    prefetchedSignIn = null;
+    return false;
+  }
+}
+
+function takePrefetchedSignIn() {
+  const p = prefetchedSignIn;
+  prefetchedSignIn = null;
+  return p && Date.now() - p.at < PREFETCH_TTL_MS ? p.options : null;
+}
+
 export async function signIn(o = {}) {
   const path = await effectivePath();
   if (!path) throw new PasskeyClientError("unsupported", "passkeys are not available here");
   const platform = serverPlatformFor(path, env.win());
   if (path === "handoff") return exclusive(async () => runHandoff("signin", { platform, signal: o.signal, onStarted: o.onHandoff, api: await api(), open: (u) => openExternal(u, env.win()) }));
   return exclusive(async () => {
-    let options;
+    let options = path === "web" ? takePrefetchedSignIn() : null;
     try {
-      options = await (await api()).authOptions(platform, { signal: o.signal });
+      if (!options) options = await (await api()).authOptions(platform, { signal: o.signal });
     } catch (err) {
       throw normalizePasskeyError(err);
     }
@@ -331,15 +360,27 @@ export async function reauthWithSecret({ password, code }) {
   }
 }
 
-/** Re-auth with an existing passkey (user verification required). */
+/** Web: fetch re-auth options ahead of the click (see prepareSignIn); null elsewhere. */
+export async function prepareReauth() {
+  const path = await effectivePath();
+  if (path !== "web") return null;
+  try {
+    return { options: await (await api()).reauthOptions("web"), at: Date.now() };
+  } catch {
+    return null;
+  }
+}
+
+/** Re-auth with an existing passkey (user verification required). o.prepared from prepareReauth(). */
 export async function reauthWithPasskey(o = {}) {
   const path = await effectivePath();
   if (!path || path === "handoff") throw new PasskeyClientError("unsupported", "use your password here");
   const platform = serverPlatformFor(path, env.win());
   return exclusive(async () => {
-    let options;
+    const fresh = path === "web" && o.prepared?.options && Date.now() - (o.prepared.at || 0) < PREFETCH_TTL_MS;
+    let options = fresh ? o.prepared.options : null;
     try {
-      options = await (await api()).reauthOptions(platform);
+      if (!options) options = await (await api()).reauthOptions(platform);
     } catch (err) {
       throw normalizePasskeyError(err);
     }
@@ -358,6 +399,21 @@ export async function reauthWithPasskey(o = {}) {
  * @param {string} name optional label ("Work laptop"); the server picks one when empty
  * @param {object} o { reauthToken (required), signal, onHandoff }
  */
+/**
+ * Web: fetch the creation options before the "create" click (see prepareSignIn). Returns
+ * { options, at } to pass to register(name, { reauthToken, prepared }), or null on the other
+ * paths (they need no fresh click).
+ */
+export async function prepareRegister(reauthToken) {
+  const path = await effectivePath();
+  if (path !== "web") return null;
+  try {
+    return { options: await (await api()).registerOptions(reauthToken, "web"), at: Date.now() };
+  } catch (err) {
+    throw normalizePasskeyError(err);
+  }
+}
+
 export async function register(name, o = {}) {
   const path = await effectivePath();
   if (!path) throw new PasskeyClientError("unsupported", "passkeys are not available here");
@@ -365,9 +421,10 @@ export async function register(name, o = {}) {
   const platform = serverPlatformFor(path, env.win());
   if (path === "handoff") return exclusive(async () => runHandoff("register", { platform, reauthToken: o.reauthToken, signal: o.signal, onStarted: o.onHandoff, api: await api(), open: (u) => openExternal(u, env.win()) }));
   return exclusive(async () => {
-    let options;
+    const fresh = path === "web" && o.prepared?.options && Date.now() - (o.prepared.at || 0) < PREFETCH_TTL_MS;
+    let options = fresh ? o.prepared.options : null;
     try {
-      options = await (await api()).registerOptions(o.reauthToken, platform);
+      if (!options) options = await (await api()).registerOptions(o.reauthToken, platform);
     } catch (err) {
       throw normalizePasskeyError(err);
     }
