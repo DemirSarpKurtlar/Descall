@@ -5,7 +5,9 @@
  * admins' 2FA and what is actually running. Each check has a weight; the score is the
  * share of passed weight (0..100). A failed check with a `fix` is a recommendation the
  * page can apply in one step (a settings patch); `remind` sends the 2FA reminder;
- * the human check has no fix here (it needs a captcha provider), so it only explains.
+ * the human check (Cloudflare Turnstile, lib/turnstile.js) passes when a key is set up and
+ * enforcing; when the key exists but the mode is monitor / off the fix switches it back
+ * to enforce, without a key it only explains (the provisioning workflow sets it up).
  * Pure: the route gathers the inputs.
  */
 
@@ -42,7 +44,7 @@ function points(weight) {
  * @param {object} p
  * @param {object} p.config        securityView(config)
  * @param {{ twoFactor: boolean, username: string }[]} p.admins
- * @param {{ humanCheck?: boolean, totpEnforced?: boolean, accessBans?: boolean, eventLog?: boolean, auditLog?: boolean }} p.env
+ * @param {{ humanCheck?: boolean, humanCheckConfigured?: boolean, totpEnforced?: boolean, accessBans?: boolean, eventLog?: boolean, auditLog?: boolean }} p.env
  */
 function computeScore({ config = {}, admins = [], env = {} } = {}) {
   const c = config;
@@ -54,7 +56,11 @@ function computeScore({ config = {}, admins = [], env = {} } = {}) {
   const age = Number(c.dmMinAccountAgeHours) || 0;
 
   const results = {
-    humanCheck: { ok: Boolean(env.humanCheck), action: env.humanCheck ? null : "explain" },
+    humanCheck: {
+      ok: Boolean(env.humanCheck),
+      action: env.humanCheck ? null : "explain",
+      fix: !env.humanCheck && env.humanCheckConfigured && c.turnstileMode && c.turnstileMode !== "enforce" ? { turnstileMode: "enforce" } : null,
+    },
     admin2fa: { ok: admins.length > 0 && without2fa.length === 0, action: without2fa.length ? "remind" : null, vars: { total: admins.length, missing: without2fa.length }, people: without2fa.map((a) => a.username).slice(0, 12) },
     totpEnforced: { ok: env.totpEnforced !== false, action: env.totpEnforced === false ? "explain" : null },
     dmMinAge: { ok: age >= 1, vars: { hours: age }, fix: age >= 1 ? null : { dmMinAccountAgeHours: RECOMMENDED.dmMinAccountAgeHours } },
