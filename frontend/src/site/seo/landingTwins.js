@@ -24,7 +24,7 @@ import {
   COMPARE_ROWS,
   GAMER_FAQ,
 } from "../content/discordSeoContent.js";
-import { PREVIEW_SIZES, previewSrcset } from "./featureGroups.js";
+import { PREVIEW_SIZES, previewAvifSrcset, previewSrcset } from "./featureGroups.js";
 import { localizedPageExtras, numberedSteps } from "./pageExtras.js";
 import { localizedMergedGuide } from "./mergedGuides.js";
 import { TR_BLOG_POSTS } from "./trBlog.js";
@@ -70,7 +70,7 @@ function heroHtml(loc, href, t, { crumbs, title, lead, tone = "default", shot = 
   const cta = primary || secondary ? `<p class="seo-lhero-cta">${primary ? button(loc, primary) : ""}${secondary ? button(loc, secondary) : ""}</p>` : "";
   const src = shot ? SHOTS[shot.mode] || SHOTS.chat : "";
   const img = shot
-    ? `<figure class="seo-lhero-shot"><div class="seo-lhero-wrap"><div class="seo-lhero-halo" aria-hidden="true"></div><div class="seo-lhero-dev"><div class="seo-lhero-scr"><img src="${src}" srcset="${previewSrcset(src)}" sizes="${PREVIEW_SIZES}" width="1440" height="900" alt="${esc(shot.caption)}" fetchpriority="high" decoding="async" /></div></div></div><figcaption>${esc(shot.caption)}</figcaption></figure>`
+    ? `<figure class="seo-lhero-shot"><div class="seo-lhero-wrap"><div class="seo-lhero-halo" aria-hidden="true"></div><div class="seo-lhero-dev"><div class="seo-lhero-scr"><picture><source type="image/avif" srcset="${previewAvifSrcset(src)}" sizes="${PREVIEW_SIZES}" /><img src="${src}" srcset="${previewSrcset(src)}" sizes="${PREVIEW_SIZES}" width="1440" height="900" alt="${esc(shot.caption)}" fetchpriority="high" decoding="async" /></picture></div></div></div><figcaption>${esc(shot.caption)}</figcaption></figure>`
     : "";
   const cls = !shot ? "is-single" : tone === "default" ? "is-plain" : `seo-tone-${tone}`;
   return `<header class="seo-lhero ${cls}">

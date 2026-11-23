@@ -1,4 +1,4 @@
-import { PREVIEW_SIZES, previewSrcset } from "../seo/featureGroups.js";
+import { PREVIEW_SIZES, avifSrc, previewAvifSrcset, previewSrcset } from "../seo/featureGroups.js";
 
 /**
  * Real app screen in a heavy frosted glass frame (approved 2026-10-19,
@@ -32,6 +32,9 @@ const PHONE_SIZES = "min(220px, 60vw)";
 export default function ProductFrame({ kind = "chats", alt = "", priority = false }) {
   const f = FRAMES[kind] || FRAMES.chats;
   const base = import.meta.env.BASE_URL;
+  const responsive = RESPONSIVE.test(f.desktop.src);
+  const phoneSrcset = f.phone ? `${base}${f.phone.src.replace(/\.webp$/, "-480.webp")} 480w, ${base}${f.phone.src} 780w` : "";
+  // AVIF first (type="image/avif"), WebP as the fallback; the browser takes the first match.
   return (
     <figure className={`mkt-pf mkt-pf-${kind}${f.wide ? " mkt-pf-wide" : ""}`}>
       <div className="mkt-pf-glass">
@@ -39,17 +42,32 @@ export default function ProductFrame({ kind = "chats", alt = "", priority = fals
           {f.phone ? (
             <source
               media="(max-width: 768px)"
-              srcSet={`${base}${f.phone.src.replace(/\.webp$/, "-480.webp")} 480w, ${base}${f.phone.src} 780w`}
+              type="image/avif"
+              srcSet={phoneSrcset.replace(/\.webp(?= \d+w)/g, ".avif")}
               sizes={PHONE_SIZES}
               width={f.phone.width}
               height={f.phone.height}
             />
           ) : null}
+          {f.phone ? (
+            <source
+              media="(max-width: 768px)"
+              srcSet={phoneSrcset}
+              sizes={PHONE_SIZES}
+              width={f.phone.width}
+              height={f.phone.height}
+            />
+          ) : null}
+          <source
+            type="image/avif"
+            srcSet={responsive ? previewAvifSrcset(`${base}${f.desktop.src}`) : `${base}${avifSrc(f.desktop.src)}`}
+            sizes={responsive ? PREVIEW_SIZES : undefined}
+          />
           <img
             className="mkt-pf-screen"
             src={`${base}${f.desktop.src}`}
-            srcSet={RESPONSIVE.test(f.desktop.src) ? previewSrcset(`${base}${f.desktop.src}`) : undefined}
-            sizes={RESPONSIVE.test(f.desktop.src) ? PREVIEW_SIZES : undefined}
+            srcSet={responsive ? previewSrcset(`${base}${f.desktop.src}`) : undefined}
+            sizes={responsive ? PREVIEW_SIZES : undefined}
             width={f.desktop.width}
             height={f.desktop.height}
             alt={alt}

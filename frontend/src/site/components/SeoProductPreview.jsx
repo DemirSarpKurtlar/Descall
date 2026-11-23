@@ -1,5 +1,5 @@
 import { IconMic, IconMonitor } from "../icons";
-import { PREVIEW_SIZES, previewSrcset } from "../seo/featureGroups.js";
+import { PREVIEW_SIZES, previewAvifSrcset, previewSrcset } from "../seo/featureGroups.js";
 
 const SHOTS = {
   chat: { src: "brand/previews/02-dm.webp", width: 1440, height: 900 },
@@ -32,16 +32,19 @@ export default function SeoProductPreview({
         {tilted ? <div className="seo-device-halo" aria-hidden /> : null}
         <div className="seo-device">
           <div className="seo-device-scr">
-            <img
-              src={src}
-              srcSet={previewSrcset(src)}
-              sizes={PREVIEW_SIZES}
-              alt={caption}
-              width={shot.width}
-              height={shot.height}
-              decoding="async"
-              loading={priority ? "eager" : "lazy"}
-            />
+            <picture>
+              <source type="image/avif" srcSet={previewAvifSrcset(src)} sizes={PREVIEW_SIZES} />
+              <img
+                src={src}
+                srcSet={previewSrcset(src)}
+                sizes={PREVIEW_SIZES}
+                alt={caption}
+                width={shot.width}
+                height={shot.height}
+                decoding="async"
+                loading={priority ? "eager" : "lazy"}
+              />
+            </picture>
           </div>
         </div>
         {chips ? (
