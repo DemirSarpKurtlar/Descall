@@ -220,7 +220,7 @@ html[data-theme="light"] .bs-preview-line b {
   color: #1B1D26;
 }
 html[data-theme="light"] .bs-preview-line time {
-  color: rgba(57, 60, 77, 0.55);
+  color: rgba(57, 60, 77, 0.76); /* 0.55 was 2.9:1 on #F2F4FA */
 }
 html[data-theme="light"] .bs-preview-body p {
   color: rgba(57, 60, 77, 0.82);
