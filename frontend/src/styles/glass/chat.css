@@ -163,7 +163,7 @@ html.glass-ui .app-root.g-shell .group-icon {
 
 html.glass-ui .app-root.g-shell .group-icon {
   border-radius: 30% !important;
-  background: linear-gradient(145deg, #6c86ff, #8a5cf6) !important;
+  background: var(--g-group-icon-fill) !important;
   color: #fff !important;
   font-size: 19px !important;
   font-weight: 650 !important;
@@ -204,11 +204,11 @@ html.glass-ui .app-root.g-shell .dm-avatar .g-st-off {
   box-shadow: 0 0 0 2.5px var(--g-ring);
 }
 
-html.glass-ui .app-root.g-shell .dm-avatar .status-online { background: var(--g-ok) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-online { background: var(--status-online, #23A55A) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-idle,
 html.glass-ui .app-root.g-shell .dm-avatar .status-away { background: var(--g-idle) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-dnd,
-html.glass-ui .app-root.g-shell .dm-avatar .status-busy { background: var(--g-dnd) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-busy { background: var(--status-dnd, #DA373C) !important; }
 html.glass-ui .app-root.g-shell .dm-avatar .status-offline,
 html.glass-ui .app-root.g-shell .dm-avatar .g-st-off { background: var(--g-off) !important; }
 
@@ -410,7 +410,7 @@ html.glass-ui .app-root.g-shell .group-swipe-btn.unread svg { background: #587AF
 html.glass-ui .app-root.g-shell .group-swipe-btn.close svg,
 html.glass-ui .app-root.g-shell .group-swipe-btn.leave svg { background: #ff453a; }
 html.glass-ui .app-root.g-shell .group-swipe-btn.invite svg { background: #587AF6; }
-html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: #30D158; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: var(--success, #23A55A); }
 html.glass-ui .app-root.g-shell .group-swipe-btn.rename svg { background: #ff9f0a; color: #fff; }
 
 /* ── Conversation header capsule (03) ──
@@ -526,14 +526,14 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   box-shadow: 0 0 0 2.5px var(--g-ring, var(--surface-1, #1e1f22));
 }
 
-html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-online { background: var(--g-ok, var(--success)) !important; }
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-online { background: var(--status-online, var(--success)) !important; }
 
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon {
   border-radius: 30%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #6c86ff, #8a5cf6);
+  background: var(--g-group-icon-fill);
   color: #fff;
   font-weight: 650;
   overflow: hidden;
@@ -569,7 +569,7 @@ html.glass-ui .app-root.g-shell.in-conversation .g-peer-name {
 html.glass-ui .app-root.g-shell.in-conversation .g-peer-status {
   font-size: 12px;
   line-height: 15px;
-  color: var(--g-ok);
+  color: var(--success-text, #3DDC84);
   font-weight: 500;
 }
 
@@ -608,7 +608,12 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-rig
   height: 19px;
 }
 
-html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.active,
+/* An open panel (search, pins, members) is a selected toggle: accent ink.
+   Red stays for the destructive state only (blocked user, .danger). */
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.active {
+  color: var(--g-brand-hi, #8FA6FF);
+}
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.header-block-btn.active,
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.danger {
   color: #ff6961;
 }
@@ -903,8 +908,8 @@ html.glass-ui .app-root.g-shell .message-bubble.own {
 }
 
 html.glass-ui .app-root.g-shell .message-bubble.own:not(.cosmetic-chat-bubble) {
-  background: rgba(88, 122, 246, 0.26) !important;
-  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.28);
+  background: rgba(var(--g-brand-rgb, 88, 122, 246), 0.26) !important;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-brand-hi, #8FA6FF) 28%, transparent);
 }
 
 html.glass-ui .app-root.g-shell .message-bubble.own.compact {
@@ -914,7 +919,7 @@ html.glass-ui .app-root.g-shell .message-bubble.own.compact {
 
 /* The bubble stays put while the composer edits it. */
 html.glass-ui .app-root.g-shell .message-bubble.is-editing {
-  box-shadow: inset 0 0 0 1.5px rgba(143, 166, 255, 0.9);
+  box-shadow: inset 0 0 0 1.5px var(--g-brand-hi, #8FA6FF);
 }
 
 html.glass-ui .app-root.g-shell .message-bubble.own.is-editing {
@@ -1004,8 +1009,8 @@ html.glass-ui .app-root.g-shell .reaction-chip {
 }
 
 html.glass-ui .app-root.g-shell .reaction-chip.reaction-mine {
-  background: rgba(88, 122, 246, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.6);
+  background: rgba(var(--g-brand-rgb, 88, 122, 246), 0.24);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--g-brand-hi, #8FA6FF) 60%, transparent);
 }
 
 html.glass-ui .app-root.g-shell .reaction-count {
@@ -2106,4 +2111,22 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-rig
 
 html.glass-ui:not(.g-fx-lean):not(.glass-lite) .g-msg-pop {
   --frost-blur: 24px;
+}
+
+/* Default group icon: the accent gradient (was a fixed blue-to-purple
+   ramp that matched nothing else). Follows the theme / custom accent. */
+html.glass-ui {
+  --g-group-icon-fill: linear-gradient(145deg, color-mix(in srgb, rgb(var(--g-brand-rgb, 88, 122, 246)) 78%, #fff), rgb(var(--g-brand-rgb, 88, 122, 246)));
+}
+
+/* Light theme: the dark-glass red ink (#ff6961) is 2.6:1 on the white frost.
+   Unread divider, header danger / active icons and menu danger rows. */
+html.glass-ui[data-theme="light"] .app-root.g-shell .message-unread-sep,
+html.glass-ui[data-theme="light"] .app-root.g-shell .message-unread-sep span,
+html.glass-ui[data-theme="light"] .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.header-block-btn.active,
+html.glass-ui[data-theme="light"] .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.danger,
+html.glass-ui[data-theme="light"] .g-menu .hover-bar-btn.danger,
+html.glass-ui[data-theme="light"] .g-menu .g-mi.danger,
+html.glass-ui[data-theme="light"] .g-menu .hover-bar-btn.danger svg {
+  color: var(--danger-text, #B42318);
 }

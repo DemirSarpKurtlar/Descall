@@ -422,13 +422,13 @@ html.glass-ui .g-me-av .g-st {
   width: 11.4px;
   height: 11.4px;
   border-radius: 50%;
-  background: var(--g-ok);
+  background: var(--status-online, #23A55A);
   box-shadow: 0 0 0 2.5px var(--g-ring, #15161d);
   z-index: 2;
 }
 
 html.glass-ui .g-me-av .g-st.status-idle { background: var(--g-idle); }
-html.glass-ui .g-me-av .g-st.status-dnd { background: var(--g-dnd); }
+html.glass-ui .g-me-av .g-st.status-dnd { background: var(--status-dnd, #DA373C); }
 html.glass-ui .g-me-av .g-st.status-invisible,
 html.glass-ui .g-me-av .g-st.status-offline { background: var(--g-off); }
 
@@ -931,9 +931,9 @@ html.glass-ui .g-status-menu .status-picker-dot {
   width: 12px;
   height: 12px;
 }
-html.glass-ui .g-status-menu .status-picker-dot.status-online { background: #30D158 !important; box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-online { background: var(--status-online, #23A55A) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-online, #23A55A) 20%, transparent); }
 html.glass-ui .g-status-menu .status-picker-dot.status-idle { background: var(--g-idle) !important; box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.2); }
-html.glass-ui .g-status-menu .status-picker-dot.status-dnd { background: #FF453A !important; box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-dnd { background: var(--status-dnd, #DA373C) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-dnd, #DA373C) 20%, transparent); }
 html.glass-ui .g-status-menu .status-picker-dot.status-invisible { background: #8E8E93 !important; box-shadow: 0 0 0 3px rgba(142, 142, 147, 0.2); }
 
 html.glass-ui .g-status-menu .status-picker-divider {

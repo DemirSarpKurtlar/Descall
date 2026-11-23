@@ -34,6 +34,12 @@
   --warning-soft: rgba(240, 178, 50, 0.12);
   /* Presence "Boşta" on every platform (UI audit #69; same as iOS / Watch). */
   --status-idle: #FF9F0A;
+  /* Presence on/dnd dots, one palette on desktop and iPhone glass (owner
+     decision Nov 2026): the semantic success / danger fills, >= 3:1 on the
+     white light-theme surfaces. Presence words in text use --success-text /
+     --danger-text. */
+  --status-online: var(--success);
+  --status-dnd: var(--danger);
   /* The one default profile banner (UI audit #3): brand charcoal with a
      faint logo-blue wash. Every "no banner yet" surface uses it. */
   --profile-banner-fallback: linear-gradient(180deg, rgba(88, 122, 245, 0.22), rgba(88, 122, 245, 0.06)), #393C4D;

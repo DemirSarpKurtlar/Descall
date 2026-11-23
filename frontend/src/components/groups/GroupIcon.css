@@ -49,7 +49,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
 .header-icon.is-clickable { cursor: pointer; transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.18s; }
 .header-icon.is-clickable:hover { filter: brightness(1.08); }
 .header-icon.is-clickable:active { transform: scale(0.95); }
-.header-icon.is-clickable:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 2px; }
+.header-icon.is-clickable:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 2px; }
 
 /* Group photo card at the top of the group members panel (group settings). */
 .group-photo-card {
@@ -73,7 +73,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .group-photo-card-icon:active { transform: scale(0.96); }
-.group-photo-card-icon:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 3px; }
+.group-photo-card-icon:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 3px; }
 .group-photo-card-badge {
   position: absolute;
   right: -4px;
