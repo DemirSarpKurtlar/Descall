@@ -1,7 +1,30 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Descall</string>
-    <string name="title_activity_main">Descall</string>
-    <string name="package_name">com.descall.app</string>
-    <string name="custom_url_scheme">com.descall.app</string>
+    <string name="app_name" translatable="false">Descall</string>
+    <string name="title_activity_main" translatable="false">Descall</string>
+    <string name="package_name" translatable="false">com.descall.app</string>
+    <string name="custom_url_scheme" translatable="false">com.descall.app</string>
+    <!-- 4.2 launcher shortcuts (xml/shortcuts.xml) and App Actions synonyms. -->
+    <string name="shortcut_new_message_short">New message</string>
+    <string name="shortcut_new_message_long">Write a new message</string>
+    <string name="shortcut_dnd_short">Do not disturb</string>
+    <string name="shortcut_dnd_long">Do not disturb on/off</string>
+    <string name="shortcut_friends_short">Friends</string>
+    <string name="shortcut_friends_long">Open your friends</string>
+    <string name="shortcut_open_chat">Open chat</string>
+    <string-array name="shortcut_new_message_synonyms">
+        <item>new message</item>
+        <item>message</item>
+        <item>write a message</item>
+    </string-array>
+    <string-array name="shortcut_dnd_synonyms">
+        <item>do not disturb</item>
+        <item>dnd</item>
+        <item>status</item>
+    </string-array>
+    <string-array name="shortcut_friends_synonyms">
+        <item>friends</item>
+        <item>friend list</item>
+        <item>who is online</item>
+    </string-array>
 </resources>

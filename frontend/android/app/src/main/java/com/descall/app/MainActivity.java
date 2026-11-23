@@ -54,6 +54,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(DescallDeepLinkPlugin.class);
     registerPlugin(DescallPushConfigPlugin.class);
     registerPlugin(DescallHapticsPlugin.class);
+    registerPlugin(DescallShortcutsPlugin.class);
     super.onCreate(savedInstanceState);
 
     // Edge to edge on every Android version, the layout Android 15+ already
