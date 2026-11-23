@@ -236,7 +236,7 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
           {DIRECTORY_CATEGORIES.map((id) => {
             const Icon = CATEGORY_ICONS[id] || MoreHorizontal;
             return (
-              <button key={id} type="button" role="tab" aria-selected={category === id} className={`dir-chip${category === id ? " is-on" : ""}`} onClick={() => setCategory(id)}>
+              <button key={id} type="button" role="tab" aria-selected={category === id} className={`dir-chip${category === id ? " is-on" : ""}`} data-cat={id} onClick={() => setCategory(id)}>
                 <Icon size={15} aria-hidden="true" />
                 {t(`dir.cat.${id}`)}
               </button>
