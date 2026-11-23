@@ -37,9 +37,10 @@
 const express = require("express");
 const { readConfig } = require("../lib/passkeys/config");
 const { createSupabaseStore } = require("../lib/passkeys/store");
-const { createPasskeyService, PasskeyError, MAX_PASSKEYS_PER_USER } = require("../lib/passkeys/service");
+const { createPasskeyService, PasskeyError, MAX_PASSKEYS_PER_USER, userHandleFor } = require("../lib/passkeys/service");
 const meta = require("../lib/passkeys/meta");
 const { peek, recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+const { apiError, apiText } = require("../lib/apiError");
 
 const LOGIN_USER_COLS =
   "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at";
@@ -173,7 +174,7 @@ function createPasskeyRouter(overrides = {}) {
   function sendError(res, err) {
     if (res.headersSent) return;
     if (err?.code === "PASSKEYS_UNAVAILABLE") {
-      return res.status(503).json({ error: "Passkeys are not available right now.", code: "PASSKEYS_UNAVAILABLE" });
+      return res.status(503).json(apiError("Passkeys are not available right now.", null, { code: "PASSKEYS_UNAVAILABLE" }));
     }
     if (err instanceof PasskeyError) {
       const body = { error: err.message, code: err.code };
@@ -182,13 +183,13 @@ function createPasskeyRouter(overrides = {}) {
       return res.status(err.status || 400).json(body);
     }
     console.error("[passkeys]", err?.message || err);
-    return res.status(500).json({ error: "Internal server error.", code: "SERVER_ERROR" });
+    return res.status(500).json(apiError("Internal server error.", null, { code: "SERVER_ERROR" }));
   }
 
   /** Feature switch + migration check, before any work. */
   async function ready(res) {
     if (!d().config.enabled) {
-      res.status(503).json({ error: "Passkeys are turned off.", code: "PASSKEYS_DISABLED" });
+      res.status(503).json(apiError("Passkeys are turned off.", null, { code: "PASSKEYS_DISABLED" }));
       return false;
     }
     let ok = false;
@@ -198,7 +199,7 @@ function createPasskeyRouter(overrides = {}) {
       ok = false;
     }
     if (!ok) {
-      res.status(503).json({ error: "Passkeys are not available right now.", code: "PASSKEYS_UNAVAILABLE" });
+      res.status(503).json(apiError("Passkeys are not available right now.", null, { code: "PASSKEYS_UNAVAILABLE" }));
       return false;
     }
     return true;
@@ -241,14 +242,13 @@ function createPasskeyRouter(overrides = {}) {
     const k = kit();
     const user = await d().loadLoginUser(userId);
     if (!user) {
-      return res.status(401).json({ error: "The passkey could not be verified.", code: "VERIFY_FAILED" });
+      return res.status(401).json(apiError("The passkey could not be verified.", null, { code: "VERIFY_FAILED" }));
     }
     const secondFactor = userVerified ? false : await k.hasSecondFactor(user);
     if (!userVerified && !secondFactor) {
-      return res.status(401).json({
-        error: "Your device did not confirm it is you (PIN, fingerprint or face). Try again, or sign in with your password.",
-        code: "UV_REQUIRED",
-      });
+      return res.status(401).json(
+        apiError("Your device did not confirm it is you (PIN, fingerprint or face). Try again, or sign in with your password.", null, { code: "UV_REQUIRED" })
+      );
     }
     const banActive = Boolean(user.is_banned) && !(user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now());
     const deferBan = banActive && !userVerified && secondFactor;
@@ -269,7 +269,7 @@ function createPasskeyRouter(overrides = {}) {
     const extra = await k.resolveEquippedExtra(user.id);
     noStore(res);
     return res.status(200).json({
-      message: "Login successful.",
+      ...apiText("message", "Login successful."),
       token,
       sessionId: session.id,
       method: "passkey",
@@ -277,10 +277,18 @@ function createPasskeyRouter(overrides = {}) {
     });
   }
 
-  router.get("/config", (req, res) => {
+  router.get("/config", async (req, res) => {
     const c = d().config;
+    let ready = false;
+    try {
+      ready = c.enabled && (await d().store.available());
+    } catch {
+      ready = false;
+    }
     res.set("Cache-Control", "public, max-age=300");
-    res.json({ enabled: c.enabled, rpId: c.rpId, android: c.androidOrigins.length > 0 });
+    // enabled: the kill switch; ready: the tables exist (migration applied). Clients hide
+    // every passkey entry unless both are true.
+    res.json({ enabled: c.enabled && ready, ready, rpId: c.rpId, android: c.androidOrigins.length > 0 });
   });
 
   router.post("/auth/options", async (req, res) => {
@@ -330,7 +338,7 @@ function createPasskeyRouter(overrides = {}) {
   /** Admin Tokens act for the owner but never manage the owner's passkeys. */
   function rejectApiToken(req, res) {
     if (!req.apiToken) return false;
-    res.status(403).json({ error: "Passkeys can only be managed from a signed-in device.", code: "SESSION_REQUIRED" });
+    res.status(403).json(apiError("Passkeys can only be managed from a signed-in device.", null, { code: "SESSION_REQUIRED" }));
     return true;
   }
 
@@ -350,7 +358,13 @@ function createPasskeyRouter(overrides = {}) {
       const methods = await reauthMethods(user || { id: req.user.id });
       if (rows.some((r) => !r.suspended_at)) methods.push("passkey");
       noStore(res);
-      return res.json({ passkeys: rows.map(meta.publicPasskey), max: MAX_PASSKEYS_PER_USER, reauthMethods: methods, rpId: d().config.rpId });
+      return res.json({
+        passkeys: rows.map(meta.publicPasskey),
+        max: MAX_PASSKEYS_PER_USER,
+        reauthMethods: methods,
+        rpId: d().config.rpId,
+        userHandle: Buffer.from(userHandleFor(req.user.id)).toString("base64url"),
+      });
     } catch (err) {
       return sendError(res, err);
     }
@@ -375,7 +389,7 @@ function createPasskeyRouter(overrides = {}) {
 
   function requireReauth(req, res) {
     if (reauthValid(req)) return true;
-    res.status(428).json({ error: "Confirm it is you first.", code: "REAUTH_REQUIRED" });
+    res.status(428).json(apiError("Confirm it is you first.", null, { code: "REAUTH_REQUIRED" }));
     return false;
   }
 
@@ -386,7 +400,7 @@ function createPasskeyRouter(overrides = {}) {
       const ipKey = `pkreauth:ip:${ip(req)}`;
       if (rejectIfLimited(res, [peek(acctKey, LIMITS.reauth), peek(ipKey, LIMITS.reauth)])) return;
       const user = await d().loadBasicUser(req.user.id);
-      if (!user) return res.status(404).json({ error: "User not found.", code: "NO_USER" });
+      if (!user) return res.status(404).json(apiError("User not found.", null, { code: "NO_USER" }));
       const password = req.body?.password;
       const code = String(req.body?.code || "").trim();
       const failed = (status, error, errCode) => {
@@ -420,7 +434,7 @@ function createPasskeyRouter(overrides = {}) {
         }
         return failed(401, "Incorrect code.", "BAD_CODE");
       }
-      return res.status(400).json({ error: user.password_hash ? "Enter your current password." : "Enter the code we sent you.", code: "REAUTH_INPUT" });
+      return res.status(400).json(apiError(user.password_hash ? "Enter your current password." : "Enter the code we sent you.", null, { code: "REAUTH_INPUT" }));
     } catch (err) {
       return sendError(res, err);
     }
@@ -464,7 +478,7 @@ function createPasskeyRouter(overrides = {}) {
       }
       if (!result.userVerified) {
         recordFailure(acctKey, LIMITS.reauth);
-        return res.status(401).json({ error: "Your device did not confirm it is you (PIN, fingerprint or face).", code: "UV_REQUIRED" });
+        return res.status(401).json(apiError("Your device did not confirm it is you (PIN, fingerprint or face).", null, { code: "UV_REQUIRED" }));
       }
       return issueReauth(req, res);
     } catch (err) {
@@ -479,7 +493,7 @@ function createPasskeyRouter(overrides = {}) {
       if (!requireReauth(req, res)) return;
       if (!(await ready(res))) return;
       const user = await d().loadBasicUser(req.user.id);
-      if (!user) return res.status(404).json({ error: "User not found.", code: "NO_USER" });
+      if (!user) return res.status(404).json(apiError("User not found.", null, { code: "NO_USER" }));
       const options = await d().service.registrationOptions({ user, sessionId: req.user.sid || null, platform: platformOf(req) });
       noStore(res);
       return res.json(options);
@@ -502,7 +516,7 @@ function createPasskeyRouter(overrides = {}) {
       if (!requireReauth(req, res)) return;
       if (!(await ready(res))) return;
       const user = await d().loadBasicUser(req.user.id);
-      if (!user) return res.status(404).json({ error: "User not found.", code: "NO_USER" });
+      if (!user) return res.status(404).json(apiError("User not found.", null, { code: "NO_USER" }));
       const row = await d().service.verifyRegistration({
         user,
         sessionId: req.user.sid || null,
@@ -525,12 +539,12 @@ function createPasskeyRouter(overrides = {}) {
     try {
       if (rejectApiToken(req, res)) return;
       if (!countCall(res, `pkmanage:acct:${req.user.id}`, LIMITS.manage)) return;
-      if (!UUID_RE.test(String(req.params.id))) return res.status(404).json({ error: "Passkey not found.", code: "NOT_FOUND" });
+      if (!UUID_RE.test(String(req.params.id))) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
       const name = meta.sanitizeName(req.body?.name);
-      if (!name) return res.status(400).json({ error: "Enter a name.", code: "BAD_NAME" });
+      if (!name) return res.status(400).json(apiError("Enter a name.", null, { code: "BAD_NAME" }));
       if (!(await ready(res))) return;
       const row = await d().store.rename(req.params.id, req.user.id, name);
-      if (!row) return res.status(404).json({ error: "Passkey not found.", code: "NOT_FOUND" });
+      if (!row) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
       d().emit(req, req.user.id, "passkeys:changed", { reason: "renamed" });
       return res.json({ passkey: meta.publicPasskey(row) });
     } catch (err) {
@@ -542,10 +556,10 @@ function createPasskeyRouter(overrides = {}) {
     try {
       if (rejectApiToken(req, res)) return;
       if (!countCall(res, `pkmanage:acct:${req.user.id}`, LIMITS.manage)) return;
-      if (!UUID_RE.test(String(req.params.id))) return res.status(404).json({ error: "Passkey not found.", code: "NOT_FOUND" });
+      if (!UUID_RE.test(String(req.params.id))) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
       if (!(await ready(res))) return;
       const row = await d().store.remove(req.params.id, req.user.id);
-      if (!row) return res.status(404).json({ error: "Passkey not found.", code: "NOT_FOUND" });
+      if (!row) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
       const user = await d().loadBasicUser(req.user.id).catch(() => null);
       if (user) {
         await d().notify(user, "passkeyRemoved", req, { name: row.name }).catch(() => {});
@@ -594,7 +608,7 @@ function createPasskeyRouter(overrides = {}) {
     const h = await d().service.handoffByCode(req.body?.code);
     if (!h || (kind && h.kind !== kind)) {
       recordFailure(key, LIMITS.handoffCode);
-      res.status(404).json({ error: "This link expired. Start again in the Descall app.", code: "HANDOFF_EXPIRED" });
+      res.status(404).json(apiError("This link expired. Start again in the Descall app.", null, { code: "HANDOFF_EXPIRED" }));
       return null;
     }
     return h;
@@ -650,7 +664,7 @@ function createPasskeyRouter(overrides = {}) {
         return sendError(res, err);
       }
       const done = await d().service.completeHandoff(h.id, { user_id: result.userId, user_verified: result.userVerified, credential_row_id: result.credential.id });
-      if (!done) return res.status(409).json({ error: "This link was already used.", code: "HANDOFF_USED" });
+      if (!done) return res.status(409).json(apiError("This link was already used.", null, { code: "HANDOFF_USED" }));
       noStore(res);
       return res.json({ ok: true });
     } catch (err) {
@@ -665,7 +679,7 @@ function createPasskeyRouter(overrides = {}) {
       if (!h) return;
       if (!countCall(res, `pkreg:acct:${h.user_id}`, LIMITS.register)) return;
       const user = await d().loadBasicUser(h.user_id);
-      if (!user) return res.status(404).json({ error: "This link expired. Start again in the Descall app.", code: "HANDOFF_EXPIRED" });
+      if (!user) return res.status(404).json(apiError("This link expired. Start again in the Descall app.", null, { code: "HANDOFF_EXPIRED" }));
       const options = await d().service.registrationOptions({ user, sessionId: h.session_id || null, platform: h.platform, handoffId: h.id });
       noStore(res);
       return res.json(options);
@@ -680,7 +694,7 @@ function createPasskeyRouter(overrides = {}) {
       const h = await handoffFromBody(req, res, "register");
       if (!h) return;
       const user = await d().loadBasicUser(h.user_id);
-      if (!user) return res.status(404).json({ error: "This link expired. Start again in the Descall app.", code: "HANDOFF_EXPIRED" });
+      if (!user) return res.status(404).json(apiError("This link expired. Start again in the Descall app.", null, { code: "HANDOFF_EXPIRED" }));
       const row = await d().service.verifyRegistration({
         user,
         sessionId: h.session_id || null,
@@ -694,7 +708,7 @@ function createPasskeyRouter(overrides = {}) {
       if (!done) {
         // Another tab finished the same link first: keep one passkey, not two.
         await d().store.remove(row.id, user.id).catch(() => {});
-        return res.status(409).json({ error: "This link was already used.", code: "HANDOFF_USED" });
+        return res.status(409).json(apiError("This link was already used.", null, { code: "HANDOFF_USED" }));
       }
       await afterRegistered(req, user, row);
       noStore(res);
@@ -710,13 +724,13 @@ function createPasskeyRouter(overrides = {}) {
       if (!(await ready(res))) return;
       const h = await d().service.pollHandoff(req.body?.pollSecret);
       noStore(res);
-      if (!h) return res.status(404).json({ status: "expired", code: "HANDOFF_EXPIRED", error: "This sign-in request expired." });
+      if (!h) return res.status(404).json(apiError("This sign-in request expired.", null, { status: "expired", code: "HANDOFF_EXPIRED" }));
       if (h.status === "failed") return res.json({ status: "failed" });
-      if (h.status === "consumed") return res.status(410).json({ status: "expired", code: "HANDOFF_USED", error: "This sign-in request was already used." });
+      if (h.status === "consumed") return res.status(410).json(apiError("This sign-in request was already used.", null, { status: "expired", code: "HANDOFF_USED" }));
       if (h.status === "pending") return res.json({ status: h.expired ? "expired" : "pending", matchCode: h.match_code });
       // completed: hand the result to the app exactly once.
       const taken = await d().service.consumeHandoff(h.id);
-      if (!taken) return res.status(410).json({ status: "expired", code: "HANDOFF_USED", error: "This sign-in request was already used." });
+      if (!taken) return res.status(410).json(apiError("This sign-in request was already used.", null, { status: "expired", code: "HANDOFF_USED" }));
       if (h.kind === "register") {
         const row = h.credential_row_id ? await d().store.getById(h.credential_row_id) : null;
         return res.json({ status: "registered", passkey: meta.publicPasskey(row) });

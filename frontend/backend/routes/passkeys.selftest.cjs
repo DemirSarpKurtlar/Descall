@@ -207,7 +207,7 @@ async function signIn(auth, o = {}) {
   {
     const r = await call("GET", "/config");
     assert.equal(r.status, 200);
-    assert.deepEqual(r.body, { enabled: true, rpId: "descall.com", android: true });
+    assert.deepEqual(r.body, { enabled: true, ready: true, rpId: "descall.com", android: true });
   }
 
   const authA = createSoftAuthenticator();
@@ -265,6 +265,8 @@ async function signIn(auth, o = {}) {
     assert.equal(list.body.passkeys.length, 1);
     assert.equal(list.body.max, 20);
     assert.deepEqual(list.body.reauthMethods, ["password", "passkey"]);
+    assert.equal(list.body.userHandle, Buffer.from(userHandleFor(UID.a)).toString("base64url"));
+    assert.equal(list.body.passkeys[0].credentialId.length > 16, true);
   }
 
   // Registration: origin allow-list, rp id, user verification, single-use challenge.
@@ -528,6 +530,8 @@ async function signIn(auth, o = {}) {
     assert.equal(r.status, 503);
     assert.equal(r.body.code, "PASSKEYS_UNAVAILABLE");
     assert.equal((await call("GET", "/", { user: UID.a })).status, 503);
+    const cfg = await call("GET", "/config");
+    assert.deepEqual(cfg.body.enabled, false, "clients hide passkeys until the migration is applied");
   }
 
   await new Promise((r) => server.close(r));

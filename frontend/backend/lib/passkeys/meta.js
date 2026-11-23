@@ -115,6 +115,9 @@ function publicPasskey(row) {
   if (!row) return null;
   return {
     id: row.id,
+    // Public by design (the authenticator shows it to any site that asks); lets the web
+    // client keep the browser's passkey list in step (WebAuthn Signal API).
+    credentialId: row.credential_id || null,
     name: row.name,
     provider: providerName(row.aaguid),
     platform: row.platform || null,
