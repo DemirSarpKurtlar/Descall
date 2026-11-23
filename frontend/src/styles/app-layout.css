@@ -3367,6 +3367,18 @@ button.header-avatar {
   white-space: nowrap;
 }
 
+/* Role colors are the server's choice; only their lightness is clamped so a
+   near-black role stays readable on dark glass and a pale one on light glass.
+   Hue and chroma are kept. Browsers without relative color keep the raw color. */
+@supports (color: oklch(from red l c h)) {
+  .member-name.has-role-color {
+    color: oklch(from var(--role-color) max(l, 0.62) c h) !important;
+  }
+  :root[data-theme="light"] .member-name.has-role-color {
+    color: oklch(from var(--role-color) min(l, 0.55) c h) !important;
+  }
+}
+
 .member-owner-badge {
   display: inline-flex;
   align-items: center;
