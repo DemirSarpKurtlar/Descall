@@ -130,14 +130,18 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  color: #fff;
-  background: rgba(237, 66, 69, 0.88);
-  box-shadow: 0 0 0 2px rgba(15, 17, 21, 0.85);
+  /* Muted / deafened: dark disc with a soft red glyph, the same "off" look as
+     the call bar. Only Hang up is solid red. */
+  color: #ff8a82;
+  background: rgba(20, 21, 30, 0.82);
+  box-shadow: 0 0 0 2px rgba(15, 17, 21, 0.85), inset 0 0 0 0.5px rgba(255, 69, 58, 0.45);
   flex-shrink: 0;
 }
 
 .participant-state-icon.is-camera-off {
-  background: rgba(79, 84, 92, 0.92);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(20, 21, 30, 0.82);
+  box-shadow: 0 0 0 2px rgba(15, 17, 21, 0.85), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
 }
 
 .participant-state-icons.is-compact {

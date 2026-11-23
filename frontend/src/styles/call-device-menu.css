@@ -90,7 +90,7 @@
 }
 
 .call-device-row.is-selected .call-device-ico {
-  color: #0a84ff;
+  color: var(--primary);
 }
 
 .call-device-text {
@@ -125,7 +125,7 @@
   flex: 0 0 14px;
   display: inline-flex;
   justify-content: flex-end;
-  color: #0a84ff;
+  color: var(--primary);
 }
 
 .call-device-empty {
@@ -153,7 +153,8 @@
 }
 :root[data-theme="light"] .call-device-sep { background: rgba(0, 0, 0, 0.1); }
 :root[data-theme="light"] .call-device-ico { color: rgba(10, 12, 22, 0.7); }
-:root[data-theme="light"] .call-device-row.is-selected .call-device-ico { color: #0a84ff; }
+:root[data-theme="light"] .call-device-row.is-selected .call-device-ico,
+:root[data-theme="light"] .call-device-check { color: var(--primary-2); }
 :root[data-theme="light"] .call-device-row:hover,
 :root[data-theme="light"] .call-device-row:focus-visible { background: rgba(0, 0, 0, 0.05); }
 
@@ -177,7 +178,7 @@
 .server-voice-dock-device .server-voice-dock-chevron.is-open svg { transform: rotate(180deg); }
 .server-voice-dock-device .server-voice-dock-chevron.is-open,
 .server-voice-dock-device .server-voice-dock-chevron:hover {
-  background: #0a84ff;
+  background: var(--primary);
   color: #fff;
 }
 .server-voice-dock-device .server-voice-dock-chevron:active { transform: scale(0.92); }
