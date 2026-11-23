@@ -763,6 +763,7 @@ const LISTENERS = {
   onOverlayAction: "descall:overlay:action",
   onMainError: "app:main-error",
   onTrayAction: "tray:action",
+  onJumpListAction: "jumplist:action",
 };
 // Same channel names as the Electron preload subscribes to.
 for (const [k, channel] of Object.entries(LISTENERS)) {

@@ -350,6 +350,13 @@
     // Tray panel (draft B, src/lib/desktopTray.js); admin windows get a no-op like adminPreload.
     setTrayState: ADMIN ? noop : (state) => fire("tray_set_state", { state: state && typeof state === "object" ? state : {} }),
     onTrayAction: ADMIN ? () => noop : (cb) => on("tray:action", cb, (p) => p || {}),
+
+    // Taskbar jump list (src/lib/jumpList.js). The Rust shell has no jump list yet: setting it
+    // is a no-op and there is never a pending action, but the listener subscribes to the same
+    // channel as preload.cjs so a future shell jump list only has to emit "jumplist:action".
+    setJumpList: noop,
+    takeJumpListAction: () => Promise.resolve(null),
+    onJumpListAction: ADMIN ? () => noop : (cb) => on("jumplist:action", cb, (p) => p || {}),
   };
 
   // Shell-only extras the Electron preload did not have (the page probes them optionally).
