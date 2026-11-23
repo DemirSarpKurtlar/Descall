@@ -46,4 +46,5 @@ assert.ok(!/#FFD60A/i.test(profile), "idle presence word is the app idle orange,
 assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b \{ color: var\(--success-text/, "profile presence word is readable in the light theme");
 assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b\.is-dnd \{ color: var\(--danger-text/, "light dnd keeps red, not the online green");
 assert.ok(!/#5b6cff/i.test(hoverCard), "hover card send button uses the accent, not a blurple");
+assert.match(read("./messaging-phase4.css"), /\.msg-link-preview-title \{[^}]*color: var\(--g-brand-hi,/s, "link preview title uses the readable accent ink");
 console.log("chatColors selftest ok");
