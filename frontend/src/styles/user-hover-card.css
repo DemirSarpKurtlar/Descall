@@ -240,7 +240,7 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
   place-items: center;
   cursor: pointer;
   color: #fff;
-  /* Was #5b6cff (a stray blurple). Logo blue (owner decision); the white glyph is an icon (3:1). */
+  /* Was a stray blurple. Logo blue (owner decision); the white glyph is an icon (3:1). */
   background: var(--g-brand, #587af5);
 }
 .uhc3-msg button:disabled { opacity: 0.35; cursor: default; background: rgba(255, 255, 255, 0.12); }
