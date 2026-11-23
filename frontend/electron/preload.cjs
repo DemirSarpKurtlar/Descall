@@ -197,6 +197,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('tray:action', handler);
     return () => ipcRenderer.off('tray:action', handler);
   },
+
+  // 4.2 Windows jump list (electron/jumpList.cjs, src/hooks/useNativeIntents.js): the page's
+  // recent DMs and labels; the task a jump list entry started ({ action, arg?, path? }).
+  setJumpList: (state) => ipcRenderer.send('jumplist:set', state && typeof state === 'object' ? state : {}),
+  takeJumpListAction: () => ipcRenderer.invoke('jumplist:take'),
+  onJumpListAction: (callback) => {
+    const handler = (_, msg) => callback(msg || {});
+    ipcRenderer.on('jumplist:action', handler);
+    return () => ipcRenderer.off('jumplist:action', handler);
+  },
 });
 
 // Descall+ (electron/premium/index.cjs): one generic bridge, limited to 'premium:*'
