@@ -348,6 +348,12 @@ async function ensurePrivateCopy(supabase, path) {
     console.warn("[private-media] copy to private failed:", error.message);
     return false;
   }
+  // The smaller AVIF copy travels with it (best effort: GET /f falls back to the original).
+  const sibling = require("./imageVariants").avifSiblingPath(path);
+  if (sibling) {
+    const { error: sibErr } = await supabase.storage.from(PUBLIC_BUCKET).copy(sibling, sibling, { destinationBucket: PRIVATE_BUCKET });
+    if (sibErr) console.warn("[private-media] AVIF copy to private skipped:", sibErr.message);
+  }
   return true;
 }
 
