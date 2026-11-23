@@ -174,31 +174,45 @@ pub(crate) fn show_system_menu(h: isize) {
 }
 
 /// The window menu at a screen point, with the items a captioned window enables in its state;
-/// the chosen command goes to the window as WM_SYSCOMMAND.
+/// the chosen command goes to the window as WM_SYSCOMMAND. The states are written into the
+/// window's own menu and stay there; a command whose window menu item is grayed can be refused
+/// by the default window handling, and a Restore left grayed is a suspect for the taskbar
+/// restore doing nothing (owner report, 4.1.1). They are all enabled again once the menu
+/// closes (descall_shell::snap::menu_items_closed).
 #[cfg(windows)]
 fn track_system_menu(hwnd: windows::Win32::Foundation::HWND, x: i32, y: i32) {
+    use descall_shell::snap::{menu_items_closed, menu_items_open};
     use windows::Win32::Foundation::{LPARAM, WPARAM};
-    use windows::Win32::UI::WindowsAndMessaging::{
-        EnableMenuItem, GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, MENU_ITEM_FLAGS, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE, SC_RESTORE, SC_SIZE,
-        TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_SYSCOMMAND,
-    };
+    use windows::Win32::UI::WindowsAndMessaging::{GetSystemMenu, IsZoomed, PostMessageW, SetForegroundWindow, TrackPopupMenu, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_SYSCOMMAND};
     unsafe {
         let menu = GetSystemMenu(hwnd, false);
         if menu.is_invalid() {
             return;
         }
-        // Same items enabled as the caption menu of a normal window in that state.
-        let maximized = IsZoomed(hwnd).as_bool();
-        let state = |on: bool| -> MENU_ITEM_FLAGS { MF_BYCOMMAND | if on { MF_ENABLED } else { MF_GRAYED } };
-        let _ = EnableMenuItem(menu, SC_RESTORE, state(maximized));
-        let _ = EnableMenuItem(menu, SC_MAXIMIZE, state(!maximized));
-        let _ = EnableMenuItem(menu, SC_MOVE, state(!maximized));
-        let _ = EnableMenuItem(menu, SC_SIZE, state(!maximized));
+        set_menu_items(menu, &menu_items_open(IsZoomed(hwnd).as_bool()));
         let _ = SetForegroundWindow(hwnd);
         let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, x, y, None, hwnd, None);
+        set_menu_items(menu, &menu_items_closed());
         if cmd.0 != 0 {
             // SC_CLOSE becomes WM_CLOSE: the main window still hides to the tray.
             let _ = PostMessageW(Some(hwnd), WM_SYSCOMMAND, WPARAM(cmd.0 as usize), LPARAM(0));
+        }
+    }
+}
+
+#[cfg(windows)]
+fn set_menu_items(menu: windows::Win32::UI::WindowsAndMessaging::HMENU, items: &[(descall_shell::snap::MenuItem, bool)]) {
+    use descall_shell::snap::MenuItem;
+    use windows::Win32::UI::WindowsAndMessaging::{EnableMenuItem, MF_BYCOMMAND, MF_ENABLED, MF_GRAYED, SC_MAXIMIZE, SC_MOVE, SC_RESTORE, SC_SIZE};
+    for (item, on) in items {
+        let id = match item {
+            MenuItem::Restore => SC_RESTORE,
+            MenuItem::Maximize => SC_MAXIMIZE,
+            MenuItem::Move => SC_MOVE,
+            MenuItem::Size => SC_SIZE,
+        };
+        unsafe {
+            let _ = EnableMenuItem(menu, id, MF_BYCOMMAND | if *on { MF_ENABLED } else { MF_GRAYED });
         }
     }
 }
@@ -208,5 +222,22 @@ fn track_system_menu(hwnd: windows::Win32::Foundation::HWND, x: i32, y: i32) {
 pub fn window_set_zoom<R: Runtime>(window: WebviewWindow<R>, factor: f64) {
     if (0.5..=2.0).contains(&factor) {
         let _ = window.set_zoom(factor);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The window menu's item states are reset right after TrackPopupMenu returns, before the
+    /// chosen command is posted (a grayed Restore blocked the taskbar restore).
+    #[test]
+    fn the_window_menu_states_are_reset_after_the_menu() {
+        let src = include_str!("window.rs");
+        let f = &src[src.find("fn track_system_menu").unwrap()..];
+        let f = &f[..f.find("\n}\n").unwrap()];
+        let track = f.find("TrackPopupMenu(menu").unwrap();
+        let reset = f.find("set_menu_items(menu, &menu_items_closed())").expect("menu states reset");
+        let post = f.find("PostMessageW(").unwrap();
+        assert!(track < reset && reset < post);
+        assert!(!f.contains("EnableMenuItem(menu, SC_"), "states come from descall_shell::snap");
     }
 }

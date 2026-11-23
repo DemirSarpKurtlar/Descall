@@ -195,6 +195,13 @@ pub fn ensure_autostart(app_data: &std::path::Path, electron_user_data: Option<&
 /// Updater relaunch of a window that was minimized: on the taskbar, minimized, without taking
 /// the focus (SW_SHOWMINNOACTIVE; main.cjs showInactive() then minimize()). show() is
 /// SW_SHOW: it activated Descall over the game or app the user was in, for a moment.
+///
+/// ShowWindow alone left tao's own record of the window at "hidden, not minimized" for the
+/// whole run: its next style change hid the window (the title bar minimize became minimize
+/// plus SW_HIDE, the taskbar button went away) and set_focus never ran. tao is told
+/// afterwards, minimized first and then shown: on a window that is already minimized and
+/// visible neither moves nor activates it, and in the other order tao would rewrite the style
+/// of a minimized window without WS_MINIMIZE (a window that cannot be restored).
 pub fn show_minimized_inactive<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) {
     #[cfg(windows)]
     {
@@ -204,9 +211,20 @@ pub fn show_minimized_inactive<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) {
             unsafe {
                 let _ = ShowWindow(HWND(h as *mut core::ffi::c_void), SW_SHOWMINNOACTIVE);
             }
+            for step in descall_shell::launch::MINIMIZED_START_SYNC {
+                match step {
+                    descall_shell::launch::TaoSync::Minimized => {
+                        let _ = w.minimize();
+                    }
+                    descall_shell::launch::TaoSync::Visible => {
+                        let _ = w.show();
+                    }
+                }
+            }
             return;
         }
     }
+    let _ = w.show();
     let _ = w.minimize();
 }
 
@@ -257,4 +275,22 @@ pub fn process_names() -> Vec<String> {
         }
     }
     names
+}
+
+#[cfg(test)]
+mod tests {
+    /// The minimized relaunch (an update installed while Descall was minimized) tells tao the
+    /// window is minimized and visible after its own ShowWindow: tao's record stayed "hidden"
+    /// and the title bar minimize then hid the window off the taskbar (4.1.1 / 4.1.2).
+    #[test]
+    fn a_minimized_relaunch_keeps_tao_in_step() {
+        let src = include_str!("platform.rs");
+        let f = &src[src.find("pub fn show_minimized_inactive").unwrap()..];
+        let f = &f[..f.find("\n}\n").unwrap()];
+        let raw = f.find("SW_SHOWMINNOACTIVE);").unwrap();
+        let sync = f.find("for step in descall_shell::launch::MINIMIZED_START_SYNC").expect("tao told after ShowWindow");
+        assert!(raw < sync);
+        assert!(f[sync..].contains("TaoSync::Minimized => {\n                        let _ = w.minimize();"));
+        assert!(f[sync..].contains("TaoSync::Visible => {\n                        let _ = w.show();"));
+    }
 }

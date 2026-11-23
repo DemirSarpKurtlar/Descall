@@ -95,6 +95,32 @@ pub fn keyboard_menu_point(window_top_left: (i32, i32), title_bar_px: i32) -> (i
     (window_top_left.0, window_top_left.1 + title_bar_px.max(0))
 }
 
+/// Window menu items whose state the shell sets when it shows the menu itself
+/// (commands/window.rs track_system_menu).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MenuItem {
+    Restore,
+    Maximize,
+    Move,
+    Size,
+}
+
+/// While the menu is open: the items a captioned window enables in that state (Restore only
+/// when maximized; Maximize, Move and Size only when not).
+pub fn menu_items_open(maximized: bool) -> [(MenuItem, bool); 4] {
+    [(MenuItem::Restore, maximized), (MenuItem::Maximize, !maximized), (MenuItem::Move, !maximized), (MenuItem::Size, !maximized)]
+}
+
+/// Once the menu is closed: every item enabled again. The states are written into the window's
+/// own menu and stay there, and the default window handling can refuse a WM_SYSCOMMAND whose
+/// window menu item is grayed: a Restore left grayed after the menu was opened on a normal
+/// window could make the taskbar's SC_RESTORE do nothing once the window is minimized. Windows
+/// sets these states itself only when it opens the menu, so all enabled is what a window whose
+/// menu Windows never opened has (tao's undecorated main window).
+pub fn menu_items_closed() -> [(MenuItem, bool); 4] {
+    [(MenuItem::Restore, true), (MenuItem::Maximize, true), (MenuItem::Move, true), (MenuItem::Size, true)]
+}
+
 /// What the pointer did on the sink (non-client mouse messages).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pointer {
@@ -235,5 +261,33 @@ mod tests {
         assert_eq!(step(v, Pointer::Up), (Visual::Hover, None), "press began elsewhere");
         assert_eq!(step(Visual::Hover, Pointer::RightUp), (Visual::None, Some(Action::SystemMenu)));
         assert_eq!(Visual::Press.as_str(), "press");
+    }
+
+    fn state(items: [(MenuItem, bool); 4], item: MenuItem) -> bool {
+        items.iter().find(|(i, _)| *i == item).map(|(_, on)| *on).unwrap()
+    }
+
+    #[test]
+    fn the_open_menu_matches_a_captioned_window() {
+        let normal = menu_items_open(false);
+        assert!(!state(normal, MenuItem::Restore) && state(normal, MenuItem::Maximize) && state(normal, MenuItem::Move) && state(normal, MenuItem::Size));
+        let max = menu_items_open(true);
+        assert!(state(max, MenuItem::Restore) && !state(max, MenuItem::Maximize) && !state(max, MenuItem::Move) && !state(max, MenuItem::Size));
+    }
+
+    /// Owner report (4.1.1 / 4.1.2): minimized with the title bar button, the window did not
+    /// come back from the taskbar. The menu opened on a normal window left Restore grayed in
+    /// the window's menu for the rest of the run.
+    #[test]
+    fn a_closed_menu_leaves_no_command_grayed() {
+        for maximized in [false, true] {
+            let _ = menu_items_open(maximized);
+            for (item, on) in menu_items_closed() {
+                assert!(on, "{item:?} left grayed after the menu (maximized {maximized})");
+            }
+        }
+        let closed: Vec<MenuItem> = menu_items_closed().iter().map(|(i, _)| *i).collect();
+        let opened: Vec<MenuItem> = menu_items_open(false).iter().map(|(i, _)| *i).collect();
+        assert_eq!(closed, opened, "every item the open menu sets is reset");
     }
 }

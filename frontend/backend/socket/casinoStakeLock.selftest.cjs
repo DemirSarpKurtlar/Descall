@@ -50,9 +50,18 @@ games.registerGameHandlers(io, socket);
     handlers["game:command"]({ groupId: "g1", command: "bj", args: "1000" }),
     handlers["game:command"]({ groupId: "g2", command: "bj", args: "1000" }),
   ]);
-  const hands = ["g1", "g2"].map((g) => GameManager.get("alice", g)).filter(Boolean);
+  // Hands that started: still open, or settled at once by a natural 21 (written to
+  // game_history). Counting only open hands failed about 1 run in 40.
+  const open = ["g1", "g2"].filter((g) => GameManager.get("alice", g)).length;
+  const settled = fake._tables.game_history.rows.filter((r) => String(r.user_id) === "alice");
+  const started = open + settled.length;
+  const won = settled.reduce((sum, r) => sum + Number(r.win_amount || 0), 0);
   const balance = fake._tables.user_credits.rows[0].credits;
-  assert.equal(hands.length, 1, "only one 1000-credit hand can start on a 1000 balance");
+  assert.ok(started >= 1, "the first stake starts a hand");
+  // Every started hand took its 1000-credit stake (the bug: two hands, one stake).
+  assert.equal(balance, 1000 - 1000 * started + won, "every started hand was paid for");
+  // Two hands only when the first one settled at once and paid out enough for the second.
+  if (started > 1) assert.ok(won >= 1000, "only one 1000-credit hand can start on a 1000 balance");
   assert.ok(balance >= 0, "balance never goes negative");
   console.log("casino stake lock selftest ok");
   process.exit(0);
