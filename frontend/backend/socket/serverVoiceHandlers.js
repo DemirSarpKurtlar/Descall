@@ -1390,6 +1390,25 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
+  // Video decode list of this member's device (screen share codec choice with an SFU:
+  // the sharer only sends AV1 / VP9 when every member decodes it). Codec names only.
+  socket.on("server:voice:codecs", ({ channelId, videoDecode } = {}) => {
+    if (!channelId) return;
+    if (!allow("codecs", 6, 10000)) return;
+    channelId = normId(channelId);
+    const call = activeServerVoiceCalls.get(channelId);
+    const self = getParticipantEntry(call, myId);
+    const me = self?.member;
+    if (!me) return;
+    const { sanitizeVideoDecode } = require("../lib/screenShareSignal");
+    const next = sanitizeVideoDecode(videoDecode);
+    if ((me.videoDecode || []).join(",") === (next || []).join(",")) return;
+    if (next) me.videoDecode = next;
+    else delete me.videoDecode;
+    setParticipant(call, myId, me);
+    emitChannelState(io, call.serverId, channelId);
+  });
+
   socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened, ptt } = {}) => {
     if (!channelId) return;
     if (!allow("media", 20, 5000)) return;
