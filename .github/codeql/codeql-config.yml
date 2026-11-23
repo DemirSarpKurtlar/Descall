@@ -1,0 +1,36 @@
+# CodeQL configuration shared by every language in .github/workflows/codeql.yml.
+# paths-ignore keeps the scan fast and the Security tab free of noise: build output,
+# vendored / generated code, translation tables and design data are not app logic.
+# (Every listed path is checked to exist or be a glob by frontend/scripts/ciConfig.selftest.mjs.)
+name: descall-codeql
+
+queries:
+  # security-extended = default security queries plus a few more precise ones; no style noise.
+  - uses: security-extended
+
+paths-ignore:
+  # build output and installed packages
+  - "**/node_modules"
+  - "**/dist"
+  - "**/dist-*"
+  - "**/target"
+  - "**/*.min.js"
+  # generated / data-only sources (translations, catalogs, static data)
+  - frontend/src/i18n/locales
+  - frontend/backend/catalog
+  - frontend/public
+  # internal tooling, design experiments and docs (not shipped to users)
+  - .claude
+  - docs
+  - output
+  - marketing
+  - descall-video
+  - tools
+  # tests and selftests: fixtures intentionally contain "unsafe" strings
+  - "**/*.selftest.mjs"
+  - "**/*.selftest.cjs"
+  - "**/*.test.js"
+  - "**/*.test.mjs"
+  - "**/*.e2e.cjs"
+  - frontend/e2e
+  - frontend/backend/test
