@@ -3,6 +3,8 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into es.js phrases.
  */
 export const API_ES = {
+  "Complete the security check to continue.": "Completa la verificación de seguridad para continuar.",
+  "The security check could not be verified. Please try again.": "No se pudo confirmar la verificación de seguridad. Inténtalo de nuevo.",
   "Appeals are not available yet. Try again later.": "Las apelaciones aún no están disponibles. Inténtalo más tarde.",
   "Owner and admin accounts cannot be banned.": "Las cuentas de propietario y de administrador no se pueden banear.",
   "Could not load appeals.": "No se pudieron cargar las apelaciones.",

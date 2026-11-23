@@ -43,6 +43,8 @@ const { noteDroppedSessions } = require("../lib/sessionGuard");
 const accessBans = require("../lib/accessBans");
 // Güvenlik Merkezi live threat feed (merged + sampled in lib/securityEvents.js).
 const securityEvents = require("../lib/securityEvents");
+// Cloudflare Turnstile human check (sign-up, password reset, sign-in step-up).
+const turnstile = require("../lib/turnstile");
 const { createSession, listSessions, removeSession, removeOtherSessions, clearAllSessions, clientIp } = require("../lib/sessions");
 const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
@@ -699,6 +701,16 @@ router.post("/register", async (req, res) => {
       return rejectSignup(res, 400, usernameIssue.code, { error: usernameIssue.message });
     }
 
+    // Human check (lib/turnstile.js): after the cheap field checks, before the breached-
+    // password lookup, any database read and the insert.
+    {
+      const hc = await turnstile.gate(req, { action: "register", ip });
+      if (!hc.ok) {
+        if (hc.outcome !== "challenged") securityEvents.note("signup_denied", { req, reason: "human_check", detail: { method: "email" } });
+        return rejectSignup(res, hc.status, "human_check", hc.body);
+      }
+    }
+
     const passwordCheck = await checkNewPassword(password);
     if (passwordCheck.error) {
       const detail = passwordCheck.code === "pwned" ? "password_breached" : signupRules.passwordLengthCode(password) || "password_short";
@@ -872,6 +884,9 @@ router.post("/login", async (req, res) => {
       securityEvents.note("account_locked", { req, reason: "minute", detail: { lookup: cleanUsername.slice(0, 64), perMinute: perMinute.max } });
       return;
     }
+    // Step-up human check after repeated wrong passwords from this address or on this
+    // account name (lib/turnstile.js loginNeedsCheck); before the lookup and bcrypt.
+    if (turnstile.loginNeedsCheck({ ip, accountKey }) && (await turnstile.rejectUnlessHuman(req, res, { action: "login", ip }))) return;
 
     const { data: user, error: lookupError } = await supabase
       .from("users")
@@ -1234,6 +1249,14 @@ router.post("/google", async (req, res) => {
           return res.status(403).json({ error: closed.message, code: closed.code });
         }
       }
+      // Human check for the new account (lib/turnstile.js); an existing account never gets here.
+      {
+        const hc = await turnstile.gate(req, { action: "social_signup", ip });
+        if (!hc.ok) {
+          if (hc.outcome !== "challenged") securityEvents.note("signup_denied", { req, reason: "human_check", detail: { method: "google" } });
+          return res.status(hc.status).json(hc.body);
+        }
+      }
       const username = await allocateUniqueUsername(preferred);
 
       const insertPayload = {
@@ -1478,6 +1501,14 @@ router.post("/apple", async (req, res) => {
         if (!closed.ok) {
           securityEvents.note("signup_denied", { req, reason: "closed", detail: { method: "apple" } });
           return res.status(403).json({ error: closed.message, code: closed.code });
+        }
+      }
+      // Human check for the new account (lib/turnstile.js), after the username step.
+      {
+        const hc = await turnstile.gate(req, { action: "social_signup", ip });
+        if (!hc.ok) {
+          if (hc.outcome !== "challenged") securityEvents.note("signup_denied", { req, reason: "human_check", detail: { method: "apple" } });
+          return res.status(hc.status).json(hc.body);
         }
       }
       const insertPayload = {
@@ -2560,6 +2591,8 @@ router.post("/password/forgot", async (req, res) => {
     if (!usernameOrEmail) {
       return res.status(400).json({ error: "Enter your username or email." });
     }
+    // Every reset email needs the human check (lib/turnstile.js).
+    if (await turnstile.rejectUnlessHuman(req, res, { action: "password_reset", ip })) return;
 
     const user = await findUserForPasswordReset(usernameOrEmail);
     if (user?.email && user.email_confirmed_at) {
@@ -2581,6 +2614,8 @@ router.post("/password/reset", async (req, res) => {
   try {
     const ip = clientIp(req);
     if (guard(res, `pwconfirm:ip:${ip}`, null, { max: 30 })) return;
+    // Step-up after three wrong codes from this address (lib/turnstile.js).
+    if (turnstile.passwordResetNeedsCheck({ ip }) && (await turnstile.rejectUnlessHuman(req, res, { action: "password_reset", ip }))) return;
     const usernameOrEmail = String(req.body?.usernameOrEmail || req.body?.email || req.body?.username || "").trim();
     const code = req.body?.code;
     const newPassword = req.body?.newPassword || req.body?.password;

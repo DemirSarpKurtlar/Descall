@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import * as M from "./securityModel.js";
+import * as H from "./humanCheckModel.js";
 import * as N from "../../../lib/platformNotice.js";
 import { SEC_CENTER_TR } from "../../../i18n/locales/secCenter.tr.js";
 import { SEC_CENTER_EN } from "../../../i18n/locales/secCenter.en.js";
@@ -194,6 +195,63 @@ assert.equal(calls, 1, "same notice twice notifies once");
 N.applyPlatformNotice(null);
 assert.equal(N.getPlatformNotice(), null);
 off();
+
+/* ---- İnsan doğrulaması (Cloudflare Turnstile) card ---- */
+{
+  const tur = require("../../../../backend/lib/turnstile.js");
+  assert.deepEqual([...H.HUMAN_MODES], [...sec.TURNSTILE_MODES], "modes agree with the server");
+  assert.deepEqual([...H.HUMAN_ACTIONS].sort(), [...tur.ACTIONS].sort(), "actions agree with the server");
+  assert.deepEqual(H.humanStatus(null), { key: "unknown", tone: "gray" });
+  assert.equal(H.humanStatus({ configured: false }).key, "notSetUp");
+  assert.equal(H.humanStatus({ configured: false, tableMissing: true }).key, "tableMissing");
+  assert.equal(H.humanStatus({ configured: true, mode: "enforce" }).key, "enforcing");
+  assert.equal(H.humanStatus({ configured: true, mode: "enforce" }).tone, "green");
+  assert.equal(H.humanStatus({ configured: true, mode: "monitor" }).key, "monitor");
+  assert.equal(H.humanStatus({ configured: true, mode: "off" }).tone, "red");
+  assert.equal(H.humanStatus({ configured: true, mode: "enforce", misconfigured: true }).key, "badSecret");
+  for (const st of ["enforcing", "monitor", "off", "notSetUp", "tableMissing", "badSecret", "unknown"]) assert.ok(t(`secCenter.human.status.${st}`));
+  const hc = {
+    configured: true,
+    mode: "enforce",
+    setting: "enforce",
+    stats: {
+      totals: { pass: 40, fail: 3, blocked: 2, fallback: 4, failOpen: 1, monitor: 0, challenged: 6 },
+      byAction: { register: { pass: 30, fail: 3, blocked: 2, fallback: 4 }, login: { pass: 10, failOpen: 1, challenged: 6 } },
+      series: { start: "2026-11-23T00:00:00.000Z", pass: [0, 4, 2], refused: [1, 0, 0], let: [0, 0, 2] },
+      checks: 50,
+      passRate: 80,
+    },
+    fallback: { usedThisHour: 60, fallbackGlobal: 60, fallbackPerIp: 3 },
+    unreachable: true,
+  };
+  const k = H.humanKpis(hc);
+  assert.deepEqual([k.pass, k.refused, k.fallback, k.failOpen, k.passRate], [40, 5, 4, 1, 80], "tiles");
+  const { bars, max } = H.humanBars(hc.stats.series);
+  assert.equal(max, 4);
+  assert.equal(bars[1].h.pass, 1, "busiest hour is full height");
+  assert.equal(bars[2].h.let, 0.5);
+  assert.equal(H.humanBars(null).bars.length, 0);
+  const rows = H.humanActionRows(hc);
+  assert.deepEqual(rows.map((r) => r.action), ["register", "social_signup", "password_reset", "login"]);
+  assert.deepEqual([rows[0].pass, rows[0].refused, rows[0].let], [30, 5, 4]);
+  assert.deepEqual([rows[3].let, rows[3].challenged], [1, 6]);
+  assert.equal(rows[1].pass, 0, "no data reads as zero");
+  assert.ok(H.humanModeNeedsReason("off") && H.humanModeNeedsReason("monitor") && !H.humanModeNeedsReason("enforce"));
+  assert.ok(M.patchNeedsReason({ turnstileMode: "off" }) && !M.patchNeedsReason({ turnstileMode: "enforce" }), "client reason rule = server rule");
+  assert.equal(M.patchNeedsReason({ turnstileMode: "monitor" }), sec.patchNeedsReason({ turnstileMode: "monitor" }));
+  const notes = H.humanNotes(hc).map((n) => n.key);
+  assert.deepEqual(notes, ["noteUnreachable", "noteBudgetFull"]);
+  assert.deepEqual(H.humanNotes({ configured: false }).map((n) => n.key), ["noteSetup"]);
+  assert.deepEqual(H.humanNotes({ configured: true, envOverride: "off", testKeys: true, misconfigured: true }).map((n) => n.key), ["noteBadSecret", "noteEnv", "noteTestKeys"]);
+  for (const n of ["noteSetup", "noteTable", "noteBadSecret", "noteUnreachable", "noteEnv", "noteTestKeys", "noteBudgetFull"]) assert.ok(t(`secCenter.human.notes.${n}`, { n: 1, mode: "x" }));
+  for (const a of H.HUMAN_ACTIONS) assert.ok(t(`secCenter.human.action.${a}`));
+  assert.equal(t("secCenter.human.meta.hosts", { n: 6 }), "6 alan adı");
+  assert.equal(M.settingName("turnstileMode", t), "İnsan doğrulaması (Turnstile)", "history names the setting");
+  assert.equal(M.valueText("turnstileMode", "monitor", t), "İzle");
+  assert.equal(M.valueText("turnstileMode", "enforce", tEn), "Enforce");
+  const line = M.eventLine({ type: "signup_denied", count: 4, detail: { reason: "human_check", method: "google" } }, t, "tr-TR");
+  assert.ok(line.includes("insan doğrulamasında") && line.includes("4"), "feed line for a stopped bot sign-up: " + line);
+}
 
 /* ---- copy: same keys and placeholders in every language, no emoji ---- */
 function flat(o, p = "", out = {}) {

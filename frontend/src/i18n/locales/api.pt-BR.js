@@ -3,6 +3,8 @@
  * (2026-11-14). Keys are the exact English server texts (see api.tr.js). Spread into pt-BR.js phrases.
  */
 export const API_PT_BR = {
+  "Complete the security check to continue.": "Conclua a verificação de segurança para continuar.",
+  "The security check could not be verified. Please try again.": "Não foi possível confirmar a verificação de segurança. Tente novamente.",
   "Appeals are not available yet. Try again later.": "Os recursos ainda não estão disponíveis. Tente novamente mais tarde.",
   "Owner and admin accounts cannot be banned.": "Contas de proprietário e de administrador não podem ser banidas.",
   "Could not load appeals.": "Não foi possível carregar os recursos.",

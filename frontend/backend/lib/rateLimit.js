@@ -88,6 +88,19 @@ function peek(key, { windowMs = WINDOW_MS, max = 30, now = Date.now() } = {}) {
   return { ok: true };
 }
 
+/**
+ * Failures recorded for this key in the last `windowMs` (no lockout decision, nothing
+ * recorded). lib/turnstile.js asks for the human check after repeated wrong passwords.
+ */
+function recentCount(key, { windowMs = WINDOW_MS, now = Date.now() } = {}) {
+  if (!key) return 0;
+  const row = buckets.get(key);
+  if (!row) return 0;
+  let n = 0;
+  for (const t of row.stamps) if (now - t < windowMs) n += 1;
+  return n;
+}
+
 function resetLimits() {
   buckets.clear();
 }
@@ -106,6 +119,7 @@ module.exports = {
   WINDOW_MS,
   recordFailure,
   peek,
+  recentCount,
   resetLimits,
   isReviewDemo,
   rejectIfLimited,

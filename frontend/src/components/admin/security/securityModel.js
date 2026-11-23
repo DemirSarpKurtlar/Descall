@@ -264,6 +264,7 @@ export function eventLine(e, t, locale = "tr-TR") {
       return t("secCenter.ev.rate_limit.line", { user: user || t("secCenter.ev.unknownAccount"), limit: d.limit || "?", n });
     case "signup_denied":
       if (d.reason === "disposable") return t("secCenter.ev.signup_denied.lineDisposable", { email: d.email || "" });
+      if (d.reason === "human_check") return t("secCenter.ev.signup_denied.lineHumanCheck", { method: t(`secCenter.method.${["email", "google", "apple"].includes(d.method) ? d.method : "email"}`), n });
       return t("secCenter.ev.signup_denied.lineClosed", { method: t(`secCenter.method.${["email", "google", "apple"].includes(d.method) ? d.method : "email"}`), n });
     case "admin_step_up":
       return t(d.ok === false ? "secCenter.ev.admin_step_up.lineFail" : "secCenter.ev.admin_step_up.lineOk", { user: user || "", n });
@@ -398,6 +399,7 @@ export function valueText(key, value, t, locale = "tr-TR", { live = false, now =
     return tail ? `${onOff(shown, t)} · ${tail}` : onOff(shown, t);
   }
   if (typeof value === "boolean") return onOff(value, t);
+  if (k === "turnstileMode" && ["enforce", "monitor", "off"].includes(value)) return t(`secCenter.human.mode.${value}`);
   if (value == null) return t("secCenter.val.none");
   if (typeof value === "number") return fmtNum(value, locale);
   if (Array.isArray(value)) return value.join(", ") || t("secCenter.val.none");
@@ -464,7 +466,7 @@ export function unitValue(key, value, t, locale = "tr-TR") {
 
 export function settingName(key, t) {
   const k = displayKey(key);
-  const known = ["registrationEnabled", "dmEnabled", "readOnlyMode", "groupCreationEnabled", "maxLoginAttempts", "maxMessagesPerMinute", "dmRateLimitMs", "dmMinAccountAgeHours", "disposableEmailBlock", "chatFrozen", "maintenanceMode", "slowModeSeconds", "rateLimitGlobalMs", "maxMessageLength"];
+  const known = ["registrationEnabled", "dmEnabled", "readOnlyMode", "groupCreationEnabled", "maxLoginAttempts", "maxMessagesPerMinute", "dmRateLimitMs", "dmMinAccountAgeHours", "disposableEmailBlock", "chatFrozen", "maintenanceMode", "slowModeSeconds", "rateLimitGlobalMs", "maxMessageLength", "turnstileMode"];
   return known.includes(k) ? t(`secCenter.setting.${k}`) : k;
 }
 
@@ -524,6 +526,7 @@ export function fixSummary(check, t, locale = "tr-TR") {
 
 /** A switch going off (or a limit) needs a reason, like the server rule. */
 export function patchNeedsReason(patch) {
+  if (patch?.turnstileMode === "off" || patch?.turnstileMode === "monitor") return true;
   return ["registrationEnabled", "dmEnabled", "groupCreationEnabled"].some((k) => patch?.[k] === false);
 }
 

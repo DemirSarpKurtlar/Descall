@@ -38,6 +38,10 @@ const IMG = "img-src 'self' https://descall.com https://des-call.onrender.com ht
 // autocapture, surveys) and Google Ads gtag.js, which only loads after cookie consent. Same
 // list as the website (public/security-policy.js).
 const SCRIPT_REMOTE = "https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com";
+// Cloudflare Turnstile (src/lib/humanCheck/turnstileClient.js): the app frames the API's
+// bridge page (/api/turnstile/frame), which runs the widget; challenges.cloudflare.com for a
+// direct widget with test keys. Same list in desktop/app/src-tauri/tauri.conf.json.
+const FRAME = "frame-src 'self' https://des-call.onrender.com https://api.descall.com https://challenges.cloudflare.com; ";
 const MEDIA = "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://pc.descall.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;";
 
 // The Vite dev server is reachable only from a dev run (polish pass: a packaged build kept it in
@@ -53,7 +57,7 @@ function buildElectronCsp(indexHtml, { dev = false } = {}) {
   const scriptSrc = !dev && hashes && hashes.length
     ? `script-src 'self' ${hashes.join(' ')} 'unsafe-eval' ${SCRIPT_REMOTE}; `
     : `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${SCRIPT_REMOTE}; `;
-  return "default-src 'self'; " + connect + IMG + scriptSrc + "style-src 'self' 'unsafe-inline'; font-src 'self' data:; " + HARDENING + MEDIA;
+  return "default-src 'self'; " + connect + IMG + scriptSrc + "style-src 'self' 'unsafe-inline'; font-src 'self' data:; " + HARDENING + FRAME + MEDIA;
 }
 
-module.exports = { buildElectronCsp, inlineScriptHashes, normalizeNewlines };
+module.exports = { buildElectronCsp, inlineScriptHashes, normalizeNewlines, FRAME };
