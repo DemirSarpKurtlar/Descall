@@ -24,8 +24,8 @@ delete process.env.TURNSTILE_HOSTNAMES;
 const http = require("http");
 const { createFakeSupabase } = require("./fakeSupabase.cjs");
 
-const SITE_KEY = "0x4AAAAAAAtestSiteKeyDescall";
-const SECRET = "0x4AAAAAAAtestSecretKeyDescall-not-real";
+const SITE_KEY = "0x4AAAAAAAAAAAAAAAAAAAAsitekey";
+const SECRET = "0x4AAAAAAAAAAAAAAAAAAAAsecret";
 
 /* ---- Cloudflare + Resend mock ---- */
 const siteverifyCalls = [];
