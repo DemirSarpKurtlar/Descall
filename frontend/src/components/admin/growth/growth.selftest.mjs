@@ -27,8 +27,8 @@ assert.equal(mod.niceMax(12000), 20000);
 assert.equal(mod.heatColor(null), "transparent");
 assert.equal(mod.heatColor(0), "rgba(255, 255, 255, 0.04)", "0% reads as empty, not as a colour");
 assert.notEqual(mod.heatColor(10), mod.heatColor(90), "sequential steps grow with the share");
-assert.equal(mod.SERIES_A, "#3987e5");
-assert.equal(mod.SERIES_B, "#d95926");
+assert.equal(mod.SERIES_A, "#587af5");
+assert.equal(mod.SERIES_B, "#d9823b");
 
 // One y-axis, legend for 2+ series, tooltip on hover.
 assert.ok(!/yRight|secondAxis/.test(charts), "never a second axis");

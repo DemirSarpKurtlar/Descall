@@ -122,9 +122,9 @@ html.glass-desktop .an-search input:focus-visible { outline: none; }
 .an-btn.is-sm { height: 30px; padding: 0 11px; border-radius: 9px; font-size: var(--fs-12) !important; }
 .an-btn.is-primary { background: linear-gradient(180deg, #6788ff, #587af5) !important; box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3); color: #fff; }
 .an-btn.is-primary:hover:not(:disabled) { background: linear-gradient(180deg, #7896ff, #6283f7) !important; }
-.an-btn.is-danger { background: linear-gradient(180deg, #ff6b6e, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff; }
-.an-btn.is-gold { background: linear-gradient(180deg, #ffb35c, #f08a24) !important; box-shadow: 0 6px 16px rgba(242, 169, 59, 0.3); color: #1a1205; }
-.an-btn.is-green { background: linear-gradient(180deg, #45d58b, #2bb36c) !important; box-shadow: 0 6px 16px rgba(52, 199, 123, 0.3); color: #fff; }
+.an-btn.is-danger { background: linear-gradient(180deg, #f4555a, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff; }
+.an-btn.is-gold { background: linear-gradient(180deg, #ffbd59, #f2a93b) !important; box-shadow: 0 6px 16px rgba(242, 169, 59, 0.3); color: #1a1205; }
+.an-btn.is-green { background: linear-gradient(180deg, #28a862, #1e9655) !important; box-shadow: 0 6px 16px rgba(52, 199, 123, 0.3); color: #fff; }
 .an-btn.is-greenq { background: rgba(52, 199, 123, 0.16) !important; color: #6fe0a3; box-shadow: inset 0 0 0 1px rgba(52, 199, 123, 0.32); }
 .an-btn.is-violet { background: rgba(155, 93, 229, 0.18) !important; color: #d6c2ff; box-shadow: inset 0 0 0 1px rgba(155, 93, 229, 0.35); }
 .an-ibtn {

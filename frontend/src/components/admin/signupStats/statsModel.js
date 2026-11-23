@@ -2,6 +2,7 @@
 import { displayName, formatDate, formatNumber } from "../../../i18n/format.js";
 import { APP_TIMEZONE } from "../../../lib/datetime.js";
 import { sinceVars } from "../feedback3/fbModel.js";
+import { CHART, STATUS } from "../adminPalette.js";
 
 /** [id, label key] */
 export const GRANULARITIES = [
@@ -133,16 +134,16 @@ export function flag(code) {
   return String.fromCodePoint(...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 }
 export function countryRow(c, i, t, locale) {
-  if (c.code === "other") return { label: t("adminx.sst.other"), color: "#9AA3B8", count: c.count };
+  if (c.code === "other") return { label: t("adminx.sst.other"), color: STATUS.neutral, count: c.count };
   if (c.code === "unknown") return { label: t("adminx.sst.unknown"), muted: true, count: c.count };
-  return { label: `${flag(c.code)} ${displayName(c.code, locale)}`, color: i === 0 ? null : "#8E8CF8", count: c.count };
+  return { label: `${flag(c.code)} ${displayName(c.code, locale)}`, color: i === 0 ? null : CHART[3], count: c.count };
 }
 
 /** [key, label key (null = brand name, shown as is), colour] */
 export const AUTH_SEGMENTS = [
-  ["email", "adminx.sst.email", "#587AF6"],
-  ["google", null, "#30D158"],
-  ["other", "adminx.sst.other", "#9AA3B8"],
+  ["email", "adminx.sst.email", CHART[0]],
+  ["google", null, CHART[1]],
+  ["other", "adminx.sst.other", STATUS.neutral],
   ["unknown", "adminx.sst.unknown", "rgba(255,255,255,.25)"],
 ];
 export function authLabel([key, labelKey], t) {

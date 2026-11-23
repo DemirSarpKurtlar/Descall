@@ -206,11 +206,11 @@ html.glass-ui .g-friend-row .status-badge {
   box-shadow: 0 0 0 2.5px var(--g-ring);
 }
 
-html.glass-ui .g-friend-row .status-online { background: var(--g-ok) !important; }
+html.glass-ui .g-friend-row .status-online { background: var(--status-online, #23A55A) !important; }
 html.glass-ui .g-friend-row .status-idle,
 html.glass-ui .g-friend-row .status-away { background: var(--g-idle) !important; }
 html.glass-ui .g-friend-row .status-dnd,
-html.glass-ui .g-friend-row .status-busy { background: var(--g-dnd) !important; }
+html.glass-ui .g-friend-row .status-busy { background: var(--status-dnd, #DA373C) !important; }
 html.glass-ui .g-friend-row .status-offline { background: var(--g-off) !important; }
 
 html.glass-ui .g-friend-meta {
@@ -283,17 +283,19 @@ html.glass-ui .g-ib svg {
 
 html.glass-ui .g-ib.brand {
   color: var(--g-brand-hi);
-  background: rgba(88, 122, 246, 0.18);
+  background: rgba(var(--g-brand-rgb, 88, 122, 246), 0.18);
 }
 
+/* Accept / decline glyphs use the status inks: #30D158 / #ff6961 were
+   1.9:1 / 2.6:1 on the light-theme tile (UI glyphs need 3:1). */
 html.glass-ui .g-ib.ok {
-  color: var(--g-ok);
-  background: rgba(48, 209, 88, 0.14);
+  color: var(--success-text, #3DDC84);
+  background: var(--success-soft, rgba(35, 165, 90, 0.12));
 }
 
 html.glass-ui .g-ib.no {
-  color: #ff6961;
-  background: rgba(255, 69, 58, 0.14);
+  color: var(--danger-text, #FF7B7B);
+  background: var(--danger-soft, rgba(218, 55, 60, 0.12));
 }
 
 html.glass-ui .g-friends-empty {
@@ -1057,9 +1059,9 @@ html.glass-ui .g-profile-handle {
   color: var(--g-t2);
 }
 
-html.glass-ui .g-profile-handle .is-on { color: var(--g-ok); }
+html.glass-ui .g-profile-handle .is-on { color: var(--success-text); }
 html.glass-ui .g-profile-handle .is-idle { color: var(--g-idle); }
-html.glass-ui .g-profile-handle .is-dnd { color: var(--g-dnd); }
+html.glass-ui .g-profile-handle .is-dnd { color: var(--danger-text); }
 html.glass-ui .g-profile-handle .is-off { color: var(--g-t3); }
 
 html.glass-ui .g-profile-chips {
@@ -1240,7 +1242,8 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .g-profile-cancel {
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .g-profile-save {
   color: var(--g-on-brand);
-  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  /* Deeper than the glass CTA stops (white "Kaydet" was 2.8:1 on #7296ff). */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--g-brand, #587AF6) 94%, #000), color-mix(in srgb, var(--g-brand, #587AF6) 80%, #000));
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .g-profile-save:disabled {
@@ -1341,6 +1344,9 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-avatar-link {
   font-size: 14px;
   font-weight: 650;
   cursor: pointer;
+}
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-profile-edit .g-pe-avatar-link {
+  color: #3d5bd9; /* #9eb0ff was 1.9:1 on the light page */
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-glass .us-field > span {
@@ -1618,3 +1624,10 @@ html.glass-ui.a11y-solid .g-server-pane {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* Presence dots: one palette on desktop and iPhone glass (owner decision
+   Nov 2026): --status-online / --status-idle / --status-dnd. Glass rows used
+   iOS #30D158 / #FF453A while StatusBadge and desktop used #23A55A / #DA373C. */
+html.glass-ui .status-badge.status-online { background: var(--status-online, #23A55A); }
+html.glass-ui .status-badge.status-idle { background: var(--status-idle, #FF9F0A); }
+html.glass-ui .status-badge.status-dnd { background: var(--status-dnd, #DA373C); }

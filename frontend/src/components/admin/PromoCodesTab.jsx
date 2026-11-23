@@ -17,6 +17,7 @@ import PromoPeoplePicker from "./PromoPeoplePicker.jsx";
 import PromoItemPicker, { promoItemName } from "./PromoItemPicker.jsx";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
+import { STATUS } from "./adminPalette.js";
 
 const QUICK = [100, 250, 500, 1000];
 const AGES = [0, 1, 3, 7, 14, 30];
@@ -233,12 +234,12 @@ function PromoForm({ overview, onCreated, t, locale }) {
       </div>
       {f.audience === "selected" ? <PromoPeoplePicker value={f.targets} onChange={(targets) => set({ targets })} t={t} /> : null}
       <div className="mt-row first">
-        <Shield size={16} color="#6cb6ff" className="mt-i" />
+        <Shield size={16} color={STATUS.infoInk} className="mt-i" />
         <div className="mt-row-copy"><b>{t("promo.oncePerUser")}</b><div className="mt-muted">{isBadge ? t("promo.badgeOnce") : t("promo.oncePerUserHint")}</div></div>
         <Toggle on={oncePerUser} disabled={isBadge} label={t("promo.oncePerUser")} onChange={(v) => set({ oncePerUser: v })} />
       </div>
       <div className="mt-row">
-        <Megaphone size={16} color="#ffb340" className="mt-i" />
+        <Megaphone size={16} color={STATUS.warnInk} className="mt-i" />
         <div className="mt-row-copy"><b>{t("promo.active")}</b><div className="mt-muted">{t("promo.activeHint")}{reach && f.active ? ` · ${reach}` : f.audience === "none" ? ` · ${t("promo.audienceNone")}` : ""}</div></div>
         <Toggle on={f.active} label={t("promo.active")} onChange={(active) => set({ active })} />
       </div>
@@ -354,10 +355,10 @@ export default function PromoCodesTab() {
 
   const k = ov?.kpis || {};
   const kpis = [
-    { label: t("promo.kpiActive"), value: fmtNum(k.activeCodes), color: "#30d158" },
-    { label: t("promo.kpiUses"), value: fmtNum(k.totalUses), color: "#0a84ff" },
-    { label: t("promo.kpiDescoin"), value: fmtNum(k.descoinOut), color: "#ffb340" },
-    { label: t("promo.kpiRejected"), value: fmtNum(k.rejected24h), color: "#ff6961" },
+    { label: t("promo.kpiActive"), value: fmtNum(k.activeCodes), color: STATUS.ok },
+    { label: t("promo.kpiUses"), value: fmtNum(k.totalUses), color: STATUS.info },
+    { label: t("promo.kpiDescoin"), value: fmtNum(k.descoinOut), color: STATUS.warn },
+    { label: t("promo.kpiRejected"), value: fmtNum(k.rejected24h), color: STATUS.bad },
   ];
 
   return (

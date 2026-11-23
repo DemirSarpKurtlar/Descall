@@ -18,8 +18,9 @@ import {
 } from "../../lib/antibotTab";
 import "../../styles/maintenance.css";
 import "../../styles/suspicious.css";
+import { CHART, STATUS } from "./adminPalette.js";
 
-const KPI_COLORS = { review: "#ff9f0a", held: "#ff453a", clusters: "#bf5af2", watch: "#0a84ff" };
+const KPI_COLORS = { review: STATUS.warn, held: STATUS.bad, clusters: CHART[3], watch: STATUS.info };
 const FILTERS = ["", "stopped", "half", "trusted"];
 const MOBILE_Q = "(max-width: 760px)";
 

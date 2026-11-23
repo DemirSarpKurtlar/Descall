@@ -299,7 +299,7 @@ function notificationCss() {
       width: 22px;
       height: 22px;
       border-radius: 7px;
-      background: #5865f2;
+      background: #587af5;
       border: 2px solid rgb(30, 32, 44);
       font-size: 10px;
       font-weight: 800;

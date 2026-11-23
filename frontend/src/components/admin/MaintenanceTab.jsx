@@ -14,6 +14,7 @@ import {
 } from "../../lib/maintenance";
 import { MaintenanceScreen, appIconSrc } from "../maintenance/MaintenanceUi";
 import "../../styles/maintenance.css";
+import { CHART, CHART_PAIRS, STATUS } from "./adminPalette.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const PLATFORM_ICONS = { web: Globe, electron: Monitor, ios: Smartphone, android: Smartphone };
@@ -228,10 +229,10 @@ export default function MaintenanceTab({ socket }) {
 
   const s = data.summary || {};
   const kpis = [
-    { label: t("maint.kpiSystem"), value: s.systemStatus === "maintenance" || active ? t("maint.kpiInMaintenance") : t("maint.kpiOperational"), color: s.systemStatus === "maintenance" || active ? "#ff9f0a" : "#30d158" },
-    s.nextStartsAt ? { label: t("maint.kpiNext"), value: formatTrtShort(s.nextStartsAt, locale), color: "#0a84ff" } : null,
-    s.monthDowntimeMs ? { label: t("maint.kpiMonth"), value: formatDuration(s.monthDowntimeMs, locale), color: "#ff9f0a" } : null,
-    s.recentlyActiveUsers ? { label: t("maint.kpiAffected"), value: `~${formatNumber(s.recentlyActiveUsers, locale)}`, color: "#bf5af2", title: t("maint.kpiAffectedHint") } : null,
+    { label: t("maint.kpiSystem"), value: s.systemStatus === "maintenance" || active ? t("maint.kpiInMaintenance") : t("maint.kpiOperational"), color: s.systemStatus === "maintenance" || active ? STATUS.warn : STATUS.ok },
+    s.nextStartsAt ? { label: t("maint.kpiNext"), value: formatTrtShort(s.nextStartsAt, locale), color: STATUS.info } : null,
+    s.monthDowntimeMs ? { label: t("maint.kpiMonth"), value: formatDuration(s.monthDowntimeMs, locale), color: STATUS.warn } : null,
+    s.recentlyActiveUsers ? { label: t("maint.kpiAffected"), value: `~${formatNumber(s.recentlyActiveUsers, locale)}`, color: CHART[3], title: t("maint.kpiAffectedHint") } : null,
   ].filter(Boolean);
 
   const target = active ? win.endsAt : win?.startsAt;
@@ -280,9 +281,9 @@ export default function MaintenanceTab({ socket }) {
                   </div>
                 </div>
                 {active ? (
-                  <span className="mt-badge mt-b-act"><span className="mt-dot" style={{ background: "#ff9f0a", boxShadow: "0 0 8px #ff9f0a" }} />{t("maint.statusActive")}</span>
+                  <span className="mt-badge mt-b-act"><span className="mt-dot" style={{ background: STATUS.warn, boxShadow: `0 0 8px ${STATUS.warn}` }} />{t("maint.statusActive")}</span>
                 ) : (
-                  <span className="mt-badge mt-b-plan"><span className="mt-dot" style={{ background: "#0a84ff" }} />{t("maint.statusScheduled")}</span>
+                  <span className="mt-badge mt-b-plan"><span className="mt-dot" style={{ background: STATUS.info }} />{t("maint.statusScheduled")}</span>
                 )}
               </div>
               <div className="mt-eyebrow">{active ? t("maint.untilEnd") : t("maint.untilStart")}</div>
@@ -370,7 +371,7 @@ export default function MaintenanceTab({ socket }) {
               <div className="mt-in ta"><textarea ref={messageRef} rows={2} maxLength={600} value={form.message} onChange={(e) => set({ message: e.target.value })} /></div>
             </label>
             <div className="mt-row first">
-              <Megaphone size={16} color="#ffb340" className="mt-i" />
+              <Megaphone size={16} color={STATUS.warnInk} className="mt-i" />
               <div className="mt-row-copy"><b>{t("maint.banner")}</b><div className="mt-muted">{t("maint.bannerHint")}</div></div>
               <div className="mt-in sel">
                 <span>{announceLabel(Number(form.announceMinutes), t)}</span><ChevronDown size={13} />
@@ -381,12 +382,12 @@ export default function MaintenanceTab({ socket }) {
               <Toggle on={form.announceOn} label={t("maint.banner")} onChange={(v) => set({ announceOn: v })} />
             </div>
             <div className="mt-row">
-              <Shield size={16} color="#6cb6ff" className="mt-i" />
+              <Shield size={16} color={STATUS.infoInk} className="mt-i" />
               <div className="mt-row-copy"><b>{t("maint.bypass")}</b><div className="mt-muted">{t("maint.bypassHint")}</div></div>
               <Toggle on={form.adminsBypass} label={t("maint.bypass")} onChange={(v) => set({ adminsBypass: v })} />
             </div>
             <div className="mt-row">
-              <Bell size={16} color="#bf5af2" className="mt-i" />
+              <Bell size={16} color={CHART_PAIRS[3][0]} className="mt-i" />
               <div className="mt-row-copy"><b>{t("maint.notify")}</b></div>
               <Toggle on={form.notifyOnEnd} label={t("maint.notify")} onChange={(v) => set({ notifyOnEnd: v })} />
             </div>

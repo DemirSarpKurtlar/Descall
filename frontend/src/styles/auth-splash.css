@@ -50,7 +50,7 @@
 .auth-shell .orb-3 {
   width: min(40vw, 300px);
   height: min(40vw, 300px);
-  background: radial-gradient(circle, var(--primary-2, #7b89ff) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--primary-2, #4a68e0) 0%, transparent 70%);
   top: 45%;
   left: 40%;
   transform: translate(-50%, -50%);
@@ -272,7 +272,7 @@
   font-size: 14px;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(180deg, var(--primary-2, #6d78f5), var(--primary, #587af5));
+  background: linear-gradient(180deg, var(--primary-2, #4a68e0), var(--primary, #587af5));
 }
 
 .auth-submit:hover:not(:disabled) {
@@ -326,15 +326,15 @@
 }
 .signup-field-chip:hover,
 .signup-field-chip:focus-visible {
-  border-color: #7b89ff;
-  background: rgba(123, 137, 255, 0.18);
+  border-color: #7b93ff;
+  background: rgba(88, 122, 245, 0.18);
 }
 
 .auth-footer {
   margin: 14px 0 0;
   text-align: center;
   font-size: 11px;
-  color: #6f7888;
+  color: #9aa3b2;
 }
 
 /* Single horizontal rule (no dual bars around "or") */
@@ -549,7 +549,7 @@
 }
 
 .apple-signin-error {
-  color: #f87171;
+  color: var(--danger-text, #ff7b7b);
   margin: 0;
 }
 

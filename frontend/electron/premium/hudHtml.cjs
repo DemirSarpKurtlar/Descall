@@ -17,7 +17,7 @@ html,body{background:transparent;overflow:hidden;width:100%;height:100%;
  font-family:"Inter","Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
  color:#f2f4f8;font-size:13px;-webkit-font-smoothing:antialiased;user-select:none}
 .card{position:absolute;inset:6px;border-radius:14px;padding:10px 12px;overflow:hidden;
- background:linear-gradient(180deg,rgba(var(--brand,88,101,242),.16),rgba(var(--brand,88,101,242),.04)) ,rgba(16,18,26,.84);
+ background:linear-gradient(180deg,rgba(var(--brand,88,122,245),.16),rgba(var(--brand,88,122,245),.04)) ,rgba(16,18,26,.84);
  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 20px rgba(0,0,0,.35)}
 .head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;letter-spacing:.02em;color:rgba(242,244,248,.75);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drag{-webkit-app-region:drag;cursor:move}
@@ -95,7 +95,7 @@ document.addEventListener('drop',function(e){if(kind!=='quickdrop')return;e.prev
  files.forEach(function(f){if(f.size>max){big=true;if(!--pending)done();return;}f.arrayBuffer().then(function(b){out.push({name:window.descallHud.fileName(f)||f.name,type:f.type||'application/octet-stream',size:f.size,data:b});if(!--pending)done();});});
  function done(){dropStatus=big?(l.tooBig||''):(l.sending||'');var s=document.getElementById('dzs');if(s)s.textContent=dropStatus;if(out.length)window.descallHud.action('drop',{target:target,files:out});}
 });
-function render(){document.documentElement.style.setProperty('--brand',state.brandRgb||'88,101,242');
+function render(){document.documentElement.style.setProperty('--brand',state.brandRgb||'88,122,245');
  if(kind==='voice')renderVoice();else if(kind==='gaming')renderGaming();else if(kind==='widget')renderWidget();else if(kind==='quickdrop')renderDrop();
  document.documentElement.style.fontSize=(state.scale||1)*13+'px';document.body.style.zoom=state.scale||1;
  reportSize();}

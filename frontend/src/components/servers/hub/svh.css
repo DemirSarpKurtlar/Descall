@@ -248,8 +248,8 @@ html[data-theme="light"] .svh-tri>.no,html[data-theme="light"] .svh-tri>button.n
 html[data-theme="light"] .svh-err{color:#D12B21}
 html[data-theme="light"] .svh-dot{box-shadow:0 0 0 2.5px #fff}
 /* Inline accents in sheets.jsx read the same tokens (no hard-coded hex). */
-.svh-root{--svh-link:#8FA6FF;--svh-ok:#30D158;--svh-err:#FF6B63;--svh-ring:rgba(20,21,32,.95);--svh-box:rgba(255,255,255,.35)}
-html[data-theme="light"] .svh-root{--svh-link:#3D5BD9;--svh-ok:#1F8F43;--svh-err:#D12B21;--svh-ring:#fff;--svh-box:rgba(57,60,77,.35)}
+.svh-root{--svh-link:#8FA6FF;--svh-ok:#30D158;--svh-err:#FF6B63;--svh-ring:rgba(20,21,32,.95);--svh-box:rgba(255,255,255,.35);--svh-t2:rgba(235,238,255,.7);--svh-t3:rgba(235,238,255,.58);--svh-t4:rgba(235,238,255,.5);--svh-note:rgba(255,240,200,.9);--svh-drag:rgba(44,46,66,.98)}
+html[data-theme="light"] .svh-root{--svh-link:#3D5BD9;--svh-ok:#1F8F43;--svh-err:#D12B21;--svh-ring:#fff;--svh-box:rgba(57,60,77,.35);--svh-t2:rgba(27,29,38,.78);--svh-t3:rgba(57,60,77,.7);--svh-t4:rgba(57,60,77,.62);--svh-note:#7A5200;--svh-drag:rgba(255,255,255,.98)}
 /* 3.7.32 — opaque fallback for the hub glass (Reduce Transparency, low-power, no backdrop-filter). */
 :root:is(.a11y-solid,.gd-lite) .svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 @media (prefers-reduced-transparency: reduce){.svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}

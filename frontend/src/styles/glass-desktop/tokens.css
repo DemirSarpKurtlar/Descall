@@ -6,8 +6,8 @@
 html.glass-desktop {
   /* Default dark palette. Exact values from html.glass-ui in glass/tokens.css. */
   --g-scheme: dark;
-  --g-brand: #587AF6;
-  --g-brand-rgb: 88,122,246;
+  --g-brand: #587AF5;
+  --g-brand-rgb: 88,122,245;
   --g-brand-hi: #8FA6FF;
   --g-brand2-rgb: 124,92,255;
   --g-deep: #0D0E13;

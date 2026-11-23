@@ -70,10 +70,10 @@ html.glass-desktop .sc-drawer:focus-visible { outline: none; }
 }
 .sc-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12) !important; }
 .sc-btn:active:not(:disabled) { transform: scale(0.98); }
-.sc-btn.is-r { background: linear-gradient(180deg, #ff6b6e, #e5383c) !important; box-shadow: 0 6px 16px rgba(var(--sc-red), 0.3); color: #fff !important; }
-.sc-btn.is-r:hover:not(:disabled) { background: linear-gradient(180deg, #ff7a7d, #ea4246) !important; }
+.sc-btn.is-r { background: linear-gradient(180deg, #f4555a, #e5383c) !important; box-shadow: 0 6px 16px rgba(var(--sc-red), 0.3); color: #fff !important; }
+.sc-btn.is-r:hover:not(:disabled) { background: linear-gradient(180deg, #f8676b, #ec4549) !important; }
 .sc-btn.is-p { background: linear-gradient(180deg, #6788ff, #587af5) !important; box-shadow: 0 6px 16px rgba(var(--sc-brand), 0.3); color: #fff !important; }
-.sc-btn.is-p:hover:not(:disabled) { background: linear-gradient(180deg, #7392ff, #6383f7) !important; }
+.sc-btn.is-p:hover:not(:disabled) { background: linear-gradient(180deg, #7896ff, #6283f7) !important; }
 .sc-btn.is-soft-r { color: #ff9a9c !important; background: rgba(var(--sc-red), 0.12) !important; box-shadow: none; }
 .sc-badge { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; font-size: var(--fs-11); font-weight: 700; background: rgba(var(--sc-red), 0.85); color: #fff; }
 

@@ -235,15 +235,15 @@ export function JoinServerSheet({ mode, initialCode = "", onClose, onJoined }) {
               <Sq server={sv} s={58} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 18, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sv.name}</div>
-                <div style={{ fontSize: 13.5, color: "rgba(235,238,255,.55)", marginTop: 3 }}>
+                <div style={{ fontSize: 13.5, color: "var(--svh-t3)", marginTop: 3 }}>
                   {f("listMetaNoOnline", { members: numFmt(sv.memberCount || 1, locale) })}
                   {sv.onlineCount != null ? <> · <span style={{ color: "var(--svh-ok)" }}>●</span> {f("onlineCount", { n: numFmt(sv.onlineCount, locale) })}</> : null}
                 </div>
-                {sv.description ? <div style={{ fontSize: 13.5, color: "rgba(235,238,255,.7)", marginTop: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sv.description}</div> : null}
+                {sv.description ? <div style={{ fontSize: 13.5, color: "var(--svh-t2)", marginTop: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sv.description}</div> : null}
               </div>
             </div>
             {inviterName || valid ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 4px 0", fontSize: 13.5, color: "rgba(235,238,255,.55)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 4px 0", fontSize: 13.5, color: "var(--svh-t3)" }}>
                 {inviter ? <Av user={inviter} s={22} /> : null}
                 <span>
                   {inviterName ? <Rich text={f("inviterLine", { name: inviterName })} bStyle={{ color: "#fff", fontWeight: 600 }} /> : null}
@@ -366,7 +366,7 @@ export function RulesGateSheet({ mode, server, onAccepted, onClose }) {
         </button>
         <Btn onClick={accept} disabled={!ok || busy}>{busy ? <Spinner /> : s.acceptJoin}</Btn>
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <button type="button" className="svh-tap" style={{ color: "rgba(235,238,255,.5)", fontSize: 14 }} onClick={onClose}>{s.notNow}</button>
+          <button type="button" className="svh-tap" style={{ color: "var(--svh-t4)", fontSize: 14 }} onClick={onClose}>{s.notNow}</button>
         </div>
       </Scroll>
     </>

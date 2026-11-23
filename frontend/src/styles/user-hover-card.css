@@ -110,12 +110,12 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
 }
 .uhc3-status { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
 .uhc3-dot { width: 7px; height: 7px; border-radius: 50%; background: #8e8e93; }
-.uhc3-status.st-online { color: #30d158; }
-.uhc3-status.st-online .uhc3-dot { background: #30d158; }
+.uhc3-status.st-online { color: #3DDC84; } /* --success-text (dark): the card stays dark */
+.uhc3-status.st-online .uhc3-dot { background: var(--status-online, #23A55A); }
 .uhc3-status.st-idle { color: var(--status-idle, #FF9F0A); }
 .uhc3-status.st-idle .uhc3-dot { background: var(--status-idle, #FF9F0A); }
-.uhc3-status.st-dnd { color: #ff6961; }
-.uhc3-status.st-dnd .uhc3-dot { background: #ff453a; }
+.uhc3-status.st-dnd { color: #FF7B7B; } /* --danger-text (dark) */
+.uhc3-status.st-dnd .uhc3-dot { background: var(--status-dnd, #DA373C); }
 
 .uhc3-badges {
   display: flex;
@@ -240,7 +240,8 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
   place-items: center;
   cursor: pointer;
   color: #fff;
-  background: #5b6cff;
+  /* Was a stray blurple. Logo blue (owner decision); the white glyph is an icon (3:1). */
+  background: var(--g-brand, #587af5);
 }
 .uhc3-msg button:disabled { opacity: 0.35; cursor: default; background: rgba(255, 255, 255, 0.12); }
 

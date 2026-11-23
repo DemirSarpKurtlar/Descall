@@ -31,7 +31,7 @@
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, #4F7CFF 0%, transparent 70%);
+  background: radial-gradient(circle, #587AF5 0%, transparent 70%);
   top: -200px;
   left: -200px;
   animation-delay: 0s;
@@ -69,8 +69,8 @@
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(79, 124, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 124, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(88, 122, 245, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(88, 122, 245, 0.04) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: gridMove 20s linear infinite;
 }

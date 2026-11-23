@@ -14,12 +14,17 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* 🎨 Core Palette, Descall azure + signal teal (not Discord blurple) */
-  --primary: #4F7CFF;
-  --primary-2: #3B63E6;
-  --primary-3: #2F52C9;
-  --primary-glow: rgba(79, 124, 255, 0.38);
-  --primary-soft: rgba(79, 124, 255, 0.14);
+  /* Core palette: the logo blue is the accent (owner decision, Nov 2026),
+     plus signal teal. Not Discord blurple. */
+  --primary: #587AF5;
+  --primary-2: #4A68E0;
+  --primary-3: #3B56C4;
+  --primary-glow: rgba(88, 122, 245, 0.38);
+  --primary-soft: rgba(88, 122, 245, 0.14);
+  /* Ink for text and glyphs on a --primary fill (buttons, active pills).
+     White by default; premium themes with a light accent (mint, solar,
+     cyberpunk...) set a dark ink, since white is below 3:1 there. */
+  --on-primary: #FFFFFF;
   --signal: #2AD4B8;
   --signal-soft: rgba(42, 212, 184, 0.14);
 
@@ -29,6 +34,12 @@
   --warning-soft: rgba(240, 178, 50, 0.12);
   /* Presence "Boşta" on every platform (UI audit #69; same as iOS / Watch). */
   --status-idle: #FF9F0A;
+  /* Presence on/dnd dots, one palette on desktop and iPhone glass (owner
+     decision Nov 2026): the semantic success / danger fills, >= 3:1 on the
+     white light-theme surfaces. Presence words in text use --success-text /
+     --danger-text. */
+  --status-online: var(--success);
+  --status-dnd: var(--danger);
   /* The one default profile banner (UI audit #3): brand charcoal with a
      faint logo-blue wash. Every "no banner yet" surface uses it. */
   --profile-banner-fallback: linear-gradient(180deg, rgba(88, 122, 245, 0.22), rgba(88, 122, 245, 0.06)), #393C4D;
@@ -43,7 +54,7 @@
   --success-text: #3DDC84;
   --warning-text: #F0B232;
 
-  /* 🏗️ Surface Colors, Premium dark gray theme */
+  /* Surface Colors, Premium dark gray theme */
   --surface-0: #111214;
   --surface-1: #1E1F22;
   --surface-2: #2B2D31;
@@ -51,7 +62,7 @@
   --surface-hover: #3C3F45;
   --surface-active: #4E5058;
 
-  /* ⚪ Text Colors */
+  /* Text Colors */
   --text-0: #FFFFFF;
   --text-1: #F2F3F5;
   --text-2: #DBDEE1;
@@ -59,21 +70,21 @@
   --text-muted: #C5CDD8;
   --text-link: #7EB6FF;
 
-  /* 🔲 Border */
+  /* Border */
   --border-0: rgba(255, 255, 255, 0.0);
   --border-1: rgba(255, 255, 255, 0.04);
   --border-2: rgba(255, 255, 255, 0.08);
   --border-3: rgba(255, 255, 255, 0.12);
   --border-4: rgba(255, 255, 255, 0.20);
 
-  /* 🕳️ Shadows */
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.32);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.40);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.56);
-  --shadow-glow-primary: 0 0 16px rgba(79, 124, 255, 0.28);
+  --shadow-glow-primary: 0 0 16px rgba(88, 122, 245, 0.28);
 
-  /* 📐 Spacing, Modern spacing scale */
+  /* Spacing, Modern spacing scale */
   --space-0: 0px;
   --space-1: 2px;
   --space-2: 4px;
@@ -89,7 +100,7 @@
   --space-20: 40px;
   --space-24: 48px;
 
-  /* 📏 Border Radius */
+  /* Border Radius */
   --radius-sm: 3px;
   /* Corner radius: five tokens (approved 2026-10-19, ai-look 03-radius-tokens).
      4, 6, 8 -> sm · 10, 12, 14 -> md · 16, 17, 18, 20 -> lg · 22, 24, 26, 28 -> xl.
@@ -106,7 +117,7 @@
   --radius-3xl: var(--r-lg);
   --radius-full: var(--r-pill);
 
-  /* 🔠 Typography */
+  /* Typography */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
   --font-code: "JetBrains Mono", "Consolas", "Courier New", monospace;
   --font-heading: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
@@ -143,14 +154,14 @@
   --line-normal: 1.4;
   --line-relaxed: 1.6;
 
-  /* 📦 Sizing, Discord-inspired dimensions */
+  /* Sizing, Discord-inspired dimensions */
   --nav-rail-width: 76px;
   --sidebar-width: 280px;
   --sidebar-collapsed: 0px;
   --header-height: 52px;
   --composer-height: 64px;
 
-  /* 🪟 Navigation glass */
+  /* Navigation glass */
   --nav-glass-bg: rgba(22, 24, 30, 0.72);
   --nav-glass-bg-strong: rgba(18, 20, 26, 0.82);
   --nav-glass-border: rgba(255, 255, 255, 0.08);
@@ -159,7 +170,7 @@
   --nav-glass-saturate: 1.35;
   --nav-active-bg: linear-gradient(
     160deg,
-    rgba(79, 124, 255, 0.52) 0%,
+    rgba(88, 122, 245, 0.52) 0%,
     rgba(42, 212, 184, 0.22) 100%
   );
   --nav-active-shadow:
@@ -170,22 +181,20 @@
   --nav-active-border: rgba(170, 190, 255, 0.42);
   --nav-active-glow: drop-shadow(0 0 8px rgba(140, 165, 255, 0.65));
 
-  /* ✨ Transitions, Smooth animations */
+  /* Transitions, Smooth animations */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: 100ms var(--ease-out);
   --transition-normal: 150ms var(--ease-out);
   --transition-slow: 250ms var(--ease-out);
 
-  /* 🔧 Legacy compatibility */
+  /* Legacy compatibility */
   --bg: var(--surface-0);
   --bg-soft: var(--surface-1);
   --panel: var(--surface-1);
   --panel-2: var(--surface-2);
   --text: var(--text-1);
   --muted: var(--text-muted);
-  --accent: var(--primary);
-  --accent-2: var(--primary-2);
   --ok: var(--success);
   --warn: var(--warning);
   --border: var(--border-2);
@@ -197,6 +206,15 @@
 [data-theme="light"] {
   color-scheme: light;
 
+  /* Logo blue one step deeper: white button text stays AA (4.87:1) and the
+     accent stays >= 3:1 as a glyph on every light surface. */
+  --primary: #3A66EE;
+  --primary-2: #2F57D6;
+  --primary-3: #2649BC;
+  --primary-glow: rgba(58, 102, 238, 0.3);
+  --primary-soft: rgba(58, 102, 238, 0.12);
+  --shadow-glow-primary: 0 0 16px rgba(58, 102, 238, 0.24);
+
   --surface-0: #F2F3F5;
   --surface-1: #FFFFFF;
   --surface-2: #E3E5E8;
@@ -207,13 +225,14 @@
   --text-0: #060607;
   --text-1: #2E3338;
   --text-2: #4E5058;
-  --text-3: #61636B;
-  --text-muted: #60636B;
-  --text-link: #006CE7;
-  /* Darker status ink on white / light grey (>= 4.5:1 on #E3E5E8). */
+  /* Muted ink, link and status ink reach 4.5:1 on every light surface,
+     --surface-3 (#D4D7DC) included: chips, hovered rows, pressed tabs. */
+  --text-3: #575961;
+  --text-muted: #55575F;
+  --text-link: #0058C4;
   --danger-text: #B42318;
-  --success-text: #13703A;
-  --warning-text: #8A5A00;
+  --success-text: #0F6634;
+  --warning-text: #7A4F00;
 
   --border-0: rgba(0, 0, 0, 0.0);
   --border-1: rgba(0, 0, 0, 0.04);
@@ -232,16 +251,16 @@
   --nav-glass-highlight: rgba(255, 255, 255, 0.55);
   --nav-active-bg: linear-gradient(
     160deg,
-    rgba(79, 124, 255, 0.28) 0%,
+    rgba(88, 122, 245, 0.28) 0%,
     rgba(42, 212, 184, 0.12) 100%
   );
   --nav-active-shadow:
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 0 0 1px rgba(79, 124, 255, 0.18),
-    0 0 16px rgba(79, 124, 255, 0.22),
+    0 0 0 1px rgba(88, 122, 245, 0.18),
+    0 0 16px rgba(88, 122, 245, 0.22),
     0 8px 20px rgba(42, 212, 184, 0.12);
-  --nav-active-border: rgba(79, 124, 255, 0.4);
-  --nav-active-glow: drop-shadow(0 0 6px rgba(79, 124, 255, 0.4));
+  --nav-active-border: rgba(88, 122, 245, 0.4);
+  --nav-active-glow: drop-shadow(0 0 6px rgba(88, 122, 245, 0.4));
 
   --bg: var(--surface-0);
   --bg-soft: var(--surface-1);
@@ -280,7 +299,7 @@
   --text-1: #F1EFFF;
   --text-2: #D9D5F5;
   --text-3: #ADA6DE;
-  --text-muted: #8B84BE;
+  --text-muted: #9690C8;
   --text-link: #A78BFA;
 
   --border-1: rgba(180, 160, 255, 0.06);
@@ -348,6 +367,7 @@
   color-scheme: dark;
 
   --primary: #22C7D6;
+  --on-primary: #061418;
   --primary-2: #1AA6B3;
   --primary-3: #13818C;
   --primary-glow: rgba(34, 199, 214, 0.35);
@@ -390,6 +410,7 @@
   color-scheme: dark;
 
   --primary: #2DBE70;
+  --on-primary: #08160F;
   --primary-2: #229156;
   --primary-3: #17633B;
   --primary-glow: rgba(45, 190, 112, 0.35);
@@ -432,6 +453,7 @@
   color-scheme: dark;
 
   --primary: #F679A3;
+  --on-primary: #15090D;
   --primary-2: #F3447E;
   --primary-3: #F00F5A;
   --primary-glow: rgba(246, 121, 163, 0.35);
@@ -474,6 +496,7 @@
   color-scheme: dark;
 
   --primary: #F6A831;
+  --on-primary: #161009;
   --primary-2: #E68E0A;
   --primary-3: #B06D07;
   --primary-glow: rgba(246, 168, 49, 0.35);
@@ -532,8 +555,8 @@
   --text-1: #EDF0F8;
   --text-2: #D4DBE8;
   --text-3: #ADB7CD;
-  --text-muted: #8A96AD;
-  --text-link: #B47BF4;
+  --text-muted: #95A1B6;
+  --text-link: #BE8CF6;
 
   --border-1: rgba(189, 153, 230, 0.06);
   --border-2: rgba(189, 153, 230, 0.12);
@@ -558,6 +581,7 @@
   color-scheme: dark;
 
   --primary: #F59247;
+  --on-primary: #150913;
   --primary-2: #F37312;
   --primary-3: #C25A0A;
   --primary-glow: rgba(245, 146, 71, 0.35);
@@ -600,6 +624,7 @@
   color-scheme: dark;
 
   --primary: #F094F0;
+  --on-primary: #110A15;
   --primary-2: #E963E9;
   --primary-3: #E232E2;
   --primary-glow: rgba(240, 148, 240, 0.35);
@@ -642,6 +667,7 @@
   color-scheme: dark;
 
   --primary: #F59166;
+  --on-primary: #160B09;
   --primary-2: #F26B31;
   --primary-3: #DD4C0E;
   --primary-glow: rgba(245, 145, 102, 0.35);
@@ -684,6 +710,7 @@
   color-scheme: dark;
 
   --primary: #B190EA;
+  --on-primary: #0E0A15;
   --primary-2: #9060E1;
   --primary-3: #6E31D8;
   --primary-glow: rgba(177, 144, 234, 0.35);
@@ -726,6 +753,7 @@
   color-scheme: dark;
 
   --primary: #5CE0BD;
+  --on-primary: #091514;
   --primary-2: #2DD7AA;
   --primary-3: #21AB86;
   --primary-glow: rgba(92, 224, 189, 0.35);
@@ -768,6 +796,7 @@
   color-scheme: dark;
 
   --primary: #E88273;
+  --on-primary: #150E0A;
   --primary-2: #E05742;
   --primary-3: #CA3721;
   --primary-glow: rgba(232, 130, 115, 0.35);
@@ -894,6 +923,7 @@
   color-scheme: dark;
 
   --primary: #FDE12B;
+  --on-primary: #130C13;
   --primary-2: #EDCE02;
   --primary-3: #B69E02;
   --primary-glow: rgba(253, 225, 43, 0.42);
@@ -936,6 +966,7 @@
   color-scheme: dark;
 
   --primary: #45DAF7;
+  --on-primary: #130B13;
   --primary-2: #0FCFF5;
   --primary-3: #08A5C4;
   --primary-glow: rgba(69, 218, 247, 0.4);
@@ -978,6 +1009,7 @@
   color-scheme: dark;
 
   --primary: #51F628;
+  --on-primary: #0C130D;
   --primary-2: #33DC09;
   --primary-3: #27A607;
   --primary-glow: rgba(81, 246, 40, 0.42);
@@ -1062,6 +1094,7 @@
   color-scheme: dark;
 
   --primary: #82FA19;
+  --on-primary: #0F120C;
   --primary-2: #67D704;
   --primary-3: #4CA003;
   --primary-glow: rgba(130, 250, 25, 0.44);
@@ -1146,6 +1179,7 @@
   color-scheme: dark;
 
   --primary: #37A0FB;
+  --on-primary: #0C0E13;
   --primary-2: #0585F5;
   --primary-3: #0467BE;
   --primary-glow: rgba(55, 160, 251, 0.42);
@@ -1230,6 +1264,7 @@
   color-scheme: dark;
 
   --primary: #5CCCF5;
+  --on-primary: #091115;
   --primary-2: #27BBF1;
   --primary-3: #0D9ED3;
   --primary-glow: rgba(92, 204, 245, 0.46);
@@ -1314,6 +1349,7 @@
   color-scheme: dark;
 
   --primary: #F6D25A;
+  --on-primary: #090B16;
   --primary-2: #F4C325;
   --primary-3: #D5A60B;
   --primary-glow: rgba(246, 210, 90, 0.46);
@@ -1440,6 +1476,7 @@
   color-scheme: dark;
 
   --primary: #EEB94F;
+  --on-primary: #150F09;
   --primary-2: #E9A41C;
   --primary-3: #BA8212;
   --primary-glow: rgba(238, 185, 79, 0.35);

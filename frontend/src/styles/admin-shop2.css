@@ -95,8 +95,8 @@ html.glass-desktop :is(.as2, .as2-scrim, .as2-pop) :is(button, input, textarea, 
 .as2-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12) !important; }
 .as2-btn:active:not(:disabled) { transform: scale(0.98); }
 .as2-btn:disabled { opacity: 0.45; }
-.as2-btn.is-p { background: linear-gradient(180deg, #6d8cff, #587af5) !important; box-shadow: 0 6px 18px rgba(88, 122, 245, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2); color: #fff; }
-.as2-btn.is-danger { background: linear-gradient(180deg, #ff6b6e, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff; }
+.as2-btn.is-p { background: linear-gradient(180deg, #6788ff, #587af5) !important; box-shadow: 0 6px 18px rgba(88, 122, 245, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2); color: #fff; }
+.as2-btn.is-danger { background: linear-gradient(180deg, #f4555a, #e5383c) !important; box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3); color: #fff; }
 .as2-btn.is-amber { background: linear-gradient(180deg, #ffbd59, #f2a93b) !important; box-shadow: 0 6px 16px rgba(242, 169, 59, 0.25); color: #241604; }
 .as2-btn.is-danger-soft { background: rgba(var(--as2-red), 0.13) !important; box-shadow: inset 0 0 0 1px rgba(var(--as2-red), 0.35); color: #ff9a9c; }
 .as2-btn.is-danger-soft:hover:not(:disabled) { background: rgba(var(--as2-red), 0.2) !important; }

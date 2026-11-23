@@ -1,0 +1,58 @@
+// Chat color pass (Nov 2026): readable ink in bubbles, accent-following
+// selections, light-theme coverage of the emoji sheet / search / menus,
+// one presence palette on iPhone glass.
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+const bubble = read("./default-bubble-glass.css");
+const picker = read("./reaction-picker.css");
+const pill = read("./reaction-pill.css");
+const search = read("./message-search.css");
+const glassChat = read("./glass/chat.css");
+const glassSocial = read("./glass/social.css");
+const sheet = read("../components/chat/EmojiPickerSheet.css");
+const groupInfo = read("../components/groups/GroupInfoSheet.css");
+const profile = read("../components/social/ProfileSheet.css");
+const hoverCard = read("./user-hover-card.css");
+
+// Bubble ink
+assert.match(bubble, /\.message-bubble:not\(\.own\):not\(\.cosmetic-chat-bubble\) \.msg-link,[^{]*\.msg-mention \{\s*color: var\(--g-brand-hi\);/s, "incoming links and mentions use the readable accent ink");
+assert.match(bubble, /\.message-bubble\.own:not\(\.cosmetic-chat-bubble\) \.msg-inline-code \{\s*color: #fff;\s*background: rgba\(255, 255, 255, 0\.2\);/, "inline code in an own bubble is a white-on-tint chip");
+assert.match(bubble, /\.message-bubble\.own:not\(\.cosmetic-chat-bubble\) \.msg-code-block code \{\s*color: #fff;/, "code block text in an own bubble stays white in the light theme");
+
+// Accent-following selections (no fixed blue that ignores themes / custom accents)
+assert.ok(!/rgba\(10, 132, 255/.test(picker), "hover bar active state uses the accent, not iOS system blue");
+assert.ok(!/rgba\(56, 70, 130/.test(pill), "own reaction pill follows the accent");
+assert.ok(!/rgba\(226, 233, 255/.test(pill), "own reaction pill (light) follows the accent");
+assert.match(glassChat, /\.reaction-chip\.reaction-mine \{\s*background: rgba\(var\(--g-brand-rgb/, "glass own reaction chip follows the accent");
+assert.ok(!/#8a5cf6/i.test(glassChat) && !/#8a5cf6/i.test(groupInfo), "no blue-to-purple default group icon ramp");
+
+// Red only for destructive meaning, readable in light
+assert.match(glassChat, /\.header-right \.icon-btn\.active \{\s*color: var\(--g-brand-hi/, "an open header panel (search, pins) is accent, not red");
+assert.match(glassChat, /html\.glass-ui\[data-theme="light"\] \.app-root\.g-shell \.message-unread-sep/, "unread divider red is darkened for the light theme");
+assert.match(picker, /:root\[data-theme="light"\] \.mhb-mi\.danger \{ color: var\(--danger-text/, "Delete keeps its red in the light hover menu");
+
+// Light theme coverage
+assert.ok(!/--text-primary|--text-secondary/.test(search), "search panel uses defined text tokens");
+assert.ok(!/--text-primary/.test(sheet), "emoji sheet uses defined text tokens");
+assert.match(sheet, /:is\(html\[data-theme="light"\], html\.theme-light\) :is\(\.emoji-sheet-cat, \.emoji-sheet-empty\)/, "emoji sheet labels are dark in the light theme");
+
+// One presence palette on iPhone glass
+for (const s of ["online", "idle", "dnd"]) {
+  assert.match(glassSocial, new RegExp(`html\\.glass-ui \\.status-badge\\.status-${s} \\{ background: var\\(--status-${s}`), `StatusBadge ${s} uses the shared presence token`);
+}
+const tokens = read("./design-tokens.css");
+assert.match(tokens, /--status-online: var\(--success\);\s*--status-dnd: var\(--danger\);/, "one presence palette: semantic success / danger");
+for (const [name, css] of [["glass/chat.css", glassChat], ["glass/social.css", glassSocial], ["ProfileSheet.css", profile], ["user-hover-card.css", hoverCard]]) {
+  assert.ok(!/status-online[^}]*background: var\(--g-ok\)/.test(css) && !/background: #30D158/i.test(css), `${name}: no iOS-only presence green`);
+}
+assert.match(profile, /\.pfs-row\.is-red \.pfs-ico \{ background: var\(--danger/, "red icon tiles only on destructive profile rows");
+assert.match(glassSocial, /\.g-ib\.ok \{\s*color: var\(--success-text/, "friend accept glyph uses the success ink");
+assert.match(read("./messages.css"), /html\[data-theme="light"\] \.msg-jump-dock \.msg-jump-btn\.msg-jump-btn \{/, "jump button is light in the light theme");
+assert.ok(!/#FFD60A/i.test(profile), "idle presence word is the app idle orange, not yellow");
+assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b \{ color: var\(--success-text/, "profile presence word is readable in the light theme");
+assert.match(profile, /:root\[data-theme="light"\] \.pfs-h b\.is-dnd \{ color: var\(--danger-text/, "light dnd keeps red, not the online green");
+assert.ok(!/#5b6cff/i.test(hoverCard), "hover card send button uses the accent, not a blurple");
+assert.match(read("./messaging-phase4.css"), /\.msg-link-preview-title \{[^}]*color: var\(--g-brand-hi,/s, "link preview title uses the readable accent ink");
+console.log("chatColors selftest ok");

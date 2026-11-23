@@ -4,6 +4,7 @@
  * dialog. No React, no fetch: selftested in games.selftest.mjs.
  * Game credits are points only (never money, never DesCoin, never convertible).
  */
+import { CHART_PAIRS } from "../adminPalette.js";
 
 export const GLOBAL_MIN_BET = 10;
 export const GLOBAL_MAX_BET = 25000;
@@ -33,17 +34,7 @@ export const LIMIT_RANGES = Object.freeze({
 });
 
 /** Avatar gradients of the draft, picked by a stable hash of the user id. */
-export const AVATAR_GRADIENTS = Object.freeze([
-  ["#4fe0a0", "#1f9a62"],
-  ["#ff7a7d", "#c9363a"],
-  ["#ff7eb6", "#c2407e"],
-  ["#4fd2e0", "#1f8a9a"],
-  ["#6d8cff", "#4a5fd6"],
-  ["#b58cff", "#7a4fd6"],
-  ["#ff9a5c", "#c75a26"],
-  ["#ffd36b", "#d69a1f"],
-  ["#9aa3c7", "#5b6385"],
-]);
+export const AVATAR_GRADIENTS = CHART_PAIRS;
 
 export function gradientFor(id) {
   const s = String(id || "");

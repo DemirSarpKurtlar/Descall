@@ -83,7 +83,7 @@ html.glass-ui .feedback-modal.fbk {
 }
 .fbk-badge {
   min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-sm); display: inline-grid; place-items: center;
-  font-size: 11px; font-weight: 700; color: #fff; background: #ff453a;
+  font-size: 11px; font-weight: 700; color: #fff; background: var(--danger, #da373c);
 }
 
 /* Body (scrolls) + footer */
@@ -100,7 +100,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-sec { margin: 4px 0 -4px; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--fbk-ink-2); }
 
 .fbk-kind-seg > button.is-on {
-  background: var(--fbk-brand, #587AF6);
+  background: var(--fbk-brand, #587af5);
   color: #fff;
   box-shadow: none;
 }
@@ -108,7 +108,7 @@ html.glass-ui .feedback-modal.fbk {
 /* Light theme (#64 made the segment track light): the kind segment keeps the
    brand selected state there too. */
 :root[data-theme="light"] .feedback-modal.fbk .fbk-seg.fbk-kind-seg > button.is-on {
-  background: var(--fbk-brand, #587AF6);
+  background: var(--fbk-brand, #587af5);
   color: #fff;
   box-shadow: none;
 }
@@ -126,17 +126,17 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-type .fbk-ti { margin-bottom: 8px; }
 .fbk-type b { font-size: 13.5px; font-weight: 650; color: var(--fbk-ink); }
 .fbk-type small { font-size: 11.5px; color: var(--fbk-ink-2); }
-.fbk-type.is-on.is-suggestion { background: rgba(255, 214, 10, 0.1); box-shadow: inset 0 0 0 1.5px rgba(255, 214, 10, 0.7); }
-.fbk-type.is-on.is-bug { background: rgba(255, 95, 85, 0.12); box-shadow: inset 0 0 0 1.5px rgba(255, 105, 97, 0.75); }
-.fbk-type.is-on.is-praise { background: rgba(255, 90, 170, 0.11); box-shadow: inset 0 0 0 1.5px rgba(255, 122, 182, 0.7); }
+.fbk-type.is-on.is-suggestion { background: rgba(242, 169, 59, 0.1); box-shadow: inset 0 0 0 1.5px rgba(242, 169, 59, 0.7); }
+.fbk-type.is-on.is-bug { background: rgba(218, 55, 60, 0.12); box-shadow: inset 0 0 0 1.5px rgba(218, 55, 60, 0.75); }
+.fbk-type.is-on.is-praise { background: rgba(155, 93, 229, 0.11); box-shadow: inset 0 0 0 1.5px rgba(155, 93, 229, 0.7); }
 
 .fbk-ti { width: 32px; height: 32px; border-radius: var(--r-md); display: grid; place-items: center; flex: none; }
-.fbk-ti.is-suggestion { background: rgba(255, 214, 10, 0.16); color: #ffd60a; }
-.fbk-ti.is-bug { background: rgba(255, 95, 85, 0.16); color: #ff6961; }
-.fbk-ti.is-praise { background: rgba(255, 90, 170, 0.16); color: #ff7ab6; }
+.fbk-ti.is-suggestion { background: rgba(242, 169, 59, 0.16); color: var(--warning-text, #f0b232); }
+.fbk-ti.is-bug { background: rgba(218, 55, 60, 0.16); color: var(--danger-text, #ff7b7b); }
+.fbk-ti.is-praise { background: rgba(155, 93, 229, 0.16); color: #b58cff; }
 :root[data-theme="light"] .fbk-ti.is-suggestion { color: #a07800; }
 :root[data-theme="light"] .fbk-ti.is-bug { color: #d12d22; }
-:root[data-theme="light"] .fbk-ti.is-praise { color: #c4307a; }
+:root[data-theme="light"] .fbk-ti.is-praise { color: #6a3bb0; }
 
 /* Text area */
 .fbk-ta-wrap { position: relative; }
@@ -172,7 +172,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-stars { display: flex; gap: 2px; }
 .fbk-stars button { width: 32px; height: 32px; border: 0; border-radius: var(--r-sm); display: grid; place-items: center; background: transparent; cursor: pointer; color: var(--fbk-hair); transition: color 0.12s ease, transform 0.12s ease; }
 .feedback-modal.fbk .fbk-stars button { color: rgba(127, 127, 140, 0.38); }
-.feedback-modal.fbk .fbk-stars button.is-on { color: #ffd60a; }
+.feedback-modal.fbk .fbk-stars button.is-on { color: var(--warning, #f0b232); }
 .fbk-stars button:hover { transform: scale(1.08); }
 .fbk-device { width: 100%; border: 0; text-align: left; cursor: pointer; color: var(--fbk-ink-2); }
 .fbk-device > span:not(.fbk-switch) { flex: 1; min-width: 0; }
@@ -189,13 +189,13 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-shot, .fbk-shot-add { position: relative; width: 76px; height: 56px; border-radius: var(--r-md); flex: none; }
 .fbk-shot { overflow: hidden; background: var(--fbk-fill-2); box-shadow: inset 0 0 0 1px var(--fbk-hair); }
 .fbk-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.fbk-shot.is-error { box-shadow: inset 0 0 0 1.5px #ff453a; }
+.fbk-shot.is-error { box-shadow: inset 0 0 0 1.5px var(--danger, #da373c); }
 .fbk-shot-busy { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); color: #fff; }
 .fbk-shot-x { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); color: #fff !important; cursor: pointer; }
 .fbk-shot-add { border: 0; display: grid; place-items: center; cursor: pointer; background: transparent; color: var(--fbk-ink-2); box-shadow: inset 0 0 0 1.5px var(--fbk-hair); }
 .fbk-shot-add:hover { color: var(--fbk-ink); background: var(--fbk-fill); }
 
-.fbk-error { margin: 0; font-size: 12.5px; color: #ff6961; }
+.fbk-error { margin: 0; font-size: 12.5px; color: var(--danger-text, #ff7b7b); }
 
 /* Primary button */
 .fbk-btn {
@@ -213,7 +213,7 @@ html.glass-ui .feedback-modal.fbk {
 
 /* Sent + empty / loading states */
 .fbk-done, .fbk-state { align-items: center; text-align: center; justify-content: center; min-height: 260px; }
-.fbk-done-ic { color: #34c759; }
+.fbk-done-ic { color: var(--success-text, #3ddc84); }
 .fbk-done h3 { margin: 4px 0 0; font-size: 18px; font-weight: 750; color: var(--fbk-ink); }
 .fbk-done p, .fbk-state p { margin: 0; max-width: 320px; font-size: 13px; line-height: 1.5; color: var(--fbk-ink-2); }
 .fbk-done-row { display: flex; gap: 8px; margin-top: 8px; }
@@ -241,10 +241,10 @@ html.glass-ui .feedback-modal.fbk {
 
 .fbk-pill { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: var(--r-md); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .fbk-pill.is-new { background: var(--fbk-fill-2); color: var(--fbk-ink-2); }
-.fbk-pill.is-in_progress { background: rgba(10, 132, 255, 0.2); color: #6fb6ff; }
-.fbk-pill.is-resolved { background: rgba(48, 209, 88, 0.18); color: #5fdc80; }
+.fbk-pill.is-in_progress { background: rgba(88, 122, 245, 0.2); color: #a9b9ff; }
+.fbk-pill.is-resolved { background: rgba(35, 165, 90, 0.18); color: var(--success-text, #3ddc84); }
 .fbk-pill.is-closed { background: var(--fbk-fill); color: var(--fbk-ink-3); }
-:root[data-theme="light"] .fbk-pill.is-in_progress { color: #0a64c8; }
+:root[data-theme="light"] .fbk-pill.is-in_progress { color: #3e55d6; }
 :root[data-theme="light"] .fbk-pill.is-resolved { color: #1c8a3c; }
 
 /* Thread */
@@ -271,7 +271,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-team { display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 5px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; color: #dfe5ff; background: rgba(110, 130, 255, 0.3); }
 :root[data-theme="light"] .fbk-team { color: #3e55d6; background: rgba(78, 111, 242, 0.14); }
 .fbk-sys { align-self: center; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--fbk-ink-3); text-align: center; }
-.fbk-sys .is-ok { color: #34c759; }
+.fbk-sys .is-ok { color: var(--success-text, #3ddc84); }
 .fbk-comp {
   display: flex; align-items: flex-end; gap: 8px; padding: 5px 5px 5px 14px; border-radius: 22px;
   background: var(--fbk-well); box-shadow: inset 0 0 0 1px var(--fbk-hair);
