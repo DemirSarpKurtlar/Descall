@@ -57,8 +57,10 @@ for (const rel of ["electron/notificationCard.cjs", "electron/premium/hudHtml.cj
 
 // Server header: back is a glass chip and the server menu is a neutral tool,
 // not the blue primary CTA (owner note, color sweep).
-const gdChat = readFileSync(join(here, "glass-desktop", "chat.css"), "utf8");
-assert.match(gdChat, /\.server-shell-header \.server-back-btn \{[^}]*background: var\(--gd-glass-fill\)/);
-assert.match(gdChat, /\.g-server-menu-btn:last-child[^{]*\{[^}]*background: transparent !important/);
+// The rules live in servers.css (one owner; the copy in glass-desktop/chat.css was dropped).
+const serverCss = readFileSync(join(here, "servers.css"), "utf8");
+assert.match(serverCss, /\.server-shell-header \.server-back-btn \{[^}]*background: var\(--gd-glass-fill\)/);
+assert.match(serverCss, /\.g-server-menu-btn:last-child[^{]*\{[^}]*background: transparent !important/);
+assert.ok(!/\.server-shell-header \.server-back-btn/.test(readFileSync(join(here, "glass-desktop", "chat.css"), "utf8")), "one place styles the server back button");
 
 console.log("themeContrast selftest OK", Object.keys(blocks).length, "themes");
