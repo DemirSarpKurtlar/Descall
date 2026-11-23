@@ -15,6 +15,7 @@ const {
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
+const { keepsOwnCsp: keepsTurnstileCsp } = require('./turnstileFrames.cjs');
 const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
 const { WINDOW_STATE_FILE, parseWindowState, pickRestoreBounds, serializeWindowState } = require('./windowState.cjs');
 const {
@@ -72,6 +73,8 @@ const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelW
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange, namespaceForAll } = require('./mainI18n.cjs');
 // Tray panel (draft B "Gelismis menu"): window in trayMenuWindow.cjs, rules in trayMenuModel.cjs.
 const trayModel = require('./trayMenuModel.cjs');
+// 4.2 taskbar jump list: Yeni mesaj, status, recent DMs (rules in jumpList.cjs).
+const jumpList = require('./jumpList.cjs');
 const { createTrayPanel } = require('./trayMenuWindow.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
@@ -319,6 +322,37 @@ onLocaleChange(() => {
   rebuildTrayMenu?.();
   refreshOverlayLanguage();
 });
+
+// 4.2 Windows jump list from the main page (src/hooks/useNativeIntents.js, debounced).
+let jumpListState = null;
+let pendingJumpTask = jumpList.parseJumpTask(process.argv);
+trustedOn('jumplist:set', (event, raw) => {
+  if (process.platform !== 'win32') return;
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return;
+  const next = jumpList.normalizeJumpListState(raw);
+  if (jumpListState && jumpList.sameJumpListState(next, jumpListState)) return;
+  jumpListState = next;
+  try {
+    const result = app.setJumpList(jumpList.buildJumpList(next, { exePath: process.execPath }));
+    if (result && result !== 'ok') log.warn(`[jumplist] setJumpList: ${result}`);
+  } catch (err) {
+    log.warn('[jumplist] setJumpList failed:', err && err.message);
+  }
+});
+// A cold start from a jump list entry: the page takes the task once it is ready.
+trustedHandle('jumplist:take', () => {
+  const task = pendingJumpTask;
+  pendingJumpTask = null;
+  return task;
+});
+function deliverJumpTask(task) {
+  if (!task) return;
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.send('jumplist:action', task);
+  } else {
+    pendingJumpTask = task;
+  }
+}
 
 // Electron 45: async safeStorage (tokenCrypto.cjs; the sync methods go away in 46). These stay
 // sendSync channels because secureToken.get() is synchronous in the renderer: the reply is
@@ -1681,6 +1715,8 @@ function createMainWindow() {
   // session (notification and overlay files) keeps the pre-2.11.2 policy.
   const legacyCsp = buildElectronCsp(null);
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    // Turnstile's bridge and challenge frames keep their own CSP (turnstileFrames.cjs).
+    if (keepsTurnstileCsp(details)) return callback({});
     const isAppDocument = /^descall:\/\/app\//i.test(details.url || '');
     callback({
       responseHeaders: {
@@ -2838,9 +2874,10 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
     // Shortcut, taskbar, or Start menu while a tray instance is already up.
     userRequestedShow = true;
+    deliverJumpTask(jumpList.parseJumpTask(argv)); // 4.2 jump list
     if (mainWindow && !mainWindow.isDestroyed()) {
       showMainWindow();
       return;

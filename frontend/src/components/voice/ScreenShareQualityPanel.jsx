@@ -6,6 +6,7 @@ import {
   SCREEN_QUALITY_PRESETS,
   estimateScreenShareMbps,
 } from "../../lib/webrtcScreenShare";
+import { screenShareLimits } from "../../lib/screenShareCodec";
 import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { usePressFeedbackScope } from "../../hooks/usePressFeedback";
@@ -109,27 +110,26 @@ export default function ScreenShareQualityPanel({
   const [appliedFlash, setAppliedFlash] = useState(false);
   const quality = screenQuality || GROUP_SCREEN_DEFAULT_QUALITY;
   const narrow = useIsNarrowViewport(720);
+  // Ceiling per viewer copy: a mesh sends one per other participant, 1:1 and SFU send one.
   const mbps = useMemo(
-    () => estimateScreenShareMbps(quality, participantCount),
-    [quality, participantCount]
+    () => estimateScreenShareMbps(quality, isGroupCall ? Math.max(1, participantCount - 1) : 1),
+    [quality, isGroupCall, participantCount]
   );
 
-  const resolutionOptions = useMemo(() => {
-    if (isGroupCall && participantCount >= 3) {
-      return SCREEN_RESOLUTION_PRESETS.filter((r) => r.value !== "1440p");
-    }
-    return SCREEN_RESOLUTION_PRESETS;
-  }, [isGroupCall, participantCount]);
-
-  const fpsOptions = useMemo(() => {
-    if (isGroupCall && participantCount >= 3) {
-      return SCREEN_FPS_PRESETS.filter((f) => f.value <= 24);
-    }
-    if (isGroupCall) {
-      return SCREEN_FPS_PRESETS.filter((f) => f.value <= 30);
-    }
-    return SCREEN_FPS_PRESETS;
-  }, [isGroupCall, participantCount]);
+  // Highest quality for everyone (no plan check): every resolution in every call; 60 FPS
+  // everywhere except a mesh of 3+ people (one full encode and upload per viewer).
+  const limits = useMemo(
+    () => screenShareLimits({ mesh: Boolean(isGroupCall), participantCount }),
+    [isGroupCall, participantCount]
+  );
+  const resolutionOptions = useMemo(
+    () => SCREEN_RESOLUTION_PRESETS.filter((r) => limits.resolutions.includes(r.value)),
+    [limits]
+  );
+  const fpsOptions = useMemo(
+    () => SCREEN_FPS_PRESETS.filter((f) => limits.fps.includes(f.value)),
+    [limits]
+  );
 
   useEffect(() => {
     if (!open) return;

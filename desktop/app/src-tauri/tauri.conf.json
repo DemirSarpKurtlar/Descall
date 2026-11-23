@@ -24,6 +24,7 @@
         "object-src": "'none'",
         "base-uri": "'self'",
         "worker-src": "'self' blob:",
+        "frame-src": "'self' https://des-call.onrender.com https://api.descall.com https://challenges.cloudflare.com",
         "media-src": "'self' blob: data: https://descall.com https://des-call.onrender.com https://pc.descall.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com"
       },
       "dangerousDisableAssetCspModification": [

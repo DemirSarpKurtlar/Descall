@@ -237,6 +237,7 @@ export default {
   "Sign in to your account": "Melde dich bei deinem Konto an",
   "Sign-in and security. Always on.": "Anmeldung und Sicherheit. Immer aktiv.",
   "Sitemap": "Sitemap",
+  "Something went wrong.": "Etwas ist schiefgelaufen.",
   "Sound better in voice chat": "Im Sprachchat besser klingen",
   "Start free": "Kostenlos starten",
   "Status": "Status",

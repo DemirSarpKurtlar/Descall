@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 4.2 launcher shortcuts (xml/shortcuts.xml) and App Actions synonyms. -->
+    <string name="shortcut_new_message_short">Новое сообщение</string>
+    <string name="shortcut_new_message_long">Написать сообщение</string>
+    <string name="shortcut_dnd_short">Не беспокоить</string>
+    <string name="shortcut_dnd_long">Не беспокоить вкл/выкл</string>
+    <string name="shortcut_friends_short">Друзья</string>
+    <string name="shortcut_friends_long">Открыть друзей</string>
+    <string name="shortcut_open_chat">Открыть чат</string>
+    <string-array name="shortcut_new_message_synonyms">
+        <item>новое сообщение</item>
+        <item>сообщение</item>
+        <item>написать сообщение</item>
+    </string-array>
+    <string-array name="shortcut_dnd_synonyms">
+        <item>не беспокоить</item>
+        <item>статус</item>
+    </string-array>
+    <string-array name="shortcut_friends_synonyms">
+        <item>друзья</item>
+        <item>список друзей</item>
+        <item>кто в сети</item>
+    </string-array>
+</resources>

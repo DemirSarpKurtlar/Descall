@@ -1,4 +1,5 @@
 import { AUTHX_PT_BR } from "./authx.pt-BR.js";
+import { PASSKEY_PT_BR } from "./passkey.pt-BR.js";
 import { API_PT_BR } from "./api.pt-BR.js";
 import { PREMIUM_STORY_PT_BR } from "./premiumStory.pt-BR.js";
 import { UAH_PT_BR } from "./uah.pt-BR.js";
@@ -18,6 +19,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
+import { VSC_PT_BR } from "./vsc.pt-BR.js";
 import { LX_PT_BR } from "./lx.pt-BR.js";
 import { USET_PT_BR } from "./uset.pt-BR.js";
 import { SVOICE_PT_BR } from "./svoice.pt-BR.js";
@@ -46,6 +48,7 @@ import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   authx: AUTHX_PT_BR,
+  passkey: PASSKEY_PT_BR,
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
   "msg4": MSG4_PT_BR,
@@ -70,6 +73,7 @@ export const nested = {
   "dir": DIR_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
+  "vsc": VSC_PT_BR,
   "lx": LX_PT_BR,
   "uset": USET_PT_BR,
   "svoice": SVOICE_PT_BR,

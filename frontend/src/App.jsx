@@ -93,6 +93,7 @@ import { attachPremiumSocket } from "./premium/usePremium.js";
 import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
+import { useNativeIntents } from "./hooks/useNativeIntents";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -3047,6 +3048,10 @@ export default function App() {
     socket.on("shop:inventory:changed", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
     });
+    // Passkeys added / removed / suspended on another device: Settings > Security reloads its list.
+    socket.on("passkeys:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:passkeys-changed", { detail: payload })); } catch { /* ignore */ }
+    });
     // Market 2.0: daily storefront reset / refresh and received gifts reach an open shop live.
     socket.on("shop2:storefront", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop2-storefront", { detail: payload })); } catch { /* ignore */ }
@@ -3290,6 +3295,23 @@ export default function App() {
       throw error;
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // Passkey sign-in (components/passkeys/PasskeySignInButton.jsx, web autofill): the server
+  // body is the same as POST /login; AuthView handles requires2fa itself.
+  const handlePasskeyLogin = async (data) => {
+    if (!data?.token) return;
+    setAuthError("");
+    transportFallbackStepRef.current = 0;
+    setToken(data.token);
+    commitSessionUser(data.user);
+    try {
+      const { Funnel, identifyUser } = await import("./site/analytics");
+      identifyUser(data.user);
+      Funnel.loginComplete({ method: "passkey" });
+    } catch {
+      /* analytics optional */
     }
   };
 
@@ -5237,6 +5259,22 @@ export default function App() {
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
   // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
   useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
+  // 4.2: Siri / Shortcuts / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows).
+  useNativeIntents({
+    me,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    navigate,
+    setStatus: handleStatusChange,
+    myStatus,
+    friends,
+    dmLastActivity,
+    locale,
+    pathname: location.pathname,
+    t,
+  });
 
   if (bootError && !me) {
     return (
@@ -5367,6 +5405,8 @@ export default function App() {
             onGoogleLogin={handleGoogleLogin}
             onAppleLogin={handleAppleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             loading={authLoading}
             error={authError}
           />
@@ -5386,6 +5426,8 @@ export default function App() {
             onRegister={handleRegister}
             onGoogleLogin={handleGoogleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             authLoading={authLoading}
             authError={authError}
           />

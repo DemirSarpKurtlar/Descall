@@ -235,7 +235,11 @@ jobs:
           # would lose Push (aps-environment) and Sign in with Apple. Ad-hoc sign the archived app
           # with App.release.entitlements; export replaces this with the Apple Distribution signature.
           APP="$ARCHIVE_PATH/Products/Applications/App.app"
-          ENT="frontend/ios/App/App/App.release.entitlements"
+          # 4.2: keychain-access-groups use $(AppIdentifierPrefix), a build setting codesign does not
+          # expand; give it the team prefix (the shared session group <team>.com.descall.shared).
+          ENT="$RUNNER_TEMP/App.release.expanded.entitlements"
+          sed 's/\$(AppIdentifierPrefix)/'"$TEAM_ID"'./g' "frontend/ios/App/App/App.release.entitlements" > "$ENT"
+          if grep -q 'AppIdentifierPrefix' "$ENT"; then echo "::error::unexpanded AppIdentifierPrefix in the entitlements"; exit 1; fi
           find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -print0 2>/dev/null |
             while IFS= read -r -d '' fw; do codesign --force --sign - --timestamp=none "$fw"; done
           # 3.0.0 (A4): notification extensions (App Group) are signed first, inside-out.
@@ -323,6 +327,9 @@ jobs:
           # 3.0.1: universal links (https://descall.com) need Associated Domains in the signed app.
           ad="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.associated-domains:0' "$WORK/ent.plist" 2>/dev/null || true)"
           [ "$ad" = "applinks:descall.com" ] || { echo "::error::Associated Domains missing on the app ('$ad')"; ok=0; }
+          # 4.2: shared Keychain group for the session the App Intents / extensions read (DescallKit).
+          kg="$(/usr/libexec/PlistBuddy -c 'Print :keychain-access-groups' "$WORK/ent.plist" 2>/dev/null || true)"
+          echo "$kg" | grep -q "$TEAM_ID.com.descall.shared" || echo "::warning::keychain-access-groups has no $TEAM_ID.com.descall.shared; Siri and extensions fall back to app-only sessions"
           urlscheme="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist" 2>/dev/null || true)"
           [ "$urlscheme" = "descall" ] || { echo "::error::descall:// URL scheme missing from Info.plist ('$urlscheme')"; ok=0; }
           for EXT in NotificationService NotificationContent; do

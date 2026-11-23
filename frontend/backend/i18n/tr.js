@@ -217,6 +217,12 @@ module.exports = {
     passwordChangedBody: "Descall hesabının şifresi az önce değiştirildi. Bu sen değilsen destek ile iletişime geç.",
     emailChangeSubject: "Descall e-posta değişikliği",
     emailChangeBody: "Descall hesabında e-posta adresini değiştirme isteği var. Bu sen değilsen hemen şifreni değiştir ve destek ile iletişime geç.",
+    passkeyAddedSubject: "Descall hesabına yeni bir passkey eklendi",
+    passkeyAddedBody: "Descall hesabına \"{name}\" adlı yeni bir passkey (geçiş anahtarı) eklendi. Bu sen değilsen Ayarlar > Güvenlik bölümünden onu kaldır, şifreni değiştir ve {support} ile iletişime geç.",
+    passkeyRemovedSubject: "Descall hesabından bir passkey kaldırıldı",
+    passkeyRemovedBody: "\"{name}\" adlı passkey Descall hesabından kaldırıldı. Bu sen değilsen şifreni değiştir ve {support} ile iletişime geç.",
+    passkeyClonedSubject: "Bir Descall passkey'in kapatıldı",
+    passkeyClonedBody: "\"{name}\" adlı passkey kopyalanmış olabileceği için kapatıldı. Şifrenle giriş yap, Ayarlar > Güvenlik bölümünden onu kaldır ve yenisini ekle. Sorun olursa {support} ile iletişime geç.",
   },
 
   dataExport: {

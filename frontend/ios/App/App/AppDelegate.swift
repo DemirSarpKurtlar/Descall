@@ -15,6 +15,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         DescallCallManager.shared.start()
         // 3.7.17: the Apple Watch app asks the API through this phone's session.
         DescallWatchBridge.shared.start()
+        // 4.2: Siri / Shortcuts and the extensions read the session from the shared Keychain group.
+        DescallSharedSessionSync.migrateIfNeeded()
         return true
     }
 

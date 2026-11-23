@@ -6,6 +6,8 @@
 // Inline data: SVGs are rewritten here; /api/shop(2)/assets/:id URLs ask the server for the
 // still variant (`still=1`, backend lib/svgStill.js).
 
+import { preferAvif } from "./avifImage.js";
+
 const SMIL_RE = /<(animate|animateTransform|animateMotion|set)\b[^>]*?(?:\/>|>[\s\S]*?<\/\1\s*>)/gi;
 const ASSET_RE = /\/api\/shop2?\/assets\//;
 const MAX_CACHE = 64;
@@ -60,7 +62,10 @@ export function stillArtUrl(url) {
   return url;
 }
 
-/** `url`, or its still version when moving art should stay still. */
+/**
+ * `url`, or its still version when moving art should stay still. A profile banner with an
+ * AVIF copy (lib/avifImage.js) resolves to that copy where the browser decodes AVIF.
+ */
 export function artUrl(url) {
-  return wantsStillArt() ? stillArtUrl(url) : url;
+  return preferAvif(wantsStillArt() ? stillArtUrl(url) : url);
 }

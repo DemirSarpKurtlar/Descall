@@ -99,6 +99,8 @@ const CATALOG = {
   feedback_delete: ["content", "medium"],
   "2fa_totp_enabled": ["account", "medium"],
   "2fa_recovery_regenerated": ["account", "medium"],
+  passkey_added: ["account", "medium"],
+  passkey_removed: ["account", "medium"],
   // Ekonomi ve Descall+
   descoin_grant: ["economy", "high"],
   descoin_reconcile_run: ["economy", "medium"],

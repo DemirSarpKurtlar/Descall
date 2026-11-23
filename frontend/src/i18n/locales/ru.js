@@ -1,4 +1,5 @@
 import { AUTHX_RU } from "./authx.ru.js";
+import { PASSKEY_RU } from "./passkey.ru.js";
 import { API_RU } from "./api.ru.js";
 import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
@@ -18,6 +19,7 @@ import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
+import { VSC_RU } from "./vsc.ru.js";
 import { LX_RU } from "./lx.ru.js";
 import { USET_RU } from "./uset.ru.js";
 import { SVOICE_RU } from "./svoice.ru.js";
@@ -46,6 +48,7 @@ import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
+  passkey: PASSKEY_RU,
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,
@@ -70,6 +73,7 @@ export const nested = {
   "dir": DIR_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
+  "vsc": VSC_RU,
   "lx": LX_RU,
   "uset": USET_RU,
   "svoice": SVOICE_RU,

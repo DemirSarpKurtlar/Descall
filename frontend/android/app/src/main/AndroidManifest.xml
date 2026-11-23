@@ -66,7 +66,23 @@
                 <data android:scheme="descall" />
             </intent-filter>
 
+            <!-- 4.2: long press on the app icon (Android 7.1+) and Google Assistant App Actions. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
         </activity>
+
+        <!-- 4.2: invisible trampoline for launcher shortcuts. A launcher clears the target's
+             task; this activity takes that in its own task and brings the running app forward
+             (DescallShortcutActivity.java), so a call or the open chat survives. -->
+        <activity
+            android:name=".DescallShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

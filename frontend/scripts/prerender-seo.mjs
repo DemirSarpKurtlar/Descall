@@ -313,9 +313,22 @@ export function stripTwinCss(html, kind) {
  * <link rel="preload"> for the first-viewport product shot of a page (the img with
  * fetchpriority="high" and a srcset): the browser starts it with the HTML head instead of
  * after parsing ~60 KB of body, and picks the same candidate (imagesrcset / imagesizes).
- * The home hero is a <picture> with a phone and a desktop source and is left alone.
+ * Shots are <picture> with an AVIF source before the WebP <img>: only the AVIF is preloaded,
+ * with type="image/avif", so a browser without AVIF skips the hint (and loads the WebP from
+ * the <img> as before) and an AVIF browser never downloads both.
  */
 export function lcpImagePreload(body) {
+  const av = body.match(/<picture><source type="image\/avif" srcset="([^"]+)" sizes="([^"]+)" \/><img [^>]*fetchpriority="high"/);
+  if (av) return `<link rel="preload" as="image" type="image/avif" imagesrcset="${av[1]}" imagesizes="${av[2]}" fetchpriority="high" />`;
+  // Home hero: phone AVIF + phone WebP sources (max-width query), desktop AVIF source, img.
+  const hero = body.match(/<picture><source media="\(max-width: (\d+)px\)" type="image\/avif" srcset="([^"]+)" sizes="([^"]+)"[^>]*>(?:<source media=[^>]*>)?<source type="image\/avif" srcset="([^"]+)" \/><img [^>]*fetchpriority="high"/);
+  if (hero) {
+    const [, max, phoneSet, phoneSizes, desktop] = hero;
+    return [
+      `<link rel="preload" as="image" type="image/avif" imagesrcset="${phoneSet}" imagesizes="${phoneSizes}" media="(max-width: ${max}px)" fetchpriority="high" />`,
+      `<link rel="preload" as="image" type="image/avif" href="${desktop}" media="(min-width: ${Number(max) + 1}px)" fetchpriority="high" />`,
+    ].join("\n    ");
+  }
   const m = body.match(/<img src="([^"]+)" srcset="([^"]+)" sizes="([^"]+)"[^>]*fetchpriority="high"/);
   if (m) return `<link rel="preload" as="image" href="${m[1]}" imagesrcset="${m[2]}" imagesizes="${m[3]}" fetchpriority="high" />`;
   // Home hero: <picture> with one phone source (max-width query) and the desktop img.

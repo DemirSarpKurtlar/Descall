@@ -49,6 +49,8 @@ mod tests {
         assert_eq!(tauri_directive("connect-src"), electron_directive("CONNECT", "connect-src"), "connect-src");
         assert_eq!(tauri_directive("img-src"), electron_directive("IMG", "img-src"), "img-src");
         assert_eq!(tauri_directive("media-src"), electron_directive("MEDIA", "media-src"), "media-src");
+        // Cloudflare Turnstile: the API's bridge page and Cloudflare's challenge frames.
+        assert_eq!(tauri_directive("frame-src"), electron_directive("FRAME", "frame-src"), "frame-src");
         let mut script = sources(&electron_const("SCRIPT_REMOTE"));
         script.insert("'self'".to_string());
         let mut tauri_script = tauri_directive("script-src");

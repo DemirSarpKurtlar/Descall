@@ -5,6 +5,7 @@ import { peekAttribution } from "../lib/attribution";
 import { pendingSignupInvite } from "../lib/serverInviteRoute";
 import { withSignupContext } from "../lib/signupContext";
 import { getLocale } from "../i18n/runtime.js";
+import { runWithHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 
 /**
  * The app's UI language for the server's emails (sign-in codes, reset codes,
@@ -41,20 +42,30 @@ function withSignupInvite(payload = {}) {
   return signupInvite ? { ...payload, signupInvite } : payload;
 }
 
+/** Sign-up: Cloudflare Turnstile token first (lib/humanCheck/turnstileClient.js). */
 export function register(payload) {
-  return httpRequest(API_ROUTES.register, {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify(withSignupContext(withSignupInvite(withAttribution(payload || {})))),
-  });
+  const body = withSignupContext(withSignupInvite(withAttribution(payload || {})));
+  return runWithHumanCheck("register", (hc) =>
+    httpRequest(API_ROUTES.register, {
+      method: "POST",
+      headers: langHeaders(),
+      body: JSON.stringify({ ...body, ...hc }),
+    }),
+  );
 }
 
+/** Sign-in: the human check only when the server asks (after wrong passwords). */
 export function login(payload) {
-  return httpRequest(API_ROUTES.login, {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify(payload),
-  });
+  return runWithHumanCheck(
+    "login",
+    (hc) =>
+      httpRequest(API_ROUTES.login, {
+        method: "POST",
+        headers: langHeaders(),
+        body: JSON.stringify({ ...payload, ...hc }),
+      }),
+    { always: false },
+  );
 }
 
 export function verify2faLogin(pendingToken, code) {
@@ -80,11 +91,18 @@ export function loginWithGoogle(credential, extra = {}) {
   if (extra?.termsAccepted) payload.termsAccepted = true;
   if (extra?.birthDate) payload.birthDate = extra.birthDate;
   if (extra?.attribution) payload.attribution = extra.attribution;
-  return httpRequest(API_ROUTES.google, {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify(withSignupContext(payload)),
-  });
+  const body = withSignupContext(payload);
+  // A new account (Terms + date of birth sent) gets the human check; a sign-in does not.
+  return runWithHumanCheck(
+    "social_signup",
+    (hc) =>
+      httpRequest(API_ROUTES.google, {
+        method: "POST",
+        headers: langHeaders(),
+        body: JSON.stringify({ ...body, ...hc }),
+      }),
+    { always: Boolean(extra?.termsAccepted) },
+  );
 }
 
 /** Sign in with Apple (native iOS). `apple` is the AppleSignIn plugin result plus the raw nonce. */
@@ -102,11 +120,18 @@ export function loginWithApple(apple, extra = {}) {
   // 2.13.8: new Apple accounts pick their username (no random one).
   payload.usernameStep = true;
   if (extra?.username) payload.username = extra.username;
-  return httpRequest(API_ROUTES.apple, {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify(withSignupContext(payload)),
-  });
+  const body = withSignupContext(payload);
+  // The account is created only on the call that carries the username (2.13.8).
+  return runWithHumanCheck(
+    "social_signup",
+    (hc) =>
+      httpRequest(API_ROUTES.apple, {
+        method: "POST",
+        headers: langHeaders(),
+        body: JSON.stringify({ ...body, ...hc }),
+      }),
+    { always: Boolean(extra?.termsAccepted && extra?.username) },
+  );
 }
 
 export function getGoogleAuthConfig() {
@@ -130,20 +155,27 @@ export function getMe(token, { signal } = {}) {
 
 /** Public forgot-password: username or email → emailed 6-digit code. */
 export function requestPasswordReset(usernameOrEmail) {
-  return httpRequest("/auth/password/forgot", {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify({ usernameOrEmail }),
-  });
+  return runWithHumanCheck("password_reset", (hc) =>
+    httpRequest("/auth/password/forgot", {
+      method: "POST",
+      headers: langHeaders(),
+      body: JSON.stringify({ usernameOrEmail, ...hc }),
+    }),
+  );
 }
 
-/** Public: verify code + set new password. */
+/** Public: verify code + set new password (human check only after wrong codes). */
 export function confirmPasswordReset({ usernameOrEmail, code, newPassword }) {
-  return httpRequest("/auth/password/reset", {
-    method: "POST",
-    headers: langHeaders(),
-    body: JSON.stringify({ usernameOrEmail, code, newPassword }),
-  });
+  return runWithHumanCheck(
+    "password_reset",
+    (hc) =>
+      httpRequest("/auth/password/reset", {
+        method: "POST",
+        headers: langHeaders(),
+        body: JSON.stringify({ usernameOrEmail, code, newPassword, ...hc }),
+      }),
+    { always: false },
+  );
 }
 
 /** End the current session server-side (best-effort). Client always clears local auth. */

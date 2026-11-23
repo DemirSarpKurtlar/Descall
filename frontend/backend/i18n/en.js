@@ -224,6 +224,12 @@ module.exports = {
     passwordChangedBody: "The password of your Descall account was just changed. If this wasn't you, contact support.",
     emailChangeSubject: "Descall email change",
     emailChangeBody: "There is a request to change the email address on your Descall account. If this wasn't you, change your password now and contact support.",
+    passkeyAddedSubject: "A new passkey was added to your Descall account",
+    passkeyAddedBody: "A new passkey named \"{name}\" was added to your Descall account. If this wasn't you, remove it in Settings > Security, change your password and contact {support}.",
+    passkeyRemovedSubject: "A passkey was removed from your Descall account",
+    passkeyRemovedBody: "The passkey named \"{name}\" was removed from your Descall account. If this wasn't you, change your password and contact {support}.",
+    passkeyClonedSubject: "One of your Descall passkeys was turned off",
+    passkeyClonedBody: "The passkey named \"{name}\" was turned off because it may have been copied. Sign in with your password, remove it in Settings > Security and add a new one. If something looks wrong, contact {support}.",
   },
 
   // Personal data export file (lib/dataExport.js).

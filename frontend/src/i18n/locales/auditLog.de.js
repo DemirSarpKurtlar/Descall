@@ -581,6 +581,8 @@ export const AUDIT_LOG_DE = {
     "feedback_delete": "Feedback gelöscht",
     "2fa_totp_enabled": "2FA eingeschaltet",
     "2fa_recovery_regenerated": "Wiederherstellungscodes erneuert",
+    "passkey_added": "Passkey hinzugefügt",
+    "passkey_removed": "Passkey entfernt",
     "descoin_grant": "DesCoin vergeben",
     "descoin_reconcile_run": "Abgleich ausgeführt",
     "descoin_reconcile_fix": "Guthaben korrigiert",

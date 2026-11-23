@@ -246,6 +246,8 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.use("/api/features", publicFeatureRoutes);
+// Cloudflare Turnstile: public site key + the in-app bridge page (lib/turnstile.js).
+app.use("/api/turnstile", require("./routes/turnstile"));
 app.use("/api/maintenance", require("./routes/maintenanceStatus"));
 app.use("/maintenance", require("./routes/maintenanceStatus"));
 // Hybrid server (Render + PC node): /api/node/assign, /health, /register, /drain-done.
@@ -523,6 +525,8 @@ app.get("*", (req, res, next) => {
   app.use("/mcp", mcpRoutes.parseErrorHandler);
 }
 
+// Passkeys (WebAuthn, routes/passkeys.js): before the auth router so /auth/passkeys/* lands here.
+app.use(["/api/auth/passkeys", "/auth/passkeys"], require("./routes/passkeys"));
 // Register main routes (both with and without /api prefix)
 app.use("/auth", authRoutes);
 // DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.
@@ -578,6 +582,8 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 // 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
 app.use("/api/watch", require("./routes/watch"));
+// 4.2: Siri / Shortcuts / widgets / Android shortcuts glance data, routes/native.js.
+app.use("/api/native", require("./routes/native"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));

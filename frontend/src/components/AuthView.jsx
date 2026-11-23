@@ -19,6 +19,7 @@ import PasswordStrength from "./auth/PasswordStrength";
 import useSignupFieldChecks from "./auth/useSignupFieldChecks";
 import SignupFieldMessage from "./auth/SignupFieldMessage";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
@@ -29,9 +30,12 @@ import { usePressFeedbackScope } from "../hooks/usePressFeedback";
 import { hapticError } from "../lib/fluid/haptics";
 import { useMaterialize } from "../hooks/useMaterialize";
 import { createValueAnimator } from "../lib/fluid/animator";
+import PasskeySignInButton, { passkeyErrorForParent } from "./passkeys/PasskeySignInButton.jsx";
+import usePasskeyAutofill, { PASSKEY_AUTOCOMPLETE } from "../hooks/usePasskeyAutofill";
+import { normalizePasskeyError, passkeyErrorKey } from "../lib/passkeys/index.js";
 import { SPRINGS } from "../lib/fluid/springs";
 
-export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error: errorProp }) {
+export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, onPasskeyLogin, onPasskeyError, loading, error: errorProp }) {
   const t = useT();
   // The parent's error stays set after "Back to login" / a tab switch; hide it there
   // until the next attempt sets a new one.
@@ -113,12 +117,35 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [socialSigningUp, setSocialSigningUp] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Passkeys (button + web autofill): a body without user verification may still need the
+  // account's second step (same 2FA screen as the password), else App opens the session.
+  const handlePasskeyBody = async (body) => {
+    if (openTwoFa(body)) return;
+    setFormError("");
+    await onPasskeyLogin?.(body);
+  };
+  const handlePasskeyError = (err) => {
+    if (passkeyErrorForParent(err)) {
+      onPasskeyError?.(normalizePasskeyError(err).cause || err);
+      return;
+    }
+    const key = passkeyErrorKey(err);
+    if (key) setFormError(t(key));
+  };
+  usePasskeyAutofill({ enabled: mode === "login" && !twoFa && !socialSignup && Boolean(onPasskeyLogin), onSignedIn: handlePasskeyBody, onError: handlePasskeyError });
+
   useEffect(() => {
     if (mode !== "register" && !socialSignup) return;
     if (noteUnder13BirthDate(birthDate)) setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
   }, [birthDate, mode, socialSignup, t]);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  // Cloudflare Turnstile solves in the background once sign-up typing starts, so the
+  // submit does not wait for it (lib/humanCheck/turnstileClient.js).
+  const signupStarted = mode === "register" && Boolean(username || email || password);
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   // As-you-type checks with the server's rules (lib/signupRules.js), register tab only.
   const checks = useSignupFieldChecks({ username, password, email, enabled: mode === "register" && !twoFa });
   const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
@@ -408,6 +435,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           }
         }}
       />
+      {mode === "login" && onPasskeyLogin ? (
+        <PasskeySignInButton disabled={loading} onSignedIn={handlePasskeyBody} onError={(err) => onPasskeyError?.(err)} />
+      ) : null}
       {inviteRef && mode === "register" && (
         <p className="auth-field-hint" role="status">
           {t("Invited by @{username}", { username: inviteRef })}
@@ -431,7 +461,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             onChange={(e) => setUsername(e.target.value)}
             onBlur={() => checks.blur("username")}
             maxLength={24}
-            autoComplete="username"
+            autoComplete={mode === "login" ? PASSKEY_AUTOCOMPLETE : "username"}
             autoCapitalize="none"
             spellCheck={false}
             required

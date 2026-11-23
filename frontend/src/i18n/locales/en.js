@@ -1,5 +1,6 @@
 /** Auto-generated + curated en locale */
 import { AUTHX_EN } from "./authx.en.js";
+import { PASSKEY_EN } from "./passkey.en.js";
 import { UAH_EN } from "./uah.en.js";
 import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
@@ -14,6 +15,7 @@ import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
+import { VSC_EN } from "./vsc.en.js";
 import { LX_EN } from "./lx.en.js";
 import { USET_EN } from "./uset.en.js";
 import { SVOICE_EN } from "./svoice.en.js";
@@ -61,6 +63,7 @@ import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
   authx: AUTHX_EN,
+  passkey: PASSKEY_EN,
   uah: UAH_EN,
   premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,
@@ -89,6 +92,7 @@ export const nested = {
   dir: DIR_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
+  vsc: VSC_EN,
   lx: LX_EN,
   uset: USET_EN,
   svoice: SVOICE_EN,

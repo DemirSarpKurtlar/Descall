@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut icon (48dp, accent circle, white glyph): new message. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#587AF5" android:pathData="M24,0a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M15,16.5h18a2.5,2.5 0,0 1,2.5 2.5v9a2.5,2.5 0,0 1,-2.5 2.5h-9.5l-5.5,4.5v-4.5h-3a2.5,2.5 0,0 1,-2.5 -2.5v-9a2.5,2.5 0,0 1,2.5 -2.5z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M24,20.5v6M21,23.5h6" />
+</vector>

@@ -6,6 +6,7 @@ import { avatarEffectClass } from "./Cosmetics";
 import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { avatarColor, avatarInitials, avatarKey } from "../../lib/avatarFallback.js";
 import { Shop2FrameOverlay, shop2FrameSrc } from "../shop/Shop2Cosmetics.jsx";
+import { avifSiblingUrl, preferAvif } from "../../lib/avifImage.js";
 
 function imgIsReady(img) {
   return Boolean(img && img.complete && img.naturalWidth > 0);
@@ -37,6 +38,8 @@ export function Avatar({
   const [hovered, setHovered] = useState(false);
   const [staticFrame, setStaticFrame] = useState(null);
   const [useBareUrl, setUseBareUrl] = useState(false);
+  // The smaller AVIF copy failed to load once: stay on the original for this URL.
+  const [avifFailed, setAvifFailed] = useState(false);
   const [stickySrc, setStickySrc] = useState(null);
   const imgRef = useRef(null);
   const reduceMotion = useReducedMotion();
@@ -59,8 +62,11 @@ export function Avatar({
 
   const resolvedUrl = source ? resolveAvatarUrl(source) : null;
   const bareUrl = resolvedUrl ? resolvedUrl.split("?")[0] : null;
-  const activeUrl = useBareUrl && bareUrl ? bareUrl : resolvedUrl;
-  const animated = isAnimatedAvatarUrl(activeUrl || resolvedUrl);
+  const originalUrl = useBareUrl && bareUrl ? bareUrl : resolvedUrl;
+  const animated = isAnimatedAvatarUrl(originalUrl || resolvedUrl);
+  // Still avatars with an AVIF copy load that copy where AVIF decodes (lib/avifImage.js).
+  const activeUrl = !animated && !avifFailed && originalUrl ? preferAvif(originalUrl) : originalUrl;
+  const usingAvif = Boolean(activeUrl && activeUrl !== originalUrl);
 
   const shouldAnimate = useMemo(() => {
     if (!animated) return false;
@@ -89,6 +95,7 @@ export function Avatar({
   useEffect(() => {
     setFailed(false);
     setUseBareUrl(false);
+    setAvifFailed(false);
     setStaticFrame(null);
   }, [resolvedUrl]);
 
@@ -107,7 +114,9 @@ export function Avatar({
   const noteGoodSrc = useCallback((src) => {
     if (!src || src.startsWith("data:")) return;
     const origin = (resolvedUrl || activeUrl || "").split("?")[0];
-    if (origin && !(src === resolvedUrl || src === activeUrl || src.split("?")[0] === origin)) {
+    const avifOrigin = origin ? (avifSiblingUrl(origin) || "") : "";
+    const base = src.split("?")[0];
+    if (origin && !(src === resolvedUrl || src === activeUrl || base === origin || (avifOrigin && base === avifOrigin))) {
       return;
     }
     stickyIdentityRef.current = identityKey;
@@ -139,6 +148,7 @@ export function Avatar({
     setStickySrc(null);
     setStaticFrame(null);
     setUseBareUrl(false);
+    setAvifFailed(false);
     setFailed(false);
     setLoaded(false);
   }, [identityKey]);
@@ -259,6 +269,12 @@ export function Avatar({
               setFailed(false);
             }}
             onError={() => {
+              if (usingAvif && displaySrc === activeUrl) {
+                // AVIF copy missing or undecodable: retry the original right away.
+                setAvifFailed(true);
+                setFailed(false);
+                return;
+              }
               if (!useBareUrl && bareUrl && displaySrc !== bareUrl) {
                 setUseBareUrl(true);
                 setFailed(false);

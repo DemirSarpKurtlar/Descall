@@ -153,7 +153,9 @@ if (fs.existsSync(assetLinksFile)) {
   const links = JSON.parse(fs.readFileSync(assetLinksFile, "utf8"));
   assert.ok(Array.isArray(links) && links.length > 0, "assetlinks.json is a statement list");
   for (const s of links) {
-    assert.deepEqual(s.relation, ["delegate_permission/common.handle_all_urls"]);
+    // App Links, plus passkeys (Credential Manager) when the statement also delegates login creds.
+    assert.ok(s.relation.includes("delegate_permission/common.handle_all_urls"));
+    assert.ok(s.relation.every((r) => ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"].includes(r)));
     assert.equal(s.target?.namespace, "android_app");
     assert.equal(s.target?.package_name, "com.descall.app");
     assert.ok(s.target.sha256_cert_fingerprints.length > 0);

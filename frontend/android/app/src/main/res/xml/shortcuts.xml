@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4.2 launcher shortcuts (long press on the Descall icon, Android 7.1+) and the Google
+     Assistant App Actions capability (OPEN_APP_FEATURE, shortcuts.xml framework; the old
+     actions.xml is not used). Every entry goes through DescallShortcutActivity, a trampoline
+     that brings the running app forward instead of letting the launcher clear its task (a
+     live call keeps going). Recent DMs are dynamic shortcuts (DescallShortcutsPlugin.java). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent
+            android:action="com.descall.app.action.OPEN_FEATURE"
+            android:targetPackage="com.descall.app"
+            android:targetClass="com.descall.app.DescallShortcutActivity">
+            <parameter
+                android:name="feature"
+                android:key="feature" />
+        </intent>
+    </capability>
+
+    <shortcut
+        android:shortcutId="new_message"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_message"
+        android:shortcutShortLabel="@string/shortcut_new_message_short"
+        android:shortcutLongLabel="@string/shortcut_new_message_long">
+        <intent
+            android:action="com.descall.app.action.NEW_MESSAGE"
+            android:targetPackage="com.descall.app"
+            android:targetClass="com.descall.app.DescallShortcutActivity" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding
+                android:key="feature"
+                android:value="@array/shortcut_new_message_synonyms" />
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="toggle_dnd"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_dnd"
+        android:shortcutShortLabel="@string/shortcut_dnd_short"
+        android:shortcutLongLabel="@string/shortcut_dnd_long">
+        <intent
+            android:action="com.descall.app.action.TOGGLE_DND"
+            android:targetPackage="com.descall.app"
+            android:targetClass="com.descall.app.DescallShortcutActivity" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding
+                android:key="feature"
+                android:value="@array/shortcut_dnd_synonyms" />
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="friends"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_friends"
+        android:shortcutShortLabel="@string/shortcut_friends_short"
+        android:shortcutLongLabel="@string/shortcut_friends_long">
+        <intent
+            android:action="com.descall.app.action.OPEN_FRIENDS"
+            android:targetPackage="com.descall.app"
+            android:targetClass="com.descall.app.DescallShortcutActivity" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding
+                android:key="feature"
+                android:value="@array/shortcut_friends_synonyms" />
+        </capability-binding>
+    </shortcut>
+</shortcuts>

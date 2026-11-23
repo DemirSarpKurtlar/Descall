@@ -1,5 +1,6 @@
 /** Auto-generated + curated tr locale */
 import { AUTHX_TR } from "./authx.tr.js";
+import { PASSKEY_TR } from "./passkey.tr.js";
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
@@ -14,6 +15,7 @@ import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { VSC_TR } from "./vsc.tr.js";
 import { LX_TR } from "./lx.tr.js";
 import { USET_TR } from "./uset.tr.js";
 import { SVOICE_TR } from "./svoice.tr.js";
@@ -71,6 +73,7 @@ import { CONV_START_I18N } from "./convStart.i18n.js";
 import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 export const nested = {
   authx: AUTHX_TR,
+  passkey: PASSKEY_TR,
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
@@ -99,6 +102,7 @@ export const nested = {
   dir: DIR_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
+  vsc: VSC_TR,
   lx: LX_TR,
   uset: USET_TR,
   svoice: SVOICE_TR,

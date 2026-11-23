@@ -7,6 +7,7 @@ import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { serverMessage } from "../i18n/serverText.js";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
@@ -14,6 +15,9 @@ import TwoFaResendButton from "../components/auth/TwoFaResendButton";
 import GlassCheckbox from "../components/ui/GlassCheckbox";
 import useSignupFieldChecks from "../components/auth/useSignupFieldChecks";
 import SignupFieldMessage from "../components/auth/SignupFieldMessage";
+import PasskeySignInButton, { passkeyErrorForParent } from "../components/passkeys/PasskeySignInButton.jsx";
+import usePasskeyAutofill, { PASSKEY_AUTOCOMPLETE } from "../hooks/usePasskeyAutofill";
+import { normalizePasskeyError, passkeyErrorKey } from "../lib/passkeys/index.js";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -52,6 +56,8 @@ function AuthModal({
   onRegister,
   onGoogleLogin,
   onVerify2fa,
+  onPasskeyLogin,
+  onPasskeyError,
   authLoading,
   authError: authErrorProp,
   initialMode = "login",
@@ -69,6 +75,11 @@ function AuthModal({
   const [birthDate, setBirthDate] = useState("");
   const [deviceBlock, setDeviceBlock] = useState("");
   const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
+  // Turnstile solves in the background once sign-up typing starts (no wait on submit).
+  const signupStarted = Boolean(open && isRegistering && !forgotMode && (username || email || password));
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   const [legalModal, setLegalModal] = useState(null);
 
   // The shell's error stays set after "Back to login" / a mode switch: hide it there
@@ -96,6 +107,26 @@ function AuthModal({
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
   const [googleUnavailable, setGoogleUnavailable] = useState(false);
+  // Passkeys: button + browser autofill on the username field (login only).
+  const [pkError, setPkError] = useState("");
+  const handlePasskeyBody = async (body) => {
+    if (openTwoFa(body)) return;
+    setPkError("");
+    await onPasskeyLogin?.(body);
+  };
+  const handlePasskeyError = (err) => {
+    if (passkeyErrorForParent(err)) {
+      onPasskeyError?.(normalizePasskeyError(err).cause || err);
+      return;
+    }
+    const key = passkeyErrorKey(err);
+    if (key) setPkError(t(key));
+  };
+  usePasskeyAutofill({
+    enabled: Boolean(open && !isRegistering && !twoFa && !forgotMode && !socialSignup && onPasskeyLogin),
+    onSignedIn: handlePasskeyBody,
+    onError: handlePasskeyError,
+  });
   // As-you-type checks with the server's rules (lib/signupRules.js), register only.
   const checks = useSignupFieldChecks({ username, password, email, enabled: Boolean(open && isRegistering && !twoFa && !forgotMode) });
   const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
@@ -410,9 +441,9 @@ function AuthModal({
                     {t("Invited by @{username}", { username: inviteRef })}
                   </div>
                 )}
-                {(authError || deviceBlock) && (
+                {(authError || deviceBlock || pkError) && (
                   <div id="mkt-auth-error" className="auth-error" role="alert">
-                    {authError || deviceBlock}
+                    {authError || deviceBlock || pkError}
                   </div>
                 )}
                 {isGoogleSignInOffered() && (
@@ -450,6 +481,14 @@ function AuthModal({
                 )}
                   </>
                 )}
+                {!isRegistering && onPasskeyLogin ? (
+                  <PasskeySignInButton
+                    className="mkt-auth-passkey"
+                    disabled={isSubmitting || authLoading}
+                    onSignedIn={handlePasskeyBody}
+                    onError={(err) => onPasskeyError?.(err)}
+                  />
+                ) : null}
                 <form onSubmit={submit}>
                   <input
                     id="mkt-auth-username"
@@ -457,7 +496,7 @@ function AuthModal({
                     onChange={(e) => setUsername(e.target.value)}
                     onBlur={() => checks.blur("username")}
                     placeholder={t("Username")}
-                    autoComplete="username"
+                    autoComplete={isRegistering ? "username" : PASSKEY_AUTOCOMPLETE}
                     autoCapitalize="none"
                     spellCheck={false}
                     maxLength={isRegistering ? 24 : undefined}

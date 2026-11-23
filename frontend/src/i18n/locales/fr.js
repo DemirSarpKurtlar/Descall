@@ -1,4 +1,5 @@
 import { AUTHX_FR } from "./authx.fr.js";
+import { PASSKEY_FR } from "./passkey.fr.js";
 import { API_FR } from "./api.fr.js";
 import { PREMIUM_STORY_FR } from "./premiumStory.fr.js";
 import { UAH_FR } from "./uah.fr.js";
@@ -18,6 +19,7 @@ import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
+import { VSC_FR } from "./vsc.fr.js";
 import { LX_FR } from "./lx.fr.js";
 import { USET_FR } from "./uset.fr.js";
 import { SVOICE_FR } from "./svoice.fr.js";
@@ -46,6 +48,7 @@ import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   authx: AUTHX_FR,
+  passkey: PASSKEY_FR,
   "premiumStory": PREMIUM_STORY_FR,
   "amp": AMP_FR,
   "msg4": MSG4_FR,
@@ -70,6 +73,7 @@ export const nested = {
   "dir": DIR_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
+  "vsc": VSC_FR,
   "lx": LX_FR,
   "uset": USET_FR,
   "svoice": SVOICE_FR,

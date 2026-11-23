@@ -81,7 +81,10 @@ const isSignupStatsWindow = /^\/admin\/signup-stats\/?$/.test(path);
 // Yönetici Paneli window (Electron, 3.1): the whole admin panel in its own
 // BrowserWindow so the main Descall window stays usable beside it.
 const isAdminPanelWindow = /^\/admin\/panel\/?$/.test(path);
-const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow;
+// Desktop passkey handoff (lib/passkeys/handoff.js): the browser half, a standalone page
+// (no app shell, no socket, no session) at https://descall.com/passkey/desktop.
+const isPasskeyDesktopPage = /^\/passkey\/desktop\/?$/.test(path);
+const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow || isPasskeyDesktopPage;
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
 const isNativeAndroid = (() => {
@@ -296,7 +299,9 @@ async function bootApp() {
     ]);
 
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
-  const RootApp = isSignupStatsWindow
+  const RootApp = isPasskeyDesktopPage
+    ? lazy(() => import("./components/passkeys/PasskeyDesktopPage.jsx"))
+    : isSignupStatsWindow
     ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
     : isAdminPanelWindow
       ? lazy(() => import("./components/admin/AdminPanelPage.jsx"))
