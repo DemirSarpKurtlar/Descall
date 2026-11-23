@@ -2,7 +2,7 @@
 export const PASSKEY_EN = {
   "signIn": {
     "button": "Sign in with a passkey",
-    "busy": "Waiting for your passkey...",
+    "busy": "Waiting for your passkey…",
     "handoffTitle": "Continue in your browser",
     "handoffLead": "Descall opened in your browser. Check that the code there is {code}, then confirm with your passkey.",
     "handoffReopen": "Open the page again",
@@ -95,6 +95,6 @@ export const PASSKEY_EN = {
     "expired": "This link expired or was already used. Start again in the Descall app.",
     "noCode": "This page opens from the Descall desktop app.",
     "unsupported": "This browser does not support passkeys. Open it in a current Chrome, Edge, Safari or Firefox.",
-    "loading": "Loading..."
+    "loading": "Loading…"
   }
 };

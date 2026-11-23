@@ -2,7 +2,7 @@
 export const PASSKEY_FR = {
   "signIn": {
     "button": "Se connecter avec une clé d'accès",
-    "busy": "En attente de ta clé d'accès...",
+    "busy": "En attente de ta clé d'accès…",
     "handoffTitle": "Continue dans ton navigateur",
     "handoffLead": "Descall s'est ouvert dans ton navigateur. Vérifie que le code affiché est {code}, puis confirme avec ta clé d'accès.",
     "handoffReopen": "Rouvrir la page",
@@ -95,6 +95,6 @@ export const PASSKEY_FR = {
     "expired": "Ce lien a expiré ou a déjà été utilisé. Recommence dans l'application Descall.",
     "noCode": "Cette page s'ouvre depuis l'application Descall sur ordinateur.",
     "unsupported": "Ce navigateur ne prend pas en charge les clés d'accès. Ouvre-la dans un Chrome, Edge, Safari ou Firefox récent.",
-    "loading": "Chargement..."
+    "loading": "Chargement…"
   }
 };

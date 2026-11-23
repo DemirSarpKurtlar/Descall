@@ -2,7 +2,7 @@
 export const PASSKEY_TR = {
   "signIn": {
     "button": "Passkey ile giriş yap",
-    "busy": "Passkey bekleniyor...",
+    "busy": "Passkey bekleniyor…",
     "handoffTitle": "Tarayıcında devam et",
     "handoffLead": "Descall tarayıcında açıldı. Oradaki kodun {code} olduğunu kontrol et ve passkey'inle onayla.",
     "handoffReopen": "Sayfayı yeniden aç",
@@ -95,6 +95,6 @@ export const PASSKEY_TR = {
     "expired": "Bu bağlantının süresi doldu ya da kullanıldı. Descall uygulamasında yeniden başlat.",
     "noCode": "Bu sayfa Descall masaüstü uygulamasından açılır.",
     "unsupported": "Bu tarayıcı passkey desteklemiyor. Güncel bir Chrome, Edge, Safari veya Firefox ile aç.",
-    "loading": "Yükleniyor..."
+    "loading": "Yükleniyor…"
   }
 };

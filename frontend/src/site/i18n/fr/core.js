@@ -237,6 +237,7 @@ export default {
   "Sign in to your account": "Connecte-toi à ton compte",
   "Sign-in and security. Always on.": "Connexion et sécurité. Toujours actifs.",
   "Sitemap": "Plan du site",
+  "Something went wrong.": "Une erreur est survenue.",
   "Sound better in voice chat": "Mieux sonner en chat vocal",
   "Start free": "Commencer gratuitement",
   "Status": "Statut",

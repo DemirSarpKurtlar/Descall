@@ -16,6 +16,8 @@
  * Pure: everything it reads comes from `env` (tests pass a fake window).
  */
 
+import { desktopBridge, isTauriShell } from "../desktopShell.js";
+
 export const PASSKEY_RP_ID = "descall.com";
 
 function capacitorPlatform(win) {
@@ -29,20 +31,11 @@ function capacitorPlatform(win) {
 }
 
 function isTauri(win) {
-  try {
-    if (win?.__TAURI_INTERNALS__ && typeof win.__TAURI_INTERNALS__ === "object") return true;
-    return win?.electronAPI?.isTauri === true;
-  } catch {
-    return false;
-  }
+  return isTauriShell(win);
 }
 
 function isDesktopBridge(win) {
-  try {
-    return Boolean(win?.electronAPI) || isTauri(win);
-  } catch {
-    return false;
-  }
+  return Boolean(desktopBridge(win)) || isTauri(win);
 }
 
 /** True when this page's host may use `rpId` (same host or a subdomain). */

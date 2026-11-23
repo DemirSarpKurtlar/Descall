@@ -581,6 +581,8 @@ export const AUDIT_LOG_TR = {
     "feedback_delete": "Geri bildirimi sildi",
     "2fa_totp_enabled": "2FA açtı",
     "2fa_recovery_regenerated": "Kurtarma kodlarını yeniledi",
+    "passkey_added": "Passkey ekledi",
+    "passkey_removed": "Passkey kaldırdı",
     "descoin_grant": "DesCoin verdi",
     "descoin_reconcile_run": "Mutabakat çalıştırdı",
     "descoin_reconcile_fix": "Bakiyeyi düzeltti",
