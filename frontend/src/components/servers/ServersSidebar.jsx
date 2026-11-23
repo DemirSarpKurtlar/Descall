@@ -6,7 +6,7 @@ import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info, UserGear, Compass } from "../ui/Icon.jsx";
+import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ChevronLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info, UserGear, Compass } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
@@ -1042,7 +1042,7 @@ export default function ServersSidebar({
               title={t("Back to servers")} aria-label={t("Back to servers")}
               onClick={() => onBackToList?.()}
             >
-              <ArrowLeft size={18} />
+              <ChevronLeft size={20} />
             </button>
             <div className="server-shell-title-wrap">
               <h2 className="sidebar-title server-shell-title">{activeServer.name}</h2>
