@@ -55,4 +55,10 @@ for (const rel of ["electron/notificationCard.cjs", "electron/premium/hudHtml.cj
   assert.ok(!/#5865f2|88,\s*101,\s*242/i.test(src), `${rel}: Discord blurple instead of the logo blue`);
 }
 
+// Server header: back is a glass chip and the server menu is a neutral tool,
+// not the blue primary CTA (owner note, color sweep).
+const gdChat = readFileSync(join(here, "glass-desktop", "chat.css"), "utf8");
+assert.match(gdChat, /\.server-shell-header \.server-back-btn \{[^}]*background: var\(--gd-glass-fill\)/);
+assert.match(gdChat, /\.g-server-menu-btn:last-child[^{]*\{[^}]*background: transparent !important/);
+
 console.log("themeContrast selftest OK", Object.keys(blocks).length, "themes");
