@@ -658,6 +658,11 @@ html[data-theme="light"] .dir-modal .dir-chip[data-cat]:not(.is-on) svg {
 html[data-theme="light"] .dir-modal .dir-chip.is-on svg {
   color: #fff;
 }
+/* Light glass: the deep stop fades to a tint of the same hue; a black-mixed stop over
+   white turned muddy grey. */
+html[data-theme="light"] .dir-modal .dir-card:not(.dir-card--skeleton) .dir-card-banner {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--cat) 86%, transparent), color-mix(in srgb, var(--cat) 38%, transparent));
+}
 html[data-theme="light"] .dir-modal .dir-card:not(.dir-card--skeleton):hover {
   background: #fff;
   box-shadow: inset 0 0 0 1px rgba(20, 24, 40, 0.1), 0 12px 28px rgba(20, 24, 40, 0.12);
