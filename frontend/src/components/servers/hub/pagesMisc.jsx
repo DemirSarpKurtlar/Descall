@@ -96,7 +96,7 @@ export function InvitePage({ route }) {
       {!p.invites ? <div className="svh-empty">{s.inviteNoPerm}</div> : (
         <>
           <div className="svh-group" style={{ padding: "20px 18px", textAlign: "center", marginTop: 4 }}>
-            <div style={{ fontSize: 13, color: "rgba(235,238,255,.5)" }}>{s.yourLink}</div>
+            <div style={{ fontSize: 13, color: "var(--svh-t4)" }}>{s.yourLink}</div>
             <div style={{ fontSize: 21, fontWeight: 650, margin: "6px 0 14px", letterSpacing: "-.02em", overflowWrap: "anywhere", minHeight: 26 }}>
               {link ? prettyUrl(link.url) : err ? <span className="svh-err" style={{ margin: 0 }}>{err}</span> : <Spinner />}
             </div>
@@ -114,7 +114,7 @@ export function InvitePage({ route }) {
                     const done = sent.has(String(fr.id));
                     return (
                       <Row key={fr.id} av={<Av user={fr} s={32} />} t={fr.displayName || fr.username} inset={58}
-                        tail={<Btn variant="gray" sm style={{ height: 30, fontSize: 14, padding: "0 14px", color: done ? "rgba(235,238,255,.5)" : "#8FA6FF" }} disabled={done || !link} onClick={() => invite(fr)}>{done ? s.invited : s.inviteBtn}</Btn>} />
+                        tail={<Btn variant="gray" sm style={{ height: 30, fontSize: 14, padding: "0 14px", color: done ? "var(--svh-t4)" : "var(--svh-link)" }} disabled={done || !link} onClick={() => invite(fr)}>{done ? s.invited : s.inviteBtn}</Btn>} />
                     );
                   })}
                 </Group>
@@ -229,7 +229,7 @@ function BansTab() {
                 const sub = [b.reason, b.moderatorDisplayName || b.moderatorUsername, b.createdAt ? shortDate(b.createdAt, locale) : null].filter(Boolean).join(" · ");
                 return (
                   <Row key={b.userId} av={<Av user={{ ...b, id: b.userId }} name={name} s={36} />} t={name} sub={sub} inset={62}
-                    tail={<Btn variant="gray" sm style={{ height: 30, fontSize: 14, padding: "0 12px", color: "#8FA6FF" }} disabled={busyId === b.userId} onClick={() => unban(b)}>{s.unban}</Btn>} />
+                    tail={<Btn variant="gray" sm style={{ height: 30, fontSize: 14, padding: "0 12px", color: "var(--svh-link)" }} disabled={busyId === b.userId} onClick={() => unban(b)}>{s.unban}</Btn>} />
                 );
               })}
             </Group>

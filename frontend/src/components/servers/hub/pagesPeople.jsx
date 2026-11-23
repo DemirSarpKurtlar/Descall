@@ -352,7 +352,7 @@ function RoleItem({ role, sub, chev, sel, onClick, draggable, onDragEnd }) {
   return (
     <Reorder.Item as="div" value={role} className="svh-ri" dragListener={false} dragControls={controls}
       onDragStart={() => { dragged.current = true; hapticSelection(); }} onDragEnd={onDragEnd}
-      whileDrag={{ scale: 1.02, zIndex: 3, backgroundColor: "rgba(44,46,66,.98)", boxShadow: "0 12px 30px rgba(0,0,0,.45)" }}>
+      whileDrag={{ scale: 1.02, zIndex: 3, backgroundColor: "var(--svh-drag)", boxShadow: "0 12px 30px rgba(0,0,0,.45)" }}>
       {row}
     </Reorder.Item>
   );
@@ -410,7 +410,7 @@ function RoleList({ sel, onPick, chev }) {
         ) : null}
       </Reorder.Group>
       {canManage ? (
-        <Btn variant="gray" style={{ marginTop: 16, height: 46, color: "#8FA6FF" }} onClick={() => onPick({ id: "new" })}><I n="plus" s={18} /> {s.createRole}</Btn>
+        <Btn variant="gray" style={{ marginTop: 16, height: 46, color: "var(--svh-link)" }} onClick={() => onPick({ id: "new" })}><I n="plus" s={18} /> {s.createRole}</Btn>
       ) : null}
       <Foot>{s.rolesFoot}</Foot>
     </>
@@ -673,7 +673,7 @@ export function TransferPage({ route }) {
       ) : <div className="svh-empty">{s.noCandidates}</div>}
       <div className="svh-group" style={{ marginTop: 18, padding: "14px 16px", display: "flex", gap: 12, alignItems: "center", background: "rgba(255,214,10,.1)", boxShadow: "inset 0 0 0 .5px rgba(255,214,10,.3)" }}>
         <span style={{ color: "#FFD60A", flex: "none", display: "grid" }}><I n="crown" s={22} /></span>
-        <div style={{ fontSize: 14, lineHeight: 1.4, color: "rgba(255,240,200,.9)" }}>
+        <div style={{ fontSize: 14, lineHeight: 1.4, color: "var(--svh-note)" }}>
           {picked ? <Rich text={f(route.leaveAfter ? "transferNoticeLeave" : "transferNotice", { name: pn, nameGen: gen(pn) })} /> : s.transferNoticeNone}
         </div>
       </div>
