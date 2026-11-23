@@ -475,20 +475,20 @@ html.glass-desktop body.electron-app .toast-stack {
    Avatar-only tiles draw speaking with <SpeakingRings> instead. */
 .participant-tile.is-speaking:not(.participant-tile--avatar-only),
 .call-tile.is-speaking {
-  box-shadow: 0 0 0 2px var(--success), 0 0 0 5px rgba(35, 165, 90, 0.22);
-  border-color: var(--success) !important;
+  box-shadow: 0 0 0 2px var(--speaking), 0 0 0 5px color-mix(in srgb, var(--speaking) 22%, transparent);
+  border-color: var(--speaking) !important;
 }
 
 @keyframes speakingPulse {
-  0%, 100% { box-shadow: 0 0 0 2px var(--success), 0 0 10px rgba(35, 165, 90, 0.22); }
-  50% { box-shadow: 0 0 0 3px var(--success), 0 0 16px rgba(35, 165, 90, 0.34); }
+  0%, 100% { box-shadow: 0 0 0 2px var(--speaking), 0 0 10px color-mix(in srgb, var(--speaking) 22%, transparent); }
+  50% { box-shadow: 0 0 0 3px var(--speaking), 0 0 16px color-mix(in srgb, var(--speaking) 34%, transparent); }
 }
 
 .speaking-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--success);
+  background: var(--speaking);
   flex-shrink: 0;
   opacity: 0;
   transform: scale(0.7);
@@ -2801,12 +2801,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .participant-tile-avatar-shell .speaking-ring.active,
 .participant-tile-avatar-core .speaking-ring.active {
   opacity: 1;
-  border-color: rgba(35, 165, 90, 0.55);
-  box-shadow: 0 0 18px rgba(35, 165, 90, 0.35);
+  border-color: color-mix(in srgb, var(--speaking) 55%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--speaking) 35%, transparent);
 }
 .participant-tile-avatar-shell .speaking-ring.ring-b.active,
 .participant-tile-avatar-core .speaking-ring.ring-b.active {
-  border-color: rgba(35, 165, 90, 0.28);
+  border-color: color-mix(in srgb, var(--speaking) 28%, transparent);
   box-shadow: none;
 }
 

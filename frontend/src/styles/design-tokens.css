@@ -8,6 +8,26 @@
   /* Logo blue (Konsept 2). Fixed across themes; --primary is the themeable accent. */
   --brand: #587AF5;
   --brand-2: #4A68E0;
+
+  /* Settings icon tiles (iOS-style colored square, white glyph). One palette
+     for the desktop sidebar (.s3 .c-*), the iPhone list (S3_TILE_HEX) and the
+     server hub (.svh-ico.c-*). Owner decision Nov 2026: every tile gives the
+     white glyph >= 3:1 (WCAG 1.4.11, non-text UI). Green, teal, orange, yellow
+     and mint were darkened by the smallest HSL lightness step that passes,
+     hue and saturation kept (settingsShopColors selftest checks the ratios).
+     Fixed across themes: the glyph is always white. */
+  --tile-blue: #3E7BFA;
+  --tile-brand: #587AF6;
+  --tile-indigo: #5E5CE6;
+  --tile-purple: #9B5DE5;
+  --tile-green: #2DAA53;
+  --tile-teal: #19A2B3;
+  --tile-orange: #E1780F;
+  --tile-yellow: #BB8E0A;
+  --tile-red: #F0453A;
+  --tile-pink: #E8457A;
+  --tile-gray: #6B6F80;
+  --tile-mint: #1FA68D;
 }
 
 :root,
@@ -40,6 +60,13 @@
      --danger-text. */
   --status-online: var(--success);
   --status-dnd: var(--danger);
+  /* Voice "speaking" ring / dot / flag: ONE token for calls, the server voice
+     list, voice tiles, screen share tiles, the mini call card and the 3D world
+     (owner decision Nov 2026; calls used iOS #30D158, servers #23A55A). Same
+     green as online presence: 4.0-6.1:1 on the dark call tiles and surfaces.
+     Rings draw it 3px wide with a glow (color-mix on this token), so it reads
+     on dark video and avatar tiles. */
+  --speaking: var(--status-online);
   /* The one default profile banner (UI audit #3): brand charcoal with a
      faint logo-blue wash. Every "no banner yet" surface uses it. */
   --profile-banner-fallback: linear-gradient(180deg, rgba(88, 122, 245, 0.22), rgba(88, 122, 245, 0.06)), #393C4D;
@@ -233,6 +260,9 @@
   --danger-text: #B42318;
   --success-text: #0F6634;
   --warning-text: #7A4F00;
+  /* Speaking ring one HSL step deeper (hue kept): #23A55A is 2.5:1 on
+     --surface-2 (#E3E5E8), this is 3.0:1 there and 3.8:1 on white. */
+  --speaking: #209652;
 
   --border-0: rgba(0, 0, 0, 0.0);
   --border-1: rgba(0, 0, 0, 0.04);

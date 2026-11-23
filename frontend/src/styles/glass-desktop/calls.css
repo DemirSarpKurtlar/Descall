@@ -60,7 +60,7 @@ html.glass-desktop .call-tile:not(.participant-tile--avatar-only) {
 
 html.glass-desktop .participant-tile.is-speaking:not(.participant-tile--avatar-only),
 html.glass-desktop .call-tile.is-speaking:not(.participant-tile--avatar-only) {
-  box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 32px rgba(48, 209, 88, 0.3) !important;
+  box-shadow: inset 0 0 0 3px var(--speaking), 0 0 32px color-mix(in srgb, var(--speaking) 42%, transparent) !important;
 }
 
 /* 1, 2, and 3+ share one centered flex grid (see call-grid.css). */
@@ -103,8 +103,8 @@ html.glass-desktop .call-quality-hud {
 
 html.glass-desktop .call-participant-grid .participant-tile.is-speaking {
   box-shadow:
-    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
-    0 0 28px rgba(48, 209, 88, 0.35) !important;
+    inset 0 0 0 3px var(--speaking),
+    0 0 28px color-mix(in srgb, var(--speaking) 47%, transparent) !important;
 }
 
 html.glass-desktop .participant-tile-label {
@@ -438,7 +438,7 @@ html.glass-desktop .gd-mosaic-cell > .participant-tile.participant-tile--avatar-
 
 html.glass-desktop[data-glass-qa-speaking] .gd-mosaic-screen,
 html.glass-desktop .gd-mosaic-cell:has(.participant-tile.is-speaking) {
-  box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 28px rgba(48, 209, 88, 0.28);
+  box-shadow: inset 0 0 0 3px var(--speaking), 0 0 28px color-mix(in srgb, var(--speaking) 40%, transparent);
 }
 
 html.glass-desktop .gd-group-mosaic .gd-share-label,
@@ -922,8 +922,8 @@ html.glass-desktop .main-panel .server-voice-tile {
 }
 html.glass-desktop .main-panel .server-voice-tile.is-speaking {
   box-shadow:
-    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
-    0 0 28px rgba(48, 209, 88, 0.32);
+    inset 0 0 0 3px var(--speaking),
+    0 0 28px color-mix(in srgb, var(--speaking) 44%, transparent);
 }
 html.glass-desktop .main-panel .server-voice-tile-video { background: transparent; }
 html.glass-desktop .main-panel .server-voice-tile-meta {

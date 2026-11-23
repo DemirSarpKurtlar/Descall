@@ -390,10 +390,21 @@ const S3_NAV_TILES = {
   promo: ["ticket", "pink"],
 };
 
-/* Same values as .s3 .c-* in settings-v3.css, for lists outside .s3. */
+/* Same tokens as .s3 .c-* in settings-v3.css (--tile-* in design-tokens.css), for lists
+   outside .s3. Every tile gives the white glyph >= 3:1. */
 const S3_TILE_HEX = {
-  blue: "#3e7bfa", brand: "#587af6", indigo: "#5e5ce6", purple: "#9b5de5", green: "#30b458", teal: "#1aa6b7",
-  orange: "#f08a24", yellow: "#e9b10c", red: "#f0453a", pink: "#e8457a", gray: "#6b6f80", mint: "#22b59a",
+  blue: "var(--tile-blue)",
+  brand: "var(--tile-brand)",
+  indigo: "var(--tile-indigo)",
+  purple: "var(--tile-purple)",
+  green: "var(--tile-green)",
+  teal: "var(--tile-teal)",
+  orange: "var(--tile-orange)",
+  yellow: "var(--tile-yellow)",
+  red: "var(--tile-red)",
+  pink: "var(--tile-pink)",
+  gray: "var(--tile-gray)",
+  mint: "var(--tile-mint)",
 };
 
 const TAB_TITLE_KEYS = {
