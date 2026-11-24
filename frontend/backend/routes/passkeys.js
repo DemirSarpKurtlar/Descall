@@ -20,7 +20,17 @@
  *   POST   /register/options { reauthToken }    -> PublicKeyCredentialCreationOptionsJSON
  *   POST   /register/verify  { reauthToken, response, name, platform } -> { passkey }
  *   PATCH  /:id { name }                       -> { passkey }       (own passkeys only)
- *   DELETE /:id                                -> { ok }            (own passkeys only)
+ *   DELETE /:id { reason, endSessions }        -> { ok, sessionsEnded } (own passkeys only)
+ *
+ * Control center (Settings > Security > Passkeys, lib/passkeys/center.js):
+ *   GET    /center                             -> passkeys with places + 30-day uses, summary
+ *                                                  (score, sign-in mix, speed), activity, alerts
+ *   POST   /alerts/:id/resolve { action }       -> "me" (it was me) | "revoke" (remove the
+ *                                                  passkey and end the other sessions)
+ *   POST   /report/info    { token }            -> what the e-mail link is about (public)
+ *   POST   /report/resolve { token, action }    -> "confirm" | "revoke" (public, one time):
+ *                                                  revoke removes the passkey and ends every
+ *                                                  session of the account
  *
  * Desktop browser handoff (Electron; Tauri on Windows older than 1903):
  *   POST /handoff          { platform }         -> { pollSecret, url, matchCode, expiresInSec }  sign-in
@@ -39,6 +49,7 @@ const { readConfig } = require("../lib/passkeys/config");
 const { createSupabaseStore } = require("../lib/passkeys/store");
 const { createPasskeyService, PasskeyError, MAX_PASSKEYS_PER_USER, userHandleFor } = require("../lib/passkeys/service");
 const meta = require("../lib/passkeys/meta");
+const center = require("../lib/passkeys/center");
 const { peek, recordFailure, rejectIfLimited } = require("../lib/rateLimit");
 const { apiError, apiText } = require("../lib/apiError");
 
@@ -59,7 +70,13 @@ const LIMITS = {
   handoffCode: { max: 60 },
   poll: { max: 400 },
   manage: { max: 60 },
+  report: { max: 30 },
 };
+
+/** A session this young counts as a fresh sign-in: adding a passkey needs no second prompt. */
+const FRESH_SESSION_MS = 10 * 60 * 1000;
+const FRESH_METHODS = new Set(["password", "passkey", "google", "apple", "2fa_totp", "2fa_email", "2fa_recovery", "register"]);
+const MAIL_KINDS = { passkeyAdded: "added", passkeyNewPlace: "newPlace", passkeyRevokedByReport: "revoked" };
 
 function defaultDeps() {
   const supabase = require("../db/supabase");
@@ -135,10 +152,30 @@ function defaultDeps() {
       const { langFrom } = require("../lib/emailTemplates");
       const { bt } = require("../lib/i18n");
       const lang = langFrom(req?.headers?.["accept-language"]);
+      if (MAIL_KINDS[kind]) {
+        // Designed e-mail with the "Ben degildim" / "Bendim" buttons (lib/passkeys/securityMail.js).
+        const { buildPasskeySecurityEmail } = require("../lib/passkeys/securityMail");
+        const tzRaw = String(req?.headers?.["cf-timezone"] || req?.headers?.["x-vercel-ip-timezone"] || "");
+        const timeZone = /^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)+$/.test(tzRaw) ? tzRaw : undefined;
+        const mail = buildPasskeySecurityEmail({ kind: MAIL_KINDS[kind], lang, timeZone, base: readConfig().desktopOrigin, ...vars });
+        await sendEmail({ to: user.email, subject: mail.subject, text: mail.text, html: mail.html });
+        return;
+      }
       const subject = bt(lang, `security.${kind}Subject`);
       const text = bt(lang, `security.${kind}Body`, { ...vars, support: SUPPORT_EMAIL });
       const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
       await sendEmail({ to: user.email, subject, text, html: `<p>${esc(text)}</p><p>${esc(SUPPORT_EMAIL)}</p>` });
+    },
+    async sessionsOf(userId) {
+      return sessions.listSessions(userId);
+    },
+    async endSessions(req, userId, ids) {
+      const removed = await sessions.removeSessions(userId, ids);
+      require("./auth").passkeyKit.revokeSessionIds(req, userId, removed);
+      return removed;
+    },
+    geo(req) {
+      return center.placeFromHeaders(req?.headers || {});
     },
     emit(req, userId, event, payload) {
       try {
@@ -240,7 +277,54 @@ function createPasskeyRouter(overrides = {}) {
    * verification the account's second factor is asked (requires2fa), and an account
    * without one gets no session (UV_REQUIRED).
    */
-  async function completeSignIn(req, res, { userId, userVerified, platform }) {
+  /**
+   * History of a passkey sign-in (best effort, never blocks the sign-in): the coarse place,
+   * the 30-day usage row and, when the passkey was never used from this place before, a
+   * new-place alert with a "Ben degildim" e-mail.
+   */
+  async function recordUse(req, { user, credential, platform, durationMs }) {
+    try {
+      if (!credential?.id || typeof d().store.insertEvent !== "function") return;
+      const geo = typeof d().geo === "function" ? d().geo(req) : { country: "", city: "" };
+      const at = new Date(d().now ? d().now() : Date.now()).toISOString();
+      const places = Array.isArray(credential.places) ? credential.places : [];
+      const fresh = center.isNewPlace(places, geo);
+      await d().store.setPlaces(credential.id, {
+        places: center.mergePlace(places, geo, at),
+        last_used_country: geo.country || null,
+        last_used_city: geo.city || null,
+      });
+      const base = {
+        user_id: user.id,
+        credential_row_id: credential.id,
+        credential_name: String(credential.name || "").slice(0, 64) || null,
+        platform: meta.normalizePlatform(platform),
+        device: meta.deviceFromUserAgent(req.headers?.["user-agent"]),
+        country: geo.country || null,
+        city: geo.city || null,
+      };
+      await d().store.insertEvent({ ...base, kind: "signin", at, duration_ms: center.cleanDuration(durationMs) });
+      if (!fresh) return;
+      const report = center.newReportToken(d().now ? d().now() : Date.now());
+      const alert = await d().store.insertEvent({
+        ...base,
+        kind: "new_place",
+        at,
+        report_hash: report.hash,
+        report_expires_at: report.expiresAt,
+        detail: { previous: places.slice(0, 3).map((p) => ({ country: p.country, city: p.city || "" })) },
+      });
+      if (!alert) return;
+      d().emit(req, user.id, "passkeys:changed", { reason: "alert" });
+      await d()
+        .notify(user, "passkeyNewPlace", req, { name: credential.name, provider: meta.providerName(credential.aaguid) || "", at, place: geo, token: report.token })
+        .catch(() => {});
+    } catch (err) {
+      console.warn("[passkeys] history:", err?.message || err);
+    }
+  }
+
+  async function completeSignIn(req, res, { userId, userVerified, platform, credential = null, durationMs = null }) {
     const k = kit();
     const user = await d().loadLoginUser(userId);
     if (!user) {
@@ -265,9 +349,12 @@ function createPasskeyRouter(overrides = {}) {
       ip: ip(req),
       deviceId: req.get("x-descall-device"),
       method: "passkey",
+      passkeyId: credential?.id || undefined,
+      signInMs: center.cleanDuration(durationMs) || undefined,
     });
     const token = d().signToken({ id: user.id, username: user.username, sid: session.id });
     await d().afterLogin(user.id, platform);
+    await recordUse(req, { user, credential, platform, durationMs });
     const extra = await k.resolveEquippedExtra(user.id);
     noStore(res);
     return res.status(200).json({
@@ -329,7 +416,13 @@ function createPasskeyRouter(overrides = {}) {
         }
         return sendError(res, err);
       }
-      return await completeSignIn(req, res, { userId: result.userId, userVerified: result.userVerified, platform: platformOf(req) });
+      return await completeSignIn(req, res, {
+        userId: result.userId,
+        userVerified: result.userVerified,
+        platform: platformOf(req),
+        credential: result.credential,
+        durationMs: req.body?.durationMs,
+      });
     } catch (err) {
       return sendError(res, err);
     }
@@ -389,8 +482,25 @@ function createPasskeyRouter(overrides = {}) {
     }
   }
 
-  function requireReauth(req, res) {
+  /** This request's session, when the sessions list is available (null otherwise). */
+  async function currentSession(req) {
+    if (typeof d().sessionsOf !== "function" || !req.user?.sid) return null;
+    const list = await d().sessionsOf(req.user.id).catch(() => []);
+    return (Array.isArray(list) ? list : []).find((s) => s && s.id === req.user.sid) || null;
+  }
+
+  /** Signed in within the last 10 minutes (any real sign-in method): counts as re-auth. */
+  async function freshSignIn(req) {
+    if (req.apiToken) return false;
+    const s = await currentSession(req);
+    const created = Date.parse(s?.createdAt || "");
+    const now = d().now ? d().now() : Date.now();
+    return Boolean(s && FRESH_METHODS.has(String(s.method || "")) && Number.isFinite(created) && now - created >= 0 && now - created < FRESH_SESSION_MS);
+  }
+
+  async function requireReauth(req, res) {
     if (reauthValid(req)) return true;
+    if (await freshSignIn(req)) return true;
     res.status(428).json(apiError("Confirm it is you first.", null, { code: "REAUTH_REQUIRED" }));
     return false;
   }
@@ -492,11 +602,12 @@ function createPasskeyRouter(overrides = {}) {
     try {
       if (rejectApiToken(req, res)) return;
       if (!countCall(res, `pkreg:acct:${req.user.id}`, LIMITS.register)) return;
-      if (!requireReauth(req, res)) return;
+      if (!(await requireReauth(req, res))) return;
       if (!(await ready(res))) return;
       const user = await d().loadBasicUser(req.user.id);
       if (!user) return res.status(404).json(apiError("User not found.", null, { code: "NO_USER" }));
-      const options = await d().service.registrationOptions({ user, sessionId: req.user.sid || null, platform: platformOf(req) });
+      const prefer = req.body?.prefer === "securityKey" || req.body?.prefer === "remoteDevice" ? req.body.prefer : undefined;
+      const options = await d().service.registrationOptions({ user, sessionId: req.user.sid || null, platform: platformOf(req), prefer });
       noStore(res);
       return res.json(options);
     } catch (err) {
@@ -505,9 +616,42 @@ function createPasskeyRouter(overrides = {}) {
   });
 
   async function afterRegistered(req, user, row) {
-    await d().notify(user, "passkeyAdded", req, { name: row.name }).catch((err) => {
-      console.warn("[passkeys] added notice failed:", err?.message || err);
-    });
+    let token;
+    try {
+      if (typeof d().store.insertEvent === "function") {
+        const geo = typeof d().geo === "function" ? d().geo(req) : { country: "", city: "" };
+        const at = new Date(d().now ? d().now() : Date.now()).toISOString();
+        await d().store.setPlaces(row.id, {
+          created_country: geo.country || null,
+          created_city: geo.city || null,
+          places: center.mergePlace([], geo, at),
+        });
+        const report = center.newReportToken(d().now ? d().now() : Date.now());
+        const ev = await d().store.insertEvent({
+          user_id: user.id,
+          credential_row_id: row.id,
+          credential_name: row.name,
+          kind: "added",
+          at,
+          platform: row.platform || null,
+          device: meta.deviceFromUserAgent(req.headers?.["user-agent"]),
+          country: geo.country || null,
+          city: geo.city || null,
+          report_hash: report.hash,
+          report_expires_at: report.expiresAt,
+        });
+        if (ev) token = report.token;
+        row.__geo = geo;
+      }
+    } catch (err) {
+      console.warn("[passkeys] history:", err?.message || err);
+    }
+    await d()
+      .notify(user, "passkeyAdded", req, { name: row.name, provider: meta.providerName(row.aaguid) || "", at: row.created_at, place: row.__geo, token })
+      .catch((err) => {
+        console.warn("[passkeys] added notice failed:", err?.message || err);
+      });
+    delete row.__geo;
     d().audit(user, "passkey_added", user.username, { passkeyId: row.id, platform: row.platform });
     d().emit(req, user.id, "passkeys:changed", { reason: "added" });
   }
@@ -515,7 +659,7 @@ function createPasskeyRouter(overrides = {}) {
   router.post("/register/verify", requireAuth, async (req, res) => {
     try {
       if (rejectApiToken(req, res)) return;
-      if (!requireReauth(req, res)) return;
+      if (!(await requireReauth(req, res))) return;
       if (!(await ready(res))) return;
       const user = await d().loadBasicUser(req.user.id);
       if (!user) return res.status(404).json(apiError("User not found.", null, { code: "NO_USER" }));
@@ -545,8 +689,10 @@ function createPasskeyRouter(overrides = {}) {
       const name = meta.sanitizeName(req.body?.name);
       if (!name) return res.status(400).json(apiError("Enter a name.", null, { code: "BAD_NAME" }));
       if (!(await ready(res))) return;
+      const before = await d().store.getById(req.params.id).catch(() => null);
       const row = await d().store.rename(req.params.id, req.user.id, name);
       if (!row) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
+      await history(req, { kind: "renamed", row, detail: { from: before?.name || null } });
       d().emit(req, req.user.id, "passkeys:changed", { reason: "renamed" });
       return res.json({ passkey: meta.publicPasskey(row) });
     } catch (err) {
@@ -560,16 +706,250 @@ function createPasskeyRouter(overrides = {}) {
       if (!countCall(res, `pkmanage:acct:${req.user.id}`, LIMITS.manage)) return;
       if (!UUID_RE.test(String(req.params.id))) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
       if (!(await ready(res))) return;
+      const reason = center.cleanReason(req.body?.reason || req.query?.reason);
+      const endSessions = req.body?.endSessions === true || req.query?.endSessions === "1";
       const row = await d().store.remove(req.params.id, req.user.id);
       if (!row) return res.status(404).json(apiError("Passkey not found.", null, { code: "NOT_FOUND" }));
+      // "Undo" right after adding: the person just made it here, no e-mail about it.
+      const nowMs = d().now ? d().now() : Date.now();
+      const quietUndo = reason === "undo" && nowMs - Date.parse(row.created_at || 0) < 10 * 60 * 1000;
       const user = await d().loadBasicUser(req.user.id).catch(() => null);
       if (user) {
-        await d().notify(user, "passkeyRemoved", req, { name: row.name }).catch(() => {});
-        d().audit(user, "passkey_removed", user.username, { passkeyId: row.id });
+        if (!quietUndo) await d().notify(user, "passkeyRemoved", req, { name: row.name }).catch(() => {});
+        d().audit(user, "passkey_removed", user.username, { passkeyId: row.id, reason });
       }
+      // The sessions this passkey opened (never the one making the request).
+      let ended = [];
+      if (endSessions && typeof d().endSessions === "function") {
+        const list = (await d().sessionsOf(req.user.id).catch(() => [])) || [];
+        const ids = list.filter((s) => s && s.passkeyId === row.id && s.id !== req.user.sid).map((s) => s.id);
+        if (ids.length) ended = await d().endSessions(req, req.user.id, ids).catch(() => []);
+      }
+      await history(req, { kind: "removed", row, detail: { reason, sessionsEnded: ended.length } });
       d().emit(req, req.user.id, "passkeys:changed", { reason: "removed" });
       // credentialId lets the client tell the platform the key is gone (WebAuthn signal API).
-      return res.json({ ok: true, credentialId: row.credential_id });
+      return res.json({ ok: true, credentialId: row.credential_id, sessionsEnded: ended.length });
+    } catch (err) {
+      return sendError(res, err);
+    }
+  });
+
+  // ---- control center ------------------------------------------------------------------
+
+  const nowMs = () => (d().now ? d().now() : Date.now());
+
+  /** One history row for a management action (best effort). */
+  async function history(req, { kind, row, detail = {}, userId = null }) {
+    try {
+      if (typeof d().store.insertEvent !== "function") return null;
+      const geo = typeof d().geo === "function" ? d().geo(req) : { country: "", city: "" };
+      return await d().store.insertEvent({
+        user_id: userId || req.user?.id || row?.user_id,
+        credential_row_id: row?.id || null,
+        credential_name: String(row?.name || "").slice(0, 64) || null,
+        kind,
+        at: new Date(nowMs()).toISOString(),
+        platform: meta.normalizePlatform(req.body?.platform || req.get?.("x-descall-platform") || "web"),
+        device: meta.deviceFromUserAgent(req.headers?.["user-agent"]),
+        country: geo.country || null,
+        city: geo.city || null,
+        detail,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  let lastPrune = 0;
+
+  router.get("/center", requireAuth, async (req, res) => {
+    try {
+      if (!(await ready(res))) return;
+      const now = nowMs();
+      const since = new Date(now - center.USAGE_DAYS * 86400000).toISOString();
+      const [rows, user, events, recent, sessionList] = await Promise.all([
+        d().store.listByUser(req.user.id),
+        d().loadBasicUser(req.user.id),
+        typeof d().store.listEvents === "function" ? d().store.listEvents(req.user.id, { sinceIso: since, limit: 1000, kinds: ["signin"] }) : [],
+        typeof d().store.listEvents === "function" ? d().store.listEvents(req.user.id, { limit: 40 }) : [],
+        typeof d().sessionsOf === "function" ? d().sessionsOf(req.user.id).catch(() => []) : [],
+      ]);
+      if (now - lastPrune > 3600 * 1000 && typeof d().store.pruneEvents === "function") {
+        lastPrune = now;
+        d().store.pruneEvents(new Date(now - 400 * 86400000).toISOString()).catch(() => {});
+      }
+      const totp = await d().totpState(req.user.id).catch(() => ({ enabled: false }));
+      const methods = await reauthMethods(user || { id: req.user.id });
+      if (rows.some((r) => !r.suspended_at)) methods.push("passkey");
+      const uses = new Map();
+      for (const e of events) {
+        if (!e.credential_row_id) continue;
+        if (!uses.has(e.credential_row_id)) uses.set(e.credential_row_id, []);
+        uses.get(e.credential_row_id).push(e.at);
+      }
+      const durations = events.map((e) => center.cleanDuration(e.duration_ms)).filter(Boolean);
+      const passkeys = rows.map((r) => ({
+        ...meta.publicPasskey(r),
+        createdCountry: r.created_country || null,
+        createdCity: r.created_city || null,
+        lastCountry: r.last_used_country || null,
+        lastCity: r.last_used_city || null,
+        places: (Array.isArray(r.places) ? r.places : []).slice(0, 6).map((p) => ({ country: p.country, city: p.city || "", last: p.last, n: p.n })),
+        uses30: (uses.get(r.id) || []).slice(0, 400),
+        idleDays: center.idleDays(r, now),
+        family: center.familyOf({ ...r, provider: meta.providerName(r.aaguid) }),
+      }));
+      const mix = center.methodMix(sessionList);
+      const score = center.securityScore({ user: user || {}, totp: Boolean(totp.enabled), passkeys: rows.map((r) => ({ ...r, provider: meta.providerName(r.aaguid) })), nowMs: now });
+      const alerts = recent
+        .filter((e) => e.kind === "new_place" && !e.resolved_at && now - Date.parse(e.at) < 30 * 86400000)
+        .map(center.publicEvent);
+      const current = (sessionList || []).find((x) => x && x.id === req.user.sid) || null;
+      noStore(res);
+      return res.json({
+        passkeys,
+        max: MAX_PASSKEYS_PER_USER,
+        reauthMethods: methods,
+        rpId: d().config.rpId,
+        userHandle: Buffer.from(userHandleFor(req.user.id)).toString("base64url"),
+        staleDays: center.STALE_DAYS,
+        geo: typeof d().geo === "function" ? (d().geo(req).city ? "city" : d().geo(req).country ? "country" : "none") : "none",
+        freshSignIn: await freshSignIn(req),
+        currentPasskeyId: current?.passkeyId || null,
+        summary: {
+          count: rows.length,
+          families: score.families,
+          mix,
+          avgPasskeyMs: durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null,
+          avgPasswordMs: mix.avgPasswordMs,
+          score: { value: score.value, level: score.level, checks: score.checks, methods: score.methods },
+          staleCount: score.staleCount,
+          suspendedCount: score.suspendedCount,
+          password: Boolean(user?.password_hash),
+          totp: Boolean(totp.enabled),
+          email2fa: Boolean(user?.two_factor_enabled),
+        },
+        activity: recent.filter((e) => e.kind !== "new_place" || e.resolved_at).slice(0, 30).map(center.publicEvent),
+        alerts,
+      });
+    } catch (err) {
+      return sendError(res, err);
+    }
+  });
+
+  /** End every other session of the account (the current one stays). */
+  async function endOtherSessions(req, userId, keepSid) {
+    if (typeof d().endSessions !== "function") return [];
+    const list = (await d().sessionsOf(userId).catch(() => [])) || [];
+    const ids = list.filter((s) => s && s.id && s.id !== keepSid).map((s) => s.id);
+    return ids.length ? d().endSessions(req, userId, ids).catch(() => []) : [];
+  }
+
+  router.post("/alerts/:id/resolve", requireAuth, async (req, res) => {
+    try {
+      if (rejectApiToken(req, res)) return;
+      if (!countCall(res, `pkmanage:acct:${req.user.id}`, LIMITS.manage)) return;
+      if (!UUID_RE.test(String(req.params.id))) return res.status(404).json(apiError("Alert not found.", null, { code: "NOT_FOUND" }));
+      const action = req.body?.action === "revoke" ? "revoke" : req.body?.action === "me" ? "me" : null;
+      if (!action) return res.status(400).json(apiError("Choose an answer.", null, { code: "BAD_ACTION" }));
+      if (!(await ready(res))) return;
+      const ev = typeof d().store.getEvent === "function" ? await d().store.getEvent(req.params.id, req.user.id) : null;
+      if (!ev || ev.kind !== "new_place") return res.status(404).json(apiError("Alert not found.", null, { code: "NOT_FOUND" }));
+      const done = await d().store.resolveEvent(ev.id, action === "revoke" ? "revoked" : "confirmed");
+      if (!done) return res.status(409).json(apiError("This alert was already answered.", null, { code: "ALREADY_RESOLVED" }));
+      let removed = null;
+      let ended = [];
+      if (action === "revoke") {
+        removed = ev.credential_row_id ? await d().store.remove(ev.credential_row_id, req.user.id) : null;
+        ended = await endOtherSessions(req, req.user.id, req.user.sid);
+        const user = await d().loadBasicUser(req.user.id).catch(() => null);
+        if (user) d().audit(user, "passkey_alert_revoked", user.username, { passkeyId: ev.credential_row_id, sessionsEnded: ended.length });
+        await history(req, { kind: "removed", row: removed || { id: ev.credential_row_id, name: ev.credential_name }, detail: { reason: "alert", sessionsEnded: ended.length } });
+      }
+      d().emit(req, req.user.id, "passkeys:changed", { reason: "alert" });
+      return res.json({ ok: true, removed: Boolean(removed), credentialId: removed?.credential_id || null, sessionsEnded: ended.length });
+    } catch (err) {
+      return sendError(res, err);
+    }
+  });
+
+  /** The open report named by body.token, else answers (404 / 410) and returns null. */
+  async function reportFromBody(req, res) {
+    const key = `pkreport:ip:${ip(req)}`;
+    if (rejectIfLimited(res, [peek(key, LIMITS.report)])) return null;
+    const token = req.body?.token;
+    const ev = center.isReportToken(token) && typeof d().store.getEventByReportHash === "function" ? await d().store.getEventByReportHash(center.sha256hex(token)) : null;
+    if (!ev) {
+      recordFailure(key, LIMITS.report);
+      res.status(404).json(apiError("This link is not valid.", null, { code: "REPORT_NOT_FOUND" }));
+      return null;
+    }
+    if (Date.parse(ev.report_expires_at || 0) <= nowMs() && !ev.resolved_at) {
+      res.status(410).json(apiError("This link expired. Sign in and check Settings > Security.", null, { code: "REPORT_EXPIRED" }));
+      return null;
+    }
+    return ev;
+  }
+
+  router.post("/report/info", async (req, res) => {
+    try {
+      if (!(await ready(res))) return;
+      const ev = await reportFromBody(req, res);
+      if (!ev) return;
+      const row = ev.credential_row_id ? await d().store.getById(ev.credential_row_id).catch(() => null) : null;
+      noStore(res);
+      return res.json({
+        kind: ev.kind,
+        name: ev.credential_name || row?.name || null,
+        provider: row ? meta.providerName(row.aaguid) : null,
+        at: ev.at,
+        platform: ev.platform || null,
+        device: ev.device || null,
+        country: ev.country || null,
+        city: ev.city || null,
+        passkeyExists: Boolean(row && row.user_id === ev.user_id),
+        resolution: ev.resolution || null,
+        resolvedAt: ev.resolved_at || null,
+      });
+    } catch (err) {
+      return sendError(res, err);
+    }
+  });
+
+  router.post("/report/resolve", async (req, res) => {
+    try {
+      if (!(await ready(res))) return;
+      const action = req.body?.action === "revoke" ? "revoke" : req.body?.action === "confirm" ? "confirm" : null;
+      if (!action) return res.status(400).json(apiError("Choose an answer.", null, { code: "BAD_ACTION" }));
+      const ev = await reportFromBody(req, res);
+      if (!ev) return;
+      const done = await d().store.resolveEvent(ev.id, action === "revoke" ? "revoked" : "confirmed");
+      if (!done) return res.status(409).json(apiError("This link was already used.", null, { code: "ALREADY_RESOLVED", resolution: ev.resolution || null }));
+      if (action === "confirm") {
+        await history(req, { kind: "report_confirmed", row: { id: ev.credential_row_id, name: ev.credential_name }, userId: ev.user_id });
+        d().emit(req, ev.user_id, "passkeys:changed", { reason: "alert" });
+        noStore(res);
+        return res.json({ ok: true, resolution: "confirmed" });
+      }
+      // "Ben degildim": the passkey goes, every session of the account ends (the person
+      // reading the mail may not be signed in anywhere; the attacker must not stay).
+      const removed = ev.credential_row_id ? await d().store.remove(ev.credential_row_id, ev.user_id).catch(() => null) : null;
+      let ended = [];
+      if (typeof d().endSessions === "function") {
+        const list = (await d().sessionsOf(ev.user_id).catch(() => [])) || [];
+        const ids = list.map((s) => s && s.id).filter(Boolean);
+        if (ids.length) ended = await d().endSessions(req, ev.user_id, ids).catch(() => []);
+      }
+      await history(req, { kind: "report_revoked", row: { id: ev.credential_row_id, name: ev.credential_name }, userId: ev.user_id, detail: { sessionsEnded: ended.length, removed: Boolean(removed) } });
+      const user = await d().loadBasicUser(ev.user_id).catch(() => null);
+      if (user) {
+        d().audit(user, "passkey_report_revoked", user.username, { passkeyId: ev.credential_row_id, sessionsEnded: ended.length });
+        await d().notify(user, "passkeyRevokedByReport", req, { name: ev.credential_name || "Passkey", at: new Date(nowMs()).toISOString(), sessions: ended.length }).catch(() => {});
+      }
+      d().securityNote("account_locked", { req, userId: ev.user_id, reason: "passkey_report", detail: { method: "passkey", sessionsEnded: ended.length } });
+      d().emit(req, ev.user_id, "passkeys:changed", { reason: "removed" });
+      noStore(res);
+      return res.json({ ok: true, resolution: "revoked", removed: Boolean(removed), credentialId: removed?.credential_id || null, sessionsEnded: ended.length });
     } catch (err) {
       return sendError(res, err);
     }
@@ -593,7 +973,7 @@ function createPasskeyRouter(overrides = {}) {
     try {
       if (rejectApiToken(req, res)) return;
       if (!countCall(res, `pkhand:acct:${req.user.id}`, LIMITS.handoff)) return;
-      if (!requireReauth(req, res)) return;
+      if (!(await requireReauth(req, res))) return;
       if (!(await ready(res))) return;
       const h = await d().service.createHandoff({ kind: "register", userId: req.user.id, sessionId: req.user.sid || null, platform: platformOf(req) });
       noStore(res);
@@ -737,7 +1117,8 @@ function createPasskeyRouter(overrides = {}) {
         const row = h.credential_row_id ? await d().store.getById(h.credential_row_id) : null;
         return res.json({ status: "registered", passkey: meta.publicPasskey(row) });
       }
-      return await completeSignIn(req, res, { userId: h.user_id, userVerified: Boolean(h.user_verified), platform: h.platform });
+      const credential = h.credential_row_id ? await d().store.getById(h.credential_row_id).catch(() => null) : null;
+      return await completeSignIn(req, res, { userId: h.user_id, userVerified: Boolean(h.user_verified), platform: h.platform, credential });
     } catch (err) {
       return sendError(res, err);
     }
