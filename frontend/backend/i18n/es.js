@@ -106,6 +106,8 @@ module.exports = {
     mentionedShort: "Te mencionó",
     friendTitle: "Solicitud de amistad",
     friendBody: "{from} quiere agregarte como amigo",
+    waveTitle: "Saludo",
+    waveBody: "{from} te ha saludado",
     calling: "{from} te está llamando",
     voiceCall: "Llamada de voz",
     videoCall: "Videollamada",

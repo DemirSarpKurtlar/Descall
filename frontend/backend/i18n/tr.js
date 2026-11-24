@@ -105,6 +105,8 @@ module.exports = {
     mentionedShort: "Senden bahsetti",
     friendTitle: "Arkadaşlık İsteği",
     friendBody: "{from} seni arkadaş olarak eklemek istiyor",
+    waveTitle: "El salladı",
+    waveBody: "{from} sana el salladı",
     calling: "{from} arıyor",
     voiceCall: "Sesli arama",
     videoCall: "Görüntülü arama",

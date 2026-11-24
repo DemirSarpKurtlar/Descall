@@ -4476,7 +4476,8 @@ export default function App() {
         return;
       }
 
-      if (type === "dm" || type === "missed-call" || type === "call") {
+      // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =

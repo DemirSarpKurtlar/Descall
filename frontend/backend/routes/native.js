@@ -10,6 +10,12 @@
  *   GET /friends?q=&ids=a,b      → { friends[] } every accepted friend with presence (EntityQuery)
  *   GET /voice?q=&occupied=1     → { rooms[] } voice / stage channels the user can see, with occupants
  *   GET /destinations?q=         → { destinations[] } servers, text channels and groups
+ *   POST /wave { to, source? }   → { ok, remainingToday, remainingForFriend, resetAt } "El salla" from a
+ *                                   widget (lib/friendWave.js: friends only, daily limits, push + socket)
+ *
+ * Widgets (draft B): ?activity=1 on /summary and /friends adds each friend's activity line,
+ * ?previews=1 on /summary adds the message bubbles to unread.top (both opt-in: Siri and
+ * Shortcuts keep the smaller, cheaper answers).
  *
  * Shaping is in lib/nativeGlance.js (pure, tested). Nothing here logs a token, a body or a name.
  */
@@ -20,6 +26,8 @@ const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const glance = require("../lib/nativeGlance");
 
 const READS = { windowMs: 60 * 1000, max: 90 };
+const WAVES = { windowMs: 60 * 1000, max: 12 };
+const PREVIEW_ROWS = 5;
 const QUERY_MAX = 64;
 
 function readQuery(req) {
@@ -37,6 +45,16 @@ function createNativeRouter(deps = {}) {
   const state = () => deps.state || require("../runtime/sharedState");
   const serverList = () => deps.serverList || require("./servers").buildMyServerList;
   const getDb = deps.getDb || (() => require("../db/supabase"));
+  const activityRows = () => deps.visibleActivityRows || require("./activityPresenceBatch").visibleActivityRows;
+  const previewPref = () => deps.pushPreview || require("../lib/pushPreview");
+  const wave = () => deps.friendWave || require("../lib/friendWave");
+  const blocking = () => deps.blocking || require("../lib/blocking");
+  const pushLib = () => deps.webPush || require("../lib/webPush");
+  const watchShape = () => require("../lib/watchApi");
+
+  function wants(req, key) {
+    return String(req.query?.[key] || "") === "1";
+  }
 
   router.use(requireAuth);
   router.use((req, res, next) => {
@@ -47,6 +65,74 @@ function createNativeRouter(deps = {}) {
     recordFailure(key, READS);
     return next();
   });
+
+  /** Friend entries + activity line (voice whereabouts, visible app activity). */
+  async function withActivity(userId, friends, servers) {
+    const online = friends.filter((f) => f?.id && f.status && f.status !== "offline" && f.status !== "invisible").map((f) => String(f.id));
+    let appRows = new Map();
+    if (online.length) {
+      try {
+        const rows = await activityRows()(online.slice(0, 500));
+        appRows = new Map(Object.entries(rows || {}).filter(([, r]) => r && !r.privacy));
+      } catch {
+        appRows = new Map();
+      }
+    }
+    const whereabouts = glance.voiceWhereabouts(servers || (await myServers(userId).catch(() => [])), state().activeServerVoiceCalls);
+    return glance.withActivity(friends, { whereabouts, appRows });
+  }
+
+  /** Last message per unread conversation (top rows only), for the widget bubbles. */
+  async function previewSources(userId, unread, { username, groupsById }) {
+    const rows = (unread?.top || []).slice(0, PREVIEW_ROWS);
+    const dmLast = {};
+    const channelLast = {};
+    const db = getDb();
+    await Promise.all(rows.map(async (row) => {
+      const [kind, id] = String(row.conv || "").split(":");
+      try {
+        if (kind === "dm") {
+          const cached = dmLib().getLastDmMessage?.(userId, id);
+          if (cached && String(cached.from?.id || cached.from || "") === String(id)) {
+            dmLast[id] = { text: dmLib().formatDmPreview(cached), at: cached.timestamp || cached.created_at || null };
+            return;
+          }
+          const { data } = await db
+            .from("dm_messages")
+            .select("content, media_url, media_type, created_at")
+            .eq("from_user_id", id)
+            .eq("to_user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data) {
+            dmLast[id] = {
+              text: dmLib().formatDmPreview({ text: data.content, mediaUrl: data.media_url, mediaType: data.media_type }),
+              at: data.created_at,
+            };
+          }
+        } else if (kind === "channel") {
+          const { data } = await db
+            .from("server_messages")
+            .select("content, media_url, media_type, created_at, sender:sender_id (id, username, display_name, avatar_url)")
+            .eq("channel_id", id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data) {
+            const raw = String(data.content || "");
+            const text = raw && !raw.startsWith("{") && !raw.startsWith("__voice__:")
+              ? raw
+              : dmLib().formatDmPreview({ text: "", mediaUrl: data.media_url, mediaType: data.media_type });
+            channelLast[id] = { text, at: data.created_at, sender: data.sender || null, mention: glance.mentionsViewer(raw, username) };
+          }
+        }
+      } catch {
+        /* that bubble keeps its count only */
+      }
+    }));
+    return { dmLast, channelLast, groupsById };
+  }
 
   function fail(res, err, where) {
     console.error(`[native] ${where} failed:`, err?.message || err);
@@ -140,6 +226,21 @@ function createNativeRouter(deps = {}) {
         channelsById: channels.channelsById,
         mutedPeers,
       });
+      const lang = String(req.get?.("accept-language") || "tr").slice(0, 5);
+      let unreadOut = unread;
+      if (wants(req, "previews") && unread.top.length) {
+        const shown = await previewPref().previewEnabled(userId).catch(() => true);
+        if (shown) {
+          const groupsById = new Map(liveGroups.map((g) => [String(g.id), g]));
+          const src = await previewSources(userId, unread, { username: meRow?.username || req.user.username, groupsById });
+          unreadOut = glance.attachPreviews(unread, {
+            ...src,
+            friendsById: new Map(friends.map((f) => [String(f.id), f])),
+            text: (t) => watchShape().previewText(t, lang.split("-")[0]),
+          });
+        }
+      }
+      const friendRows = wants(req, "activity") ? await withActivity(userId, friends, servers) : friends;
       const live = state().presence?.get?.(userId);
       res.json(glance.shapeSummary({
         me: {
@@ -149,8 +250,8 @@ function createNativeRouter(deps = {}) {
           avatarUrl: meRow?.avatar_url || null,
         },
         myStatus: live?.status || meRow?.presence_status || "online",
-        friends,
-        unread,
+        friends: friendRows,
+        unread: unreadOut,
         voice: glance.shapeVoiceRooms(servers, state().activeServerVoiceCalls, { occupiedOnly: true }),
       }));
     } catch (err) {
@@ -161,7 +262,9 @@ function createNativeRouter(deps = {}) {
   router.get("/friends", async (req, res) => {
     const ids = String(req.query?.ids || "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 50);
     try {
-      return res.json(glance.shapeFriendList(await friendEntries(req.user.id), { q: readQuery(req), ids }));
+      let entries = await friendEntries(req.user.id);
+      if (wants(req, "activity")) entries = await withActivity(req.user.id, entries, null);
+      return res.json(glance.shapeFriendList(entries, { q: readQuery(req), ids }));
     } catch (err) {
       return fail(res, err, "friends");
     }
@@ -187,6 +290,44 @@ function createNativeRouter(deps = {}) {
       return res.json(glance.shapeDestinations({ servers, groups, q: readQuery(req) }));
     } catch (err) {
       return fail(res, err, "destinations");
+    }
+  });
+
+  router.post("/wave", async (req, res) => {
+    const userId = req.user.id;
+    const key = `native:w:${userId}`;
+    if (rejectIfLimited(res, [peek(key, WAVES)])) return;
+    recordFailure(key, WAVES);
+    const io = req.app?.get?.("io");
+    try {
+      const out = await wave().sendWave({
+        db: getDb(),
+        isAcceptedFriend: (a, b) => dmLib().isAcceptedFriend(a, b),
+        isBlockedEitherWay: (a, b) => blocking().isBlockedEitherWay(a, b),
+        emit: (to, event, payload) => {
+          if (io) io.to(`user:${to}`).emit(event, payload);
+        },
+        push: (to, payload) => pushLib().sendFriendWavePush(to, payload),
+        sender: async (id) => {
+          const row = await profile().loadUserProfile(id).catch(() => null);
+          return {
+            username: row?.username || req.user.username || null,
+            name: row?.display_name || row?.username || req.user.username || null,
+            avatarUrl: row?.avatar_url || null,
+          };
+        },
+      }, { fromId: userId, to: req.body?.to, source: String(req.body?.source || "widget") });
+      return res.json(out);
+    } catch (err) {
+      if (err instanceof wave().WaveError) {
+        if (err.status === 429) res.set("Retry-After", String(err.retryAfter || 60));
+        return res.status(err.status).json({
+          error: err.code,
+          ...(err.retryAfter ? { retryAfter: err.retryAfter } : {}),
+          ...(err.resetAt ? { resetAt: new Date(err.resetAt).toISOString() } : {}),
+        });
+      }
+      return fail(res, err, "wave");
     }
   });
 

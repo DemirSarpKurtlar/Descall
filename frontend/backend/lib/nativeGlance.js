@@ -12,6 +12,15 @@
  *   shapeVoiceRooms   → [{ serverId, serverName, channelId, channelName, type, occupantCount, occupants[] }]
  *   shapeDestinations → { destinations: [{ id, kind, title, subtitle, serverId, channelId, groupId }] }
  *   shapeSummary      → { me, unread, friends: { onlineCount, offlineCount, online[] }, voice[], generatedAt }
+ *
+ * Widgets draft B ("Yuzler"), opt-in so Siri / Shortcuts keep their small payloads:
+ *   ?activity=1  every friend gains activity: { kind, label, since } (shapeActivity), the line
+ *                under each face ("Minecraft oynuyor", "Seste · Oyun Gecesi", "Boşta").
+ *                Language neutral: the native side words it.
+ *   ?previews=1  unread.top[] rows gain preview, by, avatarUrl, at, mention, peerId
+ *                (attachPreviews): the speech bubbles. Skipped when the user turned
+ *                "Mesaj önizlemesi" off (push_preview).
+ *   voice rooms always carry since (call start) and occupants[].screen.
  */
 
 const watch = require("./watchApi");
@@ -86,6 +95,7 @@ function shapeFriendList(entries = [], { q = "", ids = null, limit = MAX_FRIENDS
       presence: watch.presenceOf(f.status),
       customStatus: f.customStatus ? clip(f.customStatus, 60) : null,
       conv: `dm:${f.id}`,
+      ...(f.activity !== undefined ? { activity: f.activity } : {}),
     });
   }
   out.sort((a, b) => (PRESENCE_ORDER[a.presence] - PRESENCE_ORDER[b.presence]) || a.name.localeCompare(b.name, "tr"));
@@ -145,7 +155,13 @@ function occupantOf(member, key) {
   const id = String(member?.id || key || "");
   if (!idOk(id)) return null;
   const name = nameOf(member);
-  return { id, name, initials: watch.initialsOf(name), avatarUrl: watch.safeAvatar(member?.avatarUrl || member?.avatar_url) };
+  return {
+    id,
+    name,
+    initials: watch.initialsOf(name),
+    avatarUrl: watch.safeAvatar(member?.avatarUrl || member?.avatar_url),
+    screen: Boolean(member?.isScreenSharing),
+  };
 }
 
 /**
@@ -185,6 +201,7 @@ function shapeVoiceRooms(servers = [], activeCalls = new Map(), { q = "", occupi
         type: String(c.type) === "stage" ? "stage" : "voice",
         occupantCount: count,
         occupants,
+        since: count && Number(call?.startTime) > 0 ? new Date(Number(call.startTime)).toISOString() : null,
         position: Number(c.position) || 0,
         serverIndex,
       });
@@ -242,6 +259,183 @@ function shapeSummary({ me = {}, myStatus = "online", friends = [], unread, voic
   };
 }
 
+// ---- widgets draft B: activity line and message bubbles ----------------------------------
+
+const ACTIVITY_KINDS = ["screen", "voice", "game", "music", "app", "idle", "dnd", "custom", "offline"];
+const MUSIC_RE = /\b(spotify|apple\s*music|music|deezer|tidal|youtube\s*music|soundcloud|winamp|foobar|itunes)\b/i;
+
+function isoOrNull(at) {
+  if (at == null || at === "") return null;
+  const t = typeof at === "number" ? at : Date.parse(at);
+  return Number.isFinite(t) && t > 0 ? new Date(t).toISOString() : null;
+}
+
+/**
+ * Who is in which voice channel, among the channels the viewer can see (servers =
+ * buildMyServerList().servers, already filtered to VIEW_CHANNEL). userId → { channelName,
+ * serverName, screen, since }.
+ */
+function voiceWhereabouts(servers = [], activeCalls = new Map()) {
+  const out = new Map();
+  for (const s of Array.isArray(servers) ? servers : []) {
+    if (!s?.id) continue;
+    for (const c of Array.isArray(s.channels) ? s.channels : []) {
+      if (!c?.id || !VOICE_TYPES.has(String(c.type || ""))) continue;
+      const call = activeCalls?.get?.(c.id) || activeCalls?.get?.(String(c.id)) || null;
+      if (!call?.participants) continue;
+      for (const [key, member] of entriesOf(call.participants)) {
+        const id = String(member?.id || key || "");
+        if (!idOk(id) || out.has(id)) continue;
+        out.set(id, {
+          channelName: clip(c.name || "ses", 40),
+          serverName: clip(s.name || "", 40),
+          screen: Boolean(member?.isScreenSharing),
+          since: isoOrNull(member?.joinedAt) || isoOrNull(call.startTime),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The line under a face. Precedence: sharing the screen, in a voice channel, playing /
+ * listening / using an app (activity presence the friend allows), idle, do not disturb,
+ * custom status, offline (last seen). null when there is nothing to say.
+ *
+ * @param {object} a
+ * @param {string} a.presence      online | idle | dnd | offline (watch.presenceOf)
+ * @param {object} [a.voice]       voiceWhereabouts() entry
+ * @param {object} [a.app]         visible user_presence row { app_name, app_type, display_name, started_at }
+ * @param {string} [a.customStatus]
+ * @param {string} [a.lastSeen]
+ */
+function shapeActivity({ presence = "offline", voice = null, app = null, customStatus = null, lastSeen = null } = {}) {
+  if (presence === "offline") {
+    const since = isoOrNull(lastSeen);
+    return since ? { kind: "offline", label: null, since } : null;
+  }
+  if (voice?.screen) return { kind: "screen", label: voice.channelName || null, since: voice.since || null };
+  if (voice) return { kind: "voice", label: voice.channelName || null, since: voice.since || null };
+  if (app && (app.app_name || app.display_name)) {
+    const label = clip(app.display_name || app.app_name, 40);
+    const type = String(app.app_type || "app").toLowerCase();
+    const kind = type === "game" ? "game" : MUSIC_RE.test(`${app.app_name || ""} ${app.display_name || ""}`) || type === "music" ? "music" : "app";
+    return { kind, label, since: isoOrNull(app.started_at) };
+  }
+  if (presence === "idle") return { kind: "idle", label: null, since: null };
+  if (presence === "dnd") return { kind: "dnd", label: null, since: null };
+  if (customStatus) return { kind: "custom", label: clip(customStatus, 60), since: null };
+  return null;
+}
+
+/**
+ * Friend entries + live context → the same entries with `activity` set (shapeFriendList
+ * passes it through). appRows: userId → visible user_presence row (privacy already applied).
+ */
+function withActivity(entries = [], { whereabouts = new Map(), appRows = new Map() } = {}) {
+  return (Array.isArray(entries) ? entries : []).map((f) => {
+    if (!f?.id) return f;
+    const id = String(f.id);
+    const presence = watch.presenceOf(f.status);
+    return {
+      ...f,
+      activity: shapeActivity({
+        presence,
+        voice: presence === "offline" ? null : whereabouts.get(id) || null,
+        app: presence === "offline" ? null : appRows.get(id) || null,
+        customStatus: f.customStatus || null,
+        lastSeen: f.lastSeen || null,
+      }),
+    };
+  });
+}
+
+/** "username: text" (formatGroupListPreview) → { by, text }, when `by` is a known member. */
+function splitGroupPreview(preview, members = []) {
+  const raw = String(preview || "");
+  const i = raw.indexOf(": ");
+  if (i <= 0 || i > 64) return { by: null, text: raw, member: null };
+  const name = raw.slice(0, i);
+  const member = (Array.isArray(members) ? members : []).find((m) => m && String(m.username || "") === name) || null;
+  if (!member) return { by: null, text: raw, member: null };
+  return { by: nameOf(member), text: raw.slice(i + 2), member };
+}
+
+/**
+ * Speech bubbles for unread.top rows. Each source is optional; a row without one keeps
+ * its count only. mention: channel rows the server marked as a mention of the viewer.
+ *
+ * @param {object} unread             shapeUnread() result
+ * @param {object} src
+ * @param {Map} src.friendsById       peerId → friend entry (avatar)
+ * @param {object} src.dmLast         peerId → { text, at } last message from that friend
+ * @param {Map} src.groupsById        groupId → getUserGroups() item (lastMessage, lastActivity, members, avatarUrl)
+ * @param {object} src.channelLast    channelId → { text, at, sender: { id, username, display_name, avatar_url }, mention }
+ * @param {function} src.text         preview text localizer (watch.previewText)
+ */
+function attachPreviews(unread, { friendsById = new Map(), dmLast = {}, groupsById = new Map(), channelLast = {}, text = (t) => t } = {}) {
+  if (!unread || !Array.isArray(unread.top)) return unread;
+  const top = unread.top.map((row) => {
+    const [kind, id] = String(row.conv || "").split(":");
+    if (kind === "dm") {
+      const f = friendsById.get(id);
+      const last = dmLast?.[id] || null;
+      return {
+        ...row,
+        peerId: id,
+        avatarUrl: watch.safeAvatar(f?.avatarUrl),
+        initials: watch.initialsOf(row.title),
+        by: null,
+        preview: last?.text ? clip(text(last.text), 140) : null,
+        at: isoOrNull(last?.at),
+        mention: false,
+      };
+    }
+    if (kind === "group") {
+      const g = groupsById.get(id);
+      const split = splitGroupPreview(g?.lastMessage, g?.members);
+      return {
+        ...row,
+        peerId: split.member?.id ? String(split.member.id) : null,
+        avatarUrl: watch.safeAvatar(split.member?.avatar_url || split.member?.avatarUrl || g?.avatarUrl),
+        initials: watch.initialsOf(split.by || row.title),
+        by: split.by,
+        preview: split.text ? clip(text(split.text), 140) : null,
+        at: isoOrNull(g?.lastActivity),
+        mention: false,
+      };
+    }
+    if (kind === "channel") {
+      const last = channelLast?.[id] || null;
+      const sender = last?.sender || null;
+      const by = sender ? nameOf(sender) : null;
+      return {
+        ...row,
+        peerId: sender?.id ? String(sender.id) : null,
+        avatarUrl: watch.safeAvatar(sender?.avatar_url || sender?.avatarUrl),
+        initials: watch.initialsOf(by || row.title),
+        by,
+        preview: last?.text ? clip(text(last.text), 140) : null,
+        at: isoOrNull(last?.at),
+        mention: Boolean(last?.mention),
+      };
+    }
+    return row;
+  });
+  return { ...unread, top };
+}
+
+/** Does a channel message mention the viewer (@username, @everyone, @here)? */
+function mentionsViewer(content, username) {
+  const t = String(content || "");
+  if (/(^|\s)@(everyone|here)\b/i.test(t)) return true;
+  const u = String(username || "").trim();
+  if (!u) return false;
+  const esc = u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\w])@${esc}(?![\\w])`, "i").test(t);
+}
+
 module.exports = {
   STATUSES,
   MAX_FRIENDS,
@@ -255,4 +449,11 @@ module.exports = {
   shapeVoiceRooms,
   shapeDestinations,
   shapeSummary,
+  ACTIVITY_KINDS,
+  voiceWhereabouts,
+  shapeActivity,
+  withActivity,
+  splitGroupPreview,
+  attachPreviews,
+  mentionsViewer,
 };

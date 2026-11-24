@@ -104,6 +104,8 @@ module.exports = {
     mentionedShort: "T'a mentionné",
     friendTitle: "Demande d'ami",
     friendBody: "{from} veut t'ajouter en ami",
+    waveTitle: "Coucou",
+    waveBody: "{from} t'a fait coucou",
     calling: "{from} t'appelle",
     voiceCall: "Appel vocal",
     videoCall: "Appel vidéo",
