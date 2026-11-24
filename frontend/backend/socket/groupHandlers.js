@@ -265,7 +265,9 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Group message — persist to DB then broadcast
-  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
+  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput, silent } = {}) => {
+    // "Sessiz gönder" (share sheet): delivered and counted, but no push and no sound.
+    const silentSend = silent === true;
     // Types first (polish messaging-22): a number / object used to throw on .trim()
     // inside this async listener. Length = Sistem › maxMessageLength (messaging-06).
     {
@@ -491,6 +493,7 @@ function registerGroupHandlers(io, socket, state) {
       reply_to: replyMeta,
       replyTo: replyMeta,
       ...(pollSnapshot ? { poll: pollSnapshot } : {}),
+      ...(silentSend ? { silent: true } : {}),
       sender: (() => {
         const cached = getCachedPublicUser(myId);
         const avatar = resolveSocketAvatar(socket);
@@ -572,7 +575,7 @@ function registerGroupHandlers(io, socket, state) {
     }
 
     // Native iOS alert pushes (web / desktop notify from the socket events above).
-    void pushGroupMessageToIos({
+    if (!silentSend) void pushGroupMessageToIos({
       groupId,
       groupName: groupNameForPush,
       fromId: myId,
