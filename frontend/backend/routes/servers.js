@@ -2863,6 +2863,16 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
       changes: { via: "vanity", slug },
     });
     void recordJoinedViaInvite(userId, `vanity:${slug}`);
+    // Public server page (descall.com/s/<slug>, migration 20261124u): a join that started
+    // on the page counts for the owner's results, per traffic source.
+    if (req.body?.via === "page") {
+      try {
+        const pp = require("../lib/serverPublicPage");
+        require("../lib/publicPageStatsInstance").getPublicPageStats().add(server.id, pp.classifySource("", req.body?.src), "joins", 1);
+      } catch (statErr) {
+        console.warn("[SERVERS] public page join not counted:", statErr?.message || statErr);
+      }
+    }
 
     const { bundle, myPermissions } = await afterMemberJoined(req, server, userId, server.id);
     const channels = await publicVisibleChannels(server.id, userId, bundle.channels);
