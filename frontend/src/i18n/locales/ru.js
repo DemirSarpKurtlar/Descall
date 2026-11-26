@@ -17,6 +17,7 @@ import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
+import { PUBPAGE_RU } from "./pubpage.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { VSC_RU } from "./vsc.ru.js";
@@ -71,6 +72,7 @@ export const nested = {
   "msg5": MSG5_RU,
   "act": ACT_RU,
   "dir": DIR_RU,
+  "pubpage": PUBPAGE_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
   "vsc": VSC_RU,
@@ -5983,6 +5985,11 @@ export const nested = {
     "au_SERVER_CREATE": "Создан сервер",
     "au_SERVER_RENAME": "Сервер переименован в {name}",
     "au_SERVER_UPDATE": "Изменены настройки сервера",
+    "au_PUBLIC_PAGE_ENABLE": "Включил показ в Google",
+    "au_PUBLIC_PAGE_DISABLE": "Выключил показ в Google",
+    "au_PUBLIC_PAGE_UNDO": "Отменил выключение",
+    "au_PUBLIC_PAGE_UPDATE": "Изменил открытую страницу",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "Страница скрылась сама",
     "badgeAnn": "ОБЪЯВ",
     "banPrompt": "Забанить {name}? При желании укажите причину:",
     "banned": "Вы забанены на этом сервере.",

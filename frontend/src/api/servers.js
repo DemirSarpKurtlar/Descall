@@ -1,6 +1,7 @@
 import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
+import { takePageVisit } from "../lib/publicPageAttribution.js";
 
 async function serversRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
@@ -299,9 +300,11 @@ export function previewServerVanity(slug) {
 }
 
 export function joinServerByVanity(slug) {
+  // A join that started on the public server page counts for the owner's results.
+  const visit = takePageVisit(slug);
   return serversRequest(`/api/servers/vanity/${encodeURIComponent(slug)}/join`, {
     method: "POST",
-    body: {},
+    body: visit ? { via: "page", src: visit.src } : {},
   });
 }
 

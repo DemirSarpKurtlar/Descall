@@ -13,6 +13,7 @@ import { parseAppRoute } from "./appRoutes.js";
  *   descall://server/<id>[/<channelId>]              → /servers/<id>[/<channelId>]
  *   descall://friends | calls | activity             → /friends | /calls | /activity
  *   descall://settings[/<tab>]                       → /settings[/<tab>]
+ *   descall://s/<slug>                               → /s/<slug> (server vanity URL)
  *   https://descall.com/<same app path>              → that path
  *   https://descall.com/invite/<code>, /i/<code>      → /invite/<code> (group invite)
  *   https://descall.com/s/<slug>                      → /s/<slug> (server vanity URL)
@@ -75,6 +76,11 @@ function routeForSegments(rawSegments) {
     return channel
       ? `/servers/${encodeURIComponent(id)}/${encodeURIComponent(channel)}`
       : `/servers/${encodeURIComponent(id)}`;
+  }
+  // Public server page "Sunucuya katıl" (public/server-page-client.js): descall://s/<slug>.
+  if (head === "s") {
+    const slug = rest[0] != null ? cleanSegment(rest[0]) : null;
+    return slug && VANITY_SLUG_RE.test(slug) ? `/s/${slug.toLowerCase()}` : HOME_PATH;
   }
   if (SIMPLE_VIEWS.has(head)) return `/${head}`;
   if (head === "settings") {

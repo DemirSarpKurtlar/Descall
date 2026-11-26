@@ -17,6 +17,7 @@ import { MSG4_FR } from "./msg4.fr.js";
 import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
+import { PUBPAGE_FR } from "./pubpage.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { VSC_FR } from "./vsc.fr.js";
@@ -71,6 +72,7 @@ export const nested = {
   "msg5": MSG5_FR,
   "act": ACT_FR,
   "dir": DIR_FR,
+  "pubpage": PUBPAGE_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "vsc": VSC_FR,
@@ -5983,6 +5985,11 @@ export const nested = {
     "au_SERVER_CREATE": "A créé le serveur",
     "au_SERVER_RENAME": "A renommé le serveur en {name}",
     "au_SERVER_UPDATE": "A modifié les paramètres du serveur",
+    "au_PUBLIC_PAGE_ENABLE": "A activé Afficher sur Google",
+    "au_PUBLIC_PAGE_DISABLE": "A désactivé Afficher sur Google",
+    "au_PUBLIC_PAGE_UNDO": "A annulé la désactivation",
+    "au_PUBLIC_PAGE_UPDATE": "A modifié la page publique",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "La page s'est masquée d'elle-même",
     "badgeAnn": "ANN",
     "banPrompt": "Bannir {name} ? Ajoute une raison si tu veux :",
     "banned": "Tu es banni de ce serveur.",

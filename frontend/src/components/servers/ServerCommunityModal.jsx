@@ -38,7 +38,7 @@ function CommunitySwitch({ label, on, disabled, onChange }) {
   );
 }
 
-export default function ServerCommunityModal({ server, onClose, onServerUpdated }) {
+export default function ServerCommunityModal({ server, onClose, onServerUpdated, onOpenPublicPage }) {
   const t = useT();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -199,6 +199,18 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
         </form>
         {/* Public web directory (item 8): its own opt-in and Save, owner / administrator only. */}
         <ServerDirectorySettings server={server} />
+        {/* Public server page "Google'da göster" (UI-BRIEF draft A): opens the control desk. */}
+        {onOpenPublicPage && (server?.isOwner || serverHasPermission(server, "ADMINISTRATOR")) ? (
+          <div className="server-community-option server-public-page-entry">
+            <span className="server-community-option-label">
+              <b>{t("pubpage.entry.title")}</b>
+              <small style={{ display: "block", opacity: 0.7 }}>{t("pubpage.entry.sub")}</small>
+            </span>
+            <button type="button" className="server-primary-btn" onClick={onOpenPublicPage} data-testid="open-public-page">
+              {t("pubpage.entry.open")}
+            </button>
+          </div>
+        ) : null}
       </motion.div>
     </motion.div>,
     document.body

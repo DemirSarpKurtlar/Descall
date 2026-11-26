@@ -13,6 +13,7 @@ import { A11Y_EN } from "./a11y.en.js";
 import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
+import { PUBPAGE_EN } from "./pubpage.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { VSC_EN } from "./vsc.en.js";
@@ -90,6 +91,7 @@ export const nested = {
   msg5: MSG5_EN,
   act: ACT_EN,
   dir: DIR_EN,
+  pubpage: PUBPAGE_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
   vsc: VSC_EN,

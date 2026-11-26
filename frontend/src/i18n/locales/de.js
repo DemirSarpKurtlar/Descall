@@ -17,6 +17,7 @@ import { MSG4_DE } from "./msg4.de.js";
 import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
+import { PUBPAGE_DE } from "./pubpage.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { VSC_DE } from "./vsc.de.js";
@@ -71,6 +72,7 @@ export const nested = {
   "msg5": MSG5_DE,
   "act": ACT_DE,
   "dir": DIR_DE,
+  "pubpage": PUBPAGE_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
   "vsc": VSC_DE,
@@ -5983,6 +5985,11 @@ export const nested = {
     "au_SERVER_CREATE": "Hat den Server erstellt",
     "au_SERVER_RENAME": "Hat den Server in {name} umbenannt",
     "au_SERVER_UPDATE": "Hat die Servereinstellungen geändert",
+    "au_PUBLIC_PAGE_ENABLE": "Hat Bei Google zeigen eingeschaltet",
+    "au_PUBLIC_PAGE_DISABLE": "Hat Bei Google zeigen ausgeschaltet",
+    "au_PUBLIC_PAGE_UNDO": "Hat das Ausschalten rückgängig gemacht",
+    "au_PUBLIC_PAGE_UPDATE": "Hat die öffentliche Seite bearbeitet",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "Die Seite hat sich selbst verborgen",
     "badgeAnn": "ANK",
     "banPrompt": "{name} bannen? Gib gern einen Grund an:",
     "banned": "Du bist von diesem Server gebannt.",

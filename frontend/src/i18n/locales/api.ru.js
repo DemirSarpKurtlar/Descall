@@ -303,4 +303,11 @@ export const API_RU = {
   "Enter the code we sent you.": "Введите код, который мы отправили.",
   "Sign in first.": "Сначала войдите.",
   "Unknown request.": "Неизвестный запрос.",
+  // Public server page desk (routes/publicPages.js).
+  "Public pages are not available yet.": "Открытые страницы пока не готовы.",
+  "Turning the page off needs a reason.": "Чтобы выключить страницу, нужна причина.",
+  "Choose a descall.com/s/ address first.": "Сначала выберите адрес descall.com/s/.",
+  "Choose why you are turning the page off.": "Выберите, почему вы выключаете страницу.",
+  "Write a short reason.": "Напишите короткую причину.",
+  "The undo window has passed.": "Время на отмену истекло.",
 };

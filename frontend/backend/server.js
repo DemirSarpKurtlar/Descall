@@ -560,6 +560,8 @@ app.use("/api/activity", activityRoutes);
 app.use("/api/servers", serverRoutes);
 // Public server directory (item 8): read-only cards, no auth; owner settings signed in.
 app.use("/api/directory", require("./routes/directory"));
+// Public server page "Vitrin" (descall.com/s/<slug>) + 1200x630 invite preview images.
+app.use("/api/public-pages", require("./routes/publicPages"));
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);

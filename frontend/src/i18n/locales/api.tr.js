@@ -1033,4 +1033,11 @@ export const API_TR = {
   "Enter the code we sent you.": "Sana gönderdiğimiz kodu gir.",
   "Sign in first.": "Önce giriş yap.",
   "Unknown request.": "Bilinmeyen istek.",
+  // Public server page desk (routes/publicPages.js).
+  "Public pages are not available yet.": "Herkese açık sayfa henüz hazır değil.",
+  "Turning the page off needs a reason.": "Sayfayı kapatmak için bir sebep gerekiyor.",
+  "Choose a descall.com/s/ address first.": "Önce bir descall.com/s/ adresi seç.",
+  "Choose why you are turning the page off.": "Sayfayı neden kapattığını seç.",
+  "Write a short reason.": "Kısa bir sebep yaz.",
+  "The undo window has passed.": "Geri alma süresi doldu.",
 };
