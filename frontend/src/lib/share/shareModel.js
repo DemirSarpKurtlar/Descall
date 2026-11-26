@@ -128,6 +128,8 @@ export function itemProblem(item, { allowedMimes = null, quality = "high" } = {}
   const bytes = itemBytes(item, quality);
   if (bytes > MAX_FILE_BYTES) return "too_large";
   const k = kindOf(item);
+  // The platform could not convert it (an Android video that is not MP4 / WebM).
+  if (item?.unsupported) return "type";
   // Images and videos are converted on the phone (HEIC → JPEG, MOV → MP4); files go as they are.
   if (k === "file" && Array.isArray(allowedMimes) && allowedMimes.length && !allowedMimes.includes(String(item.mime || "").toLowerCase())) return "type";
   return null;

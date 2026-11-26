@@ -136,6 +136,10 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
         setItems(list);
         setSourceLabel(p.sourceLabel || null);
         if (p.preset && M.parseConv(p.preset)) setSelected([p.preset]);
+        if (p.job?.id) {
+          setJob(p.job);
+          host.watch?.(p.job, (j) => setJob(j));
+        }
       } catch {
         setItems([]);
       }

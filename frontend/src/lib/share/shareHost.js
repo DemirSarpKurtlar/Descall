@@ -132,6 +132,7 @@ function webHost(api) {
       else window.location.assign("/");
     },
     publishDirectShare() {},
+    async watch() {},
   };
 }
 
@@ -160,7 +161,12 @@ function androidHost(plugin, api) {
     hasSession: () => Boolean(getToken()),
     async getPayload() {
       const p = await plugin.getPayload();
-      return { items: p?.items || [], sourceLabel: p?.sourceLabel || null, preset: p?.preset || null };
+      return { items: p?.items || [], sourceLabel: p?.sourceLabel || null, preset: p?.preset || null, job: p?.job || null };
+    },
+    /** Opened from the notification ("Ayrıntılar"): follow that job's snapshots. */
+    async watch(job, onUpdate) {
+      current = job.id;
+      await attach(onUpdate);
     },
     async run(job, onUpdate) {
       current = job.id;
