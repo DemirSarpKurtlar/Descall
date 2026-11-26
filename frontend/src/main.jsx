@@ -397,6 +397,10 @@ async function boot() {
       .catch(() => {});
   }
   scheduleAnalytics({ preferMarketing: preferMarketingShell });
+  // Performans: real-user metrics (sampled, sendBeacon), after the first screen on every shell.
+  afterFirstScreen(() => {
+    import("./lib/perf/rum.js").then((m) => m.startRum()).catch(() => {});
+  });
   // Warm-ups only (noise-suppression WASM + worklets, game CSS): after the first
   // screen, not while the App chunk evaluates (cold start is CPU bound on Android).
   if (!preferMarketingShell) afterFirstScreen(preloadAppStyles);
