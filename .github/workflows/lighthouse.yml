@@ -13,8 +13,13 @@
 #     variable LHCI_BUDGET_LEVEL=error (Settings > Secrets and variables > Actions >
 #     Variables), see frontend/scripts/lhci/config.mjs.
 #  4. Full HTML reports are a workflow artifact (never temporary-public-storage).
-#  5. One sticky PR comment with a scores table and deltas against the latest main run.
-#     Runs on main save that baseline in the Actions cache (and as an artifact).
+#  5. One sticky PR comment (in Turkish, owner decision) with a scores table, deltas against
+#     the latest main run, budgets, the entry bundle size and the TBT change. Runs on main save
+#     that baseline in the Actions cache (and as an artifact).
+#  6. Every run's summary (PR number, sha, page, form factor, 4 scores, LCP / CLS / TBT, bytes,
+#     bundle) goes to public.lighthouse_runs for Yönetici Paneli > Performans > Lighthouse CI,
+#     like cloudflare-turnstile.yml writes turnstile_config: a separate "store" job with
+#     SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. Fork pull requests have no secrets: skipped.
 name: Lighthouse
 
 on:
@@ -118,13 +123,15 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           node scripts/lhci/report.mjs \
             --mobile "$RUNNER_TEMP/lhci/mobile" \
             --desktop "$RUNNER_TEMP/lhci/desktop" \
             --baseline "$RUNNER_TEMP/lhci-baseline/summary.json" \
             --out "$RUNNER_TEMP/lhci/out" \
-            --sha "$GITHUB_SHA" \
+            --sha "$HEAD_SHA" \
+            --dist dist \
             --run-url "$RUN_URL"
           cat "$RUNNER_TEMP/lhci/out/comment.md" >> "$GITHUB_STEP_SUMMARY"
 
@@ -136,6 +143,15 @@ jobs:
           path: ${{ runner.temp }}/lhci
           retention-days: 14
           if-no-files-found: warn
+
+      - name: Hand the summary to the store job
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-summary
+          path: ${{ runner.temp }}/lhci/out/summary.json
+          retention-days: 3
+          if-no-files-found: ignore
 
       - name: Hand the comment to the comment job
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
@@ -203,3 +219,46 @@ jobs:
               const { data } = await github.rest.issues.createComment({ owner, repo, issue_number, body });
               core.info(`Created comment ${data.id}`);
             }
+
+  store:
+    name: Store results (Performans panel)
+    needs: lighthouse
+    # Fork pull requests get no secrets: their results stay in the job summary only.
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            frontend/scripts/lhci
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: lighthouse-summary
+          path: ${{ runner.temp }}/lhci-summary
+
+      - name: Write the run into public.lighthouse_runs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: node scripts/lhci/store.mjs --summary "$RUNNER_TEMP/lhci-summary/summary.json"
