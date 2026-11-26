@@ -118,6 +118,9 @@ module.exports = {
     antibotBody: "{count, plural, one {# compte a dépassé} other {# comptes ont dépassé}} le seuil de risque (score max {topScore})",
     antibotWatchBody: "{count, plural, one {# nouvelle alerte de la liste de surveillance} other {# nouvelles alertes de la liste de surveillance}}",
     // Sunucu Ağı (hybrid server) owner alerts
+    // Yönetici Paneli › Performans: release regression (owner push)
+    perfTitle: "Alerte de performance",
+    perfBody: "{version} {platform} : {metric} p75 s’est dégradé de {pct} % ({from} → {to}).",
     nodesTitle: "Alerte du réseau de serveurs",
     nodesPcDown: "Le nœud PC est tombé soudainement ; les utilisateurs passent sur Render.",
     nodesKvFull: "La mémoire partagée (Key Value) est pleine à {pct} %.",

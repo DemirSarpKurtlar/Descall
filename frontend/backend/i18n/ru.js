@@ -118,6 +118,9 @@ module.exports = {
     antibotBody: "{count, plural, one {# аккаунт превысил} few {# аккаунта превысили} many {# аккаунтов превысили} other {# аккаунта превысили}} порог риска (максимум {topScore})",
     antibotWatchBody: "{count, plural, one {# новое оповещение} few {# новых оповещения} many {# новых оповещений} other {# нового оповещения}} списка наблюдения",
     // Sunucu Ağı (hybrid server) owner alerts
+    // Yönetici Paneli › Performans: release regression (owner push)
+    perfTitle: "Оповещение о производительности",
+    perfBody: "{version} {platform}: {metric} p75 ухудшился на {pct}% ({from} → {to}).",
     nodesTitle: "Оповещение сети серверов",
     nodesPcDown: "Узел ПК внезапно отключился; пользователи переходят на Render.",
     nodesKvFull: "Общая память (Key Value) заполнена на {pct} %.",

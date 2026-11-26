@@ -248,6 +248,8 @@ app.get("/api/status", (_req, res) => {
 app.use("/api/features", publicFeatureRoutes);
 // Cloudflare Turnstile: public site key + the in-app bridge page (lib/turnstile.js).
 app.use("/api/turnstile", require("./routes/turnstile"));
+// Performans: real-user samples (sendBeacon, text/plain, rate limited; routes/perfBeacon.js).
+app.use("/api/perf", require("./routes/perfBeacon"));
 app.use("/api/maintenance", require("./routes/maintenanceStatus"));
 app.use("/maintenance", require("./routes/maintenanceStatus"));
 // Hybrid server (Render + PC node): /api/node/assign, /health, /register, /drain-done.
@@ -770,6 +772,8 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
 // The scheduler publishes scheduled rows and ends expired ones.
 app.use(require("./routes/announcements"));
 require("./lib/announcements/service").start(io);
+// Performans: hourly / daily p75 rollups, release regression alerts, retention (leader only).
+require("./lib/perfJobs").start(io);
 
 // Admin role changes and the user list live in routes/admin.js (owner-only make/remove-admin,
 // section permissions); the old duplicates here were shadowed by that router and are gone.
