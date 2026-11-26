@@ -530,9 +530,35 @@ async function sendAdminNodesPush(userIds, alert = {}) {
   await deliverPush(userIds, web, { type: "admin-nodes", kind, pct });
 }
 
+/**
+ * Performans: a release regression to the owner's phones (web push, Android, iOS). Numbers
+ * only (version, platform, metric, p75 before / after); the tap opens Performans.
+ */
+const PERF_METRIC = Object.freeze({ lcp: "LCP", inp: "INP", cls: "CLS", fcp: "FCP", ttfb: "TTFB", msglist: "FML", voicejoin: "VJ", appstart: "AS" });
+const PERF_PLATFORM = Object.freeze({ web: "Web", ios: "iOS", android: "Android", electron: "Electron", tauri: "Tauri" });
+async function sendAdminPerfPush(userIds, alert = {}) {
+  const fmt = require("./perfModel").fmtValue;
+  const vars = {
+    version: String(alert.version || "").slice(0, 24),
+    platform: PERF_PLATFORM[alert.platform] || "",
+    metric: PERF_METRIC[alert.metric] || "",
+    pct: Math.max(0, Math.round(Number(alert.deltaPct) || 0)),
+    from: fmt(alert.metric, Number(alert.prevP75)),
+    to: fmt(alert.metric, Number(alert.curP75)),
+  };
+  const web = {
+    type: "admin-perf",
+    tag: `admin-perf-${String(alert.key || "").slice(0, 60)}`,
+    deepLink: "/admin/panel?tab=perf",
+    i18n: { title: ref("push.perfTitle"), body: ref("push.perfBody", vars) },
+  };
+  await deliverPush(userIds, web, { type: "admin-perf", ...vars });
+}
+
 module.exports = {
   withoutDndRecipients,
   sendAdminNodesPush,
+  sendAdminPerfPush,
   withPreviewSplit,
   sendCallRingEndedPush,
   sendWebPushToUsers,

@@ -35,6 +35,7 @@ import { SYSX_PT_BR } from "./sysx.pt-BR.js";
 import { ATOK_PT_BR } from "./atok.pt-BR.js";
 import { ANODES_PT_BR } from "./anodes.pt-BR.js";
 import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
+import { PERF_ADMIN_PT_BR } from "./perfAdmin.pt-BR.js";
 import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
 import { ANNC_PT_BR } from "./annc.pt-BR.js";
 import { COINPOP_PT_BR } from "./coinpop.pt-BR.js";
@@ -90,6 +91,7 @@ export const nested = {
   "atok": ATOK_PT_BR,
   "anodes": ANODES_PT_BR,
   "auditLog": AUDIT_LOG_PT_BR,
+  "perfAdmin": PERF_ADMIN_PT_BR,
   "livePopup": LIVE_POPUP_PT_BR,
   "annc": ANNC_PT_BR,
   "coinpop": COINPOP_PT_BR,
@@ -8511,6 +8513,7 @@ export const phrases = {
   "In Progress": "Em andamento",
   "In Safari tap Share": "No Safari, toque em Compartilhar",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Em uma chamada em grupo ({count} pessoas), resolução/FPS altos podem causar travamentos. Recomendamos 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "Em uma chamada em grupo ({count} pessoas), 1440p pode causar travamentos. Recomendamos 1080p / 30 FPS.",
   "In group": "No grupo",
   "In the air…": "No ar…",
   "In this channel": "Neste canal",
@@ -8678,7 +8681,7 @@ export const phrases = {
   "Join Server": "Entrar no servidor",
   "Join Voice": "Entrar na voz",
   "Join a Server": "Entrar em um servidor",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 720p. iPhone, Android, Windows e o navegador usam uma só conta.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 1080p. iPhone, Android, Windows e o navegador usam uma só conta.",
   "Join as audience, then request to speak.": "Entre como plateia e depois peça para falar.",
   "Join lobby": "Entrar no lobby",
   "Join me on Descall, we both get DesCoin": "Entre no Descall comigo, nós dois ganhamos DesCoin",

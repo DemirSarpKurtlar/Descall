@@ -35,6 +35,7 @@ import { SYSX_FR } from "./sysx.fr.js";
 import { ATOK_FR } from "./atok.fr.js";
 import { ANODES_FR } from "./anodes.fr.js";
 import { AUDIT_LOG_FR } from "./auditLog.fr.js";
+import { PERF_ADMIN_FR } from "./perfAdmin.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
 import { COINPOP_FR } from "./coinpop.fr.js";
@@ -90,6 +91,7 @@ export const nested = {
   "atok": ATOK_FR,
   "anodes": ANODES_FR,
   "auditLog": AUDIT_LOG_FR,
+  "perfAdmin": PERF_ADMIN_FR,
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,
   "coinpop": COINPOP_FR,
@@ -8511,6 +8513,7 @@ export const phrases = {
   "In Progress": "En cours",
   "In Safari tap Share": "Dans Safari, touche Partager",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Dans un appel de groupe ({count} personnes), une résolution ou des IPS élevés peuvent provoquer des ralentissements. 720p / 20 IPS est recommandé.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "Dans un appel de groupe ({count} personnes), le 1440p peut provoquer des ralentissements. 1080p / 30 IPS est recommandé.",
   "In group": "Dans le groupe",
   "In the air…": "En l'air…",
   "In this channel": "Dans ce salon",
@@ -8678,7 +8681,7 @@ export const phrases = {
   "Join Server": "Rejoindre un serveur",
   "Join Voice": "Rejoindre le vocal",
   "Join a Server": "Rejoindre un serveur",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Rejoins un salon vocal depuis la liste des serveurs. Partage ton écran en 720p. iPhone, Android, Windows et le navigateur utilisent un seul et même compte.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Rejoins un salon vocal depuis la liste des serveurs. Partage ton écran en 1080p. iPhone, Android, Windows et le navigateur utilisent un seul et même compte.",
   "Join as audience, then request to speak.": "Rejoins le public, puis demande la parole.",
   "Join lobby": "Rejoindre le lobby",
   "Join me on Descall, we both get DesCoin": "Rejoins-moi sur Descall, on gagne tous les deux des DesCoin",

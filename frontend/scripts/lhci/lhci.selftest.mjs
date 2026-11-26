@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { brotliDecompressSync } from "node:zlib";
 import { apiStub, pickEncoding, resolveDistPath, startServer } from "./serve-dist.mjs";
 import { BLOCKED_URL_PATTERNS, BUDGETS, LHCI_VERSION, PAGES, RUNS, budgetLevel, buildRc, missingPages } from "./config.mjs";
-import { COMMENT_MARKER, budgetViolations, buildSummary, renderComment, summarizePreset } from "./report.mjs";
+import { COMMENT_MARKER, budgetViolations, buildSummary, entryBundleSize, renderComment, scoreViolations, summarizePreset } from "./report.mjs";
 
 // ── path resolution ─────────────────────────────────────────────────────────
 const files = new Set(["index.html", "features.html", "blog.html", "blog/post-a.html", "de.html", "de/index.html", "assets/app-1.js", "robots.txt", "docs/index.html"]);
@@ -161,21 +161,41 @@ assert.deepEqual(over.map((o) => `${o.path}:${o.metric}`), ["/login:lcp"], "logi
 
 let md = renderComment(current, null, { runUrl: "https://github.com/o/r/actions/runs/1", level: "warn" });
 assert.ok(md.startsWith(COMMENT_MARKER), "sticky marker first");
-assert.match(md, /No main baseline yet/);
-assert.match(md, /\| Landing `\/` \| 91 \| 97 \| 96 \| 100 \| 2\.10 s \| 0\.020 \| 120 ms \| 900 KB \|/);
-assert.match(md, /\*\*3\.10 s\*\*/, "over-budget value in bold");
-assert.match(md, /warnings only, nothing fails yet/);
-assert.match(md, /\[workflow run artifacts\]\(https:\/\/github\.com\/o\/r\/actions\/runs\/1\)/);
+assert.match(md, /## Lighthouse CI/);
+assert.match(md, /henüz `main` ölçümü yok/, "Turkish, no baseline yet");
+assert.match(md, /\| Sayfa \| Performans \| Erişilebilirlik \| En iyi uygulamalar \| SEO \|/);
+assert.match(md, /\| `\/` \| 91 \| 97 \| 96 \| 100 \|/);
+assert.match(md, /\| `\/login` \| \*\*72\*\* \|/, "performance under 90 in bold");
+assert.match(md, /\*\*3 bütçe aşıldı\*\* \(şimdilik yalnızca uyarı, kontrolü düşürmez\): `\/login` performans 72 < 90, `\/features` performans 88 < 90, mobil `\/login` LCP 3,10 sn > 2,50 sn/);
+assert.match(md, /\*\*3,10 sn\*\*/, "over-budget lab value in bold");
+assert.match(md, /<details><summary>Sayfa başına laboratuvar ölçümleri \(LCP, TBT, CLS\)<\/summary>/);
+assert.match(md, /\[Tam raporlar\]\(https:\/\/github\.com\/o\/r\/actions\/runs\/1\)/);
+assert.match(md, /\[Descall yönetici › Performans'ta aç\]\(https:\/\/descall\.com\/admin\/panel\?tab=perf#perf=[A-Za-z0-9_-]+\)/);
 assert.doesNotMatch(md, /temporary-public-storage/);
+assert.doesNotMatch(md, /[\u{1F300}-\u{1FAFF}]/u, "no emoji");
 
 const baseline = buildSummary(
   { mobile: { "/": { scores: { performance: 0.95, accessibility: 0.97, "best-practices": 0.96, seo: 1 }, metrics: { lcp: 1900, cls: 0.02, tbt: 80, bytes: 850 * 1024 } } }, desktop: {} },
-  { sha: "abcdef0123456", createdAt: "2026-11-20T00:00:00Z" },
+  { sha: "abcdef0123456", createdAt: "2026-11-20T00:00:00Z", bundle: { raw: 600000, gzip: 211800, files: 1 } },
 );
-md = renderComment(current, baseline, { level: "error" });
-assert.match(md, /against main `abcdef0` \(2026-11-20\)/);
-assert.match(md, /\| Landing `\/` \| 91 \(-4\) \| 97 \| 96 \| 100 \| 2\.10 s \(\+0\.20\) \| 0\.020 \| 120 ms \(\+40\) \| 900 KB \(\+50 KB\) \|/, "deltas vs main");
-assert.match(md, /these fail the check/);
-assert.match(renderComment(current, { version: 99, presets: {} }), /No main baseline yet/, "an incompatible baseline is ignored");
+const withBundle = { ...current, bundle: { raw: 700000, gzip: 250000, files: 1 } };
+md = renderComment(withBundle, baseline, { level: "error" });
+assert.match(md, /`1234567` commit'i `main` \(`abcdef0`, 2026-11-20\) ile karşılaştırıldı · 3 sayfa · 3 çalıştırmanın ortancası/);
+assert.match(md, /\| `\/` \| 91 ▼ -4 \| 97 \| 96 \| 100 \|/, "score deltas vs main");
+assert.match(md, /\| `\/` \| 2,10 sn \(\+0,20\) \| 0,020 \| 120 ms \(\+40\) \| 900 KB \(\+50 KB\) \|/, "lab deltas vs main");
+assert.match(md, /Ana paket \*\*\+38,2 KB\*\* gzip/);
+assert.match(md, /bunlar kontrolü düşürür/);
+assert.match(renderComment(current, { version: 99, presets: {} }), /henüz `main` ölçümü yok/, "an incompatible baseline is ignored");
+assert.deepEqual(scoreViolations(current).map((o) => o.path), ["/login", "/features"]);
+
+// entry bundle size from dist/index.html
+const distDir = mkdtempSync(join(tmpdir(), "lhci-dist-"));
+mkdirSync(join(distDir, "assets"));
+writeFileSync(join(distDir, "index.html"), '<script type="module" crossorigin src="/assets/index-abc.js"></script>');
+writeFileSync(join(distDir, "assets", "index-abc.js"), "console.log(1);".repeat(400));
+const b = entryBundleSize(distDir);
+assert.ok(b && b.files === 1 && b.raw === 6000 && b.gzip > 0 && b.gzip < b.raw);
+assert.equal(entryBundleSize(join(distDir, "nope")), null);
+rmSync(distDir, { recursive: true, force: true });
 
 console.log("lhci selftest OK");

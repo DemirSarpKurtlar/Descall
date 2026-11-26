@@ -20,7 +20,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "What stays free on Descall",
-        p: "Descall keeps the parts you use every night free. Direct messages, group chats, servers with roles and channels, one-on-one and group voice and video calls, server voice channels and screen share all cost nothing. Search over your whole message history, replies, reactions, polls, pinned messages and voice notes are included too. No membership is needed to call, share a screen or run a server. Group screen share starts at around 720p and about 20 frames per second, with presets if someone needs a lighter or sharper stream, and the same rules apply to everyone in the call.",
+        p: "Descall keeps the parts you use every night free. Direct messages, group chats, servers with roles and channels, one-on-one and group voice and video calls, server voice channels and screen share all cost nothing. Search over your whole message history, replies, reactions, polls, pinned messages and voice notes are included too. No membership is needed to call, share a screen or run a server. Group screen share starts at around 1080p and about 30 frames per second, with presets if someone needs a lighter or sharper stream, and the same rules apply to everyone in the call.",
       },
       {
         h: "Where cosmetics fit",

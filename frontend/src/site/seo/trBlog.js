@@ -103,7 +103,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Descall’da ücretsiz kalanlar",
-        p: "Descall her akşam kullandığın parçaları ücretsiz tutuyor. Özel mesajlar, grup sohbetleri, rol ve kanallı sunucular, bire bir ve grup halinde sesli ve görüntülü aramalar, sunucu ses kanalları ve ekran paylaşımı tamamen ücretsiz. Tüm mesaj geçmişinde arama, yanıtlar, tepkiler, anketler, sabitlenmiş mesajlar ve sesli mesajlar da buna dahil. Arama yapmak, ekran paylaşmak ya da sunucu yönetmek için üyelik gerekmiyor. Grup ekran paylaşımı yaklaşık 720p ve saniyede 20 kare civarında başlıyor; daha hafif ya da daha net bir yayın gerekirse ön ayarlar var ve aramadaki herkes için aynı kurallar geçerli.",
+        p: "Descall her akşam kullandığın parçaları ücretsiz tutuyor. Özel mesajlar, grup sohbetleri, rol ve kanallı sunucular, bire bir ve grup halinde sesli ve görüntülü aramalar, sunucu ses kanalları ve ekran paylaşımı tamamen ücretsiz. Tüm mesaj geçmişinde arama, yanıtlar, tepkiler, anketler, sabitlenmiş mesajlar ve sesli mesajlar da buna dahil. Arama yapmak, ekran paylaşmak ya da sunucu yönetmek için üyelik gerekmiyor. Grup ekran paylaşımı yaklaşık 1080p ve saniyede 30 kare civarında başlıyor; daha hafif ya da daha net bir yayın gerekirse ön ayarlar var ve aramadaki herkes için aynı kurallar geçerli.",
       },
       {
         h: "Kozmetikler nereye oturuyor?",

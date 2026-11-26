@@ -41,6 +41,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "system",
   "security",
   "errors",
+  // Performans: real-user metrics, release regressions, Lighthouse CI.
+  "perf",
   "audit",
   // Admin agent (phase 1): the Claude assistant. It only sees what the asking admin's
   // own sections allow (its tools call the same routes with the admin's session).
@@ -85,6 +87,7 @@ const RULES = [
   [/^\/growth\/retention$/, "retention"],
   [/^\/growth\/economy$/, "economy"],
   [/^\/feedback(\/|$)/, "feedback"],
+  [/^\/perf(\/|$)/, "perf"],
   [/^\/(audit)(\/|$)/, "audit"],
   [/^\/(errors|security-logs)(\/|$)/, "security"],
   [/^\/security(\/|$)/, "security"],

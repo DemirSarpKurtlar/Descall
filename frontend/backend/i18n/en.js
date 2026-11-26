@@ -124,6 +124,11 @@ module.exports = {
     antibotBody: "{count, plural, one {# account crossed} other {# accounts crossed}} the risk threshold (top {topScore})",
     antibotWatchBody: "{count, plural, one {# new watch list alert} other {# new watch list alerts}}",
     // Sunucu Ağı (hybrid server) owner alerts
+    // Yönetici Paneli › Performans: release regression (owner push)
+    perfTitle: "Performance alert",
+    perfBody: "{version} {platform}: {metric} p75 got {pct}% worse ({from} → {to}).",
+    perfDigestSubject: "Descall performance digest: {n} regressions",
+    perfDigestIntro: "Admin panel > Performance",
     nodesTitle: "Server network alert",
     nodesPcDown: "The PC node dropped suddenly; users are moving to Render.",
     nodesKvFull: "Shared memory (Key Value) is {pct}% full.",

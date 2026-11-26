@@ -248,6 +248,8 @@ import { allowNotify } from "./lib/notifyPrefs";
 import { applyPeerRead } from "./lib/readReceipts";
 import { FAILED_ACTION_EVENT, dmPeerId, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
+// Performans: app start = the signed-in chat list on screen (lib/perf/rum.js).
+import { markAppStart } from "./lib/perf/rum.js";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -1192,6 +1194,12 @@ export default function App() {
       // Existing client previews win so live dm:message updates are not overwritten.
       setDmPreviews((prev) => ({ ...byPeer, ...prev }));
       setDmLastActivity((prev) => ({ ...lastByPeer, ...prev }));
+      // First chat list painted: the cold start is over (once per page load).
+      try {
+        requestAnimationFrame(() => markAppStart());
+      } catch {
+        markAppStart();
+      }
     } catch (err) {
       console.error("[DM] REST previews failed", err);
     }

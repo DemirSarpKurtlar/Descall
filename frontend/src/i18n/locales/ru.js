@@ -35,6 +35,7 @@ import { SYSX_RU } from "./sysx.ru.js";
 import { ATOK_RU } from "./atok.ru.js";
 import { ANODES_RU } from "./anodes.ru.js";
 import { AUDIT_LOG_RU } from "./auditLog.ru.js";
+import { PERF_ADMIN_RU } from "./perfAdmin.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
 import { COINPOP_RU } from "./coinpop.ru.js";
@@ -90,6 +91,7 @@ export const nested = {
   "atok": ATOK_RU,
   "anodes": ANODES_RU,
   "auditLog": AUDIT_LOG_RU,
+  "perfAdmin": PERF_ADMIN_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
   "coinpop": COINPOP_RU,
@@ -8511,6 +8513,7 @@ export const phrases = {
   "In Progress": "В работе",
   "In Safari tap Share": "В Safari нажмите «Поделиться»",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "В групповом звонке ({count, plural, one {# человек} few {# человека} many {# человек} other {# человека}}) высокое разрешение/FPS может вызывать лаги. Рекомендуется 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "В групповом звонке ({count, plural, one {# человек} few {# человека} many {# человек} other {# человека}}) 1440p может вызывать лаги. Рекомендуется 1080p / 30 FPS.",
   "In group": "В группе",
   "In the air…": "Монетка в воздухе…",
   "In this channel": "В этом канале",
@@ -8678,7 +8681,7 @@ export const phrases = {
   "Join Server": "Вступить на сервер",
   "Join Voice": "Войти в голосовой",
   "Join a Server": "Присоединиться к серверу",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Заходите в голосовой канал из списка серверов. Показывайте экран в 720p. На iPhone, Android, Windows и в браузере — один аккаунт.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Заходите в голосовой канал из списка серверов. Показывайте экран в 1080p. На iPhone, Android, Windows и в браузере — один аккаунт.",
   "Join as audience, then request to speak.": "Зайдите как слушатель, затем попросите слово.",
   "Join lobby": "Войти в лобби",
   "Join me on Descall, we both get DesCoin": "Присоединяйся ко мне в Descall, мы оба получим DesCoin",

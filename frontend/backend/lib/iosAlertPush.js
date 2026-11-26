@@ -439,6 +439,25 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "admin-nodes", kind: String(event.kind), pct },
     };
   }
+  // Performans: release regression to the owner (lib/webPush.js sendAdminPerfPush). Numbers only.
+  if (type === "admin-perf") {
+    const vars = {
+      version: clip(event.version, 24),
+      platform: clip(event.platform, 12),
+      metric: clip(event.metric, 8),
+      pct: Math.max(0, Math.min(10000, Math.floor(Number(event.pct) || 0))),
+      from: clip(event.from, 12),
+      to: clip(event.to, 12),
+    };
+    return {
+      ...base,
+      threadId: "admin-perf",
+      collapseId: `admin-perf-${vars.platform}-${vars.metric}`.slice(0, 64),
+      title: s.t("perfTitle"),
+      body: s.t("perfBody", vars),
+      data: { type: "admin-perf", version: vars.version, platform: vars.platform, metric: vars.metric },
+    };
+  }
   // Duyurular: the admin wrote the text in this person's language (lib/announcements/service.js).
   if (type === "announcement") {
     return {
