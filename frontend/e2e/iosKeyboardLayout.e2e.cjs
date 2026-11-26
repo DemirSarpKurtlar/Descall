@@ -277,6 +277,32 @@ async function runDevice(browser, base, dev, check) {
         expectOpen('server channel', sv, H - KB, { list: false });
         await closeKeyboard(W, H);
       }
+      // Create-group sheet: typing the name, the sheet (list + button) ends
+      // on the keyboard instead of running on behind it.
+      await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      for (let i = 0; i < 200; i++) { if (await page.evaluate(() => Boolean(document.querySelector('.g-tabbar')) && !document.getElementById('boot-splash')).catch(() => false)) break; await sleep(150); }
+      await sleep(800);
+      await tapText(page, '.g-tab, .g-tabbar button', 'Grup');
+      await sleep(1000);
+      const sheet = await tapText(page, 'button', 'Grup oluştur');
+      await sleep(1000);
+      const focused = sheet && await page.evaluate(() => { const e = [...document.querySelectorAll('.nc-sheet input')].find((x) => x.getBoundingClientRect().height > 0); e?.focus(); return Boolean(e); });
+      check(Boolean(focused), `${name} create-group sheet opened`);
+      if (focused) {
+        for (const mode of ['overlay', 'resize']) {
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          if (mode === 'resize') await page.setViewportSize({ width: W, height: H - KB });
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          await sleep(700);
+          const sm = await page.evaluate(() => { const r = document.querySelector('.nc-sheet').getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; });
+          log(`sheet ${mode}`, sm);
+          await shot(`8-sheet-${mode}`);
+          check(sm.bottom <= H - KB + 1 && sm.bottom >= H - KB - 2 && sm.top >= 0, `${name} create-group sheet (${mode}): ends on the keyboard (${sm.top}..${sm.bottom}, keyboard top ${H - KB})`);
+          await page.evaluate((h) => window.__descallNativeKeyboard(0, h), H);
+          await page.setViewportSize({ width: W, height: H });
+          await sleep(500);
+        }
+      }
     }
   } catch (e) {
     check(false, `${name}: ${String(e && e.stack || e)}`);
