@@ -203,6 +203,7 @@ assert.match(css, /html\.glass-ui\.kb-open \.app-root\.g-shell\.in-conversation 
 assert.match(css, /html\.glass-ui\.kb-open \.giphy-overlay\.g-giphy-scrim \{\s*padding-bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/, "GIF sheet ends on the keyboard");
 assert.match(css, /overscroll-behavior: contain;/, "the grown field scrolls inside without chaining to the list");
 assert.match(swift, /FormAccessory/);
+assert.match(swift, /if frame\.maxY < webView\.bounds\.maxY - 1 \{ return 0 \}/, "an undocked iPad keyboard lifts nothing");
 assert.match(swift, /viewDidAppear/);
 
 // Bottom sheets with text fields end on the keyboard (--kb-gap: the strip it

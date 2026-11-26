@@ -120,6 +120,10 @@ class DescallBridgeViewController: CAPBridgeViewController {
         }
         guard let raw = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return 0 }
         let frame = webView.convert(raw, from: nil)
+        // iPad floating / undocked / split keyboard: it does not reach the
+        // bottom edge, so it pushes nothing up (UIKeyboardLayoutGuide's
+        // default). Lifting the shell by its height left an empty band.
+        if frame.maxY < webView.bounds.maxY - 1 { return 0 }
         let overlap = webView.bounds.intersection(frame)
         if overlap.isNull || overlap.isInfinite { return 0 }
         return min(max(0, overlap.height), webView.bounds.height)
