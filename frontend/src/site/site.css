@@ -2045,7 +2045,7 @@ a.mkt-feature-link {
   align-items: center;
   gap: 4px 8px;
   margin: 12px 2px 0;
-  font-size: 13px;
+  font-size: var(--fs-13, 13px);
   line-height: 1.45;
   color: var(--mkt-text);
 }
