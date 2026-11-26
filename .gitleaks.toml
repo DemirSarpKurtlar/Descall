@@ -16,12 +16,18 @@ paths = [
   '''(?:^|/)frontend/scripts/generate-seo-files\.mjs$''',
   '''(?:^|/)frontend/scripts/request-indexing\.mjs$''',
   '''(?:^|/)frontend/scripts/indexnow-submit\.mjs$''',
+  # Public passkey provider AAGUIDs (the community passkey-aaguids list): device model
+  # identifiers that authenticators report openly, used only to show a provider name.
+  '''(?:^|/)frontend/backend/lib/passkeys/meta\.js$''',
 ]
 # Fake LiveKit secret that a test file held in commit e8467900 (replaced since);
 # allowlisted by exact value because gitleaks scans the whole branch history.
 # The web-push README example subscription (p256dh/auth, public test vector) used by
 # backend/test/webPushEndpoint.integration.test.cjs (commit b1957669).
 regexes = [
+  # Fake password used to register test users in the Turnstile client selftest
+  # (frontend/src/lib/humanCheck/turnstileClient.selftest.mjs, commit dcd6e6db).
+  '''pw-123456789''',
   '''lk-test-secret-that-is-long-enough-0123456789''',
   '''tBHItJI5svbpez7KI4CCXg''',
   # Fake session tokens in the desktop migration tests (descall-migrate fixtures, migrator
