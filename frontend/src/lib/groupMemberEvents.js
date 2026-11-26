@@ -31,18 +31,54 @@ export function splitTemplate(template, values = {}, boldKeys = []) {
 }
 
 /**
+ * The raw template of `key`, placeholders intact. The app translator formats
+ * every message (message.js), and a placeholder without a value becomes "":
+ * `t("gk.eventRemoved")` alone reads ", gruptan çıkardı" (screenshot 78,
+ * Nov 2026). Passing each placeholder as its own value gives the template back.
+ */
+export function rawTemplate(t, key, names) {
+  const keep = Object.fromEntries(names.map((n) => [n, `{${n}}`]));
+  return t(key, keep);
+}
+
+const knownName = (name) => {
+  const s = typeof name === "string" ? name.trim() : "";
+  return s && s !== "?" ? s : "";
+};
+
+/** Translated text for `key`, or `fallback` while the catalog is missing it. */
+const textOr = (t, key, fallback) => {
+  const v = t(key);
+  return v && v !== key ? v : fallback;
+};
+
+/** A name for the row: the stored or looked-up name, else "A member" (deleted account, old row). */
+function displayName(name, t) {
+  return knownName(name) || textOr(t, "gk.someone", "A member");
+}
+
+/**
  * Segments for a member_removed / member_left row.
  * @param {{ type: string, actorName?: string, targetName?: string, targetIsMe?: boolean }} ev
  */
 export function memberEventSegments(ev, t = (k) => k) {
   if (!ev) return [];
-  const actor = ev.actorName || "?";
-  if (ev.type === "member_left") return splitTemplate(t("gk.eventLeft"), { actor }, ["actor"]);
-  if (ev.targetIsMe) return splitTemplate(t("gk.eventRemovedMe"), { actor }, ["actor"]);
-  const target = ev.targetName || "?";
+  const actor = displayName(ev.actorName, t);
+  if (ev.type === "member_left") {
+    return splitTemplate(rawTemplate(t, "gk.eventLeft", ["actor"]), { actor }, ["actor"]);
+  }
+  if (ev.targetIsMe) {
+    return splitTemplate(rawTemplate(t, "gk.eventRemovedMe", ["actor"]), { actor }, ["actor"]);
+  }
+  const targetKnown = knownName(ev.targetName);
+  const target = displayName(ev.targetName, t);
+  // "Bir üyeyi", not "Bir üye’yi": the suffix apostrophe is for names only.
+  const targetAcc = targetKnown
+    ? curly(trAccusative(targetKnown))
+    : textOr(t, "gk.someoneAcc", target);
   return splitTemplate(
-    t("gk.eventRemoved"),
-    { actor, target, targetAcc: curly(trAccusative(target)) },
+    rawTemplate(t, "gk.eventRemoved", ["actor", "target", "targetAcc"]),
+    { actor, target, targetAcc },
     ["actor", "target", "targetAcc"],
   );
 }
@@ -71,7 +107,7 @@ export function memberEventFromMessage(msg, { meId = null, members = [] } = {}) 
 /** The removed banner body: "Demir seni 21:58’de çıkardı. …". */
 export function removedBannerBody({ actorName, time }, t = (k) => k) {
   return t("gk.bannerBody", {
-    actor: actorName || "?",
+    actor: displayName(actorName, t),
     time,
     timeLoc: curly(trLocativeTime(time)),
   });

@@ -137,6 +137,8 @@ export const nested = {
     confirm: "Remove from group",
     eventRemoved: "{actor} removed {target}",
     eventRemovedMe: "{actor} removed you from the group",
+    someone: "A member",
+    someoneAcc: "A member",
     eventLeft: "{actor} left the group",
     bannerTitle: "You were removed from this group",
     bannerBody: "{actor} removed you at {time}. You can still read old messages but can't send new ones.",

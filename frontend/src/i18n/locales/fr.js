@@ -7858,6 +7858,7 @@ export const phrases = {
   "Download Descall": "Télécharger Descall",
   "Download Desktop App": "Télécharger l'appli de bureau",
   "Download all your data including messages, friends, and settings": "Télécharge toutes tes données, y compris les messages, les amis et les paramètres",
+  "A member": "Un membre",
   "Download for Windows": "Télécharger pour Windows",
   "Download for {name}": "Télécharger pour {name}",
   "Download on the App Store": "Télécharger dans l'App Store",

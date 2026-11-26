@@ -147,6 +147,8 @@ export const nested = {
     confirm: "Gruptan çıkar",
     eventRemoved: "{actor}, {targetAcc} gruptan çıkardı",
     eventRemovedMe: "{actor} seni gruptan çıkardı",
+    someone: "Bir üye",
+    someoneAcc: "bir üyeyi",
     eventLeft: "{actor} gruptan ayrıldı",
     bannerTitle: "Bu gruptan çıkarıldın",
     bannerBody: "{actor} seni {timeLoc} çıkardı. Eski mesajları okuyabilirsin ama yeni mesaj gönderemezsin.",
