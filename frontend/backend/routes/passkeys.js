@@ -40,6 +40,7 @@ const { createSupabaseStore } = require("../lib/passkeys/store");
 const { createPasskeyService, PasskeyError, MAX_PASSKEYS_PER_USER, userHandleFor } = require("../lib/passkeys/service");
 const meta = require("../lib/passkeys/meta");
 const { peek, recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+const { burstLimit } = require("../lib/burstLimit");
 const { apiError, apiText } = require("../lib/apiError");
 
 const LOGIN_USER_COLS =
@@ -163,6 +164,8 @@ function createPasskeyRouter(overrides = {}) {
   };
   const kit = () => (typeof d().kit === "function" ? d().kit() : d().kit);
   const router = express.Router();
+  // Coarse per-IP burst cap in front of every passkey route; the per-account limits below stay.
+  router.use(burstLimit({ name: "passkeys", limit: 240 }));
   const ip = (req) => d().clientIp(req);
   const platformOf = (req) => meta.normalizePlatform(req.body?.platform || req.get?.("x-descall-platform") || "web");
 

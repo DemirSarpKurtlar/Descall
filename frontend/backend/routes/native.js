@@ -17,6 +17,7 @@
 const express = require("express");
 const { requireAuth } = require("../middleware/auth");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
+const { burstLimit } = require("../lib/burstLimit");
 const glance = require("../lib/nativeGlance");
 
 const READS = { windowMs: 60 * 1000, max: 90 };
@@ -28,6 +29,8 @@ function readQuery(req) {
 
 function createNativeRouter(deps = {}) {
   const router = express.Router();
+  // Coarse per-IP burst cap before auth; the per-user READS limit below stays.
+  router.use(burstLimit({ name: "native", limit: 600 }));
   const profile = () => deps.userProfile || require("../lib/userProfile");
   const dmLib = () => deps.dmMessages || require("../lib/dmMessages");
   const groupList = () => deps.groupList || require("../lib/groupList");

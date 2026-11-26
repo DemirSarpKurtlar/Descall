@@ -1,4 +1,5 @@
 const express = require("express");
+const { burstLimit } = require("../lib/burstLimit");
 const bcrypt = require("bcryptjs");
 const { OAuth2Client } = require("google-auth-library");
 const supabase = require("../db/supabase");
@@ -858,7 +859,10 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+// Coarse per-IP burst cap; the per-account and per-IP failure limits inside stay as they are.
+const loginBurst = burstLimit({ name: "login", limit: 120 });
+
+router.post("/login", loginBurst, async (req, res) => {
   try {
     const { username, password } = req.body ?? {};
 
