@@ -104,3 +104,5 @@ Legacy empty stubs (not linked from the index): `/sitemap-invites.xml`, `/sitema
 
 - Authenticated app UI is `noindex` via client `SeoHead` (`forceNoindex`).
 - Vite web builds use `base: "/"` so deep routes load assets; Electron builds set `ELECTRON_BUILD=1` for `base: "./"`.
+
+- **Public server pages (Nov 2026).** `descall.com/s/<slug>` is an indexable server-rendered page only when the server owner turned on "Google'da göster" (Topluluk ve Keşif); otherwise it stays the noindex invite landing. The Pages worker (`public/_worker.js` + `public/server-page.js`) renders it from `GET /api/public-pages/s/:slug` and serves `/sitemap-servers.xml` live from the backend (only shown pages, 10 minutes at the edge); `sitemap.xml` lists it as one more child. Generated 1200x630 invite cards are served at `/og/{s,invite,group}/<code>.png?v=` and `/og/invalid.png` (backend `routes/publicPages.js`). Tests: `src/site/serverPage.selftest.mjs`, `backend/test/publicPages.integration.test.cjs`, `e2e/publicPage/capture.cjs`.

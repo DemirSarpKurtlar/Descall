@@ -134,10 +134,14 @@ async function main() {
       }
       if (url.origin === 'https://descall.com') {
         if (url.pathname === '/s/anadolucraft') {
-          const qr = await (async () => {
+          // The backend draws the real QR (qrcode package); a stand-in when its deps are not installed.
+          let qr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 7"><path d="M0 0h7v7H0z" fill="#0b0c12"/><path d="M1 1h5v5H1z" fill="#fff"/><path d="M2 2h3v3H2z" fill="#0b0c12"/></svg>';
+          try {
             const QR = require(path.join(FRONT, 'backend/node_modules/qrcode'));
-            return (await QR.toString(`${PAGE.url}?src=qr`, { type: 'svg', margin: 1 })).replace(/<\?xml[^>]*>/, '');
-          })();
+            qr = (await QR.toString(`${PAGE.url}?src=qr`, { type: 'svg', margin: 1 })).replace(/<\?xml[^>]*>/, '');
+          } catch {
+            /* keep the stand-in */
+          }
           return r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: sp.renderServerPage({ ...PAGE, qrSvg: qr }, { lang: 'tr' }) });
         }
         if (url.pathname === '/server-page-client.js') return r.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(FRONT, 'public/server-page-client.js')) });
