@@ -40,13 +40,14 @@ export function mobileViewportBox({
   nativeInset = 0,
   fixedBottom = 0,
   restHeight = 0,
+  fullHeight = 0,
 } = {}) {
   const layoutH = Math.max(0, Math.round(Number(innerHeight) || 0));
   // Bottom edge of the box fixed elements are laid out in (measured). iOS can
   // report an innerHeight that already shrank with the keyboard, or one that
   // differs from that box by the toolbar. Fixed things lift from this bottom.
   const fixedMeasured = Math.max(0, Math.round(Number(fixedBottom) || 0));
-  const fixedH = editing ? fixedMeasured : 0;
+  const fixedH = editing || Number(nativeInset) > 0 ? fixedMeasured : 0;
   const refH = fixedH > 0 ? fixedH : layoutH;
   const visibleH = Math.max(0, Math.round(Number(vvHeight) || layoutH));
   const top = Math.max(0, Math.round(Number(offsetTop) || 0));
@@ -55,7 +56,19 @@ export function mobileViewportBox({
   // UIKit overlap when WKWebView does not shrink for the keyboard. Already
   // included in `gap` when the visual viewport did shrink, never add both.
   const native = Math.max(0, Math.round(Number(nativeInset) || 0));
-  const covered = Math.max(gap, native);
+  // The native overlap is measured against the WKWebView's frame, which never
+  // shrinks. With interactive-widget=resizes-content (index.html) iOS 26
+  // WebKit shrinks the layout viewport itself: innerHeight, the visual
+  // viewport and the fixed box all end at the keyboard top, so `gap` is 0 and
+  // the full overlap was taken off a second time (composer floating mid
+  // screen, an empty band the size of the keyboard under it, the list pushed
+  // up behind the header). Only the part of the overlap that is still inside
+  // the layout counts. `fullHeight` is the web view's height (native) or the
+  // tallest resting layout seen at this width.
+  const full = Math.max(0, Math.round(Number(fullHeight) || 0));
+  const layoutShrink = full > 0 ? Math.max(0, full - refH) : 0;
+  const nativeInLayout = Math.max(0, native - layoutShrink);
+  const covered = Math.max(gap, nativeInLayout);
   // Keyboard size against the tallest resting visual viewport (same width):
   // browser toolbars are in both numbers and cancel out.
   const rest = Math.max(0, Math.round(Number(restHeight) || 0));
@@ -74,7 +87,7 @@ export function mobileViewportBox({
     return { open: false, hideBar: false, top: 0, left: 0, height, kb: 0, gap: 0, lift };
   }
 
-  const extra = Math.max(0, native - gap);
+  const extra = Math.max(0, nativeInLayout - gap);
   const base = Math.min(visibleH > 0 ? visibleH : refH, Math.max(160, refH - top));
   const height = Math.max(160, base - extra);
   return {

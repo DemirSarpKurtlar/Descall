@@ -141,6 +141,43 @@ assert.equal(mobileViewportBox({ innerHeight: 956, vvHeight: 811, editing: false
 // Native app: the UIKit inset still opens it without focus.
 assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 844, editing: false, nativeInset: 336, fixedBottom: 844 }).open, true);
 
+// iOS 26 app (owner's screenshot, iPhone Pro Max 932pt, keyboard 347pt):
+// interactive-widget=resizes-content shrinks the layout viewport itself, so
+// innerHeight, the visual viewport and the fixed box all end at the keyboard
+// top (585), while UIKit still reports the full 347pt overlap against the
+// unchanged WKWebView frame. Taking it off again left a 238pt shell: the
+// composer floated mid screen over an empty keyboard-sized band and the list
+// slid behind the header.
+const resized = { innerHeight: 585, vvHeight: 585, offsetTop: 0, editing: true, nativeInset: 347, fixedBottom: 585 };
+for (const fullHeight of [932, 0]) {
+  const box = mobileViewportBox({ ...resized, fullHeight: fullHeight || 932 });
+  assert.equal(box.open, true);
+  assert.equal(box.hideBar, true, "native keyboard still hides the tab bar");
+  assert.equal(box.height, 585, "shell ends at the keyboard top, not one keyboard higher");
+  assert.equal(box.gap, 0, "fixed box already ends at the keyboard: no extra lift");
+  assert.equal(box.kb, 0);
+}
+// The keyboard animation starts (native note first) before WebKit resized:
+// same end position, the full overlap is still inside the layout.
+const preResize = mobileViewportBox({ innerHeight: 932, vvHeight: 932, editing: true, nativeInset: 347, fixedBottom: 932, fullHeight: 932 });
+assert.equal(preResize.height, 585);
+assert.equal(preResize.gap, 347);
+// Half way: the layout shrank 200 of the 347.
+const halfway = mobileViewportBox({ innerHeight: 732, vvHeight: 732, editing: true, nativeInset: 347, fixedBottom: 732, fullHeight: 932 });
+assert.equal(halfway.height, 585);
+assert.equal(halfway.gap, 147);
+// iPad split view: web view 700pt tall in a 1024pt screen, layout shrank.
+const ipadSplit = mobileViewportBox({ innerHeight: 400, vvHeight: 400, editing: true, nativeInset: 300, fixedBottom: 400, fullHeight: 700 });
+assert.equal(ipadSplit.height, 400);
+assert.equal(ipadSplit.gap, 0);
+// Without fullHeight nothing changes (old app builds, web).
+assert.equal(mobileViewportBox({ ...resized }).height, 238, "documents the old double count when the full height is unknown");
+// Keyboard reported while nothing is focused (field inside a shadow root):
+// still measured from the fixed box, not a shrunk innerHeight.
+const unfocused = mobileViewportBox({ innerHeight: 508, vvHeight: 508, editing: false, nativeInset: 336, fixedBottom: 844, fullHeight: 844 });
+assert.equal(unfocused.gap, 336);
+assert.equal(unfocused.height, 508);
+
 // No measurement (0) falls back to innerHeight, as before.
 assert.deepEqual(
   mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true, fixedBottom: 0 }),
@@ -153,7 +190,9 @@ const composer = readFileSync(new URL("../components/chat/MessageComposer.jsx", 
 const swift = readFileSync(new URL("../../ios/App/App/DescallBridgeViewController.swift", import.meta.url), "utf8");
 assert.match(hook, /--kb-gap/);
 assert.match(hook, /__descallNativeKeyboard/);
-assert.match(hook, /fixedBottom: readFixedBottom\(probe\)/);
+assert.match(hook, /const fixedBottom = readFixedBottom\(probe\)/);
+assert.match(hook, /fullHeight: nativeViewHeight \|\| rest\.layout/);
+assert.match(swift, /__descallNativeKeyboard\(\\\(px\), \\\(viewHeight\)\)/);
 assert.match(swift, /__descallNativeKeyboard/);
 // A2 §4.4: the field auto-grows (5 lines iPhone / 8 iPad) and scrolls inside;
 // the old one-line scrollTop=0 lock is gone, Enter key shows "Gönder".
