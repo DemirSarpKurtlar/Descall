@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import TransientTopHint from "./ui/TransientTopHint.jsx";
 import "../styles/call-people.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -2158,7 +2159,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
               <span className="ss-live"><span className="ss-live-dot" aria-hidden="true" />{t("Live")}</span>
               <span className="ss-pill"><Monitor size={13} aria-hidden="true" /><span className="ss-pill-text">{sharerLabel}</span></span>
             </div>
-            <div className="ss-pill ss-expanded-hint">{t("Click anywhere to exit fullscreen")}</div>
+            <TransientTopHint className="ss-pill ss-expanded-hint">{t("Click anywhere to exit fullscreen")}</TransientTopHint>
           </div>
         )}
       </div>

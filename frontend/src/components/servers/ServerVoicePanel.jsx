@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import TransientTopHint from "../ui/TransientTopHint.jsx";
 import { motion, useReducedMotion } from "framer-motion";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
@@ -644,9 +645,9 @@ function ServerScreenShareStage({
               />
             </div>
           )}
-          <div className="server-voice-screen-hint is-expanded">
+          <TransientTopHint className="server-voice-screen-hint is-expanded">
             {t("Click anywhere to exit fullscreen")}
-          </div>
+          </TransientTopHint>
         </div>,
         document.body
       )
@@ -701,7 +702,7 @@ function ServerScreenShareStage({
           </div>
         )}
 
-        <div className="server-voice-screen-hint">{expandHint}</div>
+        <TransientTopHint key={active.id} className="server-voice-screen-hint">{expandHint}</TransientTopHint>
       </div>
 
       {/* One share: the stage already shows it, a filmstrip would only repeat it. */}
@@ -1069,9 +1070,9 @@ export default function ServerVoicePanel({
                 <Monitor size={14} />
                 <span>{tileFullscreen.label}</span>
               </div>
-              <div className="server-voice-screen-hint is-expanded">
+              <TransientTopHint className="server-voice-screen-hint is-expanded">
                 {t("Click anywhere to exit fullscreen")}
-              </div>
+              </TransientTopHint>
             </div>,
             document.body
           )
