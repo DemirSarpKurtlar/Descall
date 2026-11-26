@@ -6,7 +6,7 @@ import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ChevronLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info, UserGear, Compass } from "../ui/Icon.jsx";
+import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ChevronLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info, UserGear, Compass, Search } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
@@ -59,6 +59,38 @@ import { moveNeedsSyncChoice } from "../../lib/channelOverridesView";
 
 // Public server directory inside the app (item 8), loaded when first opened.
 const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
+// "Google'da göster" desk (public server page, UI-BRIEF draft A): own chunk, opened on demand.
+const PublicPageDesk = lazy(() => import("./publicPage/PublicPageDesk"));
+
+/** Settings nav of the desk window (draft A): only the sections this member can open. */
+function publicPageNav(t, server) {
+  const can = (perm) => Boolean(server?.isOwner) || serverHasPermission(server, perm);
+  const groups = [
+    {
+      title: t("pubpage.nav.server"),
+      items: [
+        can("MANAGE_GUILD") && { key: "overview", tile: "gray", icon: "sliders", label: t("pubpage.nav.overview") },
+        { key: "community", tile: "green", icon: "globe", label: t("pubpage.nav.community") },
+        can("MANAGE_GUILD") && { key: "rules", tile: "teal", icon: "book", label: t("pubpage.nav.rules") },
+      ].filter(Boolean),
+    },
+    {
+      title: t("pubpage.nav.people"),
+      items: [
+        can("MANAGE_ROLES") && { key: "roles", tile: "purple", icon: "shield", label: t("pubpage.nav.roles") },
+        can("CREATE_INSTANT_INVITE") && { key: "invites", tile: "brand", icon: "link", label: t("pubpage.nav.invites") },
+      ].filter(Boolean),
+    },
+    {
+      title: t("pubpage.nav.moderation"),
+      items: [
+        can("BAN_MEMBERS") && { key: "bans", tile: "red", icon: "x", label: t("pubpage.nav.bans") },
+        can("VIEW_AUDIT_LOG") && { key: "audit", tile: "orange", icon: "clock", label: t("pubpage.nav.audit") },
+      ].filter(Boolean),
+    },
+  ];
+  return groups.filter((g) => g.items.length);
+}
 
 const TEMPLATE_ICONS = {
   Gamepad2,
@@ -126,6 +158,7 @@ export default function ServersSidebar({
   const [showDiscover, setShowDiscover] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
+  const [showPublicPage, setShowPublicPage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showModeration, setShowModeration] = useState(null); // 'bans' | 'audit' | null
   const [menuOpen, setMenuOpen] = useState(false);
@@ -480,6 +513,7 @@ export default function ServersSidebar({
       const kind = event?.detail?.kind;
       if (kind === "audit" || kind === "bans") setShowModeration(kind);
       else if (kind === "invite") setShowInvite(true);
+      else if (kind === "public-page") setShowPublicPage(true);
     };
     window.addEventListener("descall:server-open", onOpen);
     return () => window.removeEventListener("descall:server-open", onOpen);
@@ -1231,6 +1265,19 @@ export default function ServersSidebar({
                     {t("Community & Discovery")}
                   </button>
                 )}
+                {(activeServer?.isOwner || serverHasPermission(activeServer, "ADMINISTRATOR")) && (
+                  <button
+                    type="button"
+                    className="server-dropdown-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowPublicPage(true);
+                    }}
+                  >
+                    <Search size={15} />
+                    {t("pubpage.entry.title")}
+                  </button>
+                )}
                 {canManageGuild && (
                   <button
                     type="button"
@@ -1691,7 +1738,29 @@ export default function ServersSidebar({
               server={activeServer}
               onClose={() => setShowCommunity(false)}
               onServerUpdated={(updated) => onServerUpdated?.(updated)}
+              onOpenPublicPage={() => {
+                setShowCommunity(false);
+                setShowPublicPage(true);
+              }}
             />
+          )}
+          {showPublicPage && activeServer && (
+            <Suspense fallback={null}>
+              <PublicPageDesk
+                server={activeServer}
+                mode="window"
+                onClose={() => setShowPublicPage(false)}
+                navItems={publicPageNav(t, activeServer)}
+                onNavigate={(key) => {
+                  setShowPublicPage(false);
+                  if (key === "overview") setShowSettings(true);
+                  else if (key === "roles") setShowRoles(true);
+                  else if (key === "invites") setShowInvite(true);
+                  else if (key === "bans" || key === "audit") setShowModeration(key);
+                  else if (key === "rules") setShowCommunity(true);
+                }}
+              />
+            </Suspense>
           )}
           {showSettings && (
             <ServerSettingsModal

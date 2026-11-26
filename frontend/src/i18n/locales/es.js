@@ -17,6 +17,7 @@ import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
 import { ACT_ES } from "./act.es.js";
 import { DIR_ES, DIR_API_ES } from "./dir.es.js";
+import { PUBPAGE_ES } from "./pubpage.es.js";
 import { BAN_ES } from "./ban.es.js";
 import { IOS_SHARE_ES } from "./iosShare.es.js";
 import { VSC_ES } from "./vsc.es.js";
@@ -71,6 +72,7 @@ export const nested = {
   "msg5": MSG5_ES,
   "act": ACT_ES,
   "dir": DIR_ES,
+  "pubpage": PUBPAGE_ES,
   "ban": BAN_ES,
   "iosShare": IOS_SHARE_ES,
   "vsc": VSC_ES,
@@ -5983,6 +5985,11 @@ export const nested = {
     "au_SERVER_CREATE": "Creó el servidor",
     "au_SERVER_RENAME": "Cambió el nombre del servidor a {name}",
     "au_SERVER_UPDATE": "Cambió los ajustes del servidor",
+    "au_PUBLIC_PAGE_ENABLE": "Activó Mostrar en Google",
+    "au_PUBLIC_PAGE_DISABLE": "Desactivó Mostrar en Google",
+    "au_PUBLIC_PAGE_UNDO": "Deshizo la desactivación",
+    "au_PUBLIC_PAGE_UPDATE": "Editó la página pública",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "La página se ocultó sola",
     "badgeAnn": "ANUN",
     "banPrompt": "¿Banear a {name}? Si quieres, agrega un motivo:",
     "banned": "Estás baneado de este servidor.",

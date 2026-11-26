@@ -17,6 +17,7 @@ import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
+import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { VSC_PT_BR } from "./vsc.pt-BR.js";
@@ -71,6 +72,7 @@ export const nested = {
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
   "dir": DIR_PT_BR,
+  "pubpage": PUBPAGE_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "vsc": VSC_PT_BR,
@@ -5983,6 +5985,11 @@ export const nested = {
     "au_SERVER_CREATE": "Criou o servidor",
     "au_SERVER_RENAME": "Renomeou o servidor para {name}",
     "au_SERVER_UPDATE": "Alterou as configurações do servidor",
+    "au_PUBLIC_PAGE_ENABLE": "Ligou Mostrar no Google",
+    "au_PUBLIC_PAGE_DISABLE": "Desligou Mostrar no Google",
+    "au_PUBLIC_PAGE_UNDO": "Desfez o desligamento",
+    "au_PUBLIC_PAGE_UPDATE": "Editou a página pública",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "A página se ocultou sozinha",
     "badgeAnn": "AVISO",
     "banPrompt": "Banir {name}? Adicione um motivo, se quiser:",
     "banned": "Você foi banido deste servidor.",

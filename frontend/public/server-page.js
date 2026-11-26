@@ -228,7 +228,7 @@ export function renderBody(page, lang) {
     stats.push(`<span class="st" data-s="count"><b>${a(num(c, counts.members))}</b> ${a(c.members)}</span>`);
     if (counts.voice > 0) stats.push(`<span class="st" data-s="count"><b>${a(num(c, counts.voice))}</b> ${a(c.inVoice)}</span>`);
   }
-  if (langName) stats.push(`<span class="st lg">${icon("globe", 13)} ${a(langName)}</span>`);
+  const langStat = langName ? `<span class="lgw"><span class="sep" aria-hidden="true"></span><span class="st">${icon("globe", 13)} ${a(langName)}</span></span>` : "";
   const tags = [];
   if (meta.category) tags.push(`<a class="tg c" href="${a(directoryHref(lang, page.category))}">${a(meta.category)}</a>`);
   if (langName) tags.push(`<span class="tg c ph-only">${a(langName)}</span>`);
@@ -263,7 +263,7 @@ export function renderBody(page, lang) {
     <div class="bn${bannerUrl ? "" : " nob"}" data-s="banner">${bannerUrl ? `<img src="${a(bannerUrl)}" alt="" fetchpriority="high" decoding="async">` : ""}</div>
     <div class="head">
       <div class="icn">${iconUrl ? `<img src="${a(iconUrl)}" alt="${a(page.name)}" width="104" height="104">` : `<span>${a(initialOf(page.name))}</span>`}</div>
-      <div class="ttl"><h1>${a(page.name)}</h1><div class="stats">${stats.join('<span class="sep" aria-hidden="true"></span>')}</div></div>
+      <div class="ttl"><h1>${a(page.name)}</h1><div class="stats">${stats.join('<span class="sep" aria-hidden="true"></span>')}${stats.length ? langStat : langStat.replace('<span class="sep" aria-hidden="true"></span>', "")}</div></div>
       <div class="cta dk-only"><div class="row1"><button class="btn ghost ic-btn" type="button" data-share title="${a(c.share)}" aria-label="${a(c.share)}">${icon("share", 16)}</button>${joinBtn("lg")}</div><small>${a(c.joinSub)}</small></div>
     </div>
   </div>
@@ -327,6 +327,7 @@ h1{margin:0;font-size:30px;letter-spacing:-.025em;line-height:1.1;overflow-wrap:
 .stats .st{display:inline-flex;gap:6px;align-items:center}
 .stats b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
 .stats .sep{width:3px;height:3px;border-radius:50%;background:var(--t4)}
+.stats .lgw{display:inline-flex;gap:14px;align-items:center}
 .dot{width:8px;height:8px;border-radius:50%;background:#23A55A;display:inline-block;flex:none;animation:pl 2s infinite}
 @keyframes pl{0%{box-shadow:0 0 0 0 rgba(35,165,90,.55)}70%{box-shadow:0 0 0 8px rgba(35,165,90,0)}100%{box-shadow:0 0 0 0 rgba(35,165,90,0)}}
 @media (prefers-reduced-motion:reduce){.dot{animation:none}}
@@ -379,8 +380,7 @@ ol.rules{margin:0;padding-left:18px;color:var(--muted);font-size:13px;line-heigh
 .hero{margin:10px 12px 0}.bn{height:128px;border-radius:16px}
 .head{flex-direction:column;align-items:flex-start;padding:0 8px;margin-top:-40px;gap:10px}
 .icn{width:78px;height:78px;border-radius:20px;border-width:4px}.icn span{font-size:32px}
-h1{font-size:24px}.stats{gap:6px 10px;font-size:12.5px}.stats .lg,.stats .lg+.sep{display:none}
-.stats .sep:last-child{display:none}
+h1{font-size:24px}.stats{gap:6px 10px;font-size:12.5px}.stats .lgw{display:none}
 .tags{margin:12px 20px 0}
 .grid{display:block;padding:16px 14px 8px}
 .hl{display:flex;overflow-x:auto;gap:10px;margin:14px -14px 0;padding:0 14px 2px;scrollbar-width:none;scroll-snap-type:x mandatory}
