@@ -200,6 +200,7 @@ assert.doesNotMatch(composer, /e\.target\.scrollTop = 0/);
 assert.match(composer, /enterKeyHint="send"/);
 assert.match(composer, /--composer-grow/);
 assert.match(css, /html\.glass-ui\.kb-open \.app-root\.g-shell\.in-conversation \.composer-container \{\s*bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/);
+assert.match(css, /html\.glass-ui\.kb-open \.giphy-overlay\.g-giphy-scrim \{\s*padding-bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/, "GIF sheet ends on the keyboard");
 assert.match(css, /overscroll-behavior: contain;/, "the grown field scrolls inside without chaining to the list");
 assert.match(swift, /FormAccessory/);
 assert.match(swift, /viewDidAppear/);

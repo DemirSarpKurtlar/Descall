@@ -1842,6 +1842,20 @@ html.glass-ui .giphy-overlay.g-giphy-scrim {
   backdrop-filter: blur(6px) saturate(120%);
 }
 
+/* Typing a GIF search: the sheet ends on the keyboard. Over a full-height
+   layout (the keyboard covers the web view) it sat behind the keys with the
+   results; in a layout that shrank for the keyboard the home-indicator inset
+   (behind the keys) left a 34pt gap. --vv-height is the visible height above
+   the keyboard in both cases. */
+html.glass-ui.kb-open .giphy-overlay.g-giphy-scrim {
+  padding-bottom: calc(var(--kb-gap, 0px) + 8px);
+}
+
+html.glass-ui.kb-open .giphy-panel.g-giphy {
+  height: min(620px, calc(var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - 24px));
+  max-height: min(620px, calc(var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - 24px));
+}
+
 html.glass-ui .giphy-panel.g-giphy {
   position: relative !important;
   top: auto !important;

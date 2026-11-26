@@ -229,6 +229,35 @@ async function runDevice(browser, base, dev, check) {
         check(r.replyTop != null && r.lastBottom <= r.replyTop + 1, `${name} reply bar: newest message ends above the reply strip (${r.lastBottom} vs ${r.replyTop})`);
         await closeKeyboard(W, H);
       }
+      // GIF search: the sheet ends on the keyboard, search field on screen.
+      const plus = await tapText(page, '.composer-container button', 'Ekle|Dosya|Attach');
+      await sleep(600);
+      const gif = plus && await tapText(page, '.attachment-item', 'GIF');
+      await sleep(900);
+      check(Boolean(gif && await page.$('.giphy-search input')), `${name} GIF picker opened`);
+      if (gif) {
+        for (const mode of ['overlay', 'resize']) {
+          const at = await page.evaluate(() => { const r = document.querySelector('.giphy-search input').getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; });
+          await page.touchscreen.tap(at.x, at.y);
+          await page.focus('.giphy-search input');
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          if (mode === 'resize') await page.setViewportSize({ width: W, height: H - KB });
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          await sleep(700);
+          const gm = await page.evaluate(() => { const p = document.querySelector('.giphy-panel').getBoundingClientRect(); const i = document.querySelector('.giphy-search input').getBoundingClientRect(); return { top: Math.round(p.top), bottom: Math.round(p.bottom), search: Math.round(i.bottom) }; });
+          log(`gif ${mode}`, gm);
+          await shot(`7-gif-${mode}`);
+          check(gm.bottom <= H - KB + 1 && gm.bottom >= H - KB - 24 && gm.top >= 0 && gm.search <= H - KB, `${name} GIF search (${mode}): sheet ends on the keyboard (${gm.top}..${gm.bottom}, keyboard top ${H - KB})`);
+          await page.evaluate(() => document.activeElement?.blur());
+          await page.evaluate((h) => window.__descallNativeKeyboard(0, h), H);
+          await page.setViewportSize({ width: W, height: H });
+          await sleep(600);
+        }
+        await page.keyboard.press('Escape');
+        await tapText(page, '.giphy-close', '.');
+        await sleep(500);
+      }
+
       // Server text channel (same shell, other composer owner). Back to the
       // list first: the tab bar is hidden inside a conversation.
       await tapText(page, '.mobile-nav-btn', '.');
