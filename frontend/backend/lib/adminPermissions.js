@@ -67,6 +67,8 @@ const RULES = [
   // Sunucu Ağı (hybrid server): owner only, checked by routes/adminNodes.js.
   [/^\/nodes(\/|$)/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
+  // Apple Watch games: every admin (never a member), the caller's own scores only.
+  [/^\/watch-games(\/|$)/, "overview"],
   [/^\/staff(\/|$)/, "staff"],
   [/^\/agent(\/|$)/, "agent"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],

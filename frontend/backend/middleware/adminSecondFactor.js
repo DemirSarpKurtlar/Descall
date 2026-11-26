@@ -35,6 +35,8 @@ const STEP_UP_EXEMPT = [
   /^\/agent\/plans\/[^/]+\/(selection|dry-run|edit|discard)\/?$/, /^\/agent\/prompts(\/[^/]+(\/use)?)?\/?$/,
   // İşlem kaydı: saving / deleting one's own saved view changes nothing on the platform.
   /^\/audit\/views(\/[^/]+)?\/?$/,
+  // Apple Watch games: syncing one's own best scores changes nothing on the platform.
+  /^\/watch-games\/scores\/?$/,
 ];
 let warned = false;
 
