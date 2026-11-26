@@ -95,11 +95,15 @@ function nf(lang, n) {
   }
 }
 
+function spanMarkup(value, color, fg, ls) {
+  return `<span foreground="${color}"${fg}${ls}>${escapeMarkup(value)}</span>`;
+}
+
 /** Text layer -> { input: Buffer, width, height } (sharp/pango, bundled font). */
 async function textLayer(text, { font = FONT_HEAVY, size, color = "#ffffff", width = null, spacing = 0, align = "left", lines = 1, alpha = 1 }) {
   const ls = spacing ? ` letter_spacing="${Math.round(spacing * 1024)}"` : "";
   const fg = alpha < 1 ? ` fgalpha="${Math.round(alpha * 100)}%"` : "";
-  const markup = `<span foreground="${color}"${fg}${ls}>${escapeMarkup(text)}</span>`;
+  const markup = spanMarkup(text, color, fg, ls);
   const opts = {
     text: markup,
     font: `${font.family} ${size}`,
@@ -119,7 +123,9 @@ async function textLayer(text, { font = FONT_HEAVY, size, color = "#ffffff", wid
     guard += 1;
     body = `${body.replace(/…$/, "").split(" ").slice(0, -1).join(" ").replace(/[,.;:\-–]$/, "")}…`;
     if (!body.trim() || body === "…") break;
-    img = await sharp({ text: { ...opts, text: `<span foreground="${color}"${fg}${ls}>${escapeMarkup(body)}</span>` } }).png().toBuffer({ resolveWithObject: true });
+    const shorter = { ...opts };
+    shorter.text = spanMarkup(body, color, fg, ls);
+    img = await sharp({ text: shorter }).png().toBuffer({ resolveWithObject: true });
   }
   return { input: img.data, width: img.info.width, height: img.info.height };
 }
@@ -238,7 +244,7 @@ async function bannerBase(buf) {
       /* fall through */
     }
   }
-  // No banner: the brand colour field (draft A: "Afiş yoksa marka renginde zemin").
+  // No banner: the brand colour field (draft A, section 3).
   return sharp(Buffer.from(`<svg width="${W}" height="${H}"><defs>
     <radialGradient id="a" cx="85%" cy="20%" r="70%"><stop offset="0" stop-color="${BRAND}" stop-opacity=".75"/><stop offset="1" stop-color="${BRAND}" stop-opacity="0"/></radialGradient>
     <radialGradient id="b" cx="100%" cy="100%" r="60%"><stop offset="0" stop-color="#9B5DE5" stop-opacity=".45"/><stop offset="1" stop-color="#9B5DE5" stop-opacity="0"/></radialGradient>

@@ -42,7 +42,7 @@ const og = require("./publicPageOg");
   const red = await sharp({ create: { width: 64, height: 32, channels: 3, background: "#aa2233" } }).png().toBuffer();
   const okFetch = async () => ({ ok: true, headers: { get: () => String(red.length) }, arrayBuffer: async () => red.buffer.slice(red.byteOffset, red.byteOffset + red.length) });
   const srv = await og.renderServerCard(
-    { name: "Anadolu Craft 🎮 İşçi", description: "Sakin survival, haftalık yapı yarışmaları ve Sezon 7.", iconUrl: "https://abc.supabase.co/i.png", bannerUrl: "https://abc.supabase.co/b.png", memberCount: 4812, onlineCount: 637, category: "gaming-minecraft", lang: "tr", urlText: "descall.com/s/anadolucraft" },
+    { name: "Anadolu Craft \u{1F3AE} İşçi", description: "Sakin survival, haftalık yapı yarışmaları ve Sezon 7.", iconUrl: "https://abc.supabase.co/i.png", bannerUrl: "https://abc.supabase.co/b.png", memberCount: 4812, onlineCount: 637, category: "gaming-minecraft", lang: "tr", urlText: "descall.com/s/anadolucraft" },
     { fetchImpl: okFetch }
   );
   let meta = await sharp(srv).metadata();
@@ -66,10 +66,10 @@ const og = require("./publicPageOg");
   assert.equal(`${meta.width}x${meta.height}`, "1200x630");
 
   // Text helpers.
-  assert.equal(og.plain("a\u202eb 🎮 c", 50), "a b c");
+  assert.equal(og.plain("a\u202eb \u{1F3AE} c", 50), "a b c");
   assert.equal(og.plain("x".repeat(30), 10).length, 10);
   assert.equal(og.initialOf("  ışık"), "I");
-  assert.equal(og.initialOf("🎮"), "D");
+  assert.equal(og.initialOf("\u{1F3AE}"), "D");
 
   // LRU cache: one build per key, in-flight de-duplicated, bounded.
   let builds = 0;
