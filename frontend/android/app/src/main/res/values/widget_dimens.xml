@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget corner radius: the draft's 26px before Android 12, the system value after. -->
+    <dimen name="w_radius">24dp</dimen>
+    <dimen name="w_glow_radius">220dp</dimen>
+    <dimen name="w_pad">16dp</dimen>
+</resources>

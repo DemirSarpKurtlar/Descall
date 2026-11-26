@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Friends widget, 4x4 (friends.l): "Favorite faces", eight faces with status, a wave button on each and an Edit cell. -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToOutline="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/w_header"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/w_logo"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_w_logo" />
+
+            <TextView
+                android:id="@+id/w_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/w_stale_icon"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:importantForAccessibility="no"
+                android:layout_marginEnd="3dp"
+                android:src="@drawable/ic_w_offline"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/w_stale"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="8dp"
+                android:maxLines="1"
+                android:textSize="10.5sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/w_meta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/w_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/cell0"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face0"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand0"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face1"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand1"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face2"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand2"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/cell3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face3"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand3"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face4"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand4"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell5"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face5"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand5"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/cell6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face6"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand6"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name6"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act6"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell7"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <ImageView
+                            android:id="@+id/face7"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:importantForAccessibility="no"
+                            android:layout_gravity="bottom|center_horizontal" />
+
+                        <ImageView
+                            android:id="@+id/hand7"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="yes"
+                            android:layout_gravity="top|end"
+                            android:padding="5dp"
+                            android:src="@drawable/ic_w_hand"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/name7"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/act7"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="2dp"
+                        android:maxLines="1"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cell8"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="58dp">
+
+                        <FrameLayout
+                            android:id="@+id/edit_ring"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_gravity="bottom|center_horizontal">
+
+                            <ImageView
+                                android:id="@+id/edit_icon"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:importantForAccessibility="no"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_w_plus" />
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/edit_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="5dp"
+                        android:maxLines="1"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/w_empty_box"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginTop="0dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/w_empty_icon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_w_users" />
+
+            <TextView
+                android:id="@+id/w_empty_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginTop="8dp"
+                android:maxLines="2"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/w_empty_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginTop="3dp"
+                android:maxLines="3"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/w_empty_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/wbtn_accent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginTop="10dp"
+                android:maxLines="1"
+                android:paddingBottom="6dp"
+                android:paddingEnd="14dp"
+                android:paddingStart="14dp"
+                android:paddingTop="6dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

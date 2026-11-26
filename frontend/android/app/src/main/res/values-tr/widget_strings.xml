@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home screen widgets, their settings screen and the ongoing call notification
+         (draft B "Yuzler", com.descall.app.widget). Same keys in all seven languages
+         (frontend/src/lib/androidWidgets.selftest.mjs checks it). -->
+    <string name="widget_friends_label">Çevrimiçi arkadaşlar</string>
+    <string name="widget_friends_desc">Favori yüzlerin, kim çevrimiçi ve ne yapıyor</string>
+    <string name="widget_unread_label">Okunmamış mesajlar</string>
+    <string name="widget_unread_desc">Sana kim yazdı: yüzüyle birlikte sohbet balonları</string>
+    <string name="widget_voice_label">Seste kimler var</string>
+    <string name="widget_voice_desc">Ses odaları yüz kümeleri olarak, tek dokunuşla katıl</string>
+    <string name="widget_call_label">Canlı arama</string>
+    <string name="widget_call_desc">Kim konuşuyor, süre, sessize alma ve ayrılma</string>
+    <string name="w_online">Çevrimiçi</string>
+    <string name="w_favorites">Favori yüzler</string>
+    <string name="w_new_messages_title">Yeni mesajlar</string>
+    <string name="w_who_in_voice">Seste kimler var</string>
+    <string name="w_join">Katıl</string>
+    <string name="w_here">Buradasın</string>
+    <string name="w_talking">%s konuşuyor</string>
+    <string name="w_talking_short">konuşuyor</string>
+    <string name="w_you">Sen</string>
+    <string name="w_mic_on">Mikrofon açık</string>
+    <string name="w_mic_off">Sessizde</string>
+    <string name="w_edit">Düzenle</string>
+    <string name="w_reply">Yanıtla</string>
+    <string name="w_more_one">+ %s</string>
+    <string name="w_names_two">%1$s ve %2$s</string>
+    <string name="w_presence_online">Çevrimiçi</string>
+    <string name="w_presence_idle">Boşta</string>
+    <string name="w_presence_dnd">Rahatsız etmeyin</string>
+    <string name="w_presence_offline">Çevrimdışı</string>
+    <string name="w_in_voice">Seste · %s</string>
+    <string name="w_act_screen">Ekran paylaşıyor</string>
+    <string name="w_act_game">%s oynuyor</string>
+    <string name="w_act_music">%s dinliyor</string>
+    <string name="w_just_now">şimdi</string>
+    <string name="w_minutes_ago">%d dk önce</string>
+    <string name="w_hours_ago">%d sa önce</string>
+    <string name="w_minutes">%d dk</string>
+    <string name="w_hours">%d sa</string>
+    <string name="w_stale_offline">Çevrimdışı, %s verisi. Yenilemek için dokun.</string>
+    <string name="w_stale_error">Güncellenemedi, %s verisi. Tekrar denemek için dokun.</string>
+    <string name="w_loading">Yükleniyor</string>
+    <string name="w_empty_friends">Şu an kimse çevrimiçi değil</string>
+    <string name="w_empty_friends_sub">Arkadaşların gelince yüzleri burada görünür</string>
+    <string name="w_empty_friends_none">Henüz arkadaşın yok</string>
+    <string name="w_empty_friends_none_sub">Yüzlerini burada görmek için Descall\'da arkadaş ekle</string>
+    <string name="w_empty_unread">Hepsi okundu</string>
+    <string name="w_empty_unread_sub">Yeni mesaj yok</string>
+    <string name="w_empty_voice">Seste kimse yok</string>
+    <string name="w_empty_voice_sub">Arkadaşların girince odalar burada görünür</string>
+    <string name="w_call_idle">Aramada değilsin</string>
+    <string name="w_call_idle_sub">Şu an seste kimse yok</string>
+    <string name="w_connecting">Bağlanıyor…</string>
+    <string name="w_signed_out">Descall\'a giriş yap</string>
+    <string name="w_signed_out_sub">Arkadaşlarını burada görmek için uygulamayı bir kez aç</string>
+    <string name="w_sign_in">Giriş yap</string>
+    <string name="w_offline">Çevrimdışısın</string>
+    <string name="w_error">Yüklenemedi</string>
+    <string name="w_error_sub">Widget kendiliğinden tekrar dener</string>
+    <string name="w_retry">Tekrar dene</string>
+    <string name="w_cd_wave">%s kişisine el salla</string>
+    <string name="w_cd_waved">%s kişisine el salladın</string>
+    <string name="w_cd_edit">Favori yüzleri düzenle</string>
+    <string name="w_cd_join">%s kanalına katıl</string>
+    <string name="w_cd_mute">Sessize al</string>
+    <string name="w_cd_unmute">Sesi aç</string>
+    <string name="w_cd_deafen">Sesi kapat</string>
+    <string name="w_cd_undeafen">Sesi aç</string>
+    <string name="w_cd_leave">Aramadan ayrıl</string>
+    <string name="w_wave_sent">%s kişisine el salladın</string>
+    <string name="w_wave_limit">Bugünlük el sallama hakkın doldu</string>
+    <string name="w_wave_offline">Çevrimdışısın, el sallanamadı</string>
+    <string name="w_wave_failed">El sallanamadı. Tekrar dene.</string>
+    <string name="n_call_channel">Süren aramalar</string>
+    <string name="n_call_channel_desc">Descall aramalarını arka planda sürdürür, sessize alma ve ayrılma ile</string>
+    <string name="n_in_progress">Arama sürüyor</string>
+    <string name="n_voice_call">Sesli arama</string>
+    <string name="n_mute">Sessize al</string>
+    <string name="n_unmute">Sesi aç</string>
+    <string name="n_leave">Ayrıl</string>
+    <string name="n_chip_connecting">Bağlanıyor</string>
+    <string name="cfg_title_friends">Favori yüzler</string>
+    <string name="cfg_title_widget">Widget ayarları</string>
+    <string name="cfg_preview">Önizleme</string>
+    <string name="cfg_pick_header">Seç ve sırala · %1$d/%2$d</string>
+    <string name="cfg_pick_footer">Eklemek veya çıkarmak için yüze dokun. Sırayı değiştirmek için yüzü basılı tutup sürükle. Küçük widget\'larda ilk yüzler görünür.</string>
+    <string name="cfg_show_activity">Etkinliği göster</string>
+    <string name="cfg_show_activity_sub">Oyun, müzik, ses kanalı, ekran paylaşımı</string>
+    <string name="cfg_wave">El sallama düğmesi</string>
+    <string name="cfg_wave_sub">Arkadaş başına günde en fazla 5 kez</string>
+    <string name="cfg_color">Renk</string>
+    <string name="cfg_color_dark">Descall koyu</string>
+    <string name="cfg_color_light">Descall açık</string>
+    <string name="cfg_color_dynamic">Dinamik renk</string>
+    <string name="cfg_color_note">Dinamik renk duvar kâğıdının renklerini alır, açık ve koyu moda uyar.</string>
+    <string name="cfg_dynamic_unavailable">Dinamik renk Android 12 ve sonrasında çalışır.</string>
+    <string name="cfg_servers">Sunucular</string>
+    <string name="cfg_servers_sub">Yalnızca bu sunucuların ses odalarını göster. Seçim yoksa hepsi görünür.</string>
+    <string name="cfg_done">Bitti</string>
+    <string name="cfg_cancel">Vazgeç</string>
+    <string name="cfg_loading">Arkadaşların yükleniyor…</string>
+    <string name="cfg_error">Liste yüklenemedi.</string>
+    <string name="cfg_offline">Çevrimdışısın. Son liste gösteriliyor.</string>
+    <string name="cfg_signed_out">Önce Descall uygulamasında giriş yap.</string>
+    <string name="cfg_open_app">Descall\'u aç</string>
+    <string name="cfg_no_friends">Henüz arkadaşın yok.</string>
+    <string name="cfg_limit">En fazla 8 yüz seçebilirsin.</string>
+    <string name="cfg_cd_selected">%1$s, %2$d. sırada</string>
+    <string name="cfg_cd_not_selected">%s, seçili değil</string>
+    <string name="cfg_move_earlier">Öne al</string>
+    <string name="cfg_move_later">Geriye al</string>
+    <string name="wprev_ece">Ece</string>
+    <string name="wprev_kaan">Kaan</string>
+    <string name="wprev_selin">Selin</string>
+    <string name="wprev_arda">Arda</string>
+    <string name="wprev_count">8 kişi</string>
+    <string name="wprev_unread">4 sohbet</string>
+    <string name="wprev_people">9 kişi</string>
+    <string name="wprev_msg1">Akşam 9\'da sese gelir misin?</string>
+    <string name="wprev_msg2">Notları attım, sınavdan önce bakın</string>
+    <string name="wprev_room">Oyun Gecesi</string>
+    <string name="wprev_server">Gece Kuşu · 5 kişi</string>
+    <string name="wprev_talking">Kaan konuşuyor</string>
+    <string name="wprev_room_time">Oyun Gecesi · 12:06</string>
+    <plurals name="w_people_count">
+        <item quantity="one">%d kişi</item>
+        <item quantity="other">%d kişi</item>
+    </plurals>
+    <plurals name="w_online_count">
+        <item quantity="one">%d çevrimiçi</item>
+        <item quantity="other">%d çevrimiçi</item>
+    </plurals>
+    <plurals name="w_new_messages">
+        <item quantity="one">%d yeni mesaj</item>
+        <item quantity="other">%d yeni mesaj</item>
+    </plurals>
+    <plurals name="w_chats">
+        <item quantity="one">%d sohbet</item>
+        <item quantity="other">%d sohbet</item>
+    </plurals>
+    <plurals name="w_channels">
+        <item quantity="one">%d kanal</item>
+        <item quantity="other">%d kanal</item>
+    </plurals>
+    <plurals name="w_more_channels">
+        <item quantity="one">+%d kanal</item>
+        <item quantity="other">+%d kanal</item>
+    </plurals>
+    <plurals name="w_more_chats">
+        <item quantity="one">+%d sohbet daha</item>
+        <item quantity="other">+%d sohbet daha</item>
+    </plurals>
+    <plurals name="w_more_named">
+        <item quantity="one">+ %1$s ve %2$d sohbet daha</item>
+        <item quantity="other">+ %1$s ve %2$d sohbet daha</item>
+    </plurals>
+    <plurals name="w_names_more">
+        <item quantity="one">%1$s, %2$s ve %3$d kişi</item>
+        <item quantity="other">%1$s, %2$s ve %3$d kişi</item>
+    </plurals>
+</resources>

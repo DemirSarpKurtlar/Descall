@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Descall voice widget (draft B "Yuzler"): resizable 2x2 / 4x2 / 4x4, rendered by
+     widget/WidgetRenderer.java (responsive sizes on Android 12+), refreshed by WorkManager
+     every 30 minutes and by the running app; no updatePeriodMillis polling. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.descall.app.widget.WidgetConfigActivity"
+    android:description="@string/widget_voice_desc"
+    android:initialLayout="@layout/widget_skeleton"
+    android:maxResizeHeight="560dp"
+    android:maxResizeWidth="560dp"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="110dp"
+    android:previewLayout="@layout/widget_preview_voice"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional" />
