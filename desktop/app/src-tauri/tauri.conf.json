@@ -76,7 +76,7 @@
         "https://github.com/DemirSarpKurtlar/Descall/releases/download/desktop-latest/latest.json"
       ],
       "windows": {
-        "installMode": "passive"
+        "installMode": "quiet"
       }
     },
     "deep-link": {

@@ -104,7 +104,9 @@ pub fn reset_voice<R: Runtime>(app: &AppHandle<R>) {
     i.deferral = deferral::apply(&i.deferral, Event::ResetVoice, now_ms());
 }
 
-/// Install the staged update now. The plugin starts the NSIS installer (passive) and exits.
+/// Install the staged update now. The plugin starts the NSIS installer (quiet: `/S /UPDATE /R`,
+/// no setup window; tauri.conf.json plugins.updater.windows.installMode) and exits. A manual
+/// install (the setup run without switches) keeps its full setup screen.
 fn install<R: Runtime>(app: &AppHandle<R>, reason: &str, allow_during_call: bool) -> bool {
     if !allow_during_call && live_busy(app) {
         log::info!("[updater] install blocked, voice session active ({reason})");
