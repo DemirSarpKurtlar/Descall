@@ -113,4 +113,52 @@ function summarize(rows) {
   return { plays, lastPlayedAt: last, games: new Set(rows.map((r) => r.game)).size };
 }
 
-module.exports = { GAMES, MAX_ROWS, isKnown, sanitizeScores, better, mergeRow, changed, shapeRow, summarize };
+/* ---------- Daily play stats (the hub's weekly summary and 7-day bars) ---------- */
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const KEEP_DAYS = 14;
+
+function dayKey(date) {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+/**
+ * Cleans reported days: "YYYY-MM-DD" within the last KEEP_DAYS (and at most one day
+ * ahead for time zones), seconds 0 ... 86400, rounds and records bounded.
+ */
+function sanitizeDays(list, now = Date.now()) {
+  if (!Array.isArray(list)) return [];
+  const newest = dayKey(now + 86400000);
+  const oldest = dayKey(now - KEEP_DAYS * 86400000);
+  const out = new Map();
+  for (const raw of list.slice(0, KEEP_DAYS * 3)) {
+    const day = String(raw?.day ?? "");
+    if (!DAY_RE.test(day) || Number.isNaN(Date.parse(day)) || day > newest || day < oldest) continue;
+    const seconds = toInt(raw.seconds ?? 0, 86400);
+    const rounds = toInt(raw.rounds ?? 0, 10000);
+    const records = toInt(raw.records ?? 0, 1000);
+    if (seconds == null || rounds == null || records == null) continue;
+    const row = { day, seconds, rounds, records };
+    out.set(day, out.has(day) ? mergeDay(out.get(day), row) : row);
+  }
+  return [...out.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+}
+
+/** Counters only grow (several reports of the same day from one watch). */
+function mergeDay(stored, incoming) {
+  return {
+    day: incoming.day,
+    seconds: Math.max(Number(stored?.seconds) || 0, incoming.seconds),
+    rounds: Math.max(Number(stored?.rounds) || 0, incoming.rounds),
+    records: Math.max(Number(stored?.records) || 0, incoming.records),
+  };
+}
+
+function shapeDay(r) {
+  return { day: String(r.day).slice(0, 10), seconds: Number(r.seconds) || 0, rounds: Number(r.rounds) || 0, records: Number(r.records) || 0 };
+}
+
+module.exports = {
+  GAMES, MAX_ROWS, KEEP_DAYS, isKnown, sanitizeScores, better, mergeRow, changed, shapeRow, summarize,
+  dayKey, sanitizeDays, mergeDay, shapeDay,
+};

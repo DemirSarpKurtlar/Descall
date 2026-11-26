@@ -3,9 +3,9 @@
 /**
  * Apple Watch games scores (routes/adminWatchGames.js) on the real /api/admin chain over
  * the fake db:
- *  - members and signed-out callers are refused (403 / 401), every admin may sync,
- *    including an admin limited to one unrelated section (path maps to "overview");
- *  - each admin reads and writes only their own rows; merges keep the better best and
+ *  - the owner account only: members, signed-out callers and every other admin (also a
+ *    legacy admin with all sections) are refused; the path maps to section "games";
+ *  - the owner reads and writes only their own rows; merges keep the better best and
  *    never shrink plays; unknown games are dropped;
  *  - the POST is step-up exempt (one admin's records, nothing on the platform);
  *  - before the migration the API answers storage "unavailable" instead of failing.
@@ -23,6 +23,7 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const OWNER = "00000000-0000-4000-8000-0000000000a1";
 const LIMITED = "00000000-0000-4000-8000-0000000000a2";
 const MEMBER = "00000000-0000-4000-8000-0000000000a3";
+const LEGACY = "00000000-0000-4000-8000-0000000000a4";
 
 function user(id, username, extra = {}) {
   return { id, username, is_admin: false, active_sessions: [{ id: `s-${username}` }], ...extra };
@@ -34,6 +35,7 @@ const fake = createFakeSupabase({
     user(OWNER, "admin", { is_admin: true, is_super_admin: true }),
     user(LIMITED, "annconly", { is_admin: true, admin_permissions: ["announcements"] }),
     user(MEMBER, "kaan"),
+    user(LEGACY, "legacyadmin", { is_admin: true, admin_permissions: null }),
   ],
   admin_watch_game_scores: [
     { user_id: MEMBER, game: "runner", mode: "", best: 999, plays: 1, updated_at: "2026-11-01T00:00:00.000Z" },
@@ -81,7 +83,10 @@ const session = (id, username) => signToken({ id, username, sid: `s-${username}`
 const P = "/api/admin/watch-games/scores";
 
 (async () => {
-  assert(perms.sectionForPath("/watch-games/scores") === "overview", "path maps to overview");
+  assert(perms.sectionForPath("/watch-games/scores") === "games", "path maps to games");
+  assert(perms.sectionsFor({ username: "admin" }, { is_admin: true }).includes("games"), "owner holds games");
+  assert(!perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: null }).includes("games"), "legacy admin does not");
+  assert(!perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["games"] }).includes("games"), "games can never be granted");
   assert(STEP_UP_EXEMPT.some((re) => re.test("/watch-games/scores")), "score sync is step-up exempt");
   assert(!STEP_UP_EXEMPT.some((re) => re.test("/watch-games/scores/x")), "nothing else under it is exempt");
 
@@ -114,17 +119,30 @@ const P = "/api/admin/watch-games/scores";
     assert(by["runner:"].best === 41 && by["runner:"].plays === 7, `higher best kept: ${JSON.stringify(by["runner:"])}`);
     assert(by["sudoku:easy"].best === 250 && by["sudoku:easy"].plays === 2, `faster time wins, plays kept: ${JSON.stringify(by["sudoku:easy"])}`);
     assert(r.body.summary.plays === 9 && r.body.summary.games === 2, `summary: ${JSON.stringify(r.body.summary)}`);
+    const today = new Date().toISOString().slice(0, 10);
+    r = await call(base, "POST", P, { token: owner, body: { scores: [], days: [{ day: today, seconds: 420, rounds: 3, records: 1 }, { day: "1999-01-01", seconds: 5 }] } });
+    assert(r.status === 200 && r.body.days.length === 1 && r.body.days[0].seconds === 420, `days saved: ${JSON.stringify(r.body.days)}`);
+    r = await call(base, "POST", P, { token: owner, body: { scores: [], days: [{ day: today, seconds: 100, rounds: 5 }] } });
+    assert(r.body.days[0].seconds === 420 && r.body.days[0].rounds === 5 && r.body.days[0].records === 1, `day counters only grow: ${JSON.stringify(r.body.days)}`);
+    r = await call(base, "GET", P, { token: owner });
+    assert(r.status === 200 && r.body.days.length === 1 && r.body.scores.length === 2, `read back: ${JSON.stringify(r.body).slice(0, 300)}`);
     const ownerRows = fake._tables.admin_watch_game_scores.rows.filter((x) => x.user_id === OWNER);
     assert(ownerRows.length === 2 && !ownerRows.some((x) => x.game === "tictactoe"), "only known games stored");
 
-    r = await call(base, "GET", P, { token: limited });
-    assert(r.status === 200 && r.body.scores.length === 0, `limited admin sees only their own (none): ${r.status} ${JSON.stringify(r.body)}`);
-    r = await call(base, "POST", P, { token: limited, body: { scores: [{ game: "chess", mode: "hard", best: 1, plays: 1 }] } });
-    assert(r.status === 200 && r.body.scores.length === 1 && r.body.scores[0].game === "chess", `limited admin write: ${r.status}`);
-    r = await call(base, "POST", P, { token: limited, body: { scores: "x" } });
+    for (const [tok, who] of [[limited, "limited admin"], [session(LEGACY, "legacyadmin"), "legacy admin"]]) {
+      r = await call(base, "GET", P, { token: tok });
+      assert(r.status === 403 && r.body.code === "ADMIN_PERMISSION_DENIED", `${who} read refused: ${r.status} ${JSON.stringify(r.body)}`);
+      r = await call(base, "POST", P, { token: tok, body: { scores: [{ game: "chess", mode: "hard", best: 1, plays: 1 }] } });
+      assert(r.status === 403, `${who} write refused: ${r.status}`);
+    }
+    assert(!fake._tables.admin_watch_game_scores.rows.some((x) => x.game === "chess"), "nothing written by other admins");
+    r = await call(base, "POST", P, { token: owner, body: { scores: "x" } });
     assert(r.status === 400 && r.body.code === "BAD_SCORES", `bad body: ${r.status}`);
 
     // Before the migration: storage "unavailable", no error.
+    fakeOpts.missingTables.push("admin_watch_game_days");
+    r = await call(base, "GET", P, { token: owner });
+    assert(r.status === 200 && r.body.storage === "ok" && r.body.days.length === 0 && r.body.scores.length === 2, `days table missing: ${JSON.stringify(r.body).slice(0, 200)}`);
     fakeOpts.missingTables.push("admin_watch_game_scores");
     r = await call(base, "GET", P, { token: owner });
     assert(r.status === 200 && r.body.storage === "unavailable" && r.body.scores.length === 0, `missing table read: ${r.status} ${JSON.stringify(r.body)}`);

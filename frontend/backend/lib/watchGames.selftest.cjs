@@ -57,4 +57,25 @@ ok("merge: high keeps the max, low the smallest finished time, plays never shrin
   assert.deepStrictEqual(s, { plays: 5, lastPlayedAt: "2026-02-01", games: 1 });
 });
 
+ok("days: format, window, bounds, merge only grows", () => {
+  const now = Date.parse("2026-11-26T12:00:00Z");
+  const days = wg.sanitizeDays([
+    { day: "2026-11-26", seconds: 600, rounds: 4, records: 1 },
+    { day: "2026-11-26", seconds: 300, rounds: 6, records: 0 },
+    { day: "2026-11-27", seconds: 10 },
+    { day: "2026-11-29", seconds: 10 },
+    { day: "2026-10-01", seconds: 10 },
+    { day: "26-11-2026", seconds: 10 },
+    { day: "2026-11-25", seconds: 999999, rounds: -1 },
+    { day: "2026-11-24", seconds: 999999 },
+  ], now);
+  assert.deepStrictEqual(days, [
+    { day: "2026-11-24", seconds: 86400, rounds: 0, records: 0 },
+    { day: "2026-11-26", seconds: 600, rounds: 6, records: 1 },
+    { day: "2026-11-27", seconds: 10, rounds: 0, records: 0 },
+  ]);
+  assert.deepStrictEqual(wg.mergeDay({ seconds: 50, rounds: 9, records: 2 }, { day: "d", seconds: 40, rounds: 10, records: 1 }), { day: "d", seconds: 50, rounds: 10, records: 2 });
+  assert.deepStrictEqual(wg.sanitizeDays(null), []);
+});
+
 console.log(`watchGames selftest ok (${n})`);
