@@ -42,5 +42,112 @@ export const VSC_FR = {
     "chat": "Ouvrir une discussion",
     "place": "Ouvrir un serveur"
   },
-  "morePhrases": "+{count} autres façons de le dire"
+  "morePhrases": "+{count} autres façons de le dire",
+  "wg": {
+    "tabsLabel": "Réglages Siri et widgets",
+    "tab": {
+      "siri": "Siri",
+      "faces": "Visages favoris",
+      "lock": "Écran verrouillé",
+      "shortcuts": "Raccourcis"
+    },
+    "people": "{count} personnes",
+    "waveReceived": "t'a fait coucou",
+    "wave": {
+      "cooldown": "Attends un peu, tu viens de faire coucou.",
+      "limit": "Tu as utilisé tes coucous du jour.",
+      "notFriend": "Tu ne peux faire coucou qu'à tes amis.",
+      "failed": "Coucou impossible. Réessaie."
+    },
+    "act": {
+      "screen": "Partage son écran",
+      "voice": "En vocal",
+      "voiceIn": "Vocal · {name}",
+      "game": "Joue à {name}",
+      "music": "Écoute {name}",
+      "app": "Utilise {name}",
+      "idle": "Absent",
+      "dnd": "Ne pas déranger",
+      "offline": "Hors ligne"
+    },
+    "state": {
+      "loading": "Chargement",
+      "error": "Impossible de charger les données.",
+      "offline": "Tu es hors ligne.",
+      "retry": "Réessayer"
+    },
+    "siri": {
+      "previewLabel": "Aperçu de la réponse de Siri",
+      "tryHint": "Choisis une question pour voir la réponse avec tes données",
+      "q": {
+        "unread": "Combien de messages non lus ai-je ?",
+        "online": "Qui est en ligne ?",
+        "voice": "Qui est en vocal ?"
+      },
+      "aUnreadNone": "Tu n'as aucun message non lu.",
+      "aUnreadOne": "Tu as 1 message non lu.",
+      "aUnreadMany": "Tu as {count} messages non lus.",
+      "aOnlineNone": "Aucun de tes amis n'est en ligne.",
+      "aOnlineMany": "{count} de tes amis sont en ligne.",
+      "aVoiceNone": "Personne n'est en vocal pour le moment.",
+      "aVoiceMany": "{count} personnes sont en vocal.",
+      "favTitle": "Pour tes favoris",
+      "generalTitle": "Général",
+      "callPhrase": "Appeler {name}",
+      "msgHint": "Prêt tout seul, sans réglage",
+      "callHint": "Ajoute-le à Siri dans l'app Raccourcis",
+      "added": "Ajouté",
+      "ready": "Prêt",
+      "noFav": "Choisis d'abord tes proches dans Visages favoris ; les raccourcis se créent tout seuls.",
+      "favHint": "Les raccourcis message et appel de tes {count} favoris se créent seuls et suivent tes changements.",
+      "allPhrases": "Toutes les phrases"
+    },
+    "faces": {
+      "previewLabel": "Aperçu du widget moyen",
+      "online": "En ligne",
+      "emptyPreview": "Les visages apparaissent ici une fois choisis",
+      "wallpaper": "Fond d'écran",
+      "wall": {
+        "dark": "Sombre",
+        "light": "Clair"
+      },
+      "pickTitle": "Choisis et ordonne",
+      "pickHint": "Maintiens un visage et fais-le glisser pour changer l'ordre. Le widget une personne de l'écran verrouillé affiche le premier.",
+      "search": "Chercher un ami",
+      "reset": "Revenir à la suggestion",
+      "changed": "Visages favoris mis à jour",
+      "undo": "Annuler",
+      "full": "Tu peux choisir jusqu'à 8 visages. Retires-en un d'abord.",
+      "noFriends": "Pas encore d'amis. Une fois ajoutés, choisis leurs visages ici.",
+      "showActivity": "Afficher l'activité",
+      "showActivityHint": "Jeux, musique, partage d'écran",
+      "wave": "Bouton coucou",
+      "waveHint": "Jusqu'à {count} fois par jour et par ami",
+      "preview": "Afficher le texte",
+      "previewHint": "Dans les bulles non lues ; désactivé : expéditeur et nombre"
+    },
+    "lock": {
+      "favPerson": "Personne favorite",
+      "favPersonHint": "Un visage et son statut",
+      "lastMsg": "Dernier message",
+      "lastMsgHint": "Expéditeur et bulle",
+      "cluster": "Grappe du salon",
+      "clusterHint": "Qui est en vocal",
+      "speaker": "Qui parle",
+      "speakerHint": "Pendant un appel",
+      "addWidget": "Ajouter des widgets",
+      "widgetsCount": "{count} widgets",
+      "placed": "Placé",
+      "howToFor": "Comment ajouter {name}",
+      "step1": "Maintiens l'écran verrouillé, puis touche Personnaliser.",
+      "step2": "Choisis Écran verrouillé et touche la zone de widgets sous l'heure.",
+      "step3": "Trouve Descall dans la liste et ajoute le widget {name}.",
+      "speaking": "{name} parle",
+      "newMessages": "{count} nouveaux messages",
+      "noMessages": "Aucun nouveau message",
+      "liveOn": "Les Activités en direct sont activées : en appel, le visage de qui parle s'affiche dans la Dynamic Island et sur l'écran verrouillé.",
+      "liveOff": "Les Activités en direct sont désactivées. Active-les dans Réglages > Descall > Activités en direct.",
+      "homeHint": "Écran d'accueil : maintiens un espace vide, touche + et cherche Descall. Les petites tailles s'affichent aussi en En veille."
+    }
+  }
 };

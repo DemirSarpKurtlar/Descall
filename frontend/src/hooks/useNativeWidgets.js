@@ -339,7 +339,7 @@ export function useNativeWidgets({
       show?.(name, "presence", {
         user: friend,
         name,
-        subtitle: tr("widgets.wave.received"),
+        subtitle: tr("vsc.wg.waveReceived"),
         dismissLabel: tr("Close"),
         onOpen: () => open?.(friend),
       });

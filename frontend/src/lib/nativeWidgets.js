@@ -386,13 +386,13 @@ export function createReloadScheduler({ send, spacing = RELOAD_SPACING_MS, now =
 export function waveErrorKey(code) {
   switch (code) {
     case "wave_cooldown":
-      return "widgets.wave.cooldown";
+      return "vsc.wg.wave.cooldown";
     case "wave_limit":
-      return "widgets.wave.limit";
+      return "vsc.wg.wave.limit";
     case "not_friend":
-      return "widgets.wave.notFriend";
+      return "vsc.wg.wave.notFriend";
     default:
-      return "widgets.wave.failed";
+      return "vsc.wg.wave.failed";
   }
 }
 

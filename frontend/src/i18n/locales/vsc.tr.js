@@ -42,5 +42,112 @@ export const VSC_TR = {
     "chat": "Sohbet aç",
     "place": "Sunucu aç"
   },
-  "morePhrases": "+{count} söyleyiş daha"
+  "morePhrases": "+{count} söyleyiş daha",
+  "wg": {
+    "tabsLabel": "Siri ve widget ayarları",
+    "tab": {
+      "siri": "Siri",
+      "faces": "Favori yüzler",
+      "lock": "Kilit ekranı",
+      "shortcuts": "Kısayollar"
+    },
+    "people": "{count} kişi",
+    "waveReceived": "sana el salladı",
+    "wave": {
+      "cooldown": "Biraz bekle, az önce el salladın.",
+      "limit": "Bugünlük el sallama hakkın doldu.",
+      "notFriend": "Yalnızca arkadaşlarına el sallayabilirsin.",
+      "failed": "El sallanamadı. Tekrar dene."
+    },
+    "act": {
+      "screen": "Ekran paylaşıyor",
+      "voice": "Seste",
+      "voiceIn": "Seste · {name}",
+      "game": "{name} oynuyor",
+      "music": "{name} dinliyor",
+      "app": "{name} kullanıyor",
+      "idle": "Boşta",
+      "dnd": "Rahatsız etmeyin",
+      "offline": "Çevrimdışı"
+    },
+    "state": {
+      "loading": "Yükleniyor",
+      "error": "Bilgiler alınamadı.",
+      "offline": "Çevrimdışısın.",
+      "retry": "Tekrar dene"
+    },
+    "siri": {
+      "previewLabel": "Siri yanıt önizlemesi",
+      "tryHint": "Bir soru seç, yanıtı kendi bilgilerinle gör",
+      "q": {
+        "unread": "Kaç okunmamış mesajım var?",
+        "online": "Kim çevrimiçi?",
+        "voice": "Seste kimler var?"
+      },
+      "aUnreadNone": "Okunmamış mesajın yok.",
+      "aUnreadOne": "1 okunmamış mesajın var.",
+      "aUnreadMany": "{count} okunmamış mesajın var.",
+      "aOnlineNone": "Şu anda çevrimiçi arkadaşın yok.",
+      "aOnlineMany": "{count} arkadaşın çevrimiçi.",
+      "aVoiceNone": "Şu anda seste kimse yok.",
+      "aVoiceMany": "{count} kişi seste.",
+      "favTitle": "Favorilerin için",
+      "generalTitle": "Genel",
+      "callPhrase": "{name} kişisini ara",
+      "msgHint": "Kendiliğinden hazır, kurulum gerekmez",
+      "callHint": "Kısayollar uygulamasında Siri'ye ekle",
+      "added": "Eklendi",
+      "ready": "Hazır",
+      "noFav": "Önce Favori yüzler sekmesinden kişilerini seç; her biri için kısayollar kendiliğinden oluşur.",
+      "favHint": "{count} favorin için mesaj ve arama kısayolları kendiliğinden hazırlanır; favori değişince güncellenir.",
+      "allPhrases": "Tüm söyleyişler"
+    },
+    "faces": {
+      "previewLabel": "Orta boy widget önizlemesi",
+      "online": "Çevrimiçi",
+      "emptyPreview": "Yüz seçince burada görünür",
+      "wallpaper": "Duvar kâğıdı",
+      "wall": {
+        "dark": "Koyu",
+        "light": "Açık"
+      },
+      "pickTitle": "Seç ve sırala",
+      "pickHint": "Sırayı değiştirmek için yüzü basılı tutup sürükle. Kilit ekranındaki tek kişilik widget ilk sıradakini gösterir.",
+      "search": "Arkadaş ara",
+      "reset": "Önerilene dön",
+      "changed": "Favori yüzler güncellendi",
+      "undo": "Geri al",
+      "full": "En fazla 8 yüz seçebilirsin. Önce birini çıkar.",
+      "noFriends": "Henüz arkadaşın yok. Arkadaş ekleyince yüzleri burada seçebilirsin.",
+      "showActivity": "Etkinliği göster",
+      "showActivityHint": "Oyun, müzik, ekran paylaşımı",
+      "wave": "El sallama düğmesi",
+      "waveHint": "Bir arkadaşına günde en fazla {count} kez",
+      "preview": "Mesaj metnini göster",
+      "previewHint": "Okunmamış balonlarında; kapalıyken yalnızca gönderen ve sayı"
+    },
+    "lock": {
+      "favPerson": "Favori kişi",
+      "favPersonHint": "Tek bir yüz ve durumu",
+      "lastMsg": "Son mesaj",
+      "lastMsgHint": "Gönderen ve balon",
+      "cluster": "Kanal kümesi",
+      "clusterHint": "Seste kimler var",
+      "speaker": "Konuşan",
+      "speakerHint": "Arama sürerken",
+      "addWidget": "Widget ekle",
+      "widgetsCount": "{count} widget",
+      "placed": "Yerleştirildi",
+      "howToFor": "{name} nasıl eklenir",
+      "step1": "Kilit ekranına basılı tut, Özelleştir'e dokun.",
+      "step2": "Kilit Ekranı'nı seç ve saatin altındaki widget alanına dokun.",
+      "step3": "Listede Descall'ı bul ve {name} widget'ını ekle.",
+      "speaking": "{name} konuşuyor",
+      "newMessages": "{count} yeni mesaj",
+      "noMessages": "Yeni mesaj yok",
+      "liveOn": "Canlı Etkinlikler açık: aramadayken konuşanın yüzü Dinamik Ada'da ve kilit ekranında görünür.",
+      "liveOff": "Canlı Etkinlikler kapalı. Açmak için Ayarlar > Descall > Canlı Etkinlikler.",
+      "homeHint": "Ana ekran için: boş bir yere basılı tut, + düğmesine dokun ve Descall'ı ara. Küçük boyutlar StandBy'da da görünür."
+    }
+  }
 };

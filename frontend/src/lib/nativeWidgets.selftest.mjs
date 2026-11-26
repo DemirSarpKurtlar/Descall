@@ -203,9 +203,9 @@ const ME = "99999999-9999-4999-8999-999999999999";
   assert.equal(sent.length, 3, "cancel drops what was pending");
 }
 
-assert.equal(waveErrorKey("wave_limit"), "widgets.wave.limit");
-assert.equal(waveErrorKey("wave_cooldown"), "widgets.wave.cooldown");
-assert.equal(waveErrorKey("x"), "widgets.wave.failed");
+assert.equal(waveErrorKey("wave_limit"), "vsc.wg.wave.limit");
+assert.equal(waveErrorKey("wave_cooldown"), "vsc.wg.wave.cooldown");
+assert.equal(waveErrorKey("x"), "vsc.wg.wave.failed");
 
 // ---- "Kaan'i ara" through the intent bridge ---------------------------------------------------
 {

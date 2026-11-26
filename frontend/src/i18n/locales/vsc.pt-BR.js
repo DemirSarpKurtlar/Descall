@@ -42,5 +42,112 @@ export const VSC_PT_BR = {
     "chat": "Abrir conversa",
     "place": "Abrir servidor"
   },
-  "morePhrases": "+{count} outras formas de dizer"
+  "morePhrases": "+{count} outras formas de dizer",
+  "wg": {
+    "tabsLabel": "Ajustes da Siri e dos widgets",
+    "tab": {
+      "siri": "Siri",
+      "faces": "Rostos favoritos",
+      "lock": "Tela bloqueada",
+      "shortcuts": "Atalhos"
+    },
+    "people": "{count} pessoas",
+    "waveReceived": "acenou para você",
+    "wave": {
+      "cooldown": "Espere um pouco, você acabou de acenar.",
+      "limit": "Você já usou os acenos de hoje.",
+      "notFriend": "Você só pode acenar para amigos.",
+      "failed": "Não foi possível acenar. Tente de novo."
+    },
+    "act": {
+      "screen": "Compartilhando a tela",
+      "voice": "Na voz",
+      "voiceIn": "Voz · {name}",
+      "game": "Jogando {name}",
+      "music": "Ouvindo {name}",
+      "app": "Usando {name}",
+      "idle": "Ausente",
+      "dnd": "Não perturbe",
+      "offline": "Offline"
+    },
+    "state": {
+      "loading": "Carregando",
+      "error": "Não foi possível carregar os dados.",
+      "offline": "Você está offline.",
+      "retry": "Tentar de novo"
+    },
+    "siri": {
+      "previewLabel": "Prévia da resposta da Siri",
+      "tryHint": "Escolha uma pergunta para ver a resposta com seus dados",
+      "q": {
+        "unread": "Quantas mensagens não lidas eu tenho?",
+        "online": "Quem está online?",
+        "voice": "Quem está na voz?"
+      },
+      "aUnreadNone": "Você não tem mensagens não lidas.",
+      "aUnreadOne": "Você tem 1 mensagem não lida.",
+      "aUnreadMany": "Você tem {count} mensagens não lidas.",
+      "aOnlineNone": "Nenhum amigo seu está online agora.",
+      "aOnlineMany": "{count} amigos seus estão online.",
+      "aVoiceNone": "Ninguém está na voz agora.",
+      "aVoiceMany": "{count} pessoas estão na voz.",
+      "favTitle": "Para seus favoritos",
+      "generalTitle": "Geral",
+      "callPhrase": "Ligar para {name}",
+      "msgHint": "Pronto sozinho, sem configurar",
+      "callHint": "Adicione à Siri no app Atalhos",
+      "added": "Adicionado",
+      "ready": "Pronto",
+      "noFav": "Primeiro escolha seu pessoal em Rostos favoritos; os atalhos são criados sozinhos.",
+      "favHint": "Os atalhos de mensagem e chamada dos seus {count} favoritos são criados sozinhos e acompanham suas mudanças.",
+      "allPhrases": "Todas as frases"
+    },
+    "faces": {
+      "previewLabel": "Prévia do widget médio",
+      "online": "Online",
+      "emptyPreview": "Os rostos aparecem aqui quando você escolhe",
+      "wallpaper": "Papel de parede",
+      "wall": {
+        "dark": "Escuro",
+        "light": "Claro"
+      },
+      "pickTitle": "Escolha e ordene",
+      "pickHint": "Segure um rosto e arraste para mudar a ordem. O widget de uma pessoa na tela bloqueada mostra o primeiro.",
+      "search": "Buscar amigos",
+      "reset": "Voltar ao sugerido",
+      "changed": "Rostos favoritos atualizados",
+      "undo": "Desfazer",
+      "full": "Você pode escolher até 8 rostos. Remova um primeiro.",
+      "noFriends": "Ainda sem amigos. Quando adicionar, escolha os rostos aqui.",
+      "showActivity": "Mostrar atividade",
+      "showActivityHint": "Jogos, música, compartilhamento de tela",
+      "wave": "Botão de aceno",
+      "waveHint": "Até {count} vezes por dia por amigo",
+      "preview": "Mostrar o texto",
+      "previewHint": "Nos balões não lidos; desligado: só remetente e número"
+    },
+    "lock": {
+      "favPerson": "Pessoa favorita",
+      "favPersonHint": "Um rosto e seu status",
+      "lastMsg": "Última mensagem",
+      "lastMsgHint": "Remetente e balão",
+      "cluster": "Grupo do canal",
+      "clusterHint": "Quem está na voz",
+      "speaker": "Quem fala",
+      "speakerHint": "Durante uma chamada",
+      "addWidget": "Adicionar widgets",
+      "widgetsCount": "{count} widgets",
+      "placed": "Adicionado",
+      "howToFor": "Como adicionar {name}",
+      "step1": "Toque e segure a tela bloqueada e toque em Personalizar.",
+      "step2": "Escolha Tela Bloqueada e toque na área de widgets abaixo do relógio.",
+      "step3": "Encontre o Descall na lista e adicione o widget {name}.",
+      "speaking": "{name} está falando",
+      "newMessages": "{count} mensagens novas",
+      "noMessages": "Nenhuma mensagem nova",
+      "liveOn": "As Atividades ao Vivo estão ativadas: em uma chamada, o rosto de quem fala aparece na Dynamic Island e na tela bloqueada.",
+      "liveOff": "As Atividades ao Vivo estão desativadas. Ative em Ajustes > Descall > Atividades ao Vivo.",
+      "homeHint": "Tela de Início: toque e segure um espaço vazio, toque em + e busque Descall. Os tamanhos pequenos também aparecem no Em Espera."
+    }
+  }
 };
