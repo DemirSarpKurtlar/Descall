@@ -1,4 +1,5 @@
-//! Writes that must survive: the sign-in token and the app-lock record (secure_store.rs).
+//! Writes that must survive: the sign-in token and the app-lock record (secure_store.rs), the
+//! Descall+ settings store and the main window's position (window-state.json).
 //!
 //! "Sometimes it does not remember the sign-in": the token file was written to `*.bin.tmp` and
 //! renamed over `auth-token.bin` once, and a failed rename (Windows refuses MoveFileEx while
@@ -50,7 +51,10 @@ pub fn replace(path: &Path, bytes: &[u8]) -> bool {
 
 /// [`replace`] with the pause and the rename step injectable (tests).
 pub fn replace_with(path: &Path, bytes: &[u8], pause: Duration, mut rename: impl FnMut(&Path, &Path) -> std::io::Result<()>) -> bool {
-    let tmp = path.with_extension("bin.tmp");
+    // `<name>.tmp` next to the target (auth-token.bin.tmp, window-state.json.tmp).
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = std::path::PathBuf::from(tmp);
     if write_synced(&tmp, bytes).is_ok() && retry(|| rename(&tmp, path), pause).is_ok() {
         return true;
     }
@@ -97,6 +101,16 @@ mod tests {
         assert!(replace(&p, b"new"));
         assert_eq!(std::fs::read(&p).unwrap(), b"new");
         assert!(!d.join("auth-token.bin.tmp").exists());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn json_files_get_their_own_temp_name() {
+        let d = dir("json");
+        let p = d.join("window-state.json");
+        assert!(replace(&p, b"{\"x\":1}"));
+        assert_eq!(std::fs::read(&p).unwrap(), b"{\"x\":1}");
+        assert!(!d.join("window-state.json.tmp").exists());
         let _ = std::fs::remove_dir_all(&d);
     }
 

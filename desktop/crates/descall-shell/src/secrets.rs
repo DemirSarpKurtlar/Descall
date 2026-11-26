@@ -208,7 +208,7 @@ mod tests {
         assert!(src.contains("descall_shell::durable::remove(&p)"));
         assert!(!src.contains("std::fs::write(p, sealed)"), "no direct in-place write of the sealed token");
         let durable = include_str!("durable.rs");
-        assert!(durable.contains("with_extension(\"bin.tmp\")") && durable.contains("ErrorKind::NotFound"));
+        assert!(durable.contains("tmp.push(\".tmp\")") && durable.contains("ErrorKind::NotFound"));
     }
 
     #[test]
