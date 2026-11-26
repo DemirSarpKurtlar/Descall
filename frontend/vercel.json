@@ -428,6 +428,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/passkey/report",
+      "destination": "/index.html"
+    },
+    {
       "source": "/login",
       "destination": "/index.html"
     },

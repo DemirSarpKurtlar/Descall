@@ -84,7 +84,10 @@ const isAdminPanelWindow = /^\/admin\/panel\/?$/.test(path);
 // Desktop passkey handoff (lib/passkeys/handoff.js): the browser half, a standalone page
 // (no app shell, no socket, no session) at https://descall.com/passkey/desktop.
 const isPasskeyDesktopPage = /^\/passkey\/desktop\/?$/.test(path);
-const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow || isPasskeyDesktopPage;
+// "Ben degildim" / "Bendim" from a passkey security e-mail: standalone page as well
+// (components/passkeys/PasskeyReportPage.jsx), it works without being signed in.
+const isPasskeyReportPage = /^\/passkey\/report\/?$/.test(path);
+const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow || isPasskeyDesktopPage || isPasskeyReportPage;
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
 const isNativeAndroid = (() => {
@@ -301,6 +304,8 @@ async function bootApp() {
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
   const RootApp = isPasskeyDesktopPage
     ? lazy(() => import("./components/passkeys/PasskeyDesktopPage.jsx"))
+    : isPasskeyReportPage
+    ? lazy(() => import("./components/passkeys/PasskeyReportPage.jsx"))
     : isSignupStatsWindow
     ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
     : isAdminPanelWindow
