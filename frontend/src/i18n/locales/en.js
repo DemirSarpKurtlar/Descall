@@ -2193,6 +2193,7 @@ export const phrases = {
   "Settings applied": "Settings applied",
   "Screen quality": "Screen quality",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.",
   "Screen share volume": "Screen share volume",
   "Waiting for others to join…": "Waiting for others to join…",
   "You left the call": "You left the call",

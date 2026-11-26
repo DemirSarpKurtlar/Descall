@@ -15,9 +15,12 @@ import {
   tuneScreenSender,
 } from "./screenShareEncoder.js";
 
+// Group calls and server voice rooms start at 1080p / 30 like DM calls (owner decision Nov
+// 2026: "herkes en yüksek kalite"); a 3+ person mesh stays capped at 30 fps
+// (screenShareCodec.screenShareLimits) and the bitrate ceiling still scales per viewer.
 export const GROUP_SCREEN_DEFAULT_QUALITY = {
-  resolution: "720p",
-  fps: 20,
+  resolution: "1080p",
+  fps: 30,
   contentHint: "motion",
 };
 

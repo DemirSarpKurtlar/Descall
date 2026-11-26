@@ -375,7 +375,7 @@ export const BLOG_FAQ_BY_SLUG = {
     },
     {
       q: "What quality should I use in a group call?",
-      a: "Start at 720p and 20 frames per second, which is what Descall recommends for group calls. Lower it if anyone sees stutter, and pick Text, code for slides or documents.",
+      a: "Start at 1080p and 30 frames per second, which is what Descall recommends for group calls. Lower it if anyone sees stutter, and pick Text, code for slides or documents.",
     },
   ],
   "online-study-group-voice-chat": [

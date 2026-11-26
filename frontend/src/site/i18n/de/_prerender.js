@@ -22,6 +22,7 @@ export default {
   "HD calls": "HD-Anrufe",
   "HD voice/video and screen share without Nitro paywalls on core communication": "HD-Sprache/-Video und Bildschirmübertragung ohne Nitro-Bezahlschranken bei der Kernkommunikation",
   "Hierarchy, staff rooms, per-channel allow/deny": "Hierarchie, Team-Räume, Erlauben/Verweigern pro Kanal",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Tritt einem Sprachkanal direkt aus der Serverliste bei. Teile deinen Bildschirm in 1080p. iPhone, Android, Windows und der Browser nutzen ein Konto.",
   "Ready-made squad-up and scrim channels, no bot hell": "Fertige Kanäle für Squad-Suche und Scrims, kein Bot-Chaos",
   "Real servers": "Echte Server",
   "Real-time chat": "Echtzeit-Chat",

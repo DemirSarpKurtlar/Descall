@@ -326,8 +326,8 @@ export const MARKETING_TR = {
   "A server voice channel with the people already in the call":
     "Aramadaki kişilerle bir sunucu ses kanalı",
   "Voice next to the chat": "Sohbetin yanında ses",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.":
-    "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.":
+    "Ses kanalına sunucu listesinden katıl. Ekranı 1080p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
   "Download on the App Store": "App Store'dan indir",
   "Download the desktop app": "Masaüstü uygulamasını indir",
   "App Store": "App Store",

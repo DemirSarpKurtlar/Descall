@@ -8502,6 +8502,7 @@ export const phrases = {
   "In Progress": "En curso",
   "In Safari tap Share": "En Safari, toca Compartir",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "En una llamada grupal ({count, plural, one {# persona} other {# personas}}), una resolución o FPS altos pueden causar retrasos. Se recomienda 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "En una llamada grupal ({count, plural, one {# persona} other {# personas}}), 1440p puede causar retrasos. Se recomienda 1080p / 30 FPS.",
   "In group": "En el grupo",
   "In the air…": "En el aire…",
   "In this channel": "En este canal",
