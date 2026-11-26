@@ -98,7 +98,8 @@ export function memberEventFromMessage(msg, { meId = null, members = [] } = {}) 
     type,
     actorId: parsed.actorId,
     targetId: parsed.targetId,
-    actorName: nameOf(parsed.actorId, parsed.actorName || msg.username),
+    // Old rows may lack actorName in the JSON: the sender is the actor.
+    actorName: nameOf(parsed.actorId || msg.from?.id, parsed.actorName || msg.username || msg.from?.username),
     targetName: nameOf(parsed.targetId, parsed.targetName),
     targetIsMe: Boolean(meId && parsed.targetId === meId),
   };

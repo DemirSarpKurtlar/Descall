@@ -171,6 +171,11 @@ assert.match(css, /\.gk-removed\{[^}]*backdrop-filter:blur\(40px\)/, "removed ba
     { meId: "z", members: [] },
   );
   assert.equal(rowText(stored, "tr"), "Demir, Can’ı gruptan çıkardı", "stored names, target no longer a member");
+  const noActorName = memberEventFromMessage(
+    { type: "member_left", from: { id: "a", username: "ayse" }, memberEvent: JSON.stringify({ actorId: "a" }) },
+    { meId: "z", members: [] },
+  );
+  assert.equal(rowText(noActorName, "tr"), "ayse gruptan ayrıldı", "old row: the sender's name");
   assert.match(removedBannerBody({ actorName: null, time: "21:58" }, realT("tr")), /^Bir üye seni 21:58’de çıkardı/);
   for (const ev of [{ type: "member_removed", actorName: "x", targetName: "y" }, { type: "member_left", actorName: "x" }]) {
     for (const loc of ["en", "tr", "de"]) assert.ok(!rowText(ev, loc).startsWith(","), `${loc} ${ev.type} has the actor`);
