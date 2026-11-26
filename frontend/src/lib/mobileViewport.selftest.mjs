@@ -205,4 +205,16 @@ assert.match(css, /overscroll-behavior: contain;/, "the grown field scrolls insi
 assert.match(swift, /FormAccessory/);
 assert.match(swift, /viewDidAppear/);
 
+// Bottom sheets with text fields end on the keyboard (--kb-gap: the strip it
+// covers when the web view keeps its full height; --vv-height: what is left).
+for (const [file, scrim, sheet] of [
+  ["../components/groups/GroupSheet.css", /html\.kb-open \.gs-scrim \{ padding-bottom: var\(--kb-gap, 0px\); \}/, /html\.kb-open \.gs-sheet \{[^}]*var\(--vv-height, 100dvh\)/],
+  ["../styles/new-create.css", /html\.glass-ui\.kb-open \.add-modal-backdrop\.nc-scrim\.g-add-scrim \{\s*padding-bottom: var\(--kb-gap, 0px\);/, /html\.kb-open \.nc-sheet\.is-phone \{[^}]*var\(--vv-height, 100dvh\)/],
+  ["../components/settings/UsernameChangeModal.css", /html\.kb-open \.un-overlay \{\s*padding-bottom: var\(--kb-gap, 0px\);/, /html\.kb-open \.un-modal \{[^}]*var\(--vv-height, 100dvh\)/],
+]) {
+  const text = readFileSync(new URL(file, import.meta.url), "utf8");
+  assert.match(text, scrim, `${file}: scrim lifts by --kb-gap`);
+  assert.match(text, sheet, `${file}: sheet caps at the visible height`);
+}
+
 console.log("mobileViewport.selftest ok");
