@@ -2732,6 +2732,7 @@ export const phrases = {
   "Unread": "Okunmamış",
   "Mention": "Bahsetme",
   "Here": "Burada",
+  "A member": "Bir üye",
   "Download for Windows": "Windows için indir",
   "Download Desktop App": "Masaüstü Uygulamasını İndir",
   "Get the app": "Uygulamayı indir",
