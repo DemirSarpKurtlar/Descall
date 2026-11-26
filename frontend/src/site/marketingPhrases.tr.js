@@ -3,6 +3,10 @@ import { TR_I18N_GAPS } from "../i18n/locales/trGaps.js";
 import { TR_APPROVED_UI } from "../i18n/locales/trApprovedUi.js";
 
 export const MARKETING_TR = {
+  "All releases on GitHub": "GitHub’daki tüm sürümler",
+  "Direct link": "Doğrudan bağlantı",
+  "Not starting?": "Başlamadı mı?",
+  "Your download should start now.": "İndirme şimdi başlamalı.",
   "{label} available": "{label} mevcut",
   "← Back to blog": "← Bloga dön",
   "A lighter home for friends and squads, real servers, HD calls, screen share, and": "Arkadaşlar ve ekipler için daha hafif bir yuva, gerçek sunucular, HD aramalar, ekran paylaşımı ve",

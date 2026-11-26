@@ -39,8 +39,11 @@ const PAGES = [
   {
     jsx: "src/site/pages/MarketingDownloadPage.jsx",
     path: "/download",
-    // Shown only after the release lookup, on Android or on iPhone.
-    later: ["{label} available", "Latest release", "Download APK", "Download on the App Store"],
+    // Shown only after the release lookup, on Android or on iPhone, or after a download click.
+    later: [
+      "{label} available", "Latest release", "Download APK", "Download on the App Store",
+      "Your download should start now.", "Not starting?", "Direct link", "All releases on GitHub",
+    ],
   },
   {
     jsx: "src/site/pages/StatusPage.jsx",

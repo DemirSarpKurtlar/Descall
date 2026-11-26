@@ -177,7 +177,7 @@ function versionFromSetupFilename(name) {
 /**
  * Download a GitHub Setup asset into Downloads via Electron, then prune older installers.
  */
-function downloadDescallSetupViaElectron({ webContents, session, app, url, log } = {}) {
+function downloadDescallSetupViaElectron({ webContents, session, app, url, log, onDone } = {}) {
   const logger = log || { info() {}, warn() {} };
   if (!isDescallSetupDownloadUrl(url)) return false;
   const filename = filenameFromSetupUrl(url);
@@ -208,6 +208,9 @@ function downloadDescallSetupViaElectron({ webContents, session, app, url, log }
         } else {
           logger.warn(`[setup-cleanup] Setup download state=${state} file=${filename}`);
         }
+        // The download runs with no window of its own: without this a click on a Setup
+        // link looked dead (screenshot 77, Nov 2026). main.cjs shows the file in Explorer.
+        try { onDone?.({ state, path: savePath, filename }); } catch (_) { /* ignore */ }
       });
     } catch (err) {
       logger.warn(`[setup-cleanup] will-download handler failed: ${err?.message}`);

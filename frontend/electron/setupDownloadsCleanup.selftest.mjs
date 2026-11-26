@@ -14,6 +14,7 @@ const {
   filenameFromSetupUrl,
   versionFromSetupFilename,
   cmpSemver,
+  downloadDescallSetupViaElectron,
 } = require("./setupDownloadsCleanup.cjs");
 
 function assert(cond, msg) {
@@ -55,6 +56,28 @@ try {
 
   const leftover = readdirSync(dir).filter((n) => n.startsWith("Descall-Setup-"));
   assert(leftover.length === 1 && leftover[0] === "Descall-Setup-2.9.30.exe", `leftover=${leftover}`);
+
+  // Screenshot 77 (Nov 2026): the in-app Setup download had no UI, so the click looked
+  // dead. onDone reports the outcome so main.cjs can show the file or open the browser.
+  {
+    let listener = null;
+    const done = [];
+    const sess = { once: (ev, fn) => { if (ev === "will-download") listener = fn; }, removeListener() {} };
+    const url = "https://github.com/DemirSarpKurtlar/Descall/releases/download/v4.1.4/Descall-Setup-4.1.4.exe";
+    const wc = { session: sess, downloadURL: () => {
+      const item = { getFilename: () => "Descall-Setup-4.1.4.exe", setSavePath() {}, once: (ev, fn) => { if (ev === "done") fn({}, "completed"); } };
+      listener({}, item);
+    } };
+    const started = downloadDescallSetupViaElectron({ webContents: wc, app: fakeApp, url, log: { info() {}, warn() {} }, onDone: (r) => done.push(r) });
+    assert(started === true, "download starts");
+    assert(done.length === 1 && done[0].state === "completed", "onDone reports completion");
+    assert(done[0].path === join(dir, "Descall-Setup-4.1.4.exe"), `saved in Downloads: ${done[0].path}`);
+    const noSession = downloadDescallSetupViaElectron({ webContents: {}, app: fakeApp, url, log: { info() {}, warn() {} } });
+    assert(noSession === false, "no session: false, so main.cjs opens the browser");
+    const main = (await import("node:fs")).readFileSync(new URL("./main.cjs", import.meta.url), "utf8");
+    assert(/shell\.showItemInFolder\(filePath\)/.test(main) && /setup-download-unavailable/.test(main), "main.cjs shows the file or falls back to the browser");
+    for (const n of readdirSync(dir)) if (n === "Descall-Setup-4.1.4.exe") rmSync(join(dir, n));
+  }
 
   console.log("setupDownloadsCleanup.selftest: ok");
 } finally {

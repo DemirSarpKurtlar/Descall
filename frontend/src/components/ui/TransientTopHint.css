@@ -1,0 +1,30 @@
+/* TransientTopHint: top centre, never the bottom edge (subtitles live there). The
+   tripled class beats the surfaces' own `bottom` rules. */
+.transient-top-hint.transient-top-hint.transient-top-hint {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  left: 50%;
+  transform: translate(-50%, -4px);
+  max-width: min(calc(100% - 24px), max(45%, calc(100% - 240px)));
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  z-index: 4;
+}
+.transient-top-hint.transient-top-hint.transient-top-hint.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-duration: 0.18s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .transient-top-hint.transient-top-hint.transient-top-hint,
+  .transient-top-hint.transient-top-hint.transient-top-hint.is-visible {
+    transform: translate(-50%, 0);
+    transition: opacity 0.2s linear;
+  }
+}
