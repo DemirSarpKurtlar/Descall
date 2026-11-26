@@ -229,6 +229,38 @@ async function runDevice(browser, base, dev, check) {
         check(r.replyTop != null && r.lastBottom <= r.replyTop + 1, `${name} reply bar: newest message ends above the reply strip (${r.lastBottom} vs ${r.replyTop})`);
         await closeKeyboard(W, H);
       }
+      // Forward sheet: typing the note, the field and the sheet end on the keyboard.
+      const fbox = await page.evaluate(() => { const bs = [...document.querySelectorAll('.message-bubble[data-message-id]')]; const r = bs[bs.length - 1].getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; });
+      if (ENGINE !== 'webkit') {
+        const cdp = await ctx.newCDPSession(page);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [fbox] }); await sleep(650);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else { await page.mouse.move(fbox.x, fbox.y); await page.mouse.down(); await sleep(650); await page.mouse.up(); }
+      await sleep(600);
+      const fwd = await tapText(page, 'button, [role="menuitem"]', '^\\s*İlet\\s*$');
+      await sleep(900);
+      const note = fwd && await page.evaluate(() => { const e = [...document.querySelectorAll('.gs-sheet input, .gs-sheet textarea')].filter((x) => x.getBoundingClientRect().height > 0).pop(); e?.focus(); return Boolean(e); });
+      check(Boolean(note), `${name} forward sheet opened`);
+      if (note) {
+        for (const mode of ['overlay', 'resize']) {
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          if (mode === 'resize') await page.setViewportSize({ width: W, height: H - KB });
+          await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [KB, H]);
+          await sleep(700);
+          const fm = await page.evaluate(() => { const r = document.querySelector('.gs-sheet').getBoundingClientRect(); const a = document.activeElement.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), field: Math.round(a.bottom) }; });
+          log(`forward ${mode}`, fm);
+          await shot(`6-forward-${mode}`);
+          check(fm.bottom <= H - KB + 1 && fm.bottom >= H - KB - 2 && fm.top >= 0 && fm.field <= H - KB, `${name} forward sheet (${mode}): note field and sheet end on the keyboard (${fm.top}..${fm.bottom}, field ${fm.field}, keyboard top ${H - KB})`);
+          await page.evaluate((h) => window.__descallNativeKeyboard(0, h), H);
+          await page.setViewportSize({ width: W, height: H });
+          await sleep(500);
+        }
+        await page.evaluate(() => document.activeElement?.blur());
+        await page.keyboard.press('Escape');
+        await sleep(600);
+        if (await page.$('.gs-scrim')) { await tapText(page, '.gs-sheet button[aria-label]', 'Kapat|Close'); await sleep(600); }
+      }
+
       // GIF search: the sheet ends on the keyboard, search field on screen.
       const plus = await tapText(page, '.composer-container button', 'Ekle|Dosya|Attach');
       await sleep(600);
