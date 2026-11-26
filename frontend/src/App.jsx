@@ -94,6 +94,7 @@ import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
+import { useNativeWidgets } from "./hooks/useNativeWidgets";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -5274,6 +5275,22 @@ export default function App() {
     dmLastActivity,
     locale,
     pathname: location.pathname,
+    t,
+  });
+  // Widgets draft B: favourite faces, timeline reloads, the call's Live Activity, waves.
+  useNativeWidgets({
+    me,
+    friends,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    servers: myServers,
+    groups: myGroups,
+    dmUnread,
+    groupUnread,
+    toast,
+    onOpenDm: (user) => navigate(directPath(user)),
     t,
   });
 

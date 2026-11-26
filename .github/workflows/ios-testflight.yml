@@ -20,6 +20,13 @@
 # broadcast_extension). Until the owner registered that identifier in the Apple Developer portal
 # the appex is removed from the archive before signing, and the app hides Share Screen on iOS.
 #
+# Widgets (draft B "Yuzler", docs in frontend/ios/App/DescallWidgets): the WidgetKit extension
+# com.descall.app.widgets (home / lock screen widgets, the call's Live Activity) ships by default.
+# The workflow registers its App ID itself (appstore/asc_register_bundle.py, App Group capability)
+# and signs it at export like the notification extensions. Repository variable IOS_WIDGETS=0
+# turns it off. If the registration or the export signing fails, the extension is removed from the
+# archive and the app still ships (a widget problem never breaks TestFlight); the run says so.
+#
 # Versions: CFBundleShortVersionString = frontend/package.json version (sync-version.cjs keeps the
 # iOS MARKETING_VERSION in sync). CFBundleVersion = UTC timestamp YYYYMMDD.HHMM, so every build
 # number is higher than the previous one regardless of tag, re-run or manual dispatch.
@@ -62,6 +69,9 @@ jobs:
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       XCODE_APP: /Applications/Xcode_26.6.app
       SHIP_BROADCAST: ${{ (inputs.broadcast_extension == true || vars.IOS_BROADCAST_EXTENSION == '1') && '1' || '0' }}
+      # Widgets draft B: on unless the repository variable IOS_WIDGETS is "0". SHIP_WIDGETS itself
+      # lives in GITHUB_ENV (set below) so a failed registration or export can turn it off.
+      IOS_WIDGETS_VAR: ${{ vars.IOS_WIDGETS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +90,7 @@ jobs:
           [ "$missing" -eq 0 ]
           echo "LOG_DIR=$RUNNER_TEMP/ios-logs" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/ios-logs"
+          if [ "${IOS_WIDGETS_VAR:-}" = "0" ]; then echo "SHIP_WIDGETS=0" >> "$GITHUB_ENV"; else echo "SHIP_WIDGETS=1" >> "$GITHUB_ENV"; fi
 
       - name: Register the broadcast extension App ID (only when it ships)
         if: env.SHIP_BROADCAST == '1'
@@ -99,6 +110,29 @@ jobs:
           printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
           trap 'rm -f "$ASC_KEY_PATH"' EXIT
           "$RUNNER_TEMP/ascreg/bin/python" appstore/asc_register_bundle.py
+
+      - name: Register the widget extension App ID (skipped, not failed, when Apple refuses)
+        if: env.SHIP_WIDGETS == '1'
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REG_BUNDLE_ID: com.descall.app.widgets
+          REG_NAME: Descall Widgets
+          REG_CAPABILITIES: APP_GROUPS
+        run: |
+          set -uo pipefail
+          umask 077
+          ok=1
+          python3 -m venv "$RUNNER_TEMP/ascregw" && "$RUNNER_TEMP/ascregw/bin/pip" install --quiet pyjwt cryptography requests || ok=0
+          export ASC_KEY_PATH="$RUNNER_TEMP/asc_regw_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          if [ "$ok" -eq 1 ]; then "$RUNNER_TEMP/ascregw/bin/python" appstore/asc_register_bundle.py || ok=0; fi
+          rm -f "$ASC_KEY_PATH"
+          if [ "$ok" -ne 1 ]; then
+            echo "::warning::Widget extension App ID could not be registered; this build ships without widgets (the app is unaffected)."
+            echo "SHIP_WIDGETS=0" >> "$GITHUB_ENV"
+          fi
 
       - name: Select Xcode (App Store uploads need Xcode 26+ / iOS 26 SDK)
         run: |
@@ -228,6 +262,27 @@ jobs:
           fi
           echo "Shipping DescallBroadcast.appex ($(du -sh "$BAPPEX" | cut -f1))"
 
+      - name: Widget extension (Live Activity, home and lock screen widgets)
+        run: |
+          set -euo pipefail
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          test -d "$WAPPEX" || { echo "::error::DescallWidgets.appex missing from the archive"; exit 1; }
+          if [ "$SHIP_WIDGETS" != "1" ]; then
+            rm -rf "$WAPPEX"
+            echo "::notice::Widget extension compiled but not shipped (IOS_WIDGETS=0 or the App ID registration failed)."
+            exit 0
+          fi
+          if [ -d "$WAPPEX/Frameworks" ]; then
+            for fw in "$WAPPEX/Frameworks"/*; do
+              [ -e "$fw" ] || continue
+              name="$(basename "$fw")"
+              if [ -e "$APP/Frameworks/$name" ]; then rm -rf "$fw"; else mkdir -p "$APP/Frameworks" && mv "$fw" "$APP/Frameworks/"; fi
+            done
+            rmdir "$WAPPEX/Frameworks"
+          fi
+          echo "Shipping DescallWidgets.appex ($(du -sh "$WAPPEX" | cut -f1))"
+
       - name: Embed release entitlements in the archive (ad-hoc, re-signed at export)
         run: |
           set -euo pipefail
@@ -257,6 +312,15 @@ jobs:
               --entitlements "frontend/ios/App/DescallBroadcast/DescallBroadcast.entitlements" --generate-entitlement-der "$BAPPEX"
             codesign -d --entitlements - --xml "$BAPPEX" 2>/dev/null | plutil -p -
           fi
+          # Widgets draft B: App Group + the shared Keychain session (team prefix expanded).
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          if [ -d "$WAPPEX" ]; then
+            WENT="$RUNNER_TEMP/DescallWidgets.expanded.entitlements"
+            sed 's/\$(AppIdentifierPrefix)/'"$TEAM_ID"'./g' "frontend/ios/App/DescallWidgets/DescallWidgets.entitlements" > "$WENT"
+            codesign --force --sign - --timestamp=none --entitlements "$WENT" --generate-entitlement-der "$WAPPEX"
+            codesign -d --entitlements - --xml "$WAPPEX" 2>/dev/null | plutil -p -
+          fi
+          echo "APP_ENT=$ENT" >> "$GITHUB_ENV"
           # 3.7.17: the embedded Apple Watch app (no entitlements of its own), before the outer app.
           WAPP="$APP/Watch/DescallWatch.app"
           test -d "$WAPP" || { echo "::error::DescallWatch.app missing from the archive"; exit 1; }
@@ -288,16 +352,33 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :manageAppVersionAndBuildNumber bool false" "$EXPORT_PLIST"
           plutil -p "$EXPORT_PLIST"
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$ARCHIVE_PATH" \
-            -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist "$EXPORT_PLIST" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$LOG_DIR/export.log"
+          export_ipa() {
+            rm -rf "$EXPORT_PATH"
+            xcodebuild \
+              -exportArchive \
+              -archivePath "$ARCHIVE_PATH" \
+              -exportPath "$EXPORT_PATH" \
+              -exportOptionsPlist "$EXPORT_PLIST" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              2>&1 | tee "$1"
+          }
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          if ! export_ipa "$LOG_DIR/export.log" || [ -z "$(find "$EXPORT_PATH" -maxdepth 1 -name '*.ipa' 2>/dev/null)" ]; then
+            if [ -d "$WAPPEX" ]; then
+              # Widgets never break TestFlight: drop the extension, re-sign the app, export again.
+              echo "::warning::Export with the widget extension failed (signing / provisioning for com.descall.app.widgets). Shipping this build without widgets; see export.log."
+              rm -rf "$WAPPEX"
+              codesign --force --sign - --timestamp=none --entitlements "$APP_ENT" --generate-entitlement-der "$APP"
+              echo "SHIP_WIDGETS=0" >> "$GITHUB_ENV"
+              export_ipa "$LOG_DIR/export-without-widgets.log"
+            else
+              exit 1
+            fi
+          fi
           IPA="$(find "$EXPORT_PATH" -maxdepth 1 -name '*.ipa' | head -n 1)"
           test -s "$IPA"
           ls -lh "$IPA"
@@ -369,6 +450,34 @@ jobs:
             fi
           elif [ -d "$BAPPEX" ]; then
             echo "::error::DescallBroadcast.appex shipped although IOS_BROADCAST_EXTENSION is not 1"; ok=0
+          fi
+          # Widgets draft B: present (App Group, shared Keychain group, id, same version) when shipped.
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          if [ "$SHIP_WIDGETS" = "1" ]; then
+            if [ -d "$WAPPEX" ]; then
+              codesign -dvv "$WAPPEX" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+              codesign -d --entitlements - --xml "$WAPPEX" > "$WORK/DescallWidgets.plist" 2>/dev/null || true
+              wg="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/DescallWidgets.plist" 2>/dev/null || true)"
+              [ "$wg" = "group.com.descall.app" ] || { echo "::error::DescallWidgets has no App Group ('$wg')"; ok=0; }
+              wkg="$(/usr/libexec/PlistBuddy -c 'Print :keychain-access-groups' "$WORK/DescallWidgets.plist" 2>/dev/null || true)"
+              echo "$wkg" | grep -q "$TEAM_ID.com.descall.shared" || echo "::warning::DescallWidgets has no shared Keychain group; widgets will show 'Sign in'"
+              wid="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$WAPPEX/Info.plist")"
+              [ "$wid" = "com.descall.app.widgets" ] || { echo "::error::widget extension id is $wid"; ok=0; }
+              wv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$WAPPEX/Info.plist")"
+              wsv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$WAPPEX/Info.plist")"
+              av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+              as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+              [ "$wv" = "$av" ] && [ "$wsv" = "$as" ] || { echo "::error::DescallWidgets $wsv ($wv) != app $as ($av)"; ok=0; }
+              [ ! -d "$WAPPEX/Frameworks" ] || { echo "::error::DescallWidgets.appex has its own Frameworks folder"; ok=0; }
+              la="$(/usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' "$APP/Info.plist" 2>/dev/null || true)"
+              [ "$la" = "true" ] || { echo "::error::NSSupportsLiveActivities missing from the app Info.plist"; ok=0; }
+              echo "DescallWidgets: $wsv ($wv) matches app $as ($av)"
+            else
+              echo "::error::DescallWidgets.appex missing from the IPA although it was meant to ship"; ok=0
+            fi
+          else
+            [ ! -d "$WAPPEX" ] || { echo "::error::DescallWidgets.appex shipped although widgets were turned off for this build"; ok=0; }
+            echo "::notice::This build ships without the widget extension."
           fi
           # 3.7.17: Apple Watch app signed for distribution, same version and build as the app.
           WAPP="$APP/Watch/DescallWatch.app"

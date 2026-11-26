@@ -16,6 +16,8 @@
 "error.message.tooLong" = "Mesaj çok uzun. 1000 karakterin altında tut.";
 "error.call.none" = "Şu anda bir aramada veya ses kanalında değilsin.";
 "error.call.failed" = "Arama yanıt vermedi. Descall'ı açıp tekrar dene.";
+"error.call.busy" = "Zaten bir aramadasın. Önce ondan çık.";
+"dialog.call.calling" = "%@ Descall'da aranıyor.";
 "error.voice.failed" = "Ses kanalına katılınamadı. Descall'da tekrar dene.";
 "error.voice.noPermission" = "Bu ses kanalına katılma iznin yok.";
 "error.voice.mic" = "Katılmak için Descall'ın mikrofon iznine ihtiyacı var. Ayarlar'dan izin ver.";

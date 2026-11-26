@@ -81,6 +81,30 @@ public final class DescallAPIClient: @unchecked Sendable {
         return try await post("/api/watch/send", json: ["conv": conv, "text": body])
     }
 
+    /// "El salla": the friend gets a push and a socket event (5 per friend and 20 per day,
+    /// 60 s apart: .rateLimited past that). Never retried automatically.
+    @discardableResult
+    public func wave(to friendId: String, source: String = "widget") async throws -> DescallWaveResult {
+        guard (1...64).contains(friendId.count),
+              friendId.unicodeScalars.allSatisfy({ ($0.isASCII && CharacterSet.alphanumerics.contains($0)) || $0 == "-" }) else {
+            throw DescallAPIError.badRequest("bad_target")
+        }
+        return try await post("/api/native/wave", json: ["to": friendId, "source": source])
+    }
+
+    /// Summary with the widget extras (activity line, message bubbles).
+    public func widgetSummary() async throws -> DescallSummary {
+        try await get("/api/native/summary", query: [URLQueryItem(name: "activity", value: "1"), URLQueryItem(name: "previews", value: "1")])
+    }
+
+    /// Friends with the activity line; `ids` keeps only those (favourites).
+    public func widgetFriends(ids: [String] = []) async throws -> [DescallFriend] {
+        var items = [URLQueryItem(name: "activity", value: "1")]
+        if !ids.isEmpty { items.append(URLQueryItem(name: "ids", value: ids.prefix(50).joined(separator: ","))) }
+        let list: DescallFriendList = try await get("/api/native/friends", query: items)
+        return list.friends
+    }
+
     @discardableResult
     public func setStatus(_ status: DescallStatusChoice) async throws -> DescallStatusResult {
         try await post("/api/watch/status", json: ["status": status.rawValue])

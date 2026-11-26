@@ -123,6 +123,16 @@ export const STATIC_STRINGS = {
 
   "Send ${message} to ${friend}": row("Send ${message} to ${friend}", "${message} mesajını ${friend} kişisine gönder", "Sende ${message} an ${friend}", "Enviar ${message} a ${friend}", "Envoyer ${message} à ${friend}", "Enviar ${message} para ${friend}", "Отправить ${message} для ${friend}"),
   "Set status to ${status}": row("Set status to ${status}", "Durumu ${status} yap", "Status auf ${status} setzen", "Poner el estado en ${status}", "Mettre le statut sur ${status}", "Definir status como ${status}", "Поставить статус ${status}"),
+  "Call a Friend": row("Call a Friend", "Arkadaşını Ara", "Freund anrufen", "Llamar a un amigo", "Appeler un ami", "Ligar para um amigo", "Позвонить другу"),
+  "Opens Descall and starts a voice call with a friend.": row(
+    "Opens Descall and starts a voice call with a friend.",
+    "Descall'ı açar ve bir arkadaşınla sesli arama başlatır.",
+    "Öffnet Descall und startet einen Sprachanruf mit einem Freund.",
+    "Abre Descall e inicia una llamada de voz con un amigo.",
+    "Ouvre Descall et lance un appel vocal avec un ami.",
+    "Abre o Descall e começa uma chamada de voz com um amigo.",
+    "Открывает Descall и начинает голосовой звонок с другом."),
+  "Call ${friend}": row("Call ${friend}", "${friend} kişisini ara", "${friend} anrufen", "Llamar a ${friend}", "Appeler ${friend}", "Ligar para ${friend}", "Позвонить ${friend}"),
   "Join ${room}": row("Join ${room}", "${room} kanalına katıl", "${room} beitreten", "Unirse a ${room}", "Rejoindre ${room}", "Entrar em ${room}", "Подключиться к ${room}"),
 
   "Send Message": row("Send Message", "Mesaj Gönder", "Nachricht senden", "Enviar mensaje", "Envoyer un message", "Enviar mensagem", "Сообщение"),
@@ -152,6 +162,8 @@ export const INTENT_STRINGS = {
   "error.message.tooLong": row("The message is too long. Keep it under 1000 characters.", "Mesaj çok uzun. 1000 karakterin altında tut.", "Die Nachricht ist zu lang. Höchstens 1000 Zeichen.", "El mensaje es demasiado largo. Máximo 1000 caracteres.", "Le message est trop long. 1000 caractères maximum.", "A mensagem é longa demais. No máximo 1000 caracteres.", "Сообщение слишком длинное. Не больше 1000 символов."),
   "error.call.none": row("You're not in a call or voice channel right now.", "Şu anda bir aramada veya ses kanalında değilsin.", "Du bist gerade in keinem Anruf und keinem Sprachkanal.", "Ahora no estás en ninguna llamada ni canal de voz.", "Tu n'es dans aucun appel ni salon vocal pour le moment.", "Você não está em nenhuma chamada ou canal de voz agora.", "Сейчас вы не в звонке и не в голосовом канале."),
   "error.call.failed": row("The call didn't respond. Open Descall and try again.", "Arama yanıt vermedi. Descall'ı açıp tekrar dene.", "Der Anruf hat nicht reagiert. Öffne Descall und versuche es erneut.", "La llamada no respondió. Abre Descall e inténtalo de nuevo.", "L'appel n'a pas répondu. Ouvre Descall et réessaie.", "A chamada não respondeu. Abra o Descall e tente de novo.", "Звонок не ответил. Откройте Descall и попробуйте снова."),
+  "error.call.busy": row("You're already in a call. Leave it first.", "Zaten bir aramadasın. Önce ondan çık.", "Du bist schon in einem Anruf. Verlasse ihn zuerst.", "Ya estás en una llamada. Sal de ella primero.", "Tu es déjà en appel. Quitte-le d'abord.", "Você já está em uma chamada. Saia dela primeiro.", "Вы уже в звонке. Сначала выйдите из него."),
+  "dialog.call.calling": row("Calling %@ in Descall.", "%@ Descall'da aranıyor.", "%@ wird in Descall angerufen.", "Llamando a %@ en Descall.", "Appel de %@ dans Descall.", "Ligando para %@ no Descall.", "Звоним: %@ в Descall."),
   "error.voice.failed": row("Couldn't join the voice channel. Try again in Descall.", "Ses kanalına katılınamadı. Descall'da tekrar dene.", "Beitritt zum Sprachkanal fehlgeschlagen. Versuche es in Descall erneut.", "No se pudo entrar al canal de voz. Inténtalo de nuevo en Descall.", "Impossible de rejoindre le salon vocal. Réessaie dans Descall.", "Não foi possível entrar no canal de voz. Tente de novo no Descall.", "Не удалось подключиться к голосовому каналу. Попробуйте снова в Descall."),
   "error.voice.noPermission": row("You don't have permission to join that voice channel.", "Bu ses kanalına katılma iznin yok.", "Du darfst diesem Sprachkanal nicht beitreten.", "No tienes permiso para entrar a ese canal de voz.", "Tu n'as pas l'autorisation de rejoindre ce salon vocal.", "Você não tem permissão para entrar nesse canal de voz.", "У вас нет разрешения подключаться к этому голосовому каналу."),
   "error.voice.mic": row("Descall needs microphone access to join. Allow it in Settings.", "Katılmak için Descall'ın mikrofon iznine ihtiyacı var. Ayarlar'dan izin ver.", "Descall braucht Zugriff auf das Mikrofon. Erlaube ihn in den Einstellungen.", "Descall necesita acceso al micrófono. Permítelo en Ajustes.", "Descall a besoin du micro pour rejoindre. Autorise-le dans Réglages.", "O Descall precisa do microfone para entrar. Permita em Ajustes.", "Descall нужен доступ к микрофону. Разрешите его в Настройках."),

@@ -34,6 +34,40 @@ extension KeyedDecodingContainer {
     }
 }
 
+/// The line under a face (GET /api/native/*?activity=1, backend nativeGlance.shapeActivity).
+/// kind: screen, voice, game, music, app, idle, dnd, custom, offline. Worded natively.
+public struct DescallActivity: Codable, Hashable, Sendable {
+    public let kind: String
+    public let label: String?
+    public let since: String?
+
+    public init(kind: String, label: String? = nil, since: String? = nil) {
+        self.kind = kind
+        self.label = label
+        self.since = since
+    }
+
+    enum CodingKeys: String, CodingKey { case kind, label, since }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(kind: c.lenient(String.self, .kind) ?? "", label: c.lenient(String.self, .label), since: c.lenient(String.self, .since))
+    }
+
+    /// Parsed `since` (ISO 8601, with or without fractional seconds).
+    public var sinceDate: Date? { since.flatMap(DescallDates.parse) }
+}
+
+public enum DescallDates {
+    public static func parse(_ raw: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: raw) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: raw)
+    }
+}
+
 public struct DescallFriend: Codable, Hashable, Identifiable, Sendable {
     public let id: String
     public let username: String?
@@ -44,9 +78,12 @@ public struct DescallFriend: Codable, Hashable, Identifiable, Sendable {
     public let customStatus: String?
     /// "dm:<id>", the conversation POST /api/watch/send takes.
     public let conv: String
+    /// Only with ?activity=1 (widgets).
+    public let activity: DescallActivity?
 
     public init(id: String, username: String?, name: String, initials: String? = nil, avatarUrl: String? = nil,
-                presence: DescallPresence = .offline, customStatus: String? = nil, conv: String? = nil) {
+                presence: DescallPresence = .offline, customStatus: String? = nil, conv: String? = nil,
+                activity: DescallActivity? = nil) {
         self.id = id
         self.username = username
         self.name = name
@@ -55,9 +92,10 @@ public struct DescallFriend: Codable, Hashable, Identifiable, Sendable {
         self.presence = presence
         self.customStatus = customStatus
         self.conv = conv ?? "dm:\(id)"
+        self.activity = activity
     }
 
-    enum CodingKeys: String, CodingKey { case id, username, name, initials, avatarUrl, presence, customStatus, conv }
+    enum CodingKeys: String, CodingKey { case id, username, name, initials, avatarUrl, presence, customStatus, conv, activity }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -66,7 +104,8 @@ public struct DescallFriend: Codable, Hashable, Identifiable, Sendable {
         let name = c.lenient(String.self, .name) ?? username ?? "?"
         self.init(id: id, username: username, name: name, initials: c.lenient(String.self, .initials),
                   avatarUrl: c.lenient(String.self, .avatarUrl), presence: c.lenient(DescallPresence.self, .presence) ?? .offline,
-                  customStatus: c.lenient(String.self, .customStatus), conv: c.lenient(String.self, .conv))
+                  customStatus: c.lenient(String.self, .customStatus), conv: c.lenient(String.self, .conv),
+                  activity: c.lenient(DescallActivity.self, .activity))
     }
 }
 
@@ -76,6 +115,61 @@ public struct DescallUnreadConversation: Codable, Hashable, Sendable {
     public let title: String
     public let count: Int
     public let serverId: String?
+    // Widgets (?previews=1): the speech bubble. All optional, absent for Siri.
+    public let preview: String?
+    /// Sender name in a group / channel ("Kaan"), nil for a DM.
+    public let by: String?
+    /// The sender's face (DM friend, group member, channel author).
+    public let peerId: String?
+    public let username: String?
+    public let avatarUrl: String?
+    public let initials: String?
+    public let at: String?
+    /// A channel message that mentions the user (blue bubble edge).
+    public let mention: Bool?
+
+    public init(conv: String, kind: String, title: String, count: Int, serverId: String? = nil, preview: String? = nil,
+                by: String? = nil, peerId: String? = nil, username: String? = nil, avatarUrl: String? = nil,
+                initials: String? = nil, at: String? = nil, mention: Bool? = nil) {
+        self.conv = conv
+        self.kind = kind
+        self.title = title
+        self.count = count
+        self.serverId = serverId
+        self.preview = preview
+        self.by = by
+        self.peerId = peerId
+        self.username = username
+        self.avatarUrl = avatarUrl
+        self.initials = initials
+        self.at = at
+        self.mention = mention
+    }
+
+    enum CodingKeys: String, CodingKey { case conv, kind, title, count, serverId, preview, by, peerId, username, avatarUrl, initials, at, mention }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(conv: try c.decode(String.self, forKey: .conv), kind: c.lenient(String.self, .kind) ?? "dm",
+                  title: c.lenient(String.self, .title) ?? "", count: max(0, c.lenient(Int.self, .count) ?? 0),
+                  serverId: c.lenient(String.self, .serverId), preview: c.lenient(String.self, .preview),
+                  by: c.lenient(String.self, .by), peerId: c.lenient(String.self, .peerId), username: c.lenient(String.self, .username),
+                  avatarUrl: c.lenient(String.self, .avatarUrl), initials: c.lenient(String.self, .initials),
+                  at: c.lenient(String.self, .at), mention: c.lenient(Bool.self, .mention))
+    }
+
+    /// The id after "dm:" / "group:" / "channel:".
+    public var targetId: String { conv.split(separator: ":", maxSplits: 1).last.map(String.init) ?? "" }
+
+    /// descall:// link that opens this conversation.
+    public var deepLink: URL? {
+        switch kind {
+        case "dm": return username.flatMap { DescallDeepLink.dm(username: $0) }
+        case "group": return DescallDeepLink.group(targetId)
+        case "channel": return serverId.flatMap { DescallDeepLink.server($0, channel: targetId) }
+        default: return nil
+        }
+    }
 }
 
 public struct DescallUnread: Codable, Hashable, Sendable {
@@ -110,6 +204,16 @@ public struct DescallVoiceOccupant: Codable, Hashable, Identifiable, Sendable {
     public let name: String
     public let initials: String?
     public let avatarUrl: String?
+    /// Sharing the screen (widgets: the screen glyph on the face).
+    public let screen: Bool?
+
+    public init(id: String, name: String, initials: String? = nil, avatarUrl: String? = nil, screen: Bool? = nil) {
+        self.id = id
+        self.name = name
+        self.initials = initials
+        self.avatarUrl = avatarUrl
+        self.screen = screen
+    }
 }
 
 public struct DescallVoiceRoom: Codable, Hashable, Identifiable, Sendable {
@@ -121,11 +225,13 @@ public struct DescallVoiceRoom: Codable, Hashable, Identifiable, Sendable {
     public let type: String
     public let occupantCount: Int
     public let occupants: [DescallVoiceOccupant]
+    /// When the room filled up (ISO 8601), for "Sessiz · 38 dk".
+    public let since: String?
 
     public var id: String { channelId }
 
     public init(serverId: String, serverName: String, channelId: String, channelName: String, type: String = "voice",
-                occupantCount: Int = 0, occupants: [DescallVoiceOccupant] = []) {
+                occupantCount: Int = 0, occupants: [DescallVoiceOccupant] = [], since: String? = nil) {
         self.serverId = serverId
         self.serverName = serverName
         self.channelId = channelId
@@ -133,9 +239,10 @@ public struct DescallVoiceRoom: Codable, Hashable, Identifiable, Sendable {
         self.type = type
         self.occupantCount = occupantCount
         self.occupants = occupants
+        self.since = since
     }
 
-    enum CodingKeys: String, CodingKey { case serverId, serverName, channelId, channelName, type, occupantCount, occupants }
+    enum CodingKeys: String, CodingKey { case serverId, serverName, channelId, channelName, type, occupantCount, occupants, since }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -143,7 +250,8 @@ public struct DescallVoiceRoom: Codable, Hashable, Identifiable, Sendable {
         self.init(serverId: try c.decode(String.self, forKey: .serverId), serverName: c.lenient(String.self, .serverName) ?? "",
                   channelId: try c.decode(String.self, forKey: .channelId), channelName: c.lenient(String.self, .channelName) ?? "",
                   type: c.lenient(String.self, .type) ?? "voice",
-                  occupantCount: max(occupants.count, c.lenient(Int.self, .occupantCount) ?? 0), occupants: occupants)
+                  occupantCount: max(occupants.count, c.lenient(Int.self, .occupantCount) ?? 0), occupants: occupants,
+                  since: c.lenient(String.self, .since))
     }
 }
 
@@ -205,6 +313,13 @@ public struct DescallDestinationList: Codable, Sendable { public let destination
 public struct DescallSendResult: Codable, Sendable {
     public let ok: Bool
     public let messageId: String?
+}
+
+/// POST /api/native/wave ("El salla" from a widget).
+public struct DescallWaveResult: Codable, Sendable {
+    public let ok: Bool
+    public let remainingToday: Int?
+    public let remainingForFriend: Int?
 }
 
 public struct DescallStatusResult: Codable, Sendable {

@@ -84,6 +84,25 @@
 		B7A500042F70000100D35C0A /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = B7A500112F70000100D35C0A /* LiveKit */; };
 		B7A500052F70000100D35C0A /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = B7A500122F70000100D35C0A /* LiveKit */; };
 		B7A500182F70000100D35C0A /* DescallScreenBroadcastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A500192F70000100D35C0A /* DescallScreenBroadcastLogic.swift */; };
+		D1D6E7162F90000100D35C0A /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7012F90000100D35C0A /* Widgets.swift */; };
+		D1D6E7172F90000100D35C0A /* WidgetSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7022F90000100D35C0A /* WidgetSupport.swift */; };
+		D1D6E7182F90000100D35C0A /* WidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7032F90000100D35C0A /* WidgetData.swift */; };
+		D1D6E7192F90000100D35C0A /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7042F90000100D35C0A /* WidgetViews.swift */; };
+		D1D6E71A2F90000100D35C0A /* LiveCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */; };
+		D1D6E71B2F90000100D35C0A /* WaveIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7062F90000100D35C0A /* WaveIntent.swift */; };
+		D1D6E71C2F90000100D35C0A /* DescallWidgetLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */; };
+		D1D6E71D2F90000100D35C0A /* DescallWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */; };
+		D1D6E71E2F90000100D35C0A /* DescallCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */; };
+		D1D6E71F2F90000100D35C0A /* DescallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000012F80000100D3 /* DescallModels.swift */; };
+		D1D6E7202F90000100D35C0A /* DescallKitLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000032F80000100D3 /* DescallKitLogic.swift */; };
+		D1D6E7212F90000100D35C0A /* DescallSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000052F80000100D3 /* DescallSessionStore.swift */; };
+		D1D6E7222F90000100D35C0A /* DescallAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000072F80000100D3 /* DescallAPIClient.swift */; };
+		D1D6E7232F90000100D35C0A /* DescallWidgetLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */; };
+		D1D6E7242F90000100D35C0A /* DescallWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */; };
+		D1D6E7252F90000100D35C0A /* DescallCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */; };
+		D1D6E7262F90000100D35C0A /* DescallWidgetsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */; };
+		D1D6E7272F90000100D35C0A /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1D6E70E2F90000100D35C0A /* Localizable.strings */; };
+		D1D6E7282F90000100D35C0A /* DescallWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,6 +134,13 @@
 			remoteGlobalIDString = B7A5000C2F70000100D35C0A;
 			remoteInfo = DescallBroadcast;
 		};
+		D1D6E7322F90000100D35C0A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1D6E72E2F90000100D35C0A;
+			remoteInfo = DescallWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -135,6 +161,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				D1D6E7282F90000100D35C0A /* DescallWidgets.appex in Embed Foundation Extensions */,
 				A4A0001A2F60000100D35C0A /* NotificationService.appex in Embed Foundation Extensions */,
 				A4A0001B2F60000100D35C0A /* NotificationContent.appex in Embed Foundation Extensions */,
 				B7A500032F70000100D35C0A /* DescallBroadcast.appex in Embed Foundation Extensions */,
@@ -248,6 +275,26 @@
 		B7A500092F70000100D35C0A /* DescallBroadcast.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DescallBroadcast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7A5000A2F70000100D35C0A /* DescallScreenBroadcastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallScreenBroadcastPlugin.swift; sourceTree = "<group>"; };
 		B7A500192F70000100D35C0A /* DescallScreenBroadcastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallScreenBroadcastLogic.swift; sourceTree = "<group>"; };
+		D1D6E7012F90000100D35C0A /* Widgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
+		D1D6E7022F90000100D35C0A /* WidgetSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSupport.swift; sourceTree = "<group>"; };
+		D1D6E7032F90000100D35C0A /* WidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetData.swift; sourceTree = "<group>"; };
+		D1D6E7042F90000100D35C0A /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
+		D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCallActivity.swift; sourceTree = "<group>"; };
+		D1D6E7062F90000100D35C0A /* WaveIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveIntent.swift; sourceTree = "<group>"; };
+		D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetLogic.swift; sourceTree = "<group>"; };
+		D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetStore.swift; sourceTree = "<group>"; };
+		D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallActivity.swift; sourceTree = "<group>"; };
+		D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetsPlugin.swift; sourceTree = "<group>"; };
+		D1D6E70B2F90000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D1D6E70C2F90000100D35C0A /* DescallWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DescallWidgets.entitlements; sourceTree = "<group>"; };
+		D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DescallWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1D6E70F2F90000100D35C0A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7102F90000100D35C0A /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7112F90000100D35C0A /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7122F90000100D35C0A /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7132F90000100D35C0A /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7142F90000100D35C0A /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		D1D6E7152F90000100D35C0A /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -288,6 +335,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B7A500052F70000100D35C0A /* LiveKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1D6E72C2F90000100D35C0A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -338,6 +392,8 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				D1D6E72A2F90000100D35C0A /* WidgetShared */,
+				D1D6E7292F90000100D35C0A /* DescallWidgets */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				A4A0001C2F60000100D35C0A /* NotifyShared */,
@@ -355,6 +411,7 @@
 		504EC3051FED79650016851F /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */,
 				504EC3041FED79650016851F /* App.app */,
 				A4A0000C2F60000100D35C0A /* NotificationService.appex */,
 				A4A0000D2F60000100D35C0A /* NotificationContent.appex */,
@@ -367,6 +424,7 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */,
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */,
 				D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */,
@@ -469,6 +527,32 @@
 			path = WatchShared;
 			sourceTree = "<group>";
 		};
+		D1D6E7292F90000100D35C0A /* DescallWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				D1D6E7012F90000100D35C0A /* Widgets.swift */,
+				D1D6E7022F90000100D35C0A /* WidgetSupport.swift */,
+				D1D6E7032F90000100D35C0A /* WidgetData.swift */,
+				D1D6E7042F90000100D35C0A /* WidgetViews.swift */,
+				D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */,
+				D1D6E7062F90000100D35C0A /* WaveIntent.swift */,
+				D1D6E70E2F90000100D35C0A /* Localizable.strings */,
+				D1D6E70B2F90000100D35C0A /* Info.plist */,
+				D1D6E70C2F90000100D35C0A /* DescallWidgets.entitlements */,
+			);
+			path = DescallWidgets;
+			sourceTree = "<group>";
+		};
+		D1D6E72A2F90000100D35C0A /* WidgetShared */ = {
+			isa = PBXGroup;
+			children = (
+				D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */,
+				D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */,
+				D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */,
+			);
+			path = WidgetShared;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -485,6 +569,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				D1D6E7332F90000100D35C0A /* PBXTargetDependency */,
 				A4A0002A2F60000100D35C0A /* PBXTargetDependency */,
 				A4A0002B2F60000100D35C0A /* PBXTargetDependency */,
 				58D90E1A1F814213C4236172 /* PBXTargetDependency */,
@@ -571,6 +656,23 @@
 			productReference = B7A500092F70000100D35C0A /* DescallBroadcast.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D1D6E72E2F90000100D35C0A /* DescallWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1D6E72F2F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallWidgets" */;
+			buildPhases = (
+				D1D6E72B2F90000100D35C0A /* Sources */,
+				D1D6E72C2F90000100D35C0A /* Frameworks */,
+				D1D6E72D2F90000100D35C0A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DescallWidgets;
+			productName = DescallWidgets;
+			productReference = D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -580,6 +682,10 @@
 				LastSwiftUpdateCheck = 0920;
 				LastUpgradeCheck = 0920;
 				TargetAttributes = {
+					D1D6E72E2F90000100D35C0A = {
+						CreatedOnToolsVersion = 26.0;
+						ProvisioningStyle = Automatic;
+					};
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
@@ -623,6 +729,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				D1D6E72E2F90000100D35C0A /* DescallWidgets */,
 				504EC3031FED79650016851F /* App */,
 				A4A0001F2F60000100D35C0A /* NotificationService */,
 				A4A000202F60000100D35C0A /* NotificationContent */,
@@ -680,6 +787,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1D6E72D2F90000100D35C0A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1D6E7272F90000100D35C0A /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -687,6 +802,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1D6E7262F90000100D35C0A /* DescallWidgetsPlugin.swift in Sources */,
+				D1D6E7252F90000100D35C0A /* DescallCallActivity.swift in Sources */,
+				D1D6E7242F90000100D35C0A /* DescallWidgetStore.swift in Sources */,
+				D1D6E7232F90000100D35C0A /* DescallWidgetLogic.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */,
@@ -774,6 +893,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1D6E72B2F90000100D35C0A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1D6E7162F90000100D35C0A /* Widgets.swift in Sources */,
+				D1D6E7172F90000100D35C0A /* WidgetSupport.swift in Sources */,
+				D1D6E7182F90000100D35C0A /* WidgetData.swift in Sources */,
+				D1D6E7192F90000100D35C0A /* WidgetViews.swift in Sources */,
+				D1D6E71A2F90000100D35C0A /* LiveCallActivity.swift in Sources */,
+				D1D6E71B2F90000100D35C0A /* WaveIntent.swift in Sources */,
+				D1D6E71C2F90000100D35C0A /* DescallWidgetLogic.swift in Sources */,
+				D1D6E71D2F90000100D35C0A /* DescallWidgetStore.swift in Sources */,
+				D1D6E71E2F90000100D35C0A /* DescallCallActivity.swift in Sources */,
+				D1D6E71F2F90000100D35C0A /* DescallModels.swift in Sources */,
+				D1D6E7202F90000100D35C0A /* DescallKitLogic.swift in Sources */,
+				D1D6E7212F90000100D35C0A /* DescallSessionStore.swift in Sources */,
+				D1D6E7222F90000100D35C0A /* DescallAPIClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -797,6 +936,11 @@
 			isa = PBXTargetDependency;
 			target = B7A5000C2F70000100D35C0A /* DescallBroadcast */;
 			targetProxy = B7A500102F70000100D35C0A /* PBXContainerItemProxy */;
+		};
+		D1D6E7332F90000100D35C0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1D6E72E2F90000100D35C0A /* DescallWidgets */;
+			targetProxy = D1D6E7322F90000100D35C0A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -871,6 +1015,20 @@
 				18774A888EB07821106CB30A /* ru */,
 			);
 			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D1D6E70E2F90000100D35C0A /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D1D6E70F2F90000100D35C0A /* en */,
+				D1D6E7102F90000100D35C0A /* tr */,
+				D1D6E7112F90000100D35C0A /* de */,
+				D1D6E7122F90000100D35C0A /* es */,
+				D1D6E7132F90000100D35C0A /* fr */,
+				D1D6E7142F90000100D35C0A /* pt-BR */,
+				D1D6E7152F90000100D35C0A /* ru */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -1234,6 +1392,58 @@
 			};
 			name = Release;
 		};
+		D1D6E7302F90000100D35C0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallWidgets/DescallWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1D6E7312F90000100D35C0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallWidgets/DescallWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1287,6 +1497,15 @@
 			buildConfigurations = (
 				B7A500152F70000100D35C0A /* Debug */,
 				B7A500162F70000100D35C0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1D6E72F2F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1D6E7302F90000100D35C0A /* Debug */,
+				D1D6E7312F90000100D35C0A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

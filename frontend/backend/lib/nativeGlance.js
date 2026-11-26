@@ -384,6 +384,7 @@ function attachPreviews(unread, { friendsById = new Map(), dmLast = {}, groupsBy
       return {
         ...row,
         peerId: id,
+        username: f?.username && f.username !== "?" ? String(f.username) : null,
         avatarUrl: watch.safeAvatar(f?.avatarUrl),
         initials: watch.initialsOf(row.title),
         by: null,

@@ -192,6 +192,40 @@ func clientTests() async {
         check(false, "status: \(error)")
     }
 
+    Stub.handler = { req in
+        let body = req.httpBodyStream.map { s -> String in
+            s.open(); defer { s.close() }
+            var buf = [UInt8](repeating: 0, count: 4096)
+            let n = s.read(&buf, maxLength: buf.count)
+            return String(decoding: buf.prefix(max(0, n)), as: UTF8.self)
+        } ?? String(decoding: req.httpBody ?? Data(), as: UTF8.self)
+        return body.contains("\"to\":\"e1\"") ? (200, #"{"ok":true,"remainingToday":19,"remainingForFriend":4}"#) : (400, "{}")
+    }
+    do {
+        let r = try await client.wave(to: "e1")
+        eq(r.remainingForFriend, 4, "wave result")
+        eq(Stub.seen.last?.url?.path, "/api/native/wave", "wave path")
+    } catch {
+        check(false, "wave: \(error)")
+    }
+    Stub.handler = { _ in (429, #"{"error":"wave_limit","retryAfter":3600}"#) }
+    do {
+        _ = try await client.wave(to: "e1")
+        check(false, "a wave over the limit must throw")
+    } catch let e as DescallAPIError {
+        eq(e, .rateLimited, "429 -> rateLimited")
+    } catch {
+        check(false, "unexpected \(error)")
+    }
+    do {
+        _ = try await client.wave(to: "../x")
+        check(false, "bad id must throw")
+    } catch let e as DescallAPIError {
+        eq(e, .badRequest("bad_target"), "bad id refused before the network")
+    } catch {
+        check(false, "unexpected \(error)")
+    }
+
     Stub.handler = { _ in (-1, "") }
     do {
         _ = try await client.summary()
@@ -202,6 +236,44 @@ func clientTests() async {
         check(false, "unexpected \(error)")
     }
 }
+
+// MARK: Widgets (draft B): activity line, speech bubbles, voice room since / screen
+
+let widgetJSON = ##"""
+{"me":{"id":"m","name":"Demir","status":"online"},
+ "unread":{"total":8,"dms":3,"groups":4,"channels":1,"top":[
+   {"conv":"dm:e1","kind":"dm","title":"Ece","count":3,"peerId":"e1","username":"ece","preview":"Akşam 9'da sese gelir misin?","at":"2026-11-24T19:58:00.000Z","mention":false},
+   {"conv":"group:g1","kind":"group","title":"Kampüs Ekibi","count":4,"by":"Kaan","preview":"Notları attım"},
+   {"conv":"channel:c1","kind":"channel","title":"Gece Kuşu #duyurular","count":1,"serverId":"s1","mention":true}]},
+ "friends":{"onlineCount":2,"offlineCount":0,"online":[
+   {"id":"e1","name":"Ece","presence":"online","activity":{"kind":"game","label":"Minecraft","since":"2026-11-24T19:00:00Z"}},
+   {"id":"k1","name":"Kaan","presence":"online","activity":{"kind":"voice","label":"Oyun Gecesi"}},
+   {"id":"z1","name":"Zeynep","presence":"idle","activity":null}]},
+ "voice":[{"serverId":"s1","serverName":"Gece Kuşu","channelId":"v1","channelName":"Oyun Gecesi","type":"voice","occupantCount":2,
+   "since":"2026-11-24T19:10:00.000Z","occupants":[{"id":"k1","name":"Kaan","screen":false},{"id":"a1","name":"Arda","screen":true}]}]}
+"""##
+do {
+    let w = try JSONDecoder().decode(DescallSummary.self, from: Data(widgetJSON.utf8))
+    eq(w.friends.online[0].activity?.kind, "game", "activity kind")
+    eq(w.friends.online[0].activity?.label, "Minecraft", "activity label")
+    check(w.friends.online[0].activity?.sinceDate != nil, "activity since without fractional seconds parses")
+    eq(w.friends.online[2].activity, nil, "null activity")
+    eq(w.unread.top[0].preview, "Akşam 9'da sese gelir misin?", "bubble text")
+    eq(w.unread.top[0].deepLink?.absoluteString, "descall://dm/ece", "dm bubble opens the DM")
+    eq(w.unread.top[1].by, "Kaan", "group sender")
+    eq(w.unread.top[1].deepLink?.absoluteString, "descall://group/g1", "group bubble link")
+    eq(w.unread.top[2].mention, true, "mention flag")
+    eq(w.unread.top[2].deepLink?.absoluteString, "descall://server/s1/c1", "channel bubble link")
+    eq(w.voice[0].occupants[1].screen, true, "screen share flag")
+    eq(w.voice[0].since, "2026-11-24T19:10:00.000Z", "room since")
+    check(DescallDates.parse("2026-11-24T19:10:00.000Z") != nil, "fractional ISO date")
+} catch {
+    check(false, "widget summary decodes: \(error)")
+}
+// Old payloads (Siri) still decode: every widget field is optional.
+let oldRow = try? JSONDecoder().decode(DescallUnreadConversation.self, from: Data(#"{"conv":"dm:x","kind":"dm","title":"X","count":2}"#.utf8))
+eq(oldRow?.preview, nil, "no preview on the old shape")
+eq(oldRow?.count, 2, "count kept")
 
 let finished = DispatchSemaphore(value: 0)
 Task.detached {
