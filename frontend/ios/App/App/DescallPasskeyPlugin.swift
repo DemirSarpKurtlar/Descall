@@ -14,6 +14,11 @@ import AuthenticationServices
 ///   create({ options }) -> { response }      creation options JSON -> RegistrationResponseJSON
 ///   get({ options })    -> { response }      request options JSON  -> AuthenticationResponseJSON
 ///   cancel()
+///   autofill({ options }) -> { response }   iOS 16+: the passkey suggestion above the keyboard
+///                                         (QuickType bar) while the username field is focused;
+///                                         resolves when the person picks it, rejects "canceled"
+///                                         on autofillCancel() or when a modal request starts.
+///   autofillCancel()
 ///
 /// Rejects with codes src/lib/passkeys/errors.js maps: canceled, already_registered, domain,
 /// unsupported, busy, failed (DescallPasskeyLogic.errorCode).
@@ -26,10 +31,72 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
         CAPPluginMethod(name: "create", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "autofill", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "autofillCancel", returnType: CAPPluginReturnPromise),
     ]
 
     private var pendingCall: CAPPluginCall?
     private var controller: ASAuthorizationController?
+    // The keyboard (AutoFill-assisted) request runs on its own controller so a modal
+    // request can replace it without the two answers crossing.
+    private var autofillCall: CAPPluginCall?
+    private var autofillController: ASAuthorizationController?
+
+    @objc func autofill(_ call: CAPPluginCall) {
+        guard #available(iOS 16.0, *) else {
+            call.reject("Passkeys need iOS 16 or newer.", "unsupported")
+            return
+        }
+        guard let json = call.getString("options") else {
+            call.reject("Missing passkey options.", "failed")
+            return
+        }
+        let parsed: DescallPasskeyLogic.RequestOptions
+        switch DescallPasskeyLogic.parseRequestOptions(json) {
+        case let .success(o): parsed = o
+        case .failure(.wrongRelyingParty):
+            call.reject("Unexpected relying party.", "domain")
+            return
+        case .failure:
+            call.reject("Invalid passkey options.", "failed")
+            return
+        }
+        DispatchQueue.main.async {
+            self.stopAutofill(reason: "aborted")
+            if self.pendingCall != nil {
+                call.reject("Another passkey request is open.", "busy")
+                return
+            }
+            let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: parsed.rpId)
+            let request = provider.createCredentialAssertionRequest(challenge: parsed.challenge)
+            request.userVerificationPreference = .required
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            self.autofillCall = call
+            self.autofillController = controller
+            controller.performAutoFillAssistedRequests()
+        }
+    }
+
+    @objc func autofillCancel(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.stopAutofill(reason: "aborted")
+            call.resolve()
+        }
+    }
+
+    /// Main thread only. Ends the keyboard request (if any) and answers its call once.
+    private func stopAutofill(reason: String) {
+        guard let c = autofillController else { return }
+        let pending = autofillCall
+        autofillCall = nil
+        autofillController = nil
+        if #available(iOS 16.0, *) {
+            c.cancel()
+        }
+        pending?.reject("The passkey suggestion was closed.", reason)
+    }
 
     @objc func isAvailable(_ call: CAPPluginCall) {
         if #available(iOS 16.0, *) {
@@ -122,6 +189,7 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
             call.reject("Another passkey request is open.", "busy")
             return
         }
+        stopAutofill(reason: "aborted")
         pendingCall = call
         let controller = ASAuthorizationController(authorizationRequests: requests)
         controller.delegate = self
@@ -155,8 +223,20 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
         return nil
     }
 
+    /// The call that belongs to `controller`: the keyboard request or the modal one.
+    private func callFor(_ controller: ASAuthorizationController) -> CAPPluginCall? {
+        if let a = autofillController, a === controller {
+            let call = autofillCall
+            autofillCall = nil
+            autofillController = nil
+            return call
+        }
+        guard self.controller == nil || self.controller === controller else { return nil }
+        return finish()
+    }
+
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        guard let call = finish() else { return }
+        guard let call = callFor(controller) else { return }
         guard #available(iOS 16.0, *) else {
             call.reject("Passkeys need iOS 16 or newer.", "unsupported")
             return
@@ -201,7 +281,7 @@ public class DescallPasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationC
     }
 
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        guard let call = finish() else { return }
+        guard let call = callFor(controller) else { return }
         let ns = error as NSError
         let code = DescallPasskeyLogic.errorCode(domain: ns.domain, code: ns.code, message: ns.localizedDescription)
         call.reject(ns.localizedDescription, code)

@@ -583,6 +583,8 @@ export const AUDIT_LOG_RU = {
     "2fa_recovery_regenerated": "Обновил(а) коды восстановления",
     "passkey_added": "Добавил(а) ключ доступа",
     "passkey_removed": "Удалил(а) ключ доступа",
+    "passkey_alert_revoked": "Удалил(а) ключ после предупреждения о новом месте",
+    "passkey_report_revoked": "«Это был не я» из письма: ключ удалён",
     "descoin_grant": "Выдал(а) DesCoin",
     "descoin_reconcile_run": "Запустил(а) сверку",
     "descoin_reconcile_fix": "Исправил(а) баланс",

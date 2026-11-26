@@ -941,6 +941,7 @@ router.post("/login", loginBurst, async (req, res) => {
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
       method: "password",
+      signInMs: req.body?.signInMs,
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
 
@@ -2743,7 +2744,16 @@ router.use(require("./authBan"));
 
 module.exports = router;
 // Passkey sign-in (routes/passkeys.js) runs the same gates as /login and /2fa/verify-login.
+/** Passkey center: end these sessions now (revocation list + live sockets). */
+function revokeSessionIds(req, userId, ids) {
+  for (const sid of ids || []) {
+    revokedSessionIds.add(sid);
+    disconnectSocketsForSession(req, userId, sid);
+  }
+}
+
 module.exports.passkeyKit = {
+  revokeSessionIds,
   rejectIfBanned,
   rejectIfChildAccount,
   accessGate,

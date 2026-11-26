@@ -49,6 +49,8 @@ const SPA_PREFIXES = [
   "/s",
   // Desktop passkey handoff page (components/passkeys/PasskeyDesktopPage.jsx).
   "/passkey/desktop",
+  // "Ben degildim" link of passkey security e-mails (components/passkeys/PasskeyReportPage.jsx).
+  "/passkey/report",
 ];
 
 /** Permanent marketing moves (kept in sync with _redirects). */

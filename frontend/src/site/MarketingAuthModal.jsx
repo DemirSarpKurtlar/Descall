@@ -69,6 +69,11 @@ function AuthModal({
   const [forgotMode, setForgotMode] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const typingStartRef = useRef(0);
+  useEffect(() => {
+    if ((username || password) && !typingStartRef.current) typingStartRef.current = Date.now();
+    if (!username && !password) typingStartRef.current = 0;
+  }, [username, password]);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -260,7 +265,8 @@ function AuthModal({
           })
         );
       } else {
-        const result = await onLogin?.({ username, password });
+        const signInMs = typingStartRef.current ? Date.now() - typingStartRef.current : undefined;
+        const result = await onLogin?.({ username, password, signInMs });
         openTwoFa(result);
       }
     } catch (err) {
@@ -481,14 +487,6 @@ function AuthModal({
                 )}
                   </>
                 )}
-                {!isRegistering && onPasskeyLogin ? (
-                  <PasskeySignInButton
-                    className="mkt-auth-passkey"
-                    disabled={isSubmitting || authLoading}
-                    onSignedIn={handlePasskeyBody}
-                    onError={(err) => onPasskeyError?.(err)}
-                  />
-                ) : null}
                 <form onSubmit={submit}>
                   <input
                     id="mkt-auth-username"
@@ -603,6 +601,17 @@ function AuthModal({
                         ? t("Create Account")
                         : t("Sign In")}
                   </button>
+                  {/* Draft A: the passkey button sits under "Giris"; the browser's username
+                      suggestions list passkeys too (autofill). */}
+                  {!isRegistering && onPasskeyLogin ? (
+                    <PasskeySignInButton
+                      className="mkt-auth-passkey"
+                      disabled={isSubmitting || authLoading}
+                      onSignedIn={handlePasskeyBody}
+                      onError={(err) => onPasskeyError?.(err)}
+                      onUsePassword={() => document.getElementById(username.trim() ? "mkt-auth-password" : "mkt-auth-username")?.focus()}
+                    />
+                  ) : null}
                 </form>
                 <button
                   type="button"

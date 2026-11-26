@@ -583,6 +583,8 @@ export const AUDIT_LOG_ES = {
     "2fa_recovery_regenerated": "Renovó códigos de recuperación",
     "passkey_added": "Añadió una llave de acceso",
     "passkey_removed": "Quitó una llave de acceso",
+    "passkey_alert_revoked": "Quitó una llave tras un aviso de lugar nuevo",
+    "passkey_report_revoked": "\"No fui yo\" desde el correo: llave quitada",
     "descoin_grant": "Dio DesCoin",
     "descoin_reconcile_run": "Ejecutó conciliación",
     "descoin_reconcile_fix": "Corrigió saldo",

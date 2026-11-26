@@ -32,6 +32,26 @@ import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js
 // Logged-out web only: the native app and signed-in boots never render it, so the
 // marketing layout (JS + .mkt CSS) stays out of the App chunk's static graph.
 const MarketingApp = lazy(() => import("./site/MarketingApp"));
+// Draft A (passkeys): after a password / Google / Apple sign-in, a polite card in the corner
+// (phone: a bottom sheet) offers a passkey for this device. Loaded only when it may show.
+const PasskeySuggestCard = lazy(() => import("./components/passkeys/PasskeySuggestCard.jsx"));
+function notePasskeySuggestion(method) {
+  try {
+    import("./lib/passkeys/visual.js")
+      .then((m) => {
+        m.noteSignIn(window.localStorage, method);
+        try {
+          sessionStorage.setItem("descall.pk.lastMethod", method);
+        } catch {
+          /* ignore */
+        }
+        window.dispatchEvent(new Event("descall:passkey-suggest"));
+      })
+      .catch(() => {});
+  } catch {
+    /* storage off */
+  }
+}
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
@@ -3259,6 +3279,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("password");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3283,6 +3304,7 @@ export default function App() {
       setAuthError("");
       const data = await verify2faLogin(pendingToken, code);
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("2fa");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3340,6 +3362,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      if (!data.isNewUser) notePasskeySuggestion(method);
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -5839,6 +5862,12 @@ export default function App() {
         ) : null}
 
         <PlatformNoticeBanner enabled={Boolean(me?.id)} />
+
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <PasskeySuggestCard me={me} onOpenSettings={() => navigate("/settings/security?passkeys=1")} />
+          </Suspense>
+        ) : null}
 
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>
