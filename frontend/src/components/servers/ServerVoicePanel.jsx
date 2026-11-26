@@ -54,6 +54,7 @@ import { getToken } from "../../lib/storage";
 import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
 import { mergeVoiceRoster } from "../../lib/voiceRoster";
 import { VOICE_GRID_FIT_FROM, avatarSizeFor, fitVoiceGrid, gridBand, sameVoiceGridFit } from "../../lib/voiceGridLayout";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 /**
  * 10+ people: measure the room and pick equal tiles that fill it
@@ -738,6 +739,8 @@ export default function ServerVoicePanel({
   me,
   serverVoice,
 }) {
+  // Performans: samples taken here belong to "app/ses" (lib/perf/useRumTiming.js).
+  useRumView("app/ses");
   const t = useT();
   const { toast } = useToast();
   const inThis =

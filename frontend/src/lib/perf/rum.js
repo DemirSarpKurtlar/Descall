@@ -129,6 +129,11 @@ export function setRumView(view) {
   state.views.set(String(view || ""), now());
 }
 
+/** The view samples are attributed to right now ("" before any). */
+export function currentRumView() {
+  return state.views.current();
+}
+
 /** The signed-in app is on screen: app start = time since the page (or webview) started. */
 export function markAppStart() {
   if (state.appStartSent) return;

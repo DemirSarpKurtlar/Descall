@@ -125,7 +125,7 @@ export default function PerfChart({ chart, metric, height = 206, compact = false
             <span
               key={`l-${m.kind}-${m.i}-${m.label || m.flag}`}
               className={`apf-mk${m.bad ? " is-bad" : m.kind === "flag" ? " is-flag" : ""}`}
-              style={{ left: `${m.p}%`, top: -2 + m.row * 19, ...(m.p > 86 ? { transform: "translateX(-100%)", marginLeft: 6 } : {}) }}
+              style={{ left: `${m.p}%`, top: -2 + m.row * 19, ...(m.p > (m.kind === "flag" ? 55 : 86) ? { transform: "translateX(-100%)", marginLeft: 6 } : {}) }}
               title={m.kind === "flag" ? flagLabel(m) : m.label}
             >
               {m.kind === "flag" ? flagLabel(m) : m.label}

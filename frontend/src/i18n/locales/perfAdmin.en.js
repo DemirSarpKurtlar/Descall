@@ -155,7 +155,10 @@ export const PERF_ADMIN_EN = {
     "_download": "Download page",
     "_features": "Features",
     "_login": "Sign in",
-    "_blog": "Blog"
+    "_blog": "Blog",
+    "app_market": "Market",
+    "app_kesfet": "Discover",
+    "app_ayarlar": "Settings"
   },
   "views": {
     "label": "Saved views",

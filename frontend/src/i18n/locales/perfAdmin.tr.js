@@ -155,7 +155,10 @@ export const PERF_ADMIN_TR = {
     "_download": "İndir sayfası",
     "_features": "Özellikler",
     "_login": "Giriş",
-    "_blog": "Blog"
+    "_blog": "Blog",
+    "app_market": "Market",
+    "app_kesfet": "Keşfet",
+    "app_ayarlar": "Ayarlar"
   },
   "views": {
     "label": "Kayıtlı görünümler",

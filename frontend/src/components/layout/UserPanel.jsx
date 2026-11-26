@@ -105,6 +105,7 @@ import {
 } from "../../lib/noiseSuppression";
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 import RangeSlider from "../../premium/ui/RangeSlider.jsx";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -469,6 +470,8 @@ const UserPanel = forwardRef(function UserPanel({
   onTabChange,
   activity = {},
 }, ref) {
+  // Performans: samples taken while Ayarlar is open belong to "app/ayarlar".
+  useRumView("app/ayarlar");
   const { isMobile: isMobileViewport } = useMobile();
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();

@@ -84,7 +84,7 @@ button.apf-kpi:hover { background: rgba(255, 255, 255, 0.06) !important; }
 .apf-chart-card h3, .apf-rel h3, .apf-lh .alg-card h3 { flex-wrap: wrap; }
 .apf-h-sub { font-size: var(--fs-12); font-weight: 600; color: var(--alg-t3); }
 .apf-pills { display: flex; gap: 4px; flex-wrap: wrap; }
-.apf-pill { height: 28px !important; padding: 0 10px !important; border-radius: 9px !important; font-size: var(--fs-12) !important; box-shadow: none; display: inline-flex; align-items: center; gap: 6px; }
+.apf-pill { white-space: nowrap; flex: none; height: 28px !important; padding: 0 10px !important; border-radius: 9px !important; font-size: var(--fs-12) !important; box-shadow: none; display: inline-flex; align-items: center; gap: 6px; }
 .apf-pill.is-on { box-shadow: inset 0 0 0 1px rgba(120, 148, 255, 0.55); }
 .apf-pill b { font-weight: 700; color: inherit; opacity: 0.85; }
 .apf-pill-dot i { width: 7px; height: 7px; border-radius: 50%; }
@@ -153,7 +153,9 @@ button.apf-kpi:hover { background: rgba(255, 255, 255, 0.06) !important; }
 button.apf-c { cursor: pointer; transition: filter 0.12s ease; }
 button.apf-c:hover { filter: brightness(1.2); }
 .apf-c-center { display: flex; justify-content: center; padding: 3px 0 !important; }
-.apf-rel-grid { grid-template-columns: 64px 52px repeat(3, minmax(0, 1fr)); }
+.apf-rel-grid { grid-template-columns: 50px 40px repeat(3, minmax(0, 1fr)); }
+.apf-rel-grid > .apf-c { padding: 6px 5px; font-size: var(--fs-12); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; }
+.apf-rel-grid > .apf-hh { padding: 2px 4px !important; }
 .apf-heat { grid-template-columns: 96px repeat(3, minmax(0, 1fr)); }
 .apf-lh-pages { grid-template-columns: minmax(0, 1fr) repeat(4, 40px); }
 .apf-lab { font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(235, 238, 255, 0.45); margin: 12px 0 6px; display: flex; align-items: center; gap: 6px; }
@@ -326,7 +328,10 @@ button.apf-room-link:hover { text-decoration: underline; }
   .apf-seg { margin-left: auto; order: 2; }
   .apf-live { order: 1; height: 32px; padding: 0 10px; font-size: var(--fs-12) !important; }
   .apf-seg button { height: 28px; padding: 0 9px; font-size: var(--fs-12) !important; }
-  .apf-seg-alerts span { display: none; }
+  .apf-seg-alerts { display: none !important; }
+  /* The phone shell's top bar already says "Performans" (draft phone). */
+  .apf .alg-top > div:first-child { display: none; }
+  .apf .alg-topr { flex-wrap: nowrap; }
   .apf .alg-qrow { flex-direction: row; }
   .apf .alg-filters-btn { min-height: 46px; padding: 0 12px; }
   .apf-views { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -345,6 +350,10 @@ button.apf-room-link:hover { text-decoration: underline; }
   .apf-dkpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .apf-lh-kpis { grid-template-columns: minmax(0, 1fr); }
   .apf-legend-row { margin-bottom: 6px; }
+  .apf-ch-x span:nth-child(2), .apf-ch-x span:nth-child(4), .apf-ch-x span:nth-child(6) { display: none; }
+  .apf-ch { grid-template-columns: 40px minmax(0, 1fr); }
+  .apf-ch-x { margin-left: 40px; }
+  .apf-mk { max-width: 60vw; }
   .apf-note { right: 12px; bottom: 12px; }
 }
 @media (max-width: 860px) {

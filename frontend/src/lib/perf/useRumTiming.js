@@ -8,7 +8,7 @@
  *   useRumView(view, active)                 any other screen (Market, Keşfet, Ayarlar, voice room)
  */
 import { useEffect, useRef } from "react";
-import { rumDone, setRumView } from "./rum.js";
+import { currentRumView, rumDone, setRumView } from "./rum.js";
 
 const now = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
 
@@ -52,7 +52,9 @@ export function useMessageListTiming(conversationId, conversationType, loading) 
 export function useRumView(view, active = true) {
   useEffect(() => {
     if (!active || !view) return undefined;
+    // An overlay (Ayarlar over a chat) hands the route back to what was under it.
+    const before = currentRumView();
     setRumView(view);
-    return () => setRumView("app");
+    return () => setRumView(before && before !== view ? before : "app");
   }, [view, active]);
 }

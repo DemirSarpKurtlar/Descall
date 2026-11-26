@@ -155,7 +155,10 @@ export const PERF_ADMIN_RU = {
     "_download": "Страница загрузки",
     "_features": "Возможности",
     "_login": "Вход",
-    "_blog": "Blog"
+    "_blog": "Blog",
+    "app_market": "Магазин",
+    "app_kesfet": "Обзор",
+    "app_ayarlar": "Настройки"
   },
   "views": {
     "label": "Сохранённые виды",

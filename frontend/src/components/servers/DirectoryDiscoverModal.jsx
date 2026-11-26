@@ -15,6 +15,7 @@ import { DIRECTORY_CATEGORIES, DIRECTORY_SORTS } from "../../lib/serverDirectory
 import { directoryPath } from "../../site/directory/directoryPaths.js";
 import { ServerIcon } from "./ServerIcon";
 import "../../styles/server-directory.css";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 const PAGE = 24;
 const SORT_KEYS = { members: "dir.discover.sortMembers", online: "dir.discover.sortOnline", newest: "dir.discover.sortNewest" };
@@ -87,6 +88,8 @@ function EmptyArt() {
  * state shows where the setting lives instead.
  */
 export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer, myServers = [] }) {
+  // Performans: samples taken here belong to "app/kesfet" (lib/perf/useRumTiming.js).
+  useRumView("app/kesfet");
   const t = useT();
   const { locale } = useLocale();
   const { toast } = useToast();
