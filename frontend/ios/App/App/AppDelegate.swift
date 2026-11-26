@@ -9,6 +9,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // 4.3 share extension: finish shares it left behind (offline queue, closed sheet), now
+        // and every time the app comes to the front.
+        ShareTransport.shared.resumeAll()
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            ShareTransport.shared.resumeAll()
+        }
         Self.registerNotificationCategories()
         // PushKit + CallKit must exist before the first VoIP push is delivered,
         // which can be right after a background launch, before any web JS runs.
@@ -62,6 +68,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             options: []
         )
         UNUserNotificationCenter.current().setNotificationCategories([call, message])
+    }
+
+    /// 4.3 "Paylaş > Descall": the share extension's background transfers finished while the
+    /// extension was gone. ShareTransport (compiled into the app too) takes the events, sends
+    /// to the chats whose uploads are done, then calls the completion handler.
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        guard identifier == ShareTransport.sessionId else { return completionHandler() }
+        ShareTransport.shared.backgroundCompletion = completionHandler
+        ShareTransport.shared.resumeAll()
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
