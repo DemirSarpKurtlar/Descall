@@ -13,7 +13,7 @@ function ok(name, fn) {
 ok("catalog: ten games, modes, directions", () => {
   assert.strictEqual(Object.keys(wg.GAMES).length, 10);
   assert(!("tictactoe" in wg.GAMES), "no tic-tac-toe");
-  assert(wg.isKnown("chess", "hard") && wg.isKnown("merge", "") && !wg.isKnown("chess", "") && !wg.isKnown("x", ""));
+  assert(wg.isKnown("chess", "hard") && wg.isKnown("merge", "classic") && wg.isKnown("runner", "") && !wg.isKnown("merge", "") && !wg.isKnown("chess", "") && !wg.isKnown("x", ""));
   assert.strictEqual(wg.GAMES.sudoku.dir, "low");
   assert.strictEqual(wg.GAMES.mines.dir, "low");
   assert.strictEqual(wg.GAMES.runner.dir, "high");

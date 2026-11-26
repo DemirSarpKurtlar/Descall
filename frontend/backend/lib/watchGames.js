@@ -14,9 +14,9 @@
 const GAMES = Object.freeze({
   pong: { dir: "high", modes: ["easy", "normal", "hard"] },
   bricks: { dir: "high", modes: [""] },
-  snake: { dir: "high", modes: ["walls", "wrap"] },
-  merge: { dir: "high", modes: [""] },
-  blocks: { dir: "high", modes: [""] },
+  snake: { dir: "high", modes: ["walls", "wrap", "maze"] },
+  merge: { dir: "high", modes: ["classic", "mini"] },
+  blocks: { dir: "high", modes: ["marathon", "sprint"] },
   mines: { dir: "low", modes: ["easy", "medium", "hard"] },
   sudoku: { dir: "low", modes: ["easy", "medium", "hard"] },
   chess: { dir: "high", modes: ["easy", "normal", "hard"] },
