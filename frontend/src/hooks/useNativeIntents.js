@@ -145,7 +145,11 @@ export function useNativeIntents({
 
   useEffect(() => {
     if (!platform) return undefined;
-    return startNativeIntents(ctxRef, { platform });
+    const stops = [startNativeIntents(ctxRef, { platform })];
+    // Android home screen widgets and the call notification (lib/androidWidgets.js): mute,
+    // sound, leave, open a chat, join a room. Same actions, same handlers.
+    if (platform === "android") stops.push(startNativeIntents(ctxRef, { platform, pluginName: "DescallWidgets" }));
+    return () => stops.forEach((stop) => stop());
   }, [platform]);
 
   // Windows jump list tasks (electron/jumpList.cjs parseJumpTask): a running app gets them as

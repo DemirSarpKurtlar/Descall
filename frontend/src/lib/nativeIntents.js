@@ -285,8 +285,8 @@ function withTimeout(promise, ms = PLUGIN_TIMEOUT_MS) {
 
 const PLUGIN_FOR = { ios: "DescallIntents", android: "DescallShortcuts" };
 
-async function call(method, args = {}, { platform = nativePlatform() } = {}) {
-  const name = PLUGIN_FOR[platform];
+async function call(method, args = {}, { platform = nativePlatform(), pluginName = "" } = {}) {
+  const name = pluginName || PLUGIN_FOR[platform];
   if (!name) return null;
   const { plugin } = await pluginBox(name);
   if (!plugin || typeof plugin[method] !== "function") return null;
@@ -347,9 +347,11 @@ export async function pinConversationShortcut(item, { openChat = "" } = {}) {
 /**
  * Listen for actions from the shell and run them; also takes the ones queued before the
  * page was ready (cold start from Siri / a launcher shortcut). Returns stop().
+ * pluginName: another plugin with the same action contract (Android DescallWidgets: widget
+ * and call notification buttons, lib/androidWidgets.js).
  */
-export function startNativeIntents(ctxRef, { platform = nativePlatform() } = {}) {
-  const name = PLUGIN_FOR[platform];
+export function startNativeIntents(ctxRef, { platform = nativePlatform(), pluginName = "" } = {}) {
+  const name = pluginName || PLUGIN_FOR[platform];
   if (!name) return () => {};
   let stopped = false;
   let handle = null;
@@ -373,7 +375,7 @@ export function startNativeIntents(ctxRef, { platform = nativePlatform() } = {})
   };
 
   const drain = async () => {
-    const res = await call("takePendingActions", {}, { platform });
+    const res = await call("takePendingActions", {}, { platform, pluginName: name });
     for (const a of Array.isArray(res?.actions) ? res.actions : []) {
       if (stopped) return;
       await handle1(a);
