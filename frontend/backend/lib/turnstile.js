@@ -345,7 +345,7 @@ function cleanReason(raw) {
 const logSafe = (v) => String(v ?? "").replace(/[\r\n]+/g, " ").slice(0, 80);
 
 function logLine(action, outcome, reason) {
-  const msg = `[turnstile] action=${logSafe(action)} outcome=${logSafe(outcome)}${reason ? ` reason=${logSafe(reason)}` : ""}`;
+  const msg = `[turnstile] action=${logSafe(action)} outcome=${logSafe(outcome)}${reason ? ` reason=${logSafe(reason)}` : ""}`.replace(/\n|\r/g, "");
   if (outcome === "failOpen") console.warn(msg);
   else if (outcome !== "pass") console.info(msg);
 }
