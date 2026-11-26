@@ -156,7 +156,7 @@ export function PerfRuleDialog({ open, onClose, onSaved, t, locale, L, notify })
             <div className="alg-lab">{t("perfAdmin.rules.metric")}</div>
             <div className="alg-pills">
               {RULE_METRICS.map((m) => (
-                <button key={m} type="button" className={`alg-pill${rule.metrics.includes(m) ? " is-on" : ""}`} aria-pressed={rule.metrics.includes(m)} onClick={() => toggle("metrics", m)} data-testid={`perf-rule-metric-${m}`}>
+                <button key={m} type="button" aria-label={L.metric(m)} className={`alg-pill${rule.metrics.includes(m) ? " is-on" : ""}`} aria-pressed={rule.metrics.includes(m)} onClick={() => toggle("metrics", m)} data-testid={`perf-rule-metric-${m}`}>
                   {L.metric(m)}
                 </button>
               ))}
@@ -166,7 +166,7 @@ export function PerfRuleDialog({ open, onClose, onSaved, t, locale, L, notify })
             <div className="alg-lab">{t("perfAdmin.rules.platform")}</div>
             <div className="alg-pills">
               {PLATFORMS.map((p) => (
-                <button key={p.k} type="button" className={`alg-pill apf-pill-dot${rule.platforms.includes(p.k) ? " is-on" : ""}`} aria-pressed={rule.platforms.includes(p.k)} onClick={() => toggle("platforms", p.k)}>
+                <button key={p.k} type="button" aria-label={L.platform(p.k)} className={`alg-pill apf-pill-dot${rule.platforms.includes(p.k) ? " is-on" : ""}`} aria-pressed={rule.platforms.includes(p.k)} onClick={() => toggle("platforms", p.k)}>
                   <i style={{ background: p.c }} />
                   {L.platform(p.k)}
                 </button>
@@ -334,7 +334,7 @@ export function PerfFiltersDialog({ open, tokens, facets, L, t, onClose, onApply
         <div className="alg-lab">{t("perfAdmin.tok.range")}</div>
         <div className="alg-pills">
           {RANGES.map((r) => (
-            <button key={r} type="button" className={`alg-pill${q.range === r ? " is-on" : ""}`} aria-pressed={q.range === r} onClick={() => setQ((x) => ({ ...x, range: r }))}>
+            <button key={r} type="button" aria-label={L.range(r)} className={`alg-pill${q.range === r ? " is-on" : ""}`} aria-pressed={q.range === r} onClick={() => setQ((x) => ({ ...x, range: r }))}>
               {L.range(r)}
             </button>
           ))}

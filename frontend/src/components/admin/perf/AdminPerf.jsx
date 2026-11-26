@@ -525,7 +525,7 @@ export default function AdminPerf({ socket, onGoto, onLiveCount }) {
               <div className="apf-legend-row">
                 <div className="apf-legend">
                   {PLATFORMS.filter((p) => sum?.chart?.series?.[p.k]).map((p) => (
-                    <button key={p.k} type="button" className={selectedPlatforms.length && !selectedPlatforms.includes(p.k) ? "is-dim" : ""} onClick={() => setTokens((cur) => toggleToken(cur, "platform", p.k))} aria-pressed={selectedPlatforms.includes(p.k)}>
+                    <button key={p.k} type="button" aria-label={L.platform(p.k)} className={selectedPlatforms.length && !selectedPlatforms.includes(p.k) ? "is-dim" : ""} onClick={() => setTokens((cur) => toggleToken(cur, "platform", p.k))} aria-pressed={selectedPlatforms.includes(p.k)}>
                       <i style={{ background: p.c }} />
                       {L.platform(p.k)}
                     </button>

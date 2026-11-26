@@ -8670,7 +8670,7 @@ export const phrases = {
   "Join Server": "Entrar no servidor",
   "Join Voice": "Entrar na voz",
   "Join a Server": "Entrar em um servidor",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 720p. iPhone, Android, Windows e o navegador usam uma só conta.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 1080p. iPhone, Android, Windows e o navegador usam uma só conta.",
   "Join as audience, then request to speak.": "Entre como plateia e depois peça para falar.",
   "Join lobby": "Entrar no lobby",
   "Join me on Descall, we both get DesCoin": "Entre no Descall comigo, nós dois ganhamos DesCoin",

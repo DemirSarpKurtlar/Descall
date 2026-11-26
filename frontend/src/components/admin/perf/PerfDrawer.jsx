@@ -100,7 +100,6 @@ export default function PerfDrawer({ target, query, onClose, t, locale, L, can, 
             type="button"
             className="alg-mbtn"
             aria-label={t("perfAdmin.drawer.copy")}
-            title={t("perfAdmin.drawer.copy")}
             onClick={async () => {
               const ok = await copyText(String(target.value));
               notify(ok ? t("perfAdmin.drawer.copied") : t("perfAdmin.err.generic"), ok ? "ok" : "error");
@@ -208,7 +207,7 @@ export default function PerfDrawer({ target, query, onClose, t, locale, L, can, 
                     const tl = timeline[u.sessionId];
                     return (
                       <div key={u.userId} className={`apf-urow${on ? " is-open" : ""}`}>
-                        <button type="button" className="apf-chkrow apf-uhead" aria-expanded={on} onClick={() => setOpenUser(on ? null : u.userId)} data-testid={`perf-user-${u.userId}`}>
+                        <button type="button" className="apf-chkrow apf-uhead" aria-label={`${shortUser(u.userId)} · ${fmtValue("inp", u.value, locale, t)}`} aria-expanded={on} onClick={() => setOpenUser(on ? null : u.userId)} data-testid={`perf-user-${u.userId}`}>
                           <b className="apf-mono apf-uid" title={u.userId}>
                             {shortUser(u.userId)}
                           </b>
@@ -304,6 +303,7 @@ function HeatRow({ row, L, locale, t, onFilter }) {
               onFilter("device", c.device);
             }}
             title={t("perfAdmin.drawer.samples", { n: fmtInt(c.n, locale) })}
+            aria-label={`${L.platform(row.platform)} · ${L.device(c.device)}: ${fmtValue("inp", c.p75, locale, t)} · ${t("perfAdmin.drawer.samples", { n: fmtInt(c.n, locale) })}`}
           >
             {fmtValue("inp", c.p75, locale, t)}
           </button>

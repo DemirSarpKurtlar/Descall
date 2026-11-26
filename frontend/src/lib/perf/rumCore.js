@@ -9,6 +9,8 @@
  * personal data kept); the country comes from the edge on the server side.
  */
 
+import { desktopShellKind } from "../desktopShell.js";
+
 export const RUM_VERSION = 1;
 export const DEFAULT_SAMPLE_RATE = 0.25;
 export const MAX_BATCH = 30;
@@ -46,8 +48,8 @@ export function platformOf(win) {
   const w = win || (typeof window !== "undefined" ? window : null);
   if (!w) return "web";
   try {
-    if ((w.__TAURI_INTERNALS__ && typeof w.__TAURI_INTERNALS__ === "object") || w.electronAPI?.isTauri === true) return "tauri";
-    if (w.electronAPI?.isElectron) return "electron";
+    const shell = desktopShellKind(w);
+    if (shell) return shell;
     const cap = w.Capacitor;
     if (cap) {
       const native = typeof cap.isNativePlatform === "function" ? cap.isNativePlatform() : false;
