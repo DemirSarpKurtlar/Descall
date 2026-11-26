@@ -14,6 +14,9 @@ import { createPortal } from "react-dom";
 import { useLocale, useT } from "../../../context/LocaleContext";
 import { getPublicPageDesk, savePublicPage, disablePublicPage, undoDisablePublicPage } from "../../../api/publicPage";
 import { copyText } from "../../../lib/copyText";
+import { confirmAction } from "../../../lib/glassConfirm";
+import useModalFocus from "../../../hooks/useModalFocus";
+import GlassCheckbox from "../../ui/GlassCheckbox";
 import { formatNumber } from "../../../i18n/format.js";
 import {
   BASIC_SECTIONS, HIGHLIGHT_SECTIONS, LIMITS, RANGES, agoParts, clockLeft, diffDraft, draftFromDesk, fromLocalInput, meterState, previewPage, toLocalInput, toggleIn,
@@ -87,6 +90,8 @@ export default function PublicPageDesk({ server, mode = "window", onClose, onNav
   const [dialog, setDialog] = useState(false);
   const [tick, setTick] = useState(0);
   const serverId = server?.id;
+  // Window mode is a modal: focus stays inside, the app behind is inert (WCAG 2.4.3).
+  useModalFocus(true, rootRef, { enabled: mode === "window" });
 
   const apply = useCallback((data) => {
     setDesk(data);
@@ -177,8 +182,11 @@ export default function PublicPageDesk({ server, mode = "window", onClose, onNav
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
 
   // Leaving with unsaved changes asks first (window mode closes the whole desk).
-  const requestClose = () => {
-    if (dirty && !window.confirm(`${t("pubpage.unsaved")}. ${t("pubpage.discard")}?`)) return;
+  const requestClose = async () => {
+    if (dirty) {
+      const ok = await confirmAction({ title: t("pubpage.unsaved"), message: "", confirmLabel: t("pubpage.discard"), cancelLabel: t("pubpage.disable.cancel"), danger: true });
+      if (!ok) return;
+    }
     onClose?.();
   };
   useEffect(() => {
@@ -298,7 +306,7 @@ export default function PublicPageDesk({ server, mode = "window", onClose, onNav
           const off = draft.hiddenChannels.includes(String(c.id).toLowerCase());
           return (
             <label key={c.id} className={`ppd-chk${off ? " off" : ""}`}>
-              <input type="checkbox" checked={!off} onChange={() => set({ hiddenChannels: toggleIn(draft.hiddenChannels, String(c.id).toLowerCase()) })} />
+              <GlassCheckbox checked={!off} onChange={() => set({ hiddenChannels: toggleIn(draft.hiddenChannels, String(c.id).toLowerCase()) })} />
               <I n={c.kind === "voice" ? "vol" : "hash"} s={14} />
               <span>{c.name}</span>
             </label>

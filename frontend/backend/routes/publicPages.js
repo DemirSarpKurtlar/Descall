@@ -218,7 +218,7 @@ function noteCrawl(serverId, ua) {
 
 /** Tell IndexNow engines (Bing, Yandex, Seznam, Naver) that the page changed. Production only. */
 function pingIndexNow(slug) {
-  if (process.env.NODE_ENV !== "production" || process.env.PUBLIC_PAGE_INDEXNOW === "0" || !slug) return;
+  if (process.env.NODE_ENV !== "production" || !slug) return;
   const url = `${pp.SITE_ORIGIN}/s/${slug}`;
   fetch("https://api.indexnow.org/indexnow", {
     method: "POST",

@@ -4,6 +4,7 @@ import { I, Mark } from "./icons";
 import { renderServerPage, pageMeta } from "../../../../public/server-page.js";
 import { axis, linePoints, serpText, sourceShares, agoParts, auditFields } from "../../../lib/publicPage.js";
 import { formatNumber } from "../../../i18n/format.js";
+import { useModalFocusRef } from "../../../hooks/useModalFocus";
 
 export const SOURCE_COLORS = {
   google: "#587AF5", bing: "#00A4EF", yandex: "#FC3F1D", duckduckgo: "#DE5833", whatsapp: "#25D366", telegram: "#2AABEE", x: "#8b98a5",
@@ -249,9 +250,8 @@ export function AuditList({ entries, lang, t }) {
 export function DisableDialog({ busy, onCancel, onConfirm, t, reasons }) {
   const [reason, setReason] = useState(reasons[0]);
   const [note, setNote] = useState("");
-  const ref = useRef(null);
+  const trap = useModalFocusRef();
   useEffect(() => {
-    ref.current?.querySelector("[aria-checked=true]")?.focus();
     const onKey = (e) => {
       if (e.key === "Escape" && !busy) onCancel();
     };
@@ -261,7 +261,7 @@ export function DisableDialog({ busy, onCancel, onConfirm, t, reasons }) {
   const needNote = reason === "other" && !note.trim();
   return (
     <div className="ppd-modal" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
-      <div className="ppd-dlg" role="alertdialog" aria-modal="true" aria-labelledby="ppd-dlg-t" aria-describedby="ppd-dlg-b" ref={ref} data-testid="ppd-disable-dialog">
+      <div className="ppd-dlg" role="alertdialog" aria-modal="true" aria-labelledby="ppd-dlg-t" aria-describedby="ppd-dlg-b" ref={trap} data-testid="ppd-disable-dialog">
         <h5 id="ppd-dlg-t">{t("pubpage.disable.title")}</h5>
         <p id="ppd-dlg-b">{t("pubpage.disable.body")}</p>
         <div className="lbl">{t("pubpage.disable.reasonLabel")}</div>

@@ -298,4 +298,11 @@ export const API_DE = {
   "Enter the code we sent you.": "Gib den Code ein, den wir dir geschickt haben.",
   "Sign in first.": "Melde dich zuerst an.",
   "Unknown request.": "Unbekannte Anfrage.",
+  // Public server page desk (routes/publicPages.js).
+  "Public pages are not available yet.": "Öffentliche Seiten sind noch nicht bereit.",
+  "Turning the page off needs a reason.": "Zum Ausschalten der Seite brauchst du einen Grund.",
+  "Choose a descall.com/s/ address first.": "Wähle zuerst eine descall.com/s/-Adresse.",
+  "Choose why you are turning the page off.": "Wähle, warum du die Seite ausschaltest.",
+  "Write a short reason.": "Schreibe einen kurzen Grund.",
+  "The undo window has passed.": "Die Zeit zum Rückgängigmachen ist abgelaufen.",
 };
