@@ -374,7 +374,8 @@ export function bindServerSocketHandlers(socket, ctx) {
       notifLevel === "all"
     ) {
       bumpChannelUnreadRef.current?.(channelId, normalized.id);
-      if (markSounded(normalized.id)) playUiSound("message");
+      // "Sessiz gönder" (share sheet): unread, no sound.
+      if (!message?.silent && markSounded(normalized.id)) playUiSound("message");
     }
   };
 
@@ -402,8 +403,10 @@ export function bindServerSocketHandlers(socket, ctx) {
       activeViewRef.current === "servers" && activeChannelRef.current?.id === channelId;
     if (!isActiveChannel) {
       bumpChannelUnreadRef.current?.(channelId, messageId || null);
-      if (markSounded(messageId)) playUiSound("message");
+      if (!payload.silent && markSounded(messageId)) playUiSound("message");
     }
+    // Silent send: no desktop notification either.
+    if (payload.silent) return;
     // notificationService skips it while the window is focused and visible.
     notificationService
       .serverMessage({
