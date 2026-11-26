@@ -19,6 +19,7 @@ import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
+import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
 import { VSC_RU } from "./vsc.ru.js";
 import { LX_RU } from "./lx.ru.js";
 import { USET_RU } from "./uset.ru.js";
@@ -73,6 +74,7 @@ export const nested = {
   "dir": DIR_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
+  "shareSheet": SHARE_SHEET_RU,
   "vsc": VSC_RU,
   "lx": LX_RU,
   "uset": USET_RU,

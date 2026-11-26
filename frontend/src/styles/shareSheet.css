@@ -66,9 +66,9 @@ html[data-theme="light"] .shs-root {
   --shs-foot-bg: linear-gradient(180deg, rgba(238, 240, 248, 0), rgba(238, 240, 248, 0.92) 18px, rgba(238, 240, 248, 0.97));
 }
 
-.shs-root *, .shs-root *::before, .shs-root *::after { box-sizing: border-box; }
-.shs-root button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: inherit; padding: 0; margin: 0; }
-.shs-root input, .shs-root textarea { font: inherit; color: inherit; }
+:where(.shs-root) *, :where(.shs-root) *::before, :where(.shs-root) *::after { box-sizing: border-box; }
+:where(.shs-root) button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: inherit; padding: 0; margin: 0; }
+:where(.shs-root) input, :where(.shs-root) textarea { font: inherit; color: inherit; }
 .shs-i { width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; display: inline-block; vertical-align: middle; }
 .shs-tnum { font-variant-numeric: tabular-nums; }
 .shs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -229,7 +229,7 @@ html[data-theme="light"] .shs-chk { box-shadow: inset 0 0 0 1.5px rgba(20, 24, 4
 .shs-row.on .shs-chk .shs-i { opacity: 1; }
 .shs-lockc { width: 24px; height: 24px; display: grid; place-items: center; color: var(--shs-t3); font-size: 15px; flex: none; }
 .shs-chev { color: var(--shs-t3); font-size: 18px; display: grid; place-items: center; transition: transform 0.18s; }
-.shs-chev.open { transform: rotate(180deg); }
+
 .shs-empty { padding: 28px 24px; text-align: center; color: var(--shs-t3); font-size: 13.5px; line-height: 1.45; }
 .shs-empty b { display: block; color: var(--shs-t1); font-size: 15px; margin-bottom: 4px; }
 .shs-skel { height: 14px; border-radius: 7px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06)); background-size: 200% 100%; animation: shs-shimmer 1.2s linear infinite; }
