@@ -28,6 +28,7 @@ const C = {
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 const SITE = "https://descall.com";
 const SUPPORT = "support@descall.com";
+const BRAND = "Descall";
 
 function countryName(lang, code) {
   if (!code) return "";
@@ -109,8 +110,8 @@ function buildPasskeySecurityEmail({ kind, lang = "tr", name = "Passkey", provid
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
     <tr><td style="padding:0 6px 18px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td valign="middle"><img src="${SITE}/brand/descall-icon.png" width="36" height="36" alt="Descall" style="display:block;width:36px;height:36px;border:0;border-radius:10px;"></td>
-        <td valign="middle" style="padding-left:10px;font-family:${FONT};font-size:18px;font-weight:700;color:${C.ink};">Descall</td>
+        <td valign="middle"><img src="${SITE}/brand/descall-icon.png" width="36" height="36" alt="${BRAND}" style="display:block;width:36px;height:36px;border:0;border-radius:10px;"></td>
+        <td valign="middle" style="padding-left:10px;font-family:${FONT};font-size:18px;font-weight:700;color:${C.ink};">${BRAND}</td>
       </tr></table>
     </td></tr>
     <tr><td bgcolor="${C.card}" style="background-color:${C.card};border:1px solid ${C.edge};border-radius:22px;padding:28px 30px 26px;">
