@@ -94,6 +94,7 @@ import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
+import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -5274,6 +5275,17 @@ export default function App() {
     locale,
     pathname: location.pathname,
     t,
+  });
+  // Android home screen widgets + the ongoing call notification (draft B "Yuzler").
+  useAndroidWidgets({
+    me,
+    socket: socketApi,
+    call,
+    groupCall,
+    serverVoice,
+    friends,
+    servers: myServers,
+    groups: myGroups,
   });
 
   if (bootError && !me) {

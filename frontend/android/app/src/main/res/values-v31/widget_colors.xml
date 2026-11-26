@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material You widget theme, day (Android 12+ system palette, tones like the draft's
+         "Dinamik renk": tinted surface, secondary text, primary accent). -->
+    <color name="wdyn_bg_start">@android:color/system_accent2_50</color>
+    <color name="wdyn_bg_end">@android:color/system_accent2_100</color>
+    <color name="wdyn_glow">@android:color/transparent</color>
+    <color name="wdyn_surface">@android:color/system_accent2_50</color>
+    <color name="wdyn_text">@android:color/system_accent2_900</color>
+    <color name="wdyn_text2">@android:color/system_accent2_700</color>
+    <color name="wdyn_text3">@android:color/system_accent2_600</color>
+    <color name="wdyn_chip">#0F000000</color>
+    <color name="wdyn_accent">@android:color/system_accent1_600</color>
+    <color name="wdyn_on_accent">@android:color/system_accent1_0</color>
+    <color name="wdyn_success">#FF0F6634</color>
+</resources>
