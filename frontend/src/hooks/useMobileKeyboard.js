@@ -3,10 +3,14 @@ import { isTextEditing, mobileViewportBox } from "../lib/mobileViewport";
 
 /** Points of keyboard covering the web view. 0 on web, Android, and desktop. */
 let nativeKeyboardInset = 0;
+/** Height of the WKWebView in points (second argument from Swift), 0 if unknown. */
+let nativeViewHeight = 0;
 const nativeKeyboardListeners = new Set();
 
-function setNativeKeyboardInset(px) {
+function setNativeKeyboardInset(px, viewHeight) {
   nativeKeyboardInset = Math.max(0, Math.round(Number(px) || 0));
+  const vh = Math.round(Number(viewHeight) || 0);
+  if (vh > 0) nativeViewHeight = vh;
   nativeKeyboardListeners.forEach((fn) => {
     try {
       fn(nativeKeyboardInset);
@@ -86,7 +90,7 @@ export function useMobileKeyboard(enabled = true) {
     const probe = createFixedProbe();
     // Tallest visual viewport seen at rest (nothing focused) for this width.
     // Keyboard size is measured against it, so browser toolbars cancel out.
-    let rest = { w: 0, h: 0 };
+    let rest = { w: 0, h: 0, layout: 0 };
 
     const apply = () => {
       const layoutH = window.innerHeight || root.clientHeight || 0;
@@ -95,8 +99,13 @@ export function useMobileKeyboard(enabled = true) {
       const vvW = vv?.width ?? layoutW;
       const editing = isTextEditing(document.activeElement);
       const w = Math.round(vvW);
-      if (rest.w !== w) rest = { w, h: 0 };
+      if (rest.w !== w) rest = { w, h: 0, layout: 0 };
+      const fixedBottom = readFixedBottom(probe);
       if (!editing && !nativeKeyboardInset && vvH > rest.h) rest.h = Math.round(vvH);
+      // Full layout height with no keyboard: what a layout that shrank for the
+      // keyboard (resizes-content) is measured against.
+      const layoutNow = Math.round(Math.max(fixedBottom, layoutH));
+      if (!editing && !nativeKeyboardInset && layoutNow > rest.layout) rest.layout = layoutNow;
       const box = mobileViewportBox({
         innerHeight: layoutH,
         vvHeight: vvH,
@@ -104,8 +113,11 @@ export function useMobileKeyboard(enabled = true) {
         offsetLeft: vv?.offsetLeft ?? 0,
         editing,
         nativeInset: nativeKeyboardInset,
-        fixedBottom: readFixedBottom(probe),
+        fixedBottom,
         restHeight: rest.h,
+        // The web view's own height from Swift is exact; the resting layout is
+        // the fallback for an app build that does not send it yet.
+        fullHeight: nativeViewHeight || rest.layout,
       });
       const open = box.open;
 

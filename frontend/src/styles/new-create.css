@@ -437,6 +437,17 @@ html.glass-ui .add-modal-backdrop.nc-scrim.g-add-scrim {
   border-radius: var(--g-r-sheet, 28px) var(--g-r-sheet, 28px) 0 0;
 }
 .nc-sheet.is-phone { padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
+/* Typing a group name or a friend search: the sheet ends on the keyboard. Over
+   a full-height layout (the keyboard covers the web view) its list and the
+   "Grup olustur" button sat behind the keys; the home-indicator padding is
+   behind the keys too. --vv-height is the visible height above them. */
+html.glass-ui.kb-open .add-modal-backdrop.nc-scrim.g-add-scrim {
+  padding-bottom: var(--kb-gap, 0px);
+}
+html.kb-open .nc-sheet.is-phone {
+  max-height: min(86vh, calc(var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - 12px));
+  padding-bottom: 0;
+}
 .nc-sheet.is-phone .g-grabber { margin: 8px auto 0; }
 .nc-sheet.is-phone .nc-foot small { font-size: 12px; line-height: 1.35; }
 .nc-sheet.is-phone .nc-primary { padding: 0 18px; }

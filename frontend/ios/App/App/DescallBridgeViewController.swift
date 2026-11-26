@@ -83,7 +83,11 @@ class DescallBridgeViewController: CAPBridgeViewController {
     /// WKWebView often leaves the layout viewport full-screen while the keyboard
     /// covers the composer. Publish the overlap in CSS pixels so the shell can
     /// sit the text field just above the keys. A web view that already shrank
-    /// reports 0 here, so the inset is not applied twice.
+    /// reports 0 here. The web view's height goes along with it: on iOS 26 the
+    /// frame stays full screen but WebKit shrinks the layout viewport itself
+    /// (interactive-widget=resizes-content), and the web side subtracts only
+    /// the part of the overlap that is still inside that layout, so the
+    /// keyboard is never taken off twice (src/lib/mobileViewport.js).
     private func observeKeyboardInset() {
         let names: [Notification.Name] = [
             UIResponder.keyboardWillChangeFrameNotification,
@@ -104,7 +108,8 @@ class DescallBridgeViewController: CAPBridgeViewController {
         guard let webView else { return }
         let overlap = keyboardOverlap(note, webView: webView)
         let px = Int(overlap.rounded())
-        let js = "window.__descallNativeKeyboard && window.__descallNativeKeyboard(\(px))"
+        let viewHeight = Int(webView.bounds.height.rounded())
+        let js = "window.__descallNativeKeyboard && window.__descallNativeKeyboard(\(px), \(viewHeight))"
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
@@ -115,6 +120,10 @@ class DescallBridgeViewController: CAPBridgeViewController {
         }
         guard let raw = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return 0 }
         let frame = webView.convert(raw, from: nil)
+        // iPad floating / undocked / split keyboard: it does not reach the
+        // bottom edge, so it pushes nothing up (UIKeyboardLayoutGuide's
+        // default). Lifting the shell by its height left an empty band.
+        if frame.maxY < webView.bounds.maxY - 1 { return 0 }
         let overlap = webView.bounds.intersection(frame)
         if overlap.isNull || overlap.isInfinite { return 0 }
         return min(max(0, overlap.height), webView.bounds.height)
