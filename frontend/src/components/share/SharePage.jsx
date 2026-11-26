@@ -15,6 +15,8 @@ import { getLocaleMeta } from "../../i18n/registry.js";
 import * as M from "../../lib/share/shareModel.js";
 import { createShareHost, shareHistory, targetsCache } from "../../lib/share/shareHost.js";
 import { DescallMark, Icon } from "./shareIcons.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
+import { removeBootSplashNow } from "../../lib/bootSplashDirect.js";
 import ShareRun from "./ShareRun.jsx";
 import "../../styles/shareSheet.css";
 
@@ -57,13 +59,13 @@ function variantFromUrl() {
 }
 
 export default function SharePage({ host: hostProp = null, now: nowProp = null }) {
-  const t = useT();
+  const translate = useT();
   const { locale } = useLocale();
   const intl = getLocaleMeta(locale)?.intl || "tr-TR";
   const host = useMemo(() => hostProp || createShareHost(), [hostProp]);
   const variant = variantFromUrl() || (host.platform === "android" ? "android" : "ios");
   const now = useCallback(() => (nowProp ? nowProp() : Date.now()), [nowProp]);
-  const tx = useCallback((k, v) => t(`shareSheet.${k}`, v), [t]);
+  const t = translate;
 
   const [items, setItems] = useState([]);
   const [sourceLabel, setSourceLabel] = useState(null);
@@ -86,6 +88,9 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
   const [linkMeta, setLinkMeta] = useState({});
   const [job, setJob] = useState(null);
   const toastTimer = useRef(null);
+  const sheetRef = useRef(null);
+  // The sheet is the whole page: keep keyboard focus inside it (Android hardware keyboards, web).
+  useModalFocus(true, sheetRef);
 
   const say = useCallback((text) => {
     setToast(text);
@@ -96,7 +101,8 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
   useEffect(() => {
     try {
       document.documentElement.setAttribute("data-react-ready", "1");
-      window.__descallDismissBootSplash?.({ minMs: 0 });
+      // A share sheet opens at once: no boot logo animation (it holds the splash up to 4.5 s).
+      removeBootSplashNow();
     } catch {
       /* ignore */
     }
@@ -132,7 +138,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
         const p = await host.getPayload();
         if (!alive) return;
         const list = (p.items || []).slice(0, M.MAX_ITEMS);
-        if ((p.items || []).length > M.MAX_ITEMS) say(tx("limitItems", { count: M.MAX_ITEMS }));
+        if ((p.items || []).length > M.MAX_ITEMS) say(t("shareSheet.limitItems", { count: M.MAX_ITEMS }));
         setItems(list);
         setSourceLabel(p.sourceLabel || null);
         if (p.preset && M.parseConv(p.preset)) setSelected([p.preset]);
@@ -148,7 +154,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
     return () => {
       alive = false;
     };
-  }, [host, loadTargets, say, tx]);
+  }, [host, loadTargets, say, t]);
 
   // Link cards: title and site from the app's own link preview service.
   useEffect(() => {
@@ -175,9 +181,9 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
     if (bad.length) {
       setSelected((s) => s.filter((c) => !bad.includes(c)));
       const e = index.get(bad[0]);
-      say(tx("targetRemoved", { name: e.name, reason: tx(`reason.${M.targetVerdict(e, { hasFiles }).reason}`) }));
+      say(t("shareSheet.targetRemoved", { name: e.name, reason: t(`shareSheet.reason.${M.targetVerdict(e, { hasFiles }).reason}`) }));
     }
-  }, [targets, index, hasFiles, selected, say, tx]);
+  }, [targets, index, hasFiles, selected, say, t]);
 
   // Permission precheck + duplicate warning for what is selected.
   useEffect(() => {
@@ -194,13 +200,13 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
           if (lost.length) {
             setSelected((s) => s.filter((c) => !lost.includes(c)));
             const e = index.get(lost[0]);
-            say(tx("targetRemoved", { name: e?.name || "", reason: tx(`reason.${res[lost[0]].reason || "no_permission"}`) }));
+            say(t("shareSheet.targetRemoved", { name: e?.name || "", reason: t(`shareSheet.reason.${res[lost[0]].reason || "no_permission"}`) }));
           }
         })
         .catch(() => {});
     }, 350);
     return () => clearTimeout(timer);
-  }, [selected, items, sendable, host, load, index, say, tx, message]);
+  }, [selected, items, sendable, host, load, index, say, t, message]);
 
   const dups = useMemo(
     () => M.duplicates({ history: shareHistory.read(), items: sendable.concat(items.filter((i) => M.kindOf(i) === "link")), convs: selected, precheck, now: now() }).filter((d) => !dismissed.includes(d.conv)),
@@ -211,7 +217,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
     const e = index.get(conv);
     if (e && !M.targetVerdict(e, { hasFiles }).ok) return;
     const r = M.toggleTarget(selected, conv);
-    if (r.limited) say(tx("limitTargets", { count: M.MAX_TARGETS }));
+    if (r.limited) say(t("shareSheet.limitTargets", { count: M.MAX_TARGETS }));
     setSelected(r.selected);
   };
 
@@ -219,7 +225,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
 
   const whenText = (at) => {
     const r = M.relativeDay(new Date(at).toISOString(), now());
-    return r ? tx(`when.${r.key}`, { count: r.n }) : "";
+    return r ? t(`shareSheet.when.${r.key}`, { count: r.n }) : "";
   };
   const timeText = (at) => new Intl.DateTimeFormat(intl, { hour: "2-digit", minute: "2-digit" }).format(new Date(at));
   const scheduleText = (at) => {
@@ -250,9 +256,9 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
     return (
       <div className={`shs-root ${variant}`} data-variant={variant}>
         {variant === "ios" ? <div className="shs-dim" /> : null}
-        <div className="shs-sheet" role="dialog" aria-modal="true" aria-label={tx("title")}>
+        <div className="shs-sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label={t("shareSheet.title")}>
           {variant === "ios" ? <div className="shs-grab" /> : null}
-          <ShareRun job={job} setJob={setJob} host={host} tx={tx} intl={intl} now={now} timeText={timeText} scheduleText={scheduleText} itemsSource={items} index={index} say={say} variant={variant} />
+          <ShareRun job={job} setJob={setJob} host={host} t={t} intl={intl} now={now} timeText={timeText} scheduleText={scheduleText} itemsSource={items} index={index} say={say} variant={variant} />
         </div>
         {toast ? <div className="shs-toast" role="status">{toast}</div> : null}
       </div>
@@ -260,9 +266,9 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
   }
 
   const count = selected.length;
-  const ctaLabel = count ? (sendAt ? tx("sendScheduled", { count }) : variant === "android" ? tx("sendShort", { count }) : tx("send", { count })) : tx("pick");
-  const itemsText = tx("items", { count: items.length });
-  const subtitle = sourceLabel ? tx("source", { app: sourceLabel, items: itemsText }) : tx("itemsSize", { items: itemsText, size: M.formatBytes(tot.chosen, intl) });
+  const ctaLabel = count ? (sendAt ? t("shareSheet.sendScheduled", { count }) : variant === "android" ? t("shareSheet.sendShort", { count }) : t("shareSheet.send", { count })) : t("shareSheet.pick");
+  const itemsText = t("shareSheet.items", { count: items.length });
+  const subtitle = sourceLabel ? t("shareSheet.source", { app: sourceLabel, items: itemsText }) : t("shareSheet.itemsSize", { items: itemsText, size: M.formatBytes(tot.chosen, intl) });
   const media = M.hasMedia(sendable);
 
   const chips = (
@@ -270,22 +276,22 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
       {hasFiles ? (
         <button type="button" className={`shs-opt on${menu === "quality" ? " focus" : ""}`} onClick={() => setMenu(menu === "quality" ? null : "quality")} aria-haspopup="menu" aria-expanded={menu === "quality"}>
           <Icon name={quality === "saver" ? "zap" : quality === "original" ? "image" : "spark"} />
-          {tx(`quality.chip.${quality}`)}
+          {t(`shareSheet.quality.chip.${quality}`)}
           {variant === "ios" ? <Icon name="chevD" /> : null}
         </button>
       ) : null}
-      <button type="button" className={`shs-opt${silent ? " on" : ""}`} aria-pressed={silent} onClick={() => { setSilent(!silent); if (!silent) say(tx("silentHint")); }}>
+      <button type="button" className={`shs-opt${silent ? " on" : ""}`} aria-pressed={silent} onClick={() => { setSilent(!silent); if (!silent) say(t("shareSheet.silentHint")); }}>
         <Icon name="bellOff" />
-        {tx("silent")}
+        {t("shareSheet.silent")}
       </button>
-      <button type="button" className={`shs-opt${sendAt ? " on" : ""}${menu === "schedule" ? " focus" : ""}`} onClick={() => setMenu(menu === "schedule" ? null : "schedule")} aria-haspopup="menu" aria-expanded={menu === "schedule"} aria-label={tx("scheduleChip")}>
+      <button type="button" className={`shs-opt${sendAt ? " on" : ""}${menu === "schedule" ? " focus" : ""}`} onClick={() => setMenu(menu === "schedule" ? null : "schedule")} aria-haspopup="menu" aria-expanded={menu === "schedule"} aria-label={t("shareSheet.scheduleChip")}>
         <Icon name="clock" />
-        {variant === "android" && !sendAt ? null : sendAt ? scheduleText(sendAt) : tx("scheduleChip")}
+        {variant === "android" && !sendAt ? null : sendAt ? scheduleText(sendAt) : t("shareSheet.scheduleChip")}
       </button>
       {media && variant === "ios" ? (
         <button type="button" className={`shs-opt${strip ? " on" : ""}`} aria-pressed={strip} onClick={() => setStrip(!strip)}>
           <Icon name={strip ? "pinOff" : "pin"} />
-          {strip ? tx("location.chipOn") : tx("location.chipOff")}
+          {strip ? t("shareSheet.location.chipOn") : t("shareSheet.location.chipOff")}
         </button>
       ) : null}
     </div>
@@ -294,24 +300,24 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
   return (
     <div className={`shs-root ${variant}`} data-variant={variant}>
       {variant === "ios" ? <div className="shs-dim" onClick={() => host.finish()} /> : null}
-      <div className="shs-sheet" role="dialog" aria-modal="true" aria-label={tx("title")}>
+      <div className="shs-sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label={t("shareSheet.title")}>
         {variant === "ios" ? (
           <>
             <div className="shs-grab" />
             <div className="shs-nav">
-              <button type="button" className="shs-lnk" onClick={() => host.finish()}>{tx("cancel")}</button>
+              <button type="button" className="shs-lnk" onClick={() => host.finish()}>{t("shareSheet.cancel")}</button>
               <div className="shs-title">
-                <span className="tl"><span className="shs-mlogo"><DescallMark /></span>{tx("title")}</span>
+                <span className="tl"><span className="shs-mlogo"><DescallMark /></span>{t("shareSheet.title")}</span>
                 <small>{subtitle}</small>
               </div>
-              <button type="button" className={`shs-ibtn${menu === "quality" ? " on" : ""}`} aria-label={tx("options")} onClick={() => setMenu(menu === "quality" ? null : "quality")}><Icon name="sliders" /></button>
+              <button type="button" className={`shs-ibtn${menu === "quality" ? " on" : ""}`} aria-label={t("shareSheet.options")} onClick={() => setMenu(menu === "quality" ? null : "quality")}><Icon name="sliders" /></button>
             </div>
           </>
         ) : (
           <div className="shs-tba">
-            <button type="button" className="ib" aria-label={tx("close")} onClick={() => host.finish()}><Icon name="x" /></button>
-            <h1>{tx("title")}<small>{subtitle}</small></h1>
-            <button type="button" className="ib" aria-label={tx("options")} onClick={() => setMenu(menu === "quality" ? null : "quality")}><Icon name="sliders" /></button>
+            <button type="button" className="ib" aria-label={t("shareSheet.close")} onClick={() => host.finish()}><Icon name="x" /></button>
+            <h1>{t("shareSheet.title")}<small>{subtitle}</small></h1>
+            <button type="button" className="ib" aria-label={t("shareSheet.options")} onClick={() => setMenu(menu === "quality" ? null : "quality")}><Icon name="sliders" /></button>
           </div>
         )}
 
@@ -320,14 +326,14 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
             <div className="shs-bnr w" role="status" style={{ marginBottom: 8 }}>
               <Icon name="alert" />
               <span>
-                <b>{tx(dups[0].kind === "link" ? "dup.link" : "dup.file", { when: whenText(dups[0].at), name: index.get(dups[0].conv)?.name || "" })}</b>
-                {tx("dup.body", { name: M.firstName(index.get(dups[0].conv)?.name || "") })}
+                <b>{t(dups[0].kind === "link" ? "shareSheet.dup.link" : "shareSheet.dup.file", { when: whenText(dups[0].at), name: index.get(dups[0].conv)?.name || "" })}</b>
+                {t("shareSheet.dup.body", { name: M.firstName(index.get(dups[0].conv)?.name || "") })}
               </span>
-              <button type="button" className="shs-mini" onClick={() => { setSelected((s) => s.filter((c) => c !== dups[0].conv)); setDismissed((d) => [...d, dups[0].conv]); }}>{tx("dup.remove")}</button>
+              <button type="button" className="shs-mini" onClick={() => { setSelected((s) => s.filter((c) => c !== dups[0].conv)); setDismissed((d) => [...d, dups[0].conv]); }}>{t("shareSheet.dup.remove")}</button>
             </div>
           ) : null}
 
-          <Strip items={items} problems={problems} linkMeta={linkMeta} onRemove={removeItem} tx={tx} intl={intl} />
+          <Strip items={items} problems={problems} linkMeta={linkMeta} onRemove={removeItem} t={t} intl={intl} />
           {items.length ? (
             <div className="shs-ameta">
               <b>{itemsText}</b>
@@ -335,20 +341,20 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
                 <>
                   <span className="d" />
                   <span className="shs-tnum">{quality === "original" ? M.formatBytes(tot.original, intl) : `${M.formatBytes(tot.original, intl)} → ${M.formatBytes(tot.chosen, intl)}`}</span>
-                  {variant === "android" ? <span className="gr">{tx(`quality.chip.${quality}`)}</span> : tot.savedPercent > 0 ? <span className="gr">{tx("saved", { percent: tot.savedPercent })}</span> : null}
+                  {variant === "android" ? <span className="gr">{t(`shareSheet.quality.chip.${quality}`)}</span> : tot.savedPercent > 0 ? <span className="gr">{t("shareSheet.saved", { percent: tot.savedPercent })}</span> : null}
                 </>
               ) : null}
-              {[...problems.values()].some(Boolean) ? (<><span className="d" /><span className="bad">{tx(`reason.${[...problems.values()].find(Boolean)}`)}</span></>) : null}
+              {[...problems.values()].some(Boolean) ? (<><span className="d" /><span className="bad">{t(`shareSheet.reason.${[...problems.values()].find(Boolean)}`)}</span></>) : null}
             </div>
           ) : (
-            <div className="shs-ameta"><b>{tx("noItems")}</b></div>
+            <div className="shs-ameta"><b>{t("shareSheet.noItems")}</b></div>
           )}
 
           <label className="shs-search">
             <Icon name="search" />
-            <span className="shs-sr">{tx("search")}</span>
-            <input type="search" value={query} placeholder={tx("search")} onChange={(e) => setQuery(e.target.value)} enterKeyHint="search" autoComplete="off" />
-            {query ? <button type="button" className="clr" aria-label={tx("clearSearch")} onClick={() => setQuery("")}><Icon name="x" /></button> : null}
+            <span className="shs-sr">{t("shareSheet.search")}</span>
+            <input type="search" value={query} placeholder={t("shareSheet.search")} onChange={(e) => setQuery(e.target.value)} enterKeyHint="search" autoComplete="off" />
+            {query ? <button type="button" className="clr" aria-label={t("shareSheet.clearSearch")} onClick={() => setQuery("")}><Icon name="x" /></button> : null}
           </label>
 
           {!query && recents.length ? (
@@ -369,7 +375,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
             <div className="shs-pad" style={{ paddingTop: 4, paddingBottom: 2 }}>
               <div className="shs-seg" role="tablist">
                 {M.TABS.map((k) => (
-                  <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{tx(`tabs.${k}`)}</button>
+                  <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{t(`shareSheet.tabs.${k}`)}</button>
                 ))}
               </div>
             </div>
@@ -378,7 +384,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
               {M.TABS.map((k) => (
                 <button key={k} type="button" role="tab" aria-selected={tab === k} className={`shs-mchip${tab === k ? " on" : ""}`} onClick={() => setTab(k)}>
                   {tab === k ? <Icon name="check" /> : null}
-                  {tx(`tabs.${k}`)}
+                  {t(`shareSheet.tabs.${k}`)}
                 </button>
               ))}
             </div>
@@ -394,7 +400,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
             hasFiles={hasFiles}
             expanded={expanded}
             setExpanded={setExpanded}
-            tx={tx}
+            t={t}
             now={now}
             retry={loadTargets}
             openApp={() => host.openApp("descall://open")}
@@ -403,11 +409,11 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
 
         {menu ? <div className="shs-scrim" onClick={() => setMenu(null)} /> : null}
         {menu === "quality" ? (
-          <div className="shs-menu" role="menu" aria-label={tx("quality.title")}>
+          <div className="shs-menu" role="menu" aria-label={t("shareSheet.quality.title")}>
             {M.QUALITIES.map((q) => (
               <button key={q} type="button" role="menuitemradio" aria-checked={quality === q} className={`shs-mi${quality === q ? " on" : ""}`} onClick={() => { setQuality(q); setMenu(null); }}>
                 <Icon name={q === "original" ? "image" : q === "high" ? "spark" : "zap"} />
-                <span className="shs-rt"><b>{tx(`quality.${q}`)}</b><small>{tx(`quality.${q}Desc`, { size: M.formatBytes(M.totals(sendable, q).chosen, intl) })}</small></span>
+                <span className="shs-rt"><b>{t(`shareSheet.quality.${q}`)}</b><small>{t(`shareSheet.quality.${q}Desc`, { size: M.formatBytes(M.totals(sendable, q).chosen, intl) })}</small></span>
                 {quality === q ? <span className="ck2"><Icon name="check" /></span> : null}
               </button>
             ))}
@@ -416,7 +422,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
                 <div className="shs-msep" />
                 <button type="button" role="menuitemcheckbox" aria-checked={strip} className="shs-mi" onClick={() => setStrip(!strip)}>
                   <Icon name="pinOff" />
-                  <span className="shs-rt"><b>{tx("location.title")}</b><small>{tx("location.desc")}</small></span>
+                  <span className="shs-rt"><b>{t("shareSheet.location.title")}</b><small>{t("shareSheet.location.desc")}</small></span>
                   <span className={`shs-tg${strip ? " on" : ""}`} />
                 </button>
               </>
@@ -424,30 +430,30 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
           </div>
         ) : null}
         {menu === "schedule" ? (
-          <div className="shs-menu" role="menu" aria-label={tx("scheduleTitle")}>
-            <div className="mh">{tx("scheduleTitle")}</div>
+          <div className="shs-menu" role="menu" aria-label={t("shareSheet.scheduleTitle")}>
+            <div className="mh">{t("shareSheet.scheduleTitle")}</div>
             {M.schedulePresets(now()).map((p) => (
               <button key={p.key} type="button" role="menuitemradio" aria-checked={sendAt === p.at} className={`shs-mi${sendAt === p.at ? " on" : ""}`} onClick={() => { setSendAt(p.at); setMenu(null); }}>
                 <Icon name="clock" />
-                <span className="shs-rt"><b>{tx(`schedule.${p.key}`)}</b><small>{scheduleText(p.at)}</small></span>
+                <span className="shs-rt"><b>{t(`shareSheet.schedule.${p.key}`)}</b><small>{scheduleText(p.at)}</small></span>
                 {sendAt === p.at ? <span className="ck2"><Icon name="check" /></span> : null}
               </button>
             ))}
             <div className="shs-dt">
-              <input type="datetime-local" aria-label={tx("schedule.custom")} value={customAt} onChange={(e) => setCustomAt(e.target.value)} />
+              <input type="datetime-local" aria-label={t("shareSheet.schedule.custom")} value={customAt} onChange={(e) => setCustomAt(e.target.value)} />
               <button type="button" className="shs-mini p" onClick={() => {
                 const at = Date.parse(customAt);
-                if (!M.validScheduleTime(at, now())) return say(tx("schedule.invalid"));
+                if (!M.validScheduleTime(at, now())) return say(t("shareSheet.schedule.invalid"));
                 setSendAt(at);
                 setMenu(null);
-              }}>{tx("schedule.set")}</button>
+              }}>{t("shareSheet.schedule.set")}</button>
             </div>
             {sendAt ? (
               <>
                 <div className="shs-msep" />
                 <button type="button" className="shs-mi" onClick={() => { setSendAt(null); setMenu(null); }}>
                   <Icon name="send" />
-                  <span className="shs-rt"><b>{tx("schedule.now")}</b></span>
+                  <span className="shs-rt"><b>{t("shareSheet.schedule.now")}</b></span>
                 </button>
               </>
             ) : null}
@@ -458,9 +464,9 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
           {menu ? null : (
             <label className="shs-field">
               <Icon name="msg" />
-              <span className="shs-sr">{tx("message")}</span>
-              <textarea rows={1} value={message} maxLength={M.MAX_TEXT} placeholder={tx("message")} onChange={(e) => { setMessage(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${Math.min(92, e.target.scrollHeight)}px`; }} />
-              {message.length > M.MAX_TEXT - 200 ? <span className="cnt shs-tnum">{M.MAX_TEXT - message.length}</span> : null}
+              <span className="shs-sr">{t("shareSheet.message")}</span>
+              <textarea rows={1} value={message} maxLength={M.MAX_TEXT} placeholder={t("shareSheet.message")} onChange={(e) => { setMessage(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${Math.min(92, e.target.scrollHeight)}px`; }} />
+              {M.MAX_TEXT - message.length < 200 ? <span className="cnt shs-tnum">{M.MAX_TEXT - message.length}</span> : null}
             </label>
           )}
           {variant === "android" ? (
@@ -481,7 +487,7 @@ export default function SharePage({ host: hostProp = null, now: nowProp = null }
   );
 }
 
-function Strip({ items, problems, linkMeta, onRemove, tx, intl }) {
+function Strip({ items, problems, linkMeta, onRemove, t, intl }) {
   if (!items.length) return null;
   return (
     <div className="shs-strip">
@@ -489,7 +495,7 @@ function Strip({ items, problems, linkMeta, onRemove, tx, intl }) {
         const k = M.kindOf(it);
         const bad = problems.get(it.id);
         const x = (
-          <button type="button" className="x" aria-label={`${tx("remove")} ${it.name || ""}`} onClick={() => onRemove(it.id)}><Icon name="x" /></button>
+          <button type="button" className="x" aria-label={`${t("shareSheet.remove")} ${it.name || ""}`} onClick={() => onRemove(it.id)}><Icon name="x" /></button>
         );
         if (k === "link") {
           const meta = linkMeta[it.url] || {};
@@ -508,14 +514,14 @@ function Strip({ items, problems, linkMeta, onRemove, tx, intl }) {
         if (k === "file") {
           const ext = String(it.name || "").split(".").pop().toUpperCase().slice(0, 4);
           return (
-            <div key={it.id} className={`shs-att file${bad ? " bad" : ""}`} title={bad ? tx(`reason.${bad}`) : undefined}>
+            <div key={it.id} className={`shs-att file${bad ? " bad" : ""}`} title={bad ? t(`shareSheet.reason.${bad}`) : undefined}>
               <span className="shs-ftile"><Icon name="file" />{ext ? <em>{ext}</em> : null}</span>
               <span><b>{it.name}</b><small>{M.formatBytes(it.size || it.estimates?.original || 0, intl)}{it.pages ? ` · ${it.pages}` : ""}</small></span>
             </div>
           );
         }
         return (
-          <div key={it.id} className={`shs-att${bad ? " bad" : ""}`} style={it.thumb ? { backgroundImage: `url("${it.thumb}")` } : undefined} title={bad ? tx(`reason.${bad}`) : it.name}>
+          <div key={it.id} className={`shs-att${bad ? " bad" : ""}`} style={it.thumb ? { backgroundImage: `url("${it.thumb}")` } : undefined} title={bad ? t(`shareSheet.reason.${bad}`) : it.name}>
             {x}
             {k === "video" ? <span className="dur shs-tnum"><Icon name="play" />{M.formatDuration(it.durationMs)}</span> : null}
           </div>
@@ -525,29 +531,29 @@ function Strip({ items, problems, linkMeta, onRemove, tx, intl }) {
   );
 }
 
-function Row({ e, on, dis, sub = false, hasFiles, tx, now, onToggle }) {
+function Row({ e, on, dis, sub = false, hasFiles, t, now, onToggle }) {
   const s = M.rowSubtitle(e, { hasFiles, now: now() });
-  const presence = e.presence ? tx(`presence.${e.presence}`) : "";
+  const presence = e.presence ? t(`shareSheet.presence.${e.presence}`) : "";
   const vars = { ...(s.vars || {}), presence };
   return (
     <button type="button" className={`shs-row${sub ? " sub" : ""}${on ? " on" : ""}${dis ? " dis" : ""}`} aria-pressed={on} aria-disabled={dis} onClick={() => onToggle(e.conv)}>
       <Avatar entry={e} size={sub ? 32 : 40} />
       <span className="shs-rt">
         <b>{e.kind === "channel" && !sub ? <>{e.name} <span className="mut">· {e.serverName}</span></> : e.name}</b>
-        <small>{tx(s.key, vars)}</small>
+        <small>{t(`shareSheet.${s.key}`, vars)}</small>
       </span>
       {dis ? <span className="shs-lockc"><Icon name="lock" /></span> : <span className="shs-chk"><Icon name="check" /></span>}
     </button>
   );
 }
 
-function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded, setExpanded, tx, now, retry, openApp }) {
+function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded, setExpanded, t, now, retry, openApp }) {
   if (load === "signedout") {
     return (
       <div className="shs-empty">
-        <b>{tx("signedOutTitle")}</b>
-        {tx("signedOutBody")}
-        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}><button type="button" className="shs-mini p" onClick={openApp}>{tx("openApp")}</button></div>
+        <b>{t("shareSheet.signedOutTitle")}</b>
+        {t("shareSheet.signedOutBody")}
+        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}><button type="button" className="shs-mini p" onClick={openApp}>{t("shareSheet.openApp")}</button></div>
       </div>
     );
   }
@@ -555,9 +561,9 @@ function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded
     const off = typeof navigator !== "undefined" && navigator.onLine === false;
     return (
       <div className="shs-empty">
-        <b>{tx("errorTitle")}</b>
-        {off ? tx("errorOffline") : null}
-        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}><button type="button" className="shs-mini" onClick={retry}><Icon name="refresh" />{tx("retry")}</button></div>
+        <b>{t("shareSheet.errorTitle")}</b>
+        {off ? t("shareSheet.errorOffline") : null}
+        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}><button type="button" className="shs-mini" onClick={retry}><Icon name="refresh" />{t("shareSheet.retry")}</button></div>
       </div>
     );
   }
@@ -579,7 +585,7 @@ function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded
   if (!sections.length) {
     return (
       <div className="shs-empty">
-        {query ? <b>{tx("emptySearch", { query })}</b> : (<><b>{tx("emptyTitle")}</b>{tx("emptyBody")}</>)}
+        {query ? <b>{t("shareSheet.emptySearch", { query })}</b> : (<><b>{t("shareSheet.emptyTitle")}</b>{t("shareSheet.emptyBody")}</>)}
       </div>
     );
   }
@@ -590,16 +596,16 @@ function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded
       const ok = sec.rows.filter((c) => M.targetVerdict(c, { hasFiles }).ok).length;
       return (
         <div key={sec.key}>
-          <div className="shs-sec">{i === 0 || open ? s.name : null}{i === 0 || open ? <span className="cnt">{tx("server.channels", { count: sec.rows.length })}</span> : null}</div>
+          <div className="shs-sec">{i === 0 || open ? s.name : null}{i === 0 || open ? <span className="cnt">{t("shareSheet.server.channels", { count: sec.rows.length })}</span> : null}</div>
           <div className="shs-grp">
             <button type="button" className="shs-row srvhead" aria-expanded={open} onClick={() => setExpanded(open ? "__none" : s.id)}>
               <Avatar entry={{ ...s, kind: "server" }} size={40} />
-              <span className="shs-rt"><b>{s.name}</b><small>{ok ? tx("server.sendable", { count: ok }) : tx("server.none")}</small></span>
+              <span className="shs-rt"><b>{s.name}</b><small>{ok ? t("shareSheet.server.sendable", { count: ok }) : t("shareSheet.server.none")}</small></span>
               <span className={`shs-chev${open ? " open" : ""}`}><Icon name={open ? "chevD" : "chevR"} /></span>
             </button>
             {open
               ? sec.rows.map((c) => (
-                  <Row key={c.conv} e={c} sub on={selected.includes(c.conv)} dis={!M.targetVerdict(c, { hasFiles }).ok} hasFiles={hasFiles} tx={tx} now={now} onToggle={toggle} />
+                  <Row key={c.conv} e={c} sub on={selected.includes(c.conv)} dis={!M.targetVerdict(c, { hasFiles }).ok} hasFiles={hasFiles} t={t} now={now} onToggle={toggle} />
                 ))
               : null}
           </div>
@@ -609,10 +615,10 @@ function List({ load, sections, tab, query, selected, toggle, hasFiles, expanded
   }
   return sections.map((sec) => (
     <div key={sec.key}>
-      <div className="shs-sec">{tx(`sec.${sec.key}`)}</div>
+      <div className="shs-sec">{t(`shareSheet.sec.${sec.key}`)}</div>
       <div className="shs-grp">
         {sec.rows.map((e) => (
-          <Row key={e.conv} e={e} on={selected.includes(e.conv)} dis={!M.targetVerdict(e, { hasFiles }).ok} hasFiles={hasFiles} tx={tx} now={now} onToggle={toggle} />
+          <Row key={e.conv} e={e} on={selected.includes(e.conv)} dis={!M.targetVerdict(e, { hasFiles }).ok} hasFiles={hasFiles} t={t} now={now} onToggle={toggle} />
         ))}
       </div>
     </div>

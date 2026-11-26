@@ -36,14 +36,14 @@ function Tiles({ job, note, forceBadge }) {
         );
       })}
       {job.text && /https?:\/\//.test(job.text) ? (
-        <span className="tile ic"><Icon name="link" /><span className={`bd ${forceBadge || (job.targets.every((t) => t.textSent || t.status === "sent" || t.status === "scheduled") ? "ok" : "wait")}`}><Icon name={forceBadge === "wait" ? "clock" : "check"} /></span></span>
+        <span className="tile ic"><Icon name="link" /><span className={`bd ${forceBadge || (job.targets.every((tg) => tg.textSent || tg.status === "sent" || tg.status === "scheduled") ? "ok" : "wait")}`}><Icon name={forceBadge === "wait" ? "clock" : "check"} /></span></span>
       ) : null}
       <small>{note}</small>
     </div>
   );
 }
 
-export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, scheduleText, index, say, variant }) {
+export default function ShareRun({ job, setJob, host, t, intl, now, timeText, scheduleText, index, say, variant }) {
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState(false);
   const s = M.summarizeJob(job, { now: now() });
@@ -56,11 +56,11 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
   }, [s.phase, s.undoLeft]);
   void tick;
 
-  const itemsText = tx("items", { count: Math.max(1, s.itemCount) });
-  const chatsText = tx("chats", { count: s.targetCount });
-  const reasonText = (r) => tx(`reason.${r || "failed"}`);
-  const entryOf = (t) => index.get(t.conv) || { ...t, id: t.conv.split(":")[1] };
-  const label = (t) => (t.kind === "channel" ? `#${t.name}` : t.name);
+  const itemsText = t("shareSheet.items", { count: Math.max(1, s.itemCount) });
+  const chatsText = t("shareSheet.chats", { count: s.targetCount });
+  const reasonText = (r) => t(`shareSheet.reason.${r || "failed"}`);
+  const entryOf = (tg) => index.get(tg.conv) || { ...tg, id: tg.conv.split(":")[1] };
+  const label = (tg) => (tg.kind === "channel" ? `#${tg.name}` : tg.name);
 
   const retry = async () => {
     setBusy(true);
@@ -76,12 +76,12 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
     try {
       const r = await host.undo(job);
       setJob(r.job);
-      if (r.failed) say(tx("undone.failed"));
+      if (r.failed) say(t("shareSheet.undone.failed"));
     } finally {
       setBusy(false);
     }
   };
-  const open = (t) => host.openApp(M.deepLinkFor(t ? entryOf(t) : entryOf(job.targets[0])));
+  const open = (tg) => host.openApp(M.deepLinkFor(tg ? entryOf(tg) : entryOf(job.targets[0])));
 
   const nav = (title, sub, left, right) => (
     <div className="shs-nav">
@@ -93,20 +93,20 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
 
   const rowsBlock = (renderLine, withOpen = false, withRetry = false) => (
     <div className="shs-grp">
-      {job.targets.map((t) => {
-        const line = renderLine(t);
+      {job.targets.map((tg) => {
+        const line = renderLine(tg);
         return (
-          <div key={t.conv} className="shs-row dense">
-            <Avatar entry={entryOf(t)} size={36} />
+          <div key={tg.conv} className="shs-row dense">
+            <Avatar entry={entryOf(tg)} size={36} />
             <span className="shs-rt">
-              <b>{label(t)}</b>
+              <b>{label(tg)}</b>
               {line}
             </span>
-            {withOpen && (t.status === "sent" || t.status === "scheduled") ? (
-              <button type="button" className="shs-mini" onClick={() => open(t)}>{tx("sent.open")}<Icon name="chevR" /></button>
+            {withOpen && (tg.status === "sent" || tg.status === "scheduled") ? (
+              <button type="button" className="shs-mini" onClick={() => open(tg)}>{t("shareSheet.sent.open")}<Icon name="chevR" /></button>
             ) : null}
-            {withRetry && (t.status === "failed" || t.status === "partial") && t.reason !== "cancelled" ? (
-              <button type="button" className="shs-mini p" disabled={busy} onClick={retry}><Icon name="refresh" />{tx("partial.retryOne")}</button>
+            {withRetry && (tg.status === "failed" || tg.status === "partial") && tg.reason !== "cancelled" ? (
+              <button type="button" className="shs-mini p" disabled={busy} onClick={retry}><Icon name="refresh" />{t("shareSheet.partial.retryOne")}</button>
             ) : null}
           </div>
         );
@@ -116,30 +116,30 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
 
   if (s.phase === "sending") {
     const stats = s.speed > 0 && s.eta != null
-      ? tx("run.stats", { sent: M.formatBytes(s.sentBytes, intl), total: M.formatBytes(s.totalBytes, intl), speed: M.formatBytes(s.speed, intl), eta: s.eta })
-      : tx("run.statsShort", { sent: M.formatBytes(s.sentBytes, intl), total: M.formatBytes(s.totalBytes, intl) });
+      ? t("shareSheet.run.stats", { sent: M.formatBytes(s.sentBytes, intl), total: M.formatBytes(s.totalBytes, intl), speed: M.formatBytes(s.speed, intl), eta: s.eta })
+      : t("shareSheet.run.statsShort", { sent: M.formatBytes(s.sentBytes, intl), total: M.formatBytes(s.totalBytes, intl) });
     return (
       <div className="shs-run">
-        {nav(tx("run.title"), tx("run.sub", { items: itemsText, chats: chatsText }), host.canBackground ? <button type="button" className="shs-lnk" onClick={() => host.finish()}>{tx("hide")}</button> : null)}
+        {nav(t("shareSheet.run.title"), t("shareSheet.run.sub", { items: itemsText, chats: chatsText }), host.canBackground ? <button type="button" className="shs-lnk" onClick={() => host.finish()}>{t("shareSheet.hide")}</button> : null)}
         <div className="shs-body">
           <div className="shs-hero">
             <Ring p={s.percent / 100} size={72} text={intl.startsWith("tr") ? `%${s.percent}` : `${s.percent}%`} fs={18} />
-            <span className="shs-rt"><b>{tx("run.hero", { count: s.targetCount })}</b><small className="shs-tnum">{stats}</small></span>
+            <span className="shs-rt"><b>{t("shareSheet.run.hero", { count: s.targetCount })}</b><small className="shs-tnum">{stats}</small></span>
           </div>
-          {job.items.length ? <Tiles job={job} note={tx("run.uploaded", { done: s.uploaded, count: s.itemCount })} /> : null}
-          {rowsBlock((t) => {
-            if (t.status === "sent" || t.status === "scheduled") return <small className="shs-stline ok"><Icon name="check" />{t.status === "scheduled" ? tx("scheduled.row", { time: scheduleText(job.sendAt || now()) }) : tx("sent.delivered", { time: timeText(t.at || now()) })}</small>;
-            const p = M.targetProgress(job, t.conv);
-            if (t.status === "queued" && p === 0) return (<><small className="shs-stline"><Icon name="clock" />{tx("run.queued")}</small><div className="shs-bar"><span style={{ width: "0%" }} /></div></>);
-            return (<><small className="shs-stline b">{t.status === "sending" && p >= 80 ? tx("run.sending") : tx("run.uploading", { percent: p })}</small><div className="shs-bar"><span style={{ width: `${p}%` }} /></div></>);
+          {job.items.length ? <Tiles job={job} note={t("shareSheet.run.uploaded", { done: s.uploaded, count: s.itemCount })} /> : null}
+          {rowsBlock((tg) => {
+            if (tg.status === "sent" || tg.status === "scheduled") return <small className="shs-stline ok"><Icon name="check" />{tg.status === "scheduled" ? t("shareSheet.scheduled.row", { time: scheduleText(job.sendAt || now()) }) : t("shareSheet.sent.delivered", { time: timeText(tg.at || now()) })}</small>;
+            const p = M.targetProgress(job, tg.conv);
+            if (tg.status === "queued" && p === 0) return (<><small className="shs-stline"><Icon name="clock" />{t("shareSheet.run.queued")}</small><div className="shs-bar"><span style={{ width: "0%" }} /></div></>);
+            return (<><small className="shs-stline b">{tg.status === "sending" && p >= 80 ? t("shareSheet.run.sending") : t("shareSheet.run.uploading", { percent: p })}</small><div className="shs-bar"><span style={{ width: `${p}%` }} /></div></>);
           })}
           {host.canBackground ? (
-            <div className="shs-bnr i2"><Icon name="info" /><span><b>{tx("run.canClose")}</b>{tx("run.canCloseBody")}</span></div>
+            <div className="shs-bnr i2"><Icon name="info" /><span><b>{t("shareSheet.run.canClose")}</b>{t("shareSheet.run.canCloseBody")}</span></div>
           ) : null}
         </div>
         <div className="shs-actions">
-          {host.canBackground ? <button type="button" className="shs-cta" onClick={() => host.finish()}>{tx("run.background")}</button> : null}
-          <button type="button" className="shs-btn2 dz" onClick={() => host.cancel()}><Icon name="x" />{tx("run.stop")}</button>
+          {host.canBackground ? <button type="button" className="shs-cta" onClick={() => host.finish()}>{t("shareSheet.run.background")}</button> : null}
+          <button type="button" className="shs-btn2 dz" onClick={() => host.cancel()}><Icon name="x" />{t("shareSheet.run.stop")}</button>
         </div>
       </div>
     );
@@ -147,61 +147,61 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
 
   if (s.phase === "sent" || s.phase === "scheduled") {
     const scheduled = s.phase === "scheduled";
-    const slowLater = job.targets.some((t) => t.status === "sent" && t.scheduledIds.length);
+    const slowLater = job.targets.some((tg) => tg.status === "sent" && tg.scheduledIds.length);
     return (
       <div className="shs-run">
-        {nav(tx(scheduled ? "scheduled.title" : "sent.title"), null, null, <button type="button" className="shs-lnk r b" onClick={() => host.finish()}>{tx("done")}</button>)}
+        {nav(t(scheduled ? "shareSheet.scheduled.title" : "shareSheet.sent.title"), null, null, <button type="button" className="shs-lnk r b" onClick={() => host.finish()}>{t("shareSheet.done")}</button>)}
         <div className="shs-body">
           <div className="shs-hero">
             <span className={`shs-bigic ${scheduled ? "b" : "ok"}`}><Icon name={scheduled ? "clock" : "check"} /></span>
             <span className="shs-rt">
-              <b>{tx(scheduled ? "scheduled.hero" : "sent.hero", { count: s.done })}</b>
-              <small>{scheduled ? tx("scheduled.sub", { when: scheduleText(job.sendAt) }) : tx("sent.sub", { items: itemsText, size: M.formatBytes(s.totalBytes, intl), seconds: s.seconds || 1 })}</small>
+              <b>{t(scheduled ? "shareSheet.scheduled.hero" : "shareSheet.sent.hero", { count: s.done })}</b>
+              <small>{scheduled ? t("shareSheet.scheduled.sub", { when: scheduleText(job.sendAt) }) : t("shareSheet.sent.sub", { items: itemsText, size: M.formatBytes(s.totalBytes, intl), seconds: s.seconds || 1 })}</small>
             </span>
           </div>
-          {job.items.length ? <Tiles job={job} note={tx("sent.allArrived")} forceBadge={scheduled ? null : "ok"} /> : null}
+          {job.items.length ? <Tiles job={job} note={t("shareSheet.sent.allArrived")} forceBadge={scheduled ? null : "ok"} /> : null}
           {s.undoLeft > 0 && !job.undone ? (
             <div className="shs-undo">
               <Ring p={s.undoLeft / M.UNDO_SECONDS} size={38} text={String(s.undoLeft)} fs={13} color="#8FA6FF" />
-              <span className="shs-rt"><b>{tx("undo.title")}</b><small>{tx(scheduled ? "undo.bodyScheduled" : "undo.body", { seconds: s.undoLeft })}</small></span>
-              <button type="button" className="shs-mini p" disabled={busy} onClick={undo}><Icon name="undo" />{busy ? tx("undo.busy") : tx("undo.button")}</button>
+              <span className="shs-rt"><b>{t("shareSheet.undo.title")}</b><small>{t(scheduled ? "shareSheet.undo.bodyScheduled" : "shareSheet.undo.body", { seconds: s.undoLeft })}</small></span>
+              <button type="button" className="shs-mini p" disabled={busy} onClick={undo}><Icon name="undo" />{busy ? t("shareSheet.undo.busy") : t("shareSheet.undo.button")}</button>
             </div>
           ) : null}
-          {rowsBlock((t) => (
+          {rowsBlock((tg) => (
             <small className="shs-stline ok"><Icon name="check" />
-              {t.status === "scheduled" ? tx("scheduled.row", { time: scheduleText(job.sendAt) }) : slowLater && t.scheduledIds.length ? tx("slowRow", { time: timeText((t.at || now()) + 35000) }) : tx("sent.delivered", { time: timeText(t.at || now()) })}
+              {tg.status === "scheduled" ? t("shareSheet.scheduled.row", { time: scheduleText(job.sendAt) }) : slowLater && tg.scheduledIds.length ? t("shareSheet.slowRow", { time: timeText((tg.at || now()) + 35000) }) : t("shareSheet.sent.delivered", { time: timeText(tg.at || now()) })}
             </small>
           ), true)}
         </div>
         <div className="shs-actions">
-          <button type="button" className="shs-cta" onClick={() => open(null)}><Icon name="out" />{tx("sent.openInApp")}</button>
-          <button type="button" className="shs-btn2" onClick={() => host.finish()}>{tx("done")}</button>
+          <button type="button" className="shs-cta" onClick={() => open(null)}><Icon name="out" />{t("shareSheet.sent.openInApp")}</button>
+          <button type="button" className="shs-btn2" onClick={() => host.finish()}>{t("shareSheet.done")}</button>
         </div>
       </div>
     );
   }
 
   if (s.phase === "partial") {
-    const bad = job.targets.find((t) => t.status === "failed" || t.status === "partial");
+    const bad = job.targets.find((tg) => tg.status === "failed" || tg.status === "partial");
     return (
       <div className="shs-run">
-        {nav(tx("partial.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{tx("close")}</button>)}
+        {nav(t("shareSheet.partial.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{t("shareSheet.close")}</button>)}
         <div className="shs-body">
           <div className="shs-hero">
             <span className="shs-bigic w"><Icon name="alert" /></span>
-            <span className="shs-rt"><b>{tx("partial.hero", { done: s.done, count: s.targetCount })}</b><small>{tx("partial.sub", { name: bad ? label(bad) : "", reason: reasonText(bad?.reason) })}</small></span>
+            <span className="shs-rt"><b>{t("shareSheet.partial.hero", { done: s.done, count: s.targetCount })}</b><small>{t("shareSheet.partial.sub", { name: bad ? label(bad) : "", reason: reasonText(bad?.reason) })}</small></span>
           </div>
-          {job.items.length ? <Tiles job={job} note={tx("partial.itemsIn", { ok: s.itemsOk, count: s.itemCount })} /> : null}
-          {rowsBlock((t) => {
-            if (t.status === "sent" || t.status === "scheduled") return <small className="shs-stline ok"><Icon name="check" />{tx("sent.delivered", { time: timeText(t.at || now()) })}</small>;
-            const n = t.failedItems.length;
-            return <small className="shs-stline d"><Icon name="alert" />{n ? tx("partial.itemsFailed", { count: n, reason: reasonText(t.reason) }) : reasonText(t.reason)}</small>;
+          {job.items.length ? <Tiles job={job} note={t("shareSheet.partial.itemsIn", { ok: s.itemsOk, count: s.itemCount })} /> : null}
+          {rowsBlock((tg) => {
+            if (tg.status === "sent" || tg.status === "scheduled") return <small className="shs-stline ok"><Icon name="check" />{t("shareSheet.sent.delivered", { time: timeText(tg.at || now()) })}</small>;
+            const n = tg.failedItems.length;
+            return <small className="shs-stline d"><Icon name="alert" />{n ? t("shareSheet.partial.itemsFailed", { count: n, reason: reasonText(tg.reason) }) : reasonText(tg.reason)}</small>;
           }, false, true)}
-          <div className="shs-bnr i2"><Icon name="info" /><span><b>{tx("partial.infoTitle")}</b>{tx("partial.infoBody")}</span></div>
+          <div className="shs-bnr i2"><Icon name="info" /><span><b>{t("shareSheet.partial.infoTitle")}</b>{t("shareSheet.partial.infoBody")}</span></div>
         </div>
         <div className="shs-actions">
-          <button type="button" className="shs-cta" disabled={busy} onClick={retry}><Icon name="refresh" />{tx("partial.retryFailed")}</button>
-          <button type="button" className="shs-btn2" onClick={async () => setJob(await host.dropFailed(job))}>{tx("partial.dropFailed")}</button>
+          <button type="button" className="shs-cta" disabled={busy} onClick={retry}><Icon name="refresh" />{t("shareSheet.partial.retryFailed")}</button>
+          <button type="button" className="shs-btn2" onClick={async () => setJob(await host.dropFailed(job))}>{t("shareSheet.partial.dropFailed")}</button>
         </div>
       </div>
     );
@@ -210,22 +210,22 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
   if (s.phase === "waiting") {
     return (
       <div className="shs-run">
-        {nav(tx("offline.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{tx("close")}</button>)}
+        {nav(t("shareSheet.offline.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{t("shareSheet.close")}</button>)}
         <div className="shs-body">
           <div className="shs-hero">
             <span className="shs-bigic d"><Icon name="wifiOff" /></span>
-            <span className="shs-rt"><b>{tx("offline.hero")}</b><small>{s.done ? tx("offline.subSome", { done: s.done, count: s.targetCount }) : tx("offline.subNone")}</small></span>
+            <span className="shs-rt"><b>{t("shareSheet.offline.hero")}</b><small>{s.done ? t("shareSheet.offline.subSome", { done: s.done, count: s.targetCount }) : t("shareSheet.offline.subNone")}</small></span>
           </div>
-          {job.items.length ? <Tiles job={job} note={tx("offline.kept")} forceBadge="wait" /> : null}
-          <div className="shs-bnr i2"><Icon name="clock" /><span><b>{tx("offline.queuedTitle")}</b>{tx("offline.queuedBody", { items: itemsText, chats: chatsText })}</span></div>
-          {rowsBlock((t) => (t.status === "sent" || t.status === "scheduled"
-            ? <small className="shs-stline ok"><Icon name="check" />{tx("sent.delivered", { time: timeText(t.at || now()) })}</small>
-            : <small className="shs-stline w"><Icon name="clock" />{tx("offline.row")}</small>))}
+          {job.items.length ? <Tiles job={job} note={t("shareSheet.offline.kept")} forceBadge="wait" /> : null}
+          <div className="shs-bnr i2"><Icon name="clock" /><span><b>{t("shareSheet.offline.queuedTitle")}</b>{t("shareSheet.offline.queuedBody", { items: itemsText, chats: chatsText })}</span></div>
+          {rowsBlock((tg) => (tg.status === "sent" || tg.status === "scheduled"
+            ? <small className="shs-stline ok"><Icon name="check" />{t("shareSheet.sent.delivered", { time: timeText(tg.at || now()) })}</small>
+            : <small className="shs-stline w"><Icon name="clock" />{t("shareSheet.offline.row")}</small>))}
         </div>
         <div className="shs-actions">
-          <button type="button" className="shs-cta" disabled={busy} onClick={() => host.retryNow(job)}><Icon name="refresh" />{tx("offline.retryNow")}</button>
-          {host.canBackground ? <button type="button" className="shs-btn2" onClick={async () => { await host.saveDraft(job); say(tx("offline.draftSaved")); host.finish(); }}>{tx("offline.saveDraft")}</button> : null}
-          <button type="button" className="shs-btn2 dz ghost" onClick={async () => { await host.remove(job); host.finish(); }}>{tx("offline.remove")}</button>
+          <button type="button" className="shs-cta" disabled={busy} onClick={() => host.retryNow(job)}><Icon name="refresh" />{t("shareSheet.offline.retryNow")}</button>
+          {host.canBackground ? <button type="button" className="shs-btn2" onClick={async () => { await host.saveDraft(job); say(t("shareSheet.offline.draftSaved")); host.finish(); }}>{t("shareSheet.offline.saveDraft")}</button> : null}
+          <button type="button" className="shs-btn2 dz ghost" onClick={async () => { await host.remove(job); host.finish(); }}>{t("shareSheet.offline.remove")}</button>
         </div>
       </div>
     );
@@ -233,20 +233,20 @@ export default function ShareRun({ job, setJob, host, tx, intl, now, timeText, s
 
   // failed | cancelled | undone
   const undone = s.phase === "undone";
-  const first = job.targets.find((t) => t.reason);
+  const first = job.targets.find((tg) => tg.reason);
   return (
     <div className="shs-run">
-      {nav(tx(undone ? "undone.title" : "failed.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{tx("close")}</button>)}
+      {nav(t(undone ? "shareSheet.undone.title" : "shareSheet.failed.title"), null, null, <button type="button" className="shs-lnk r" onClick={() => host.finish()}>{t("shareSheet.close")}</button>)}
       <div className="shs-body">
         <div className="shs-hero">
           <span className={`shs-bigic ${undone ? "b" : "d"}`}><Icon name={undone ? "undo" : "alert"} /></span>
-          <span className="shs-rt"><b>{tx(undone ? "undone.hero" : "failed.hero")}</b><small>{undone ? tx("undone.sub") : reasonText(first?.reason)}</small></span>
+          <span className="shs-rt"><b>{t(undone ? "shareSheet.undone.hero" : "shareSheet.failed.hero")}</b><small>{undone ? t("shareSheet.undone.sub") : reasonText(first?.reason)}</small></span>
         </div>
-        {!undone ? rowsBlock((t) => <small className="shs-stline d"><Icon name="alert" />{reasonText(t.reason)}</small>) : null}
+        {!undone ? rowsBlock((tg) => <small className="shs-stline d"><Icon name="alert" />{reasonText(tg.reason)}</small>) : null}
       </div>
       <div className="shs-actions">
-        {!undone && first?.reason !== "signed_out" ? <button type="button" className="shs-cta" disabled={busy} onClick={retry}><Icon name="refresh" />{tx("retry")}</button> : null}
-        <button type="button" className="shs-btn2" onClick={() => host.finish()}>{tx("close")}</button>
+        {!undone && first?.reason !== "signed_out" ? <button type="button" className="shs-cta" disabled={busy} onClick={retry}><Icon name="refresh" />{t("shareSheet.retry")}</button> : null}
+        <button type="button" className="shs-btn2" onClick={() => host.finish()}>{t("shareSheet.close")}</button>
       </div>
     </div>
   );

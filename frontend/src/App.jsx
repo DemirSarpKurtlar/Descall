@@ -2421,7 +2421,7 @@ export default function App() {
         }
         if (activeDmRef.current?.id !== convWith) {
           // "Sessiz gönder" (share sheet): unread, but no sound and no notification.
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted && !message?.silent && allowNotify("dm", convWith)) {
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith) && !message?.silent) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || t("Someone"),
