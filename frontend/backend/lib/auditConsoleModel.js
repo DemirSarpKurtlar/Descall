@@ -101,6 +101,8 @@ const CATALOG = {
   "2fa_recovery_regenerated": ["account", "medium"],
   passkey_added: ["account", "medium"],
   passkey_removed: ["account", "medium"],
+  passkey_alert_revoked: ["account", "high"],
+  passkey_report_revoked: ["account", "high"],
   // Ekonomi ve Descall+
   descoin_grant: ["economy", "high"],
   descoin_reconcile_run: ["economy", "medium"],

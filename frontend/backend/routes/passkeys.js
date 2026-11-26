@@ -828,6 +828,7 @@ function createPasskeyRouter(overrides = {}) {
           password: Boolean(user?.password_hash),
           totp: Boolean(totp.enabled),
           email2fa: Boolean(user?.two_factor_enabled),
+          emailConfirmed: Boolean(user?.email && user?.email_confirmed_at),
         },
         activity: recent.filter((e) => e.kind !== "new_place" || e.resolved_at).slice(0, 30).map(center.publicEvent),
         alerts,

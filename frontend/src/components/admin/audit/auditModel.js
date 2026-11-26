@@ -99,6 +99,8 @@ const ACT = {
   "2fa_recovery_regenerated": ["key", "blue"],
   passkey_added: ["key", "blue"],
   passkey_removed: ["key", "blue"],
+  passkey_alert_revoked: ["key", "red"],
+  passkey_report_revoked: ["key", "red"],
   descoin_grant: ["coin", "green"],
   descoin_reconcile_run: ["scale", "green"],
   descoin_reconcile_fix: ["scale", "green"],
