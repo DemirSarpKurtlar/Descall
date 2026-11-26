@@ -1973,6 +1973,23 @@ function createMainWindow() {
     tryBackgroundCheck('blur');
   });
 
+  // A Descall Setup link downloads in-app (older installers are pruned). It has no window
+  // of its own, so the finished file is shown in Explorer, and a download that cannot
+  // start opens in the browser instead: before, the click did nothing visible.
+  const startSetupDownload = (url) => {
+    const started = downloadDescallSetupViaElectron({
+      webContents: mainWindow.webContents,
+      app,
+      url,
+      log,
+      onDone: ({ state, path: filePath }) => {
+        if (state === 'completed') shell.showItemInFolder(filePath);
+        else if (state !== 'cancelled') openExternalSafely(url, 'setup-download-failed');
+      },
+    });
+    if (!started) openExternalSafely(url, 'setup-download-unavailable');
+  };
+
   // Handle external links — Descall Setup assets download in-app so we can prune older installers.
   // The admin windows get adminPreload.cjs: the same bridge minus screen capture, clipboard,
   // process list, downloads, call overlay and update install.
@@ -2004,12 +2021,7 @@ function createMainWindow() {
       };
     }
     if (isDescallSetupDownloadUrl(url)) {
-      downloadDescallSetupViaElectron({
-        webContents: mainWindow.webContents,
-        app,
-        url,
-        log,
-      });
+      startSetupDownload(url);
       return { action: 'deny' };
     }
     openExternalSafely(url, 'window-open');
@@ -2049,12 +2061,7 @@ function createMainWindow() {
     if (isAppUrl(url, { isDev })) return;
     event.preventDefault();
     if (isDescallSetupDownloadUrl(url)) {
-      downloadDescallSetupViaElectron({
-        webContents: mainWindow.webContents,
-        app,
-        url,
-        log,
-      });
+      startSetupDownload(url);
       return;
     }
     openExternalSafely(url, 'will-navigate');

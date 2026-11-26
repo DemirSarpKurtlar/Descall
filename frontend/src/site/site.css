@@ -2038,6 +2038,30 @@ a.mkt-feature-link {
   color: var(--mkt-muted);
 }
 
+/* After a click: the download is on its way, with a direct link and the releases page. */
+.mkt-download-started {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 12px 2px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mkt-text);
+}
+.mkt-download-started > svg {
+  color: #3dd68c;
+  flex: none;
+}
+.mkt-download-started-alt {
+  color: var(--mkt-muted);
+}
+.mkt-download-started-alt a {
+  color: #8ea6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .mkt-download-panel-meta {
   margin: 14px 0 0;
   font-size: 13px;
