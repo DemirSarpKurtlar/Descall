@@ -26,19 +26,26 @@ export const passkeyApi = {
   config: () => httpRequest(`${PASSKEY_API}/config`, { method: "GET" }),
   // Sign-in (no session yet).
   authOptions: (platform, opts) => post("/auth/options", { platform }, opts),
-  authVerify: (response, platform, opts) => post("/auth/verify", { response, platform }, opts),
+  authVerify: (response, platform, opts) => post("/auth/verify", { response, platform, ...(opts?.durationMs ? { durationMs: opts.durationMs } : {}) }, opts),
   // Signed in.
   list: () => authed("", { method: "GET" }),
   reauth: ({ password, code }) => authed("/reauth", { body: { ...(password ? { password } : {}), ...(code ? { code } : {}) } }),
   reauthOptions: (platform) => authed("/reauth/options", { body: { platform } }),
   reauthVerify: (response, platform) => authed("/reauth/verify", { body: { response, platform } }),
-  registerOptions: (reauthToken, platform) => authed("/register/options", { body: { reauthToken, platform } }),
-  registerVerify: (reauthToken, response, name, platform) => authed("/register/verify", { body: { reauthToken, response, name, platform } }),
+  registerOptions: (reauthToken, platform, prefer) => authed("/register/options", { body: { ...(reauthToken ? { reauthToken } : {}), platform, ...(prefer ? { prefer } : {}) } }),
+  registerVerify: (reauthToken, response, name, platform) => authed("/register/verify", { body: { ...(reauthToken ? { reauthToken } : {}), response, name, platform } }),
   rename: (id, name) => authed(`/${encodeURIComponent(id)}`, { method: "PATCH", body: { name } }),
-  remove: (id) => authed(`/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  remove: (id, { reason, endSessions } = {}) =>
+    authed(`/${encodeURIComponent(id)}`, { method: "DELETE", body: { ...(reason ? { reason } : {}), ...(endSessions ? { endSessions: true } : {}) } }),
+  // Control center (Settings > Security > Passkeys).
+  center: () => authed("/center", { method: "GET" }),
+  resolveAlert: (id, action) => authed(`/alerts/${encodeURIComponent(id)}/resolve`, { body: { action } }),
+  // The "Ben degildim" page of the security e-mails (no session).
+  reportInfo: (token) => post("/report/info", { token }),
+  reportResolve: (token, action) => post("/report/resolve", { token, action }),
   // Desktop browser handoff.
   handoffSignIn: (platform) => post("/handoff", { platform }),
-  handoffRegister: (reauthToken, platform) => authed("/handoff/register", { body: { reauthToken, platform } }),
+  handoffRegister: (reauthToken, platform) => authed("/handoff/register", { body: { ...(reauthToken ? { reauthToken } : {}), platform } }),
   handoffPoll: (pollSecret, opts) => post("/handoff/poll", { pollSecret }, opts),
   // The browser page (https://descall.com/passkey/desktop).
   handoffInfo: (code) => post("/handoff/info", { code }),
