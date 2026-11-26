@@ -19,8 +19,8 @@
  * keyboardWillChangeFrame. Mode "overlay" keeps the viewport (older iOS: the
  * keyboard covers a full-height layout) to make sure that still lifts.
  *
- *   VITE_API_BASE_URL=http://127.0.0.1:5371 VITE_SOCKET_URL=http://127.0.0.1:5371 npx vite build --outDir /tmp/dist-perf
- *   node e2e/iosKeyboardLayout.e2e.cjs --dist=/tmp/dist-perf [--out=/tmp/ios-kb] [--engine=chromium|webkit]
+ *   VITE_API_BASE_URL=http://127.0.0.1:5361 VITE_SOCKET_URL=http://127.0.0.1:5361 npx vite build --outDir dist-e2e
+ *   node e2e/iosKeyboardLayout.e2e.cjs --dist=dist-e2e [--port=5361] [--out=/tmp/ios-kb] [--engine=chromium|webkit]
  * Exit 1 when any geometry check fails.
  */
 
@@ -31,18 +31,22 @@ const mock = require('./perf/mockBackend.cjs');
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] = a.replace(/^--/, '').split('='); return [k, v ?? true]; }));
 const pw = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
 const DIST = path.resolve(args.dist || path.join(__dirname, '../dist-perf'));
-const OUT = path.resolve(args.out || '/tmp/descall-ios-kb');
-const PORT = Number(args.port || 5371);
+const OUT = path.resolve(args.out || process.env.DESCALL_E2E_SHOTS || '/tmp/descall-ios-kb');
+const PORT = Number(args.port || 5361);
 // Geometry only, so Chromium mobile emulation is enough where WebKit is not installed.
 const ENGINE = String(args.engine || 'chromium');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
-// iPhone 15/16 Pro Max (the owner's phone: 1290x2796 @3x) and its keyboard
-// with the suggestion row: top edge at 585pt.
-const W = 430;
-const H = 932;
-const KB = 347;
-const LANDSCAPE = { w: 932, h: 430, kb: 209 };
+const IPAD_UA = 'Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+const DEVICES = [
+  // iPhone 15/16 Pro Max (the owner's phone: 1290x2796 @3x) and its keyboard
+  // with the suggestion row: top edge at 585pt.
+  { name: 'iphone', W: 430, H: 932, KB: 347, UA: IPHONE_UA, landscape: { w: 932, h: 430, kb: 209 }, extras: true },
+  // iPad split view (half width, phone layout) and a wide iPad window; the
+  // keyboard spans the screen, the web view is only part of it.
+  { name: 'ipad-split', W: 507, H: 1180, KB: 398, UA: IPAD_UA },
+  { name: 'ipad-wide', W: 820, H: 1180, KB: 398, UA: IPAD_UA },
+];
 
 function installNativeShell() {
   window.CapacitorCustomPlatform = { name: 'ios' };
@@ -71,11 +75,13 @@ function measure() {
     const el = document.elementFromPoint(last.left + last.width / 2, y);
     hit = Boolean(el && bubbles[bubbles.length - 1].contains(el));
   }
+  const reply = vis(document.querySelector('.composer-reply-bar'));
   const cs = getComputedStyle(document.documentElement);
   return {
     inner: innerHeight,
     composerBottom: comp ? Math.round(comp.bottom) : null,
     composerTop: capsule ? Math.round(capsule.top) : (comp ? Math.round(comp.top) : null),
+    containerTop: comp ? Math.round(comp.top) : null,
     listTop: scr ? Math.round(scr.top) : null,
     listBottom: scr ? Math.round(scr.bottom) : null,
     distFromBottom: sc ? Math.round(sc.scrollHeight - sc.scrollTop - sc.clientHeight) : null,
@@ -83,6 +89,7 @@ function measure() {
     lastTop: last ? Math.round(last.top) : null,
     lastBottom: last ? Math.round(last.bottom) : null,
     lastHit: hit,
+    replyTop: reply ? Math.round(reply.top) : null,
     kbOpen: document.documentElement.classList.contains('kb-open'),
     vvHeight: cs.getPropertyValue('--vv-height').trim(),
     kbGap: cs.getPropertyValue('--kb-gap').trim(),
@@ -90,15 +97,18 @@ function measure() {
   };
 }
 
-async function main() {
-  if (!fs.existsSync(path.join(DIST, 'index.html'))) { console.error(`[ios-kb] no ${DIST}/index.html`); process.exit(2); }
-  fs.mkdirSync(OUT, { recursive: true });
-  const srv = await mock.start({ dist: DIST, port: PORT });
-  const base = `http://127.0.0.1:${srv.port}`;
-  const browser = ENGINE === 'webkit'
-    ? await pw.webkit.launch({ headless: true })
-    : await pw.chromium.launch({ headless: true, args: ['--no-sandbox'] });
-  const ctxOpts = { viewport: { width: W, height: H }, screen: { width: W, height: H }, deviceScaleFactor: 1, hasTouch: true, userAgent: IPHONE_UA, locale: 'tr-TR', timezoneId: 'Europe/Istanbul', colorScheme: 'dark' };
+async function tapText(page, sel, re) {
+  const pt = await page.evaluate(([sel, re]) => {
+    const e = [...document.querySelectorAll(sel)].find((x) => new RegExp(re).test(`${x.getAttribute('aria-label') || ''} ${x.textContent}`) && x.getBoundingClientRect().width > 0);
+    if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  }, [sel, re]);
+  if (pt) await page.touchscreen.tap(pt.x, pt.y);
+  return Boolean(pt);
+}
+
+async function runDevice(browser, base, dev, check) {
+  const { name, W, H, KB, UA } = dev;
+  const ctxOpts = { viewport: { width: W, height: H }, screen: { width: W, height: H }, deviceScaleFactor: 1, hasTouch: true, userAgent: UA, locale: 'tr-TR', timezoneId: 'Europe/Istanbul', colorScheme: 'dark' };
   if (ENGINE !== 'webkit') ctxOpts.isMobile = true;
   const ctx = await browser.newContext(ctxOpts);
   await ctx.route('**/*', (r) => (/^(data|blob):/.test(r.request().url()) || r.request().url().startsWith(base) ? r.continue() : r.abort()));
@@ -112,8 +122,33 @@ async function main() {
     localStorage.setItem('descall_user', JSON.stringify(me));
   }, [base, mock.ME]);
   const page = await ctx.newPage();
-  const fails = [];
-  const check = (ok, msg) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${msg}`); if (!ok) fails.push(msg); };
+  const shot = (f) => page.screenshot({ path: path.join(OUT, `${name}-${f}.png`) });
+  const openKeyboard = async (mode, w, h, kb) => {
+    await page.focus('.composer-input');
+    // Swift's keyboardWillChangeFrame comes first, then WebKit resizes.
+    await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [kb, h]);
+    await sleep(60);
+    if (mode === 'resize') await page.setViewportSize({ width: w, height: h - kb });
+    await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [kb, h]);
+    await sleep(700);
+  };
+  const closeKeyboard = async (w, h) => {
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.evaluate((h) => window.__descallNativeKeyboard(0, h), h);
+    await page.setViewportSize({ width: w, height: h });
+    await sleep(900);
+  };
+  const expectOpen = (label, m, kbTop, { list = true } = {}) => {
+    label = `${name} ${label}`;
+    check(m.kbOpen, `${label}: html.kb-open`);
+    check(m.composerBottom != null && m.composerBottom <= kbTop + 1 && m.composerBottom >= kbTop - 24, `${label}: composer sits on the keyboard (bottom ${m.composerBottom}, keyboard top ${kbTop})`);
+    check(m.app != null && m.app >= kbTop - 2 && m.app <= kbTop + 2, `${label}: shell ends at the keyboard top, no empty band (${m.app} vs ${kbTop}, --vv-height ${m.vvHeight}, --kb-gap ${m.kbGap})`);
+    check(m.listBottom != null && m.listBottom >= Math.min(m.composerTop, m.containerTop) - 2, `${label}: the list reaches the composer (list bottom ${m.listBottom}, composer top ${m.containerTop})`);
+    if (!list) return;
+    check(m.lastHit && m.lastBottom <= m.composerTop + 1 && (m.headerBottom == null || m.lastTop >= m.headerBottom - 1), `${label}: newest message visible between header and composer (${m.lastTop}..${m.lastBottom}, header ${m.headerBottom}, composer ${m.composerTop})`);
+    check(m.distFromBottom != null && m.distFromBottom <= 2, `${label}: list stays scrolled to the newest message (distance ${m.distFromBottom})`);
+  };
+  const log = (k, m) => console.log(`[ios-kb] ${name} ${k}`, JSON.stringify(m));
   try {
     await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
     for (let i = 0; i < 300; i++) { if (await page.evaluate(() => document.querySelectorAll('.dm-item').length > 0 && !document.getElementById('boot-splash')).catch(() => false)) break; await sleep(150); }
@@ -125,77 +160,113 @@ async function main() {
     }
     await sleep(1200);
     const rest = await page.evaluate(measure);
-    console.log('[ios-kb] rest', JSON.stringify(rest));
-    await page.screenshot({ path: path.join(OUT, '0-rest.png') });
-    check(rest.composerBottom != null && rest.composerBottom > H - 140, `at rest the composer is at the bottom (${rest.composerBottom})`);
-
-    const openKeyboard = async (mode, w, h, kb) => {
-      await page.focus('.composer-input');
-      // Swift's keyboardWillChangeFrame comes first, then WebKit resizes.
-      await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [kb, h]);
-      await sleep(60);
-      if (mode === 'resize') await page.setViewportSize({ width: w, height: h - kb });
-      await page.evaluate(([kb, h]) => window.__descallNativeKeyboard(kb, h), [kb, h]);
-      await sleep(700);
-    };
-    const closeKeyboard = async (w, h) => {
-      await page.evaluate(() => document.activeElement?.blur());
-      await page.evaluate((h) => window.__descallNativeKeyboard(0, h), h);
-      await page.setViewportSize({ width: w, height: h });
-      await sleep(900);
-    };
-    const expectOpen = (label, m, kbTop) => {
-      check(m.kbOpen, `${label}: html.kb-open`);
-      check(m.composerBottom != null && m.composerBottom <= kbTop + 1 && m.composerBottom >= kbTop - 24, `${label}: composer sits on the keyboard (bottom ${m.composerBottom}, keyboard top ${kbTop})`);
-      check(m.app != null && m.app >= kbTop - 2 && m.app <= kbTop + 2, `${label}: shell ends at the keyboard top, no empty band (${m.app} vs ${kbTop}, --vv-height ${m.vvHeight}, --kb-gap ${m.kbGap})`);
-      check(m.listBottom != null && m.listBottom >= m.composerTop - 2, `${label}: the list reaches the composer (list bottom ${m.listBottom}, composer top ${m.composerTop})`);
-      check(m.lastHit && m.lastBottom <= m.composerTop + 1 && (m.headerBottom == null || m.lastTop >= m.headerBottom - 1), `${label}: newest message visible between header and composer (${m.lastTop}..${m.lastBottom}, header ${m.headerBottom}, composer ${m.composerTop})`);
-      check(m.distFromBottom != null && m.distFromBottom <= 2, `${label}: list stays scrolled to the newest message (distance ${m.distFromBottom})`);
-    };
+    log('rest', rest);
+    await shot('0-rest');
+    check(rest.composerBottom != null && rest.composerBottom > H - 140, `${name} at rest the composer is at the bottom (${rest.composerBottom})`);
 
     // iOS 26: layout viewport shrinks (resizes-content) + native overlap.
     await openKeyboard('resize', W, H, KB);
     const a = await page.evaluate(measure);
-    console.log('[ios-kb] resize', JSON.stringify(a));
-    await page.screenshot({ path: path.join(OUT, '1-keyboard-resize.png') });
+    log('resize', a);
+    await shot('1-keyboard-resize');
     expectOpen('iOS 26 resized layout', a, H - KB);
 
     await closeKeyboard(W, H);
     const c = await page.evaluate(measure);
-    console.log('[ios-kb] closed', JSON.stringify(c));
-    await page.screenshot({ path: path.join(OUT, '2-closed.png') });
-    check(!c.kbOpen, 'closed: kb-open cleared');
-    check(Math.abs((c.composerBottom || 0) - (rest.composerBottom || 0)) <= 2, `closed: composer back where it was (${c.composerBottom} vs ${rest.composerBottom})`);
-    check(c.app === rest.app, `closed: shell full height again (${c.app} vs ${rest.app})`);
+    log('closed', c);
+    await shot('2-closed');
+    check(!c.kbOpen, `${name} closed: kb-open cleared`);
+    check(Math.abs((c.composerBottom || 0) - (rest.composerBottom || 0)) <= 2, `${name} closed: composer back where it was (${c.composerBottom} vs ${rest.composerBottom})`);
+    check(c.app === rest.app, `${name} closed: shell full height again (${c.app} vs ${rest.app})`);
 
     // Keyboard over a full-height layout (no resize): still lifted once.
     await openKeyboard('overlay', W, H, KB);
     const b = await page.evaluate(measure);
-    console.log('[ios-kb] overlay', JSON.stringify(b));
-    await page.screenshot({ path: path.join(OUT, '3-keyboard-overlay.png') });
+    log('overlay', b);
+    await shot('3-keyboard-overlay');
     expectOpen('overlay keyboard', b, H - KB);
     await closeKeyboard(W, H);
 
-    // Rotate to landscape with the keyboard up, then back to portrait.
-    await page.setViewportSize({ width: LANDSCAPE.w, height: LANDSCAPE.h });
-    await sleep(900);
-    await openKeyboard('resize', LANDSCAPE.w, LANDSCAPE.h, LANDSCAPE.kb);
-    const l = await page.evaluate(measure);
-    console.log('[ios-kb] landscape', JSON.stringify(l));
-    await page.screenshot({ path: path.join(OUT, '4-landscape.png') });
-    check(l.composerBottom != null && l.composerBottom <= LANDSCAPE.h - LANDSCAPE.kb + 1 && l.composerBottom >= LANDSCAPE.h - LANDSCAPE.kb - 24, `landscape: composer on the keyboard (${l.composerBottom}, keyboard top ${LANDSCAPE.h - LANDSCAPE.kb})`);
-    await closeKeyboard(LANDSCAPE.w, LANDSCAPE.h);
-    await page.setViewportSize({ width: W, height: H });
-    await sleep(900);
-    await openKeyboard('resize', W, H, KB);
-    const p = await page.evaluate(measure);
-    console.log('[ios-kb] portrait again', JSON.stringify(p));
-    expectOpen('after rotation', p, H - KB);
-    await closeKeyboard(W, H);
+    if (dev.landscape) {
+      // Rotate to landscape with the keyboard up, then back to portrait.
+      const L = dev.landscape;
+      await page.setViewportSize({ width: L.w, height: L.h });
+      await sleep(900);
+      await openKeyboard('resize', L.w, L.h, L.kb);
+      const l = await page.evaluate(measure);
+      log('landscape', l);
+      await shot('4-landscape');
+      check(l.composerBottom != null && l.composerBottom <= L.h - L.kb + 1 && l.composerBottom >= L.h - L.kb - 24, `${name} landscape: composer on the keyboard (${l.composerBottom}, keyboard top ${L.h - L.kb})`);
+      await closeKeyboard(L.w, L.h);
+      await page.setViewportSize({ width: W, height: H });
+      await sleep(900);
+      await openKeyboard('resize', W, H, KB);
+      const p = await page.evaluate(measure);
+      log('portrait again', p);
+      expectOpen('after rotation', p, H - KB);
+      await closeKeyboard(W, H);
+    }
+
+    if (dev.extras) {
+      // Reply bar: long-press the newest bubble, "Yanıtla", then type.
+      const box = await page.evaluate(() => { const bs = [...document.querySelectorAll('.message-bubble[data-message-id]')]; const r = bs[bs.length - 1].getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; });
+      await page.mouse.move(box.x, box.y);
+      if (ENGINE !== 'webkit') {
+        const cdp = await ctx.newCDPSession(page);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [box] }); await sleep(650);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else { await page.mouse.down(); await sleep(650); await page.mouse.up(); }
+      await sleep(600);
+      const replied = await tapText(page, 'button, [role="menuitem"]', '^\\s*Yanıtla\\s*$');
+      await sleep(700);
+      check(replied, `${name} reply: "Yanıtla" in the message menu`);
+      if (replied) {
+        await openKeyboard('resize', W, H, KB);
+        const r = await page.evaluate(measure);
+        log('reply', r);
+        await shot('5-reply-keyboard');
+        expectOpen('reply bar', r, H - KB);
+        check(r.replyTop != null && r.lastBottom <= r.replyTop + 1, `${name} reply bar: newest message ends above the reply strip (${r.lastBottom} vs ${r.replyTop})`);
+        await closeKeyboard(W, H);
+      }
+      // Server text channel (same shell, other composer owner). Back to the
+      // list first: the tab bar is hidden inside a conversation.
+      await tapText(page, '.mobile-nav-btn', '.');
+      await sleep(900);
+      const tab = await tapText(page, '.g-tab, .g-tabbar button', 'Sunucu');
+      await sleep(1200);
+      const srvRow = tab && await tapText(page, '.server-list-item', 'Büyük Sunucu');
+      await sleep(1500);
+      const ch = srvRow && await tapText(page, '.channel-item, [data-channel-id], button, [role="button"]', '^\\s*#?\\s*kanal-1\\b');
+      await sleep(1500);
+      check(Boolean(ch && await page.$('.composer-input')), `${name} server channel opened`);
+      if (ch) {
+        await openKeyboard('resize', W, H, KB);
+        const sv = await page.evaluate(measure);
+        log('server channel', sv);
+        await shot('6-server-keyboard');
+        expectOpen('server channel', sv, H - KB, { list: false });
+        await closeKeyboard(W, H);
+      }
+    }
   } catch (e) {
-    fails.push(String(e && e.stack || e));
+    check(false, `${name}: ${String(e && e.stack || e)}`);
   }
-  await ctx.close(); await browser.close(); srv.close();
+  await ctx.close();
+}
+
+async function main() {
+  if (!fs.existsSync(path.join(DIST, 'index.html'))) { console.error(`[ios-kb] no ${DIST}/index.html`); process.exit(2); }
+  fs.mkdirSync(OUT, { recursive: true });
+  const srv = await mock.start({ dist: DIST, port: PORT });
+  const base = `http://127.0.0.1:${srv.port}`;
+  const browser = ENGINE === 'webkit'
+    ? await pw.webkit.launch({ headless: true })
+    : await pw.chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined, args: ['--no-sandbox'] });
+  const fails = [];
+  const check = (ok, msg) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${msg}`); if (!ok) fails.push(msg); };
+  for (const dev of DEVICES) await runDevice(browser, base, dev, check);
+  await browser.close(); srv.close();
   console.log(`[ios-kb] ${fails.length ? 'FAIL' : 'ok'}${fails.length ? `\n    - ${fails.join('\n    - ')}` : ''}`);
   process.exit(fails.length ? 1 : 0);
 }
