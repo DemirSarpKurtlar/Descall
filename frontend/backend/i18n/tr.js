@@ -122,6 +122,8 @@ module.exports = {
     // Yönetici Paneli › Performans: release regression (owner push)
     perfTitle: "Performans uyarısı",
     perfBody: "{version} {platform}: {metric} p75 %{pct} kötüleşti ({from} → {to}).",
+    perfDigestSubject: "Descall performans özeti: {n} gerileme",
+    perfDigestIntro: "Yönetici Paneli > Performans",
     nodesTitle: "Sunucu Ağı uyarısı",
     nodesPcDown: "PC düğümü aniden düştü; kullanıcılar Render'a geçiyor.",
     nodesKvFull: "Ortak bellek (Key Value) %{pct} dolu.",

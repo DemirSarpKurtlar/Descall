@@ -123,6 +123,8 @@ module.exports = {
     // Yönetici Paneli › Performans: release regression (owner push)
     perfTitle: "Performance-Warnung",
     perfBody: "{version} {platform}: {metric} p75 ist um {pct} % schlechter ({from} → {to}).",
+    perfDigestSubject: "Descall Performance-Übersicht: {n} Rückschritte",
+    perfDigestIntro: "Admin-Panel > Performance",
     nodesTitle: "Servernetz-Warnung",
     nodesPcDown: "Der PC-Knoten ist plötzlich ausgefallen; Nutzer wechseln zu Render.",
     nodesKvFull: "Gemeinsamer Speicher (Key Value) ist zu {pct} % voll.",

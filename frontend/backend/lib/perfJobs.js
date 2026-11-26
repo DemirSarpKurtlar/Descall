@@ -12,6 +12,7 @@
 
 const model = require("./perfModel");
 const store = require("./perfStore");
+const { bt } = require("./i18n");
 
 const TICK_MS = 5 * 60e3;
 const ALERT_EVERY_MS = 15 * 60e3;
@@ -248,8 +249,8 @@ async function emailDigest({ now = Date.now() } = {}) {
   const lines = pending.map((a) => `- ${model.alertText({ version: a.app_version, platform: a.platform, metric: a.metric, prevP75: a.prev_p75, curP75: a.cur_p75, deltaPct: a.delta_pct, sessions: a.sessions })}`);
   await deps.mail({
     to: process.env.REPORT_ALERT_EMAIL || "demirkurtlar@icloud.com",
-    subject: `Descall performans özeti: ${pending.length} gerileme`,
-    text: `Yönetici Paneli > Performans\n\n${lines.join("\n")}\n`,
+    subject: bt("tr", "push.perfDigestSubject", { n: pending.length }),
+    text: `${bt("tr", "push.perfDigestIntro")}\n\n${lines.join("\n")}\n`,
   });
   for (const a of pending) await store.updateAlert(a.id, { notified: { ...a.notified, emailPending: false, email: new Date(now).toISOString() } });
   return pending.length;

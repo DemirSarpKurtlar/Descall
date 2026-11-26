@@ -30,6 +30,7 @@ import { SYSX_TR } from "./sysx.tr.js";
 import { ATOK_TR } from "./atok.tr.js";
 import { ANODES_TR } from "./anodes.tr.js";
 import { AUDIT_LOG_TR } from "./auditLog.tr.js";
+import { PERF_ADMIN_TR } from "./perfAdmin.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
 import { COINPOP_TR } from "./coinpop.tr.js";
@@ -117,6 +118,7 @@ export const nested = {
   atok: ATOK_TR,
   "anodes": ANODES_TR,
   auditLog: AUDIT_LOG_TR,
+  perfAdmin: PERF_ADMIN_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,
   coinpop: COINPOP_TR,

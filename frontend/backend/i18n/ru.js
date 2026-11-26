@@ -121,6 +121,8 @@ module.exports = {
     // Yönetici Paneli › Performans: release regression (owner push)
     perfTitle: "Оповещение о производительности",
     perfBody: "{version} {platform}: {metric} p75 ухудшился на {pct}% ({from} → {to}).",
+    perfDigestSubject: "Сводка производительности Descall: регрессий {n}",
+    perfDigestIntro: "Панель администратора > Производительность",
     nodesTitle: "Оповещение сети серверов",
     nodesPcDown: "Узел ПК внезапно отключился; пользователи переходят на Render.",
     nodesKvFull: "Общая память (Key Value) заполнена на {pct} %.",

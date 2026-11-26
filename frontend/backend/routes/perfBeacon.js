@@ -17,6 +17,7 @@ const store = require("../lib/perfStore");
 const { recordFailure } = require("../lib/rateLimit");
 const { ipOfRequest } = require("../lib/clientIp");
 const { countryOf } = require("../lib/adminTokens/core");
+const { apiError } = require("../lib/apiError");
 
 const router = express.Router();
 const MAX_BYTES = 32 * 1024;
@@ -71,6 +72,6 @@ router.post("/beacon", textBody, async (req, res) => {
 });
 
 // Anything else under /api/perf: no.
-router.all("*", (_req, res) => res.status(404).json({ error: "Not found" }));
+router.all("*", (_req, res) => res.status(404).json(apiError("Not found")));
 
 module.exports = router;

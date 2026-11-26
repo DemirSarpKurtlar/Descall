@@ -23,6 +23,7 @@ const model = require("../lib/perfModel");
 const store = require("../lib/perfStore");
 const Q = require("../lib/perfQueries");
 const state = require("../runtime/sharedState");
+const { apiError } = require("../lib/apiError");
 
 const router = express.Router();
 const DAY = 86400e3;
@@ -216,7 +217,7 @@ router.get("/perf/detail", async (req, res) => {
   const query = queryOf(req);
   const dim = Q.GROUPS[req.query.dim] ? req.query.dim : "route";
   const value = String(req.query.value || "").slice(0, 80);
-  if (!value) return res.status(400).json({ error: "Invalid id", code: "BAD_VALUE" });
+  if (!value) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_VALUE" }));
   const q2 = { ...query, [dim]: [dim === "route" ? model.normalizeRoute(value) || value : value] };
   try {
     const out = await cached(`d|${JSON.stringify(q2)}|${dim}`, async () => {
@@ -259,7 +260,7 @@ router.get("/perf/detail", async (req, res) => {
 
 router.get("/perf/session/:id", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!/^[A-Za-z0-9_-]{8,32}$/.test(id)) return res.status(400).json({ error: "Invalid session.", code: "BAD_SESSION" });
+  if (!/^[A-Za-z0-9_-]{8,32}$/.test(id)) return res.status(400).json(apiError("Invalid session.", null, { code: "BAD_SESSION" }));
   try {
     const events = await store.sessionEvents(id);
     res.set("Cache-Control", "no-store");
@@ -281,7 +282,7 @@ router.get("/perf/views", async (_req, res) => {
 
 router.post("/perf/views", async (req, res) => {
   const name = String(req.body?.name || "").replace(/\s+/g, " ").trim().slice(0, 60);
-  if (!name) return res.status(400).json({ error: "Name required", code: "NAME_REQUIRED" });
+  if (!name) return res.status(400).json(apiError("Name required", null, { code: "NAME_REQUIRED" }));
   const query = model.parseQuery(req.body?.query || {});
   try {
     const view = await store.saveView({ owner_id: req.user.id, owner_username: req.user.username || null, name, query: { ...query, tab: req.body?.tab === "lh" ? "lh" : "rum" }, shared: req.body?.shared !== false });
@@ -294,11 +295,11 @@ router.post("/perf/views", async (req, res) => {
 
 router.delete("/perf/views/:id", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid id", code: "BAD_ID" });
+  if (!UUID_RE.test(id)) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_ID" }));
   try {
     const views = await store.listViews();
     const v = views.find((x) => x.id === id);
-    if (!v) return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
+    if (!v) return res.status(404).json(apiError("Not found", null, { code: "NOT_FOUND" }));
     await store.deleteView(id);
     audit(req, "perf_view_delete", id, { name: v.name });
     res.json({ ok: true });
@@ -338,7 +339,7 @@ router.put("/perf/rules/:id", async (req, res) => {
   const c = model.cleanRule(req.body || {});
   if (!c.ok) return res.status(400).json({ error: c.error, code: c.error });
   const id = String(req.params.id || "");
-  if (id !== "default" && id !== "new" && !UUID_RE.test(id)) return res.status(400).json({ error: "Invalid id", code: "BAD_ID" });
+  if (id !== "default" && id !== "new" && !UUID_RE.test(id)) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_ID" }));
   try {
     const before = id !== "default" && id !== "new" ? (await store.listRules()).find((r) => r.id === id) || null : null;
     const saved = await store.saveRule(before ? id : null, { ...c.rule, updated_by: req.user.id, ...(before ? {} : { created_by: req.user.id }) });
@@ -352,7 +353,7 @@ router.put("/perf/rules/:id", async (req, res) => {
 
 router.delete("/perf/rules/:id", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid id", code: "BAD_ID" });
+  if (!UUID_RE.test(id)) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_ID" }));
   try {
     await store.deleteRule(id);
     audit(req, "perf_rule_delete", id, {});
@@ -375,7 +376,7 @@ router.get("/perf/alerts", async (_req, res) => {
 
 async function setAlertStatus(req, res, status) {
   const id = String(req.params.id || "");
-  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid id", code: "BAD_ID" });
+  if (!UUID_RE.test(id)) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_ID" }));
   try {
     const row = await store.updateAlert(id, { status, hidden_by: status === "hidden" ? req.user.id : null });
     audit(req, status === "hidden" ? "perf_alert_hide" : "perf_alert_unhide", id, { metric: row.metric, platform: row.platform, version: row.app_version });
@@ -400,11 +401,11 @@ router.post("/perf/alerts/:id/unhide", (req, res) => setAlertStatus(req, res, "o
 
 router.post("/perf/alerts/:id/error-log", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid id", code: "BAD_ID" });
+  if (!UUID_RE.test(id)) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_ID" }));
   try {
     const rows = await store.listAlerts({ limit: 200 });
     const row = rows.find((a) => a.id === id);
-    if (!row) return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
+    if (!row) return res.status(404).json(apiError("Not found", null, { code: "NOT_FOUND" }));
     let logId = row.error_log_id;
     if (!logId) {
       logId = await require("../lib/perfJobs").openErrorLog(row);

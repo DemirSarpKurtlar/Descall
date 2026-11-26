@@ -34,6 +34,7 @@ import { SYSX_FR } from "./sysx.fr.js";
 import { ATOK_FR } from "./atok.fr.js";
 import { ANODES_FR } from "./anodes.fr.js";
 import { AUDIT_LOG_FR } from "./auditLog.fr.js";
+import { PERF_ADMIN_FR } from "./perfAdmin.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
 import { COINPOP_FR } from "./coinpop.fr.js";
@@ -88,6 +89,7 @@ export const nested = {
   "atok": ATOK_FR,
   "anodes": ANODES_FR,
   "auditLog": AUDIT_LOG_FR,
+  "perfAdmin": PERF_ADMIN_FR,
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,
   "coinpop": COINPOP_FR,
