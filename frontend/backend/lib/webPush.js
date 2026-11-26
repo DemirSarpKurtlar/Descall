@@ -452,6 +452,27 @@ async function sendFriendRequestPush(userId, payload = {}) {
 }
 
 /**
+ * "El salla" (wave) from a friend's widget (lib/friendWave.js). Web push, Android and iOS;
+ * the tap opens the DM with that friend. One notification per friend (same tag / collapse id).
+ */
+async function sendFriendWavePush(userId, payload = {}) {
+  const fromRef = payload.from ? String(payload.from).slice(0, 64) : { key: "push.someone" };
+  const web = {
+    type: "friend-wave",
+    tag: `friend-wave-${payload.fromId || userId}`,
+    deepLink: "/friends",
+    fromId: payload.fromId || null,
+    from: payload.from || null,
+    i18n: { title: ref("push.waveTitle"), body: ref("push.waveBody", { from: fromRef }) },
+  };
+  await deliverPush([userId], web, {
+    type: "friend-wave",
+    fromId: payload.fromId,
+    fromName: payload.from,
+  });
+}
+
+/**
  * Re-engagement: "<friend> is in voice in <server>" (lib/reengage.js decides who
  * gets it). Web push, Android and iOS; the tap opens the voice channel.
  */
@@ -523,6 +544,7 @@ module.exports = {
   sendIosGroupMentionPush,
   sendServerMessagePush,
   sendFriendRequestPush,
+  sendFriendWavePush,
   sendFriendVoicePush,
   sendMessageRequestPush,
 };

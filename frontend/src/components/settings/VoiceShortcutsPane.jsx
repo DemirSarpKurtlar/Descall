@@ -4,6 +4,10 @@
  *                  a native sheet with Siri tips and the Shortcuts app link (iOS 17+);
  *   Android        the app icon shortcuts and "Ana ekrana ekle" for a recent chat;
  *   Windows        the taskbar jump list.
+ * Widgets draft B ("Yuzler"): on iPhone the page is three panels (WidgetsSiriPane.jsx): Siri
+ * (answer preview, the favourites' shortcuts, general ones, every phrase), Favori yuzler (the
+ * widgets' numbered faces and preferences) and Kilit ekrani (lock screen widget gallery). On
+ * Android the favourite faces sit next to the launcher shortcuts.
  * Rows reuse the settings card (us-card / us-row); styles/voice-shortcuts.css adds the phrase
  * chips. Every string is in vsc.<locale>.js.
  */
@@ -20,6 +24,7 @@ import {
   subscribeRecentShortcuts,
 } from "../../lib/nativeIntents.js";
 import { Avatar } from "../ui/Avatar";
+import WidgetsSiriPane from "./WidgetsSiriPane";
 import "../../styles/voice-shortcuts.css";
 
 const GLYPH = {
@@ -102,81 +107,84 @@ export default function VoiceShortcutsPane() {
       <p className="us-lead">{lead}</p>
 
       {platform === "ios" ? (
-        <section className="us-section" aria-labelledby="vsc-phrases">
-          <h3 id="vsc-phrases" className="vsc-title">{t("vsc.phrasesTitle")}</h3>
-          <PhraseList rows={rows} t={t} />
-          {avail && !siriReady ? (
-            <p className="us-row-desc" role="note">{t("vsc.needsIos17")}</p>
-          ) : (
-            <div className="us-btn-row">
-              <button type="button" className="us-btn primary vsc-siri" onClick={openSiri} disabled={!siriReady || siriState === "busy"}>
-                <S3Glyph name="sparkle" size={16} stroke={2.2} />
-                {t("vsc.addToSiri")}
-              </button>
-            </div>
-          )}
-          {siriState === "failed" ? (
-            <p className="us-row-desc vsc-error" role="alert">{t("vsc.siriFailed")}</p>
-          ) : null}
-        </section>
+        <WidgetsSiriPane
+          platform="ios"
+          t={t}
+          locale={locale}
+          siriReady={avail ? siriReady : null}
+          onAddToSiri={openSiri}
+          siriState={siriState}
+          phraseList={<PhraseList rows={rows} t={t} />}
+        />
       ) : null}
 
       {platform === "android" ? (
-        <>
-          <section className="us-section" aria-labelledby="vsc-launcher">
-            <h3 id="vsc-launcher" className="vsc-title">{t("vsc.launcherTitle")}</h3>
-            <div className="us-card stack">
-              {[
-                ["newMessage", "msg"],
-                ["dnd", "moon"],
-                ["friends", "users"],
-              ].map(([key, glyph]) => (
-                <div key={key} className="us-row vsc-row">
-                  <span className="vsc-ico" aria-hidden="true">
-                    <S3Glyph name={glyph} size={16} stroke={2.2} />
-                  </span>
-                  <span className="vsc-copy">
-                    <span className="us-row-title">{t(`vsc.${key}`)}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="us-row-desc">{t("vsc.launcherHint")}</p>
-          </section>
-
-          <section className="us-section" aria-labelledby="vsc-recent">
-            <h3 id="vsc-recent" className="vsc-title">{t("vsc.recentTitle")}</h3>
-            {recent.length ? (
-              <div className="us-card stack">
-                {recent.map((item) => {
-                  const state = pins[item.id];
-                  return (
-                    <div key={item.id} className="us-row vsc-row">
-                      <Avatar user={{ id: item.id, username: item.username, displayName: item.name, avatarUrl: item.avatarUrl }} size={32} />
-                      <span className="vsc-copy">
-                        <span className="us-row-title">{item.name}</span>
-                        {state === "requested" ? <span className="us-row-desc" role="status">{t("vsc.pinRequested")}</span> : null}
-                        {state === "unsupported" ? <span className="us-row-desc" role="status">{t("vsc.pinUnsupported")}</span> : null}
-                        {state === "failed" ? <span className="us-row-desc vsc-error" role="alert">{t("vsc.pinFailed")}</span> : null}
+        <WidgetsSiriPane
+          platform="android"
+          t={t}
+          locale={locale}
+          siriReady={false}
+          onAddToSiri={openSiri}
+          siriState={siriState}
+          phraseList={null}
+          androidShortcuts={
+            <>
+              <section className="us-section" aria-labelledby="vsc-launcher">
+                <h3 id="vsc-launcher" className="vsc-title">{t("vsc.launcherTitle")}</h3>
+                <div className="us-card stack">
+                  {[
+                    ["newMessage", "msg"],
+                    ["dnd", "moon"],
+                    ["friends", "users"],
+                  ].map(([key, glyph]) => (
+                    <div key={key} className="us-row vsc-row">
+                      <span className="vsc-ico" aria-hidden="true">
+                        <S3Glyph name={glyph} size={16} stroke={2.2} />
                       </span>
-                      <button
-                        type="button"
-                        className="us-btn vsc-pin"
-                        onClick={() => pin(item)}
-                        disabled={state === "busy" || state === "unsupported" || avail?.pinSupported === false}
-                      >
-                        {t("vsc.addToHome")}
-                      </button>
+                      <span className="vsc-copy">
+                        <span className="us-row-title">{t(`vsc.${key}`)}</span>
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="us-row-desc">{t("vsc.noRecent")}</p>
-            )}
-            <p className="us-row-desc">{t("vsc.recentHint")}</p>
-          </section>
-        </>
+                  ))}
+                </div>
+                <p className="us-row-desc">{t("vsc.launcherHint")}</p>
+              </section>
+
+              <section className="us-section" aria-labelledby="vsc-recent">
+                <h3 id="vsc-recent" className="vsc-title">{t("vsc.recentTitle")}</h3>
+                {recent.length ? (
+                  <div className="us-card stack">
+                    {recent.map((item) => {
+                      const state = pins[item.id];
+                      return (
+                        <div key={item.id} className="us-row vsc-row">
+                          <Avatar user={{ id: item.id, username: item.username, displayName: item.name, avatarUrl: item.avatarUrl }} size={32} />
+                          <span className="vsc-copy">
+                            <span className="us-row-title">{item.name}</span>
+                            {state === "requested" ? <span className="us-row-desc" role="status">{t("vsc.pinRequested")}</span> : null}
+                            {state === "unsupported" ? <span className="us-row-desc" role="status">{t("vsc.pinUnsupported")}</span> : null}
+                            {state === "failed" ? <span className="us-row-desc vsc-error" role="alert">{t("vsc.pinFailed")}</span> : null}
+                          </span>
+                          <button
+                            type="button"
+                            className="us-btn vsc-pin"
+                            onClick={() => pin(item)}
+                            disabled={state === "busy" || state === "unsupported" || avail?.pinSupported === false}
+                          >
+                            {t("vsc.addToHome")}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="us-row-desc">{t("vsc.noRecent")}</p>
+                )}
+                <p className="us-row-desc">{t("vsc.recentHint")}</p>
+              </section>
+            </>
+          }
+        />
       ) : null}
 
       {!platform && desktop ? (

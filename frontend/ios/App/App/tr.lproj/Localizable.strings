@@ -31,6 +31,9 @@
 "Opens Descall and joins a voice channel." = "Descall'ı açar ve bir ses kanalına katılır.";
 "Send ${message} to ${friend}" = "${message} mesajını ${friend} kişisine gönder";
 "Set status to ${status}" = "Durumu ${status} yap";
+"Call a Friend" = "Arkadaşını Ara";
+"Opens Descall and starts a voice call with a friend." = "Descall'ı açar ve bir arkadaşınla sesli arama başlatır.";
+"Call ${friend}" = "${friend} kişisini ara";
 "Join ${room}" = "${room} kanalına katıl";
 "Send Message" = "Mesaj Gönder";
 "Unread" = "Okunmamış";

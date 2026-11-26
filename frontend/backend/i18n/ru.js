@@ -104,6 +104,8 @@ module.exports = {
     mentionedShort: "Упоминание",
     friendTitle: "Запрос в друзья",
     friendBody: "{from} хочет добавить вас в друзья",
+    waveTitle: "Привет",
+    waveBody: "{from} помахал(а) вам",
     calling: "{from} звонит вам",
     voiceCall: "Голосовой звонок",
     videoCall: "Видеозвонок",

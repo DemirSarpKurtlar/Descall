@@ -89,6 +89,12 @@ jobs:
           set -euo pipefail
           swiftc -o "$RUNNER_TEMP/kit" App/DescallKit/*.swift selftest/kit/main.swift
           "$RUNNER_TEMP/kit"
+      - name: Widgets logic selftest (Swift, favourites / refresh / Live Activity state)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/wl" App/DescallKit/*.swift App/WidgetShared/DescallWidgetLogic.swift selftest/widgets/main.swift
+          "$RUNNER_TEMP/wl"
       - name: Passkey logic selftest (Swift)
         working-directory: frontend/ios
         run: |
@@ -179,6 +185,17 @@ jobs:
             ls "$BAPPEX/Frameworks"
           fi
           echo "Broadcast extension: $(du -sh "$BAPPEX" | cut -f1), app Frameworks: $(ls "$APP/Frameworks" | tr '\n' ' ')"
+          # Widgets draft B: WidgetKit extension (widgets + Live Activity), strings in every language.
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          test -d "$WAPPEX" || { echo "::error::DescallWidgets.appex not embedded"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WAPPEX/Info.plist")" = "com.descall.app.widgets"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$WAPPEX/Info.plist")" = "com.apple.widgetkit-extension"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' "$APP/Info.plist")" = "true"
+          test -d "$WAPPEX/Metadata.appintents" || { echo "::error::widget App Intents metadata missing"; exit 1; }
+          for L in en tr de es fr pt-BR ru; do
+            test -f "$WAPPEX/$L.lproj/Localizable.strings" || { echo "::error::DescallWidgets $L.lproj/Localizable.strings missing"; exit 1; }
+          done
+          echo "Widget extension: $(du -sh "$WAPPEX" | cut -f1)"
           # 3.7.17: the Apple Watch app is embedded with its own id, the iPhone app as companion.
           WAPP="$APP/Watch/DescallWatch.app"
           test -d "$WAPP" || { echo "::error::DescallWatch.app not embedded"; exit 1; }

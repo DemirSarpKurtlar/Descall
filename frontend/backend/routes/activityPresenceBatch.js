@@ -54,6 +54,44 @@ async function invisibleIds(ids) {
   return out;
 }
 
+/**
+ * The live activity rows these (already friend-checked) users let their friends see:
+ * { [id]: row | null | { privacy: 'only-me' } }. Also used by /api/native (widget faces).
+ */
+async function visibleActivityRows(ids) {
+  const [settingsRes, presenceRes, hidden] = await Promise.all([
+    supabase
+      .from('user_activity_settings')
+      .select('user_id,privacy,show_game_activity,show_app_activity,show_browser')
+      .in('user_id', ids),
+    supabase
+      .from('user_presence')
+      .select('user_id,app_name,app_type,display_name,started_at,is_manual,updated_at')
+      .in('user_id', ids),
+    invisibleIds(ids),
+  ]);
+  if (presenceRes.error) throw presenceRes.error;
+
+  const settingsById = new Map((settingsRes.data || []).map((r) => [r.user_id, { ...DEFAULTS, ...r }]));
+  const rowById = new Map((presenceRes.data || []).map((r) => [r.user_id, r]));
+  const presence = {};
+  for (const id of ids) {
+    const settings = settingsById.get(id) || DEFAULTS;
+    if (settings.privacy === 'hidden') presence[id] = null;
+    else if (settings.privacy === 'only-me') presence[id] = { privacy: 'only-me' };
+    else if (hidden.has(id)) presence[id] = null;
+    else {
+      const row = rowById.get(id);
+      if (!row || !kindVisible(row, settings)) presence[id] = null;
+      else {
+        const { user_id: _uid, ...rest } = row;
+        presence[id] = rest;
+      }
+    }
+  }
+  return presence;
+}
+
 router.post('/presence/batch', requireAuth, async (req, res) => {
   const me = req.user?.id;
   if (!me) return res.sendStatus(401);
@@ -64,36 +102,7 @@ router.post('/presence/batch', requireAuth, async (req, res) => {
     const ids = [...new Set(pool)].slice(0, MAX_PRESENCE_BATCH);
     if (!ids.length) return res.json({ presence: {} });
 
-    const [settingsRes, presenceRes, hidden] = await Promise.all([
-      supabase
-        .from('user_activity_settings')
-        .select('user_id,privacy,show_game_activity,show_app_activity,show_browser')
-        .in('user_id', ids),
-      supabase
-        .from('user_presence')
-        .select('user_id,app_name,app_type,display_name,started_at,is_manual,updated_at')
-        .in('user_id', ids),
-      invisibleIds(ids),
-    ]);
-    if (presenceRes.error) throw presenceRes.error;
-
-    const settingsById = new Map((settingsRes.data || []).map((r) => [r.user_id, { ...DEFAULTS, ...r }]));
-    const rowById = new Map((presenceRes.data || []).map((r) => [r.user_id, r]));
-    const presence = {};
-    for (const id of ids) {
-      const settings = settingsById.get(id) || DEFAULTS;
-      if (settings.privacy === 'hidden') presence[id] = null;
-      else if (settings.privacy === 'only-me') presence[id] = { privacy: 'only-me' };
-      else if (hidden.has(id)) presence[id] = null;
-      else {
-        const row = rowById.get(id);
-        if (!row || !kindVisible(row, settings)) presence[id] = null;
-        else {
-          const { user_id: _uid, ...rest } = row;
-          presence[id] = rest;
-        }
-      }
-    }
+    const presence = await visibleActivityRows(ids);
     return res.json({ presence });
   } catch (err) {
     console.error('[activity] presence batch failed:', err?.message || err);
@@ -103,3 +112,4 @@ router.post('/presence/batch', requireAuth, async (req, res) => {
 
 module.exports = router;
 module.exports.MAX_PRESENCE_BATCH = MAX_PRESENCE_BATCH;
+module.exports.visibleActivityRows = visibleActivityRows;

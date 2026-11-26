@@ -58,6 +58,8 @@ enum DescallSharedSessionSync {
         DescallIntentBridge.shared.reset()
         // Siri suggestions and Spotlight must not keep showing this account's friends.
         INInteraction.deleteAll(completion: nil)
+        // Widgets draft B: favourites, cached faces and the call card go too.
+        DescallWidgetsBridge.signedOut()
         afterChange()
     }
 

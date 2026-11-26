@@ -16,6 +16,8 @@
 "error.message.tooLong" = "Le message est trop long. 1000 caractères maximum.";
 "error.call.none" = "Tu n'es dans aucun appel ni salon vocal pour le moment.";
 "error.call.failed" = "L'appel n'a pas répondu. Ouvre Descall et réessaie.";
+"error.call.busy" = "Tu es déjà en appel. Quitte-le d'abord.";
+"dialog.call.calling" = "Appel de %@ dans Descall.";
 "error.voice.failed" = "Impossible de rejoindre le salon vocal. Réessaie dans Descall.";
 "error.voice.noPermission" = "Tu n'as pas l'autorisation de rejoindre ce salon vocal.";
 "error.voice.mic" = "Descall a besoin du micro pour rejoindre. Autorise-le dans Réglages.";

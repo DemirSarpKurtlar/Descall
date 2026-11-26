@@ -42,5 +42,112 @@ export const VSC_EN = {
     "chat": "Open a chat",
     "place": "Open a server"
   },
-  "morePhrases": "+{count} more ways to say it"
+  "morePhrases": "+{count} more ways to say it",
+  "wg": {
+    "tabsLabel": "Siri and widget settings",
+    "tab": {
+      "siri": "Siri",
+      "faces": "Favorite faces",
+      "lock": "Lock screen",
+      "shortcuts": "Shortcuts"
+    },
+    "people": "{count} people",
+    "waveReceived": "waved at you",
+    "wave": {
+      "cooldown": "Wait a moment, you just waved.",
+      "limit": "You've used today's waves.",
+      "notFriend": "You can only wave at friends.",
+      "failed": "Couldn't wave. Try again."
+    },
+    "act": {
+      "screen": "Sharing screen",
+      "voice": "In voice",
+      "voiceIn": "Voice · {name}",
+      "game": "Playing {name}",
+      "music": "Listening to {name}",
+      "app": "Using {name}",
+      "idle": "Idle",
+      "dnd": "Do not disturb",
+      "offline": "Offline"
+    },
+    "state": {
+      "loading": "Loading",
+      "error": "Couldn't load your data.",
+      "offline": "You're offline.",
+      "retry": "Try again"
+    },
+    "siri": {
+      "previewLabel": "Siri answer preview",
+      "tryHint": "Pick a question to see the answer with your own data",
+      "q": {
+        "unread": "How many unread messages do I have?",
+        "online": "Who's online?",
+        "voice": "Who's in voice?"
+      },
+      "aUnreadNone": "You have no unread messages.",
+      "aUnreadOne": "You have 1 unread message.",
+      "aUnreadMany": "You have {count} unread messages.",
+      "aOnlineNone": "None of your friends are online right now.",
+      "aOnlineMany": "{count} of your friends are online.",
+      "aVoiceNone": "Nobody is in voice right now.",
+      "aVoiceMany": "{count} people are in voice.",
+      "favTitle": "For your favorites",
+      "generalTitle": "General",
+      "callPhrase": "Call {name}",
+      "msgHint": "Ready on its own, no setup",
+      "callHint": "Add it to Siri in the Shortcuts app",
+      "added": "Added",
+      "ready": "Ready",
+      "noFav": "Pick your people in Favorite faces first; shortcuts for each are made on their own.",
+      "favHint": "Message and call shortcuts for your {count} favorites are made on their own and follow your changes.",
+      "allPhrases": "Every phrase"
+    },
+    "faces": {
+      "previewLabel": "Medium widget preview",
+      "online": "Online",
+      "emptyPreview": "Faces show up here once you pick them",
+      "wallpaper": "Wallpaper",
+      "wall": {
+        "dark": "Dark",
+        "light": "Light"
+      },
+      "pickTitle": "Pick and order",
+      "pickHint": "Hold a face and drag it to change the order. The single-person lock screen widget shows the first one.",
+      "search": "Search friends",
+      "reset": "Back to suggested",
+      "changed": "Favorite faces updated",
+      "undo": "Undo",
+      "full": "You can pick up to 8 faces. Remove one first.",
+      "noFriends": "No friends yet. Once you add some, pick their faces here.",
+      "showActivity": "Show activity",
+      "showActivityHint": "Games, music, screen sharing",
+      "wave": "Wave button",
+      "waveHint": "Up to {count} times a day per friend",
+      "preview": "Show message text",
+      "previewHint": "In the unread bubbles; off: only sender and count"
+    },
+    "lock": {
+      "favPerson": "Favorite person",
+      "favPersonHint": "One face and their status",
+      "lastMsg": "Latest message",
+      "lastMsgHint": "Sender and bubble",
+      "cluster": "Channel cluster",
+      "clusterHint": "Who's in voice",
+      "speaker": "Speaker",
+      "speakerHint": "While a call runs",
+      "addWidget": "Add widgets",
+      "widgetsCount": "{count} widgets",
+      "placed": "Placed",
+      "howToFor": "How to add {name}",
+      "step1": "Touch and hold the lock screen, then tap Customize.",
+      "step2": "Pick Lock Screen and tap the widget area under the clock.",
+      "step3": "Find Descall in the list and add the {name} widget.",
+      "speaking": "{name} is speaking",
+      "newMessages": "{count} new messages",
+      "noMessages": "No new messages",
+      "liveOn": "Live Activities are on: in a call, the speaker's face shows in the Dynamic Island and on the lock screen.",
+      "liveOff": "Live Activities are off. Turn them on in Settings > Descall > Live Activities.",
+      "homeHint": "Home screen: touch and hold an empty spot, tap +, and search for Descall. The small sizes also show in StandBy."
+    }
+  }
 };

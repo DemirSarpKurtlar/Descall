@@ -301,6 +301,20 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "friend-request", fromId: event.fromId, from },
     };
   }
+  // Widgets draft B: a friend waved from a home / lock screen widget (lib/friendWave.js).
+  if (type === "friend-wave") {
+    return {
+      ...base,
+      threadId: "friend-wave",
+      priority: 5,
+      // A wave is a "hey, are you there": stale after an hour.
+      expiresInSec: 3600,
+      collapseId: event.fromId ? `wave-${event.fromId}`.slice(0, 64) : "",
+      title: s.t("waveTitle"),
+      body: s.t("waveBody", { from }),
+      data: { type: "friend-wave", fromId: event.fromId, from },
+    };
+  }
   // Re-engagement (lib/reengage.js): a friend joined a voice channel the recipient can join.
   if (type === "friend-voice") {
     const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");

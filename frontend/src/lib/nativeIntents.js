@@ -25,6 +25,8 @@ export const INTENT_ACTIONS = Object.freeze([
   "newMessage",
   "openFriends",
   "openPath",
+  // Widgets draft B: "Kaan'i ara" (a favourite's Siri / Spotlight shortcut) starts a DM call.
+  "callFriend",
 ]);
 export const MAX_RECENT_SHORTCUTS = 4;
 export const PLUGIN_TIMEOUT_MS = 2500;
@@ -133,6 +135,12 @@ export function parseIntentAction(raw) {
   if (type === "setStatus") {
     return INTENT_STATUSES.includes(p.status) ? { id, type, payload: { status: p.status } } : null;
   }
+  if (type === "callFriend") {
+    const userId = str(p.userId, 64);
+    const username = str(p.username, 64);
+    if (!ID_RE.test(userId) || (username && !USERNAME_RE.test(username))) return null;
+    return { id, type, payload: { userId, username, video: p.video === true } };
+  }
   if (type === "openPath") {
     const path = str(p.path, 200);
     // In-app paths only (the deep link router made them): never a URL.
@@ -185,6 +193,13 @@ export async function runIntentAction(action, ctx = {}) {
         ctx.navigate?.("/direct");
         ctx.onNewMessage?.();
         return { ok: true };
+      case "callFriend": {
+        if (!ctx.callFriend) return { ok: false, error: "not_ready" };
+        if (callStatePayload(ctx.getVoice?.() || {}).active) return { ok: false, error: "busy" };
+        const res = await ctx.callFriend(a.payload);
+        if (res && res.ok === false) return { ok: false, error: res.error || "failed" };
+        return { ok: true };
+      }
       case "openFriends":
         ctx.navigate?.("/friends");
         return { ok: true };

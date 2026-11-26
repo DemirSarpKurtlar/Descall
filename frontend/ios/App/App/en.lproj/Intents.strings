@@ -16,6 +16,8 @@
 "error.message.tooLong" = "The message is too long. Keep it under 1000 characters.";
 "error.call.none" = "You're not in a call or voice channel right now.";
 "error.call.failed" = "The call didn't respond. Open Descall and try again.";
+"error.call.busy" = "You're already in a call. Leave it first.";
+"dialog.call.calling" = "Calling %@ in Descall.";
 "error.voice.failed" = "Couldn't join the voice channel. Try again in Descall.";
 "error.voice.noPermission" = "You don't have permission to join that voice channel.";
 "error.voice.mic" = "Descall needs microphone access to join. Allow it in Settings.";

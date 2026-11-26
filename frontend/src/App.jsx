@@ -95,6 +95,7 @@ import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.j
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
 import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
+import { useNativeWidgets } from "./hooks/useNativeWidgets";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -4477,7 +4478,8 @@ export default function App() {
         return;
       }
 
-      if (type === "dm" || type === "missed-call" || type === "call") {
+      // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =
@@ -5286,6 +5288,23 @@ export default function App() {
     friends,
     servers: myServers,
     groups: myGroups,
+  });
+
+  // Widgets draft B: favourite faces, timeline reloads, the call's Live Activity, waves.
+  useNativeWidgets({
+    me,
+    friends,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    servers: myServers,
+    groups: myGroups,
+    dmUnread,
+    groupUnread,
+    toast,
+    onOpenDm: (user) => navigate(directPath(user)),
+    t,
   });
 
   if (bootError && !me) {
