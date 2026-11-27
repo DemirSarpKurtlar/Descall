@@ -319,6 +319,10 @@ export function OnboardingProvider({
       void api.event("onboarding_joined", { server: serverId, slot, interest: interests.join(",") });
       let server = null;
       const alreadyMember = (data?.myServers || []).some((s) => String(s.id) === serverId) || joinedIds.has(serverId);
+      // What this send can still earn: the join step (once) and the first message (once).
+      const joinStep = (data?.checklist?.items || []).find((i) => i.id === "join");
+      const joinBonus = !alreadyMember && joinStep && !joinStep.done ? joinStep.reward : 0;
+      const helloBefore = Boolean(data?.firstHello?.at);
       try {
         if (!alreadyMember) {
           const res = await api.join(serverId);
@@ -332,7 +336,7 @@ export function OnboardingProvider({
       }
       const channel = preview?.introChannel || null;
       if (!text || !channel) {
-        setSend({ phase: "sent", serverId, joinedOnly: true, alreadyMember, server, startedAt: Date.now(), name: target.name, channelId: channel?.id || null });
+        setSend({ phase: "sent", serverId, joinedOnly: true, alreadyMember, server, startedAt: Date.now(), name: target.name, channelId: channel?.id || null, joinBonus, helloBefore });
         void load({ quiet: true });
         return;
       }
@@ -350,8 +354,12 @@ export function OnboardingProvider({
           text,
           startedAt: Date.now(),
           name: target.name,
+          joinBonus,
+          helloBefore,
         };
         setSend(next);
+        // Follow the conversation where the message went (the preview polls it live).
+        setPreviewChannel(channel.id);
         setTrack({ replies: 0, reactions: 0, repliers: [] });
         void load({ quiet: true });
         if (isMobile) onOpenChannel?.(serverId, channel.id);

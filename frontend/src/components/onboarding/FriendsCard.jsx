@@ -7,43 +7,35 @@
  *     preview of what your friend will see.
  * Contacts matching is not offered: the app has no contacts permission flow yet.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { useT } from "../../context/LocaleContext";
 import { useOnboarding } from "./OnboardingContext";
 import { Avatar, Coin } from "./parts";
 import { buildFriendInviteUrl } from "../../lib/referral";
+import { copyText } from "../../lib/copyText";
 import { getInviteQr } from "../../api/onboarding";
 import { Check, Copy, HandWaving, Link, MessageSquare, QrCode, Send, Share, UserPlus, X, Lock } from "../ui/Icon.jsx";
+
+/** Share links always point at the public site: inside the apps the page origin is a local shell
+ * (tauri.localhost, https://localhost on Android) that a friend could not open. */
+function shareOrigin() {
+  try {
+    return /(^|\.)descall\.com$/i.test(window.location.hostname) ? window.location.origin : "https://descall.com";
+  } catch {
+    return "https://descall.com";
+  }
+}
 
 function prettyUrl(url) {
   return String(url || "").replace(/^https?:\/\//, "");
 }
 
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      ta.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
-
 function QrDialog({ onClose }) {
   const t = useT();
   const [qr, setQr] = useState({ state: "loading" });
+  const cardRef = useRef(null);
+  useModalFocus(true, cardRef);
   useEffect(() => {
     let alive = true;
     getInviteQr()
@@ -58,7 +50,7 @@ function QrDialog({ onClose }) {
   }, [onClose]);
   return (
     <div className="onb onb-qr-pop" role="dialog" aria-modal="true" aria-label={t("onb.friends.qrTitle")} onClick={onClose}>
-      <div className="onb-qr-card" onClick={(e) => e.stopPropagation()}>
+      <div className="onb-qr-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <b style={{ fontSize: 16 }}>{t("onb.friends.qrTitle")}</b>
         {qr.state === "ready" ? (
           // The SVG comes from our own server (qrcode library output), never from user input.
@@ -81,7 +73,7 @@ function useInvite() {
   const [copied, setCopied] = useState(false);
   const [qr, setQr] = useState(false);
   const username = o?.data?.me?.username || o?.me?.username || "";
-  const url = buildFriendInviteUrl(username);
+  const url = buildFriendInviteUrl(username, shareOrigin());
   const copy = async () => {
     const ok = await copyText(url);
     if (ok) {

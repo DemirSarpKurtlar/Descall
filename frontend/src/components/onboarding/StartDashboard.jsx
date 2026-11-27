@@ -13,13 +13,19 @@ import FriendsCard from "./FriendsCard";
 import { quickReplies } from "../../lib/onboarding";
 import { Award, Bot, Clock, Compass, Eye, ShieldCheck, TrendingUp, Volume2, X, RefreshCw, Check } from "../ui/Icon.jsx";
 
+const CHIPS_SHOWN = 8;
+
 export function InterestChips({ size = "md" }) {
   const t = useT();
   const o = useOnboarding();
+  const [all, setAll] = useState(false);
   const catalog = o?.data?.interestCatalog || [];
+  // The first eight, plus any chosen one further down; the rest behind "+N".
+  const shown = all ? catalog : catalog.filter((c, i) => i < CHIPS_SHOWN || o.interests.includes(c.id));
+  const hiddenCount = catalog.length - shown.length;
   return (
     <div className="onb-chips" role="group" aria-label={t("onb.interests.label")}>
-      {catalog.map((c) => {
+      {shown.map((c) => {
         const on = o.interests.includes(c.id);
         return (
           <button key={c.id} type="button" className={`onb-chip${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => o.chooseInterest(c.id)} data-size={size}>
@@ -29,6 +35,11 @@ export function InterestChips({ size = "md" }) {
           </button>
         );
       })}
+      {hiddenCount > 0 ? (
+        <button type="button" className="onb-chip is-more" onClick={() => setAll(true)} aria-label={t("onb.interests.more", { n: hiddenCount })}>
+          +{hiddenCount}
+        </button>
+      ) : null}
     </div>
   );
 }

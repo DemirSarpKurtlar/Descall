@@ -29,7 +29,7 @@ export default function JoinedBanner({ channelId }) {
   const tr = o.track || {};
   return (
     <div className="onb onb-joined" data-testid="onb-joined">
-      {!s.joinedOnly ? (
+      {!s.joinedOnly && !s.helloBefore ? (
         <div className="badge" role="status">
           <span className="onb-badge-ico"><Award size={22} /></span>
           <div style={{ flex: 1, minWidth: 0 }}>

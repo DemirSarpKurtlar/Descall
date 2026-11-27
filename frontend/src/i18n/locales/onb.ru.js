@@ -36,7 +36,8 @@ export const ONB_RU = {
   },
   "interests": {
     "label": "Твои интересы",
-    "onlineHint": "{n} онлайн в этом интересе"
+    "onlineHint": "{n} онлайн в этом интересе",
+    "more": "Ещё интересов: {n}"
   },
   "interest": {
     "study": "Учёба",

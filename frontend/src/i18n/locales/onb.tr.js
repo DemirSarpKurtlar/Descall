@@ -36,7 +36,8 @@ export const ONB_TR = {
   },
   "interests": {
     "label": "İlgi alanların",
-    "onlineHint": "Bu alanda {n} kişi çevrimiçi"
+    "onlineHint": "Bu alanda {n} kişi çevrimiçi",
+    "more": "{n} ilgi alanı daha"
   },
   "interest": {
     "study": "Ders çalışma",

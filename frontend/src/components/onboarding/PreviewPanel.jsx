@@ -5,6 +5,7 @@
  * edit. After sending: replies / reactions counters and a 10-second undo.
  */
 import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { useOnboarding } from "./OnboardingContext";
 import { Avatar, Coin, ServerIcon } from "./parts";
@@ -31,31 +32,33 @@ function SentCard({ o, t, compact }) {
         <div>
           {s.joinedOnly ? (
             <b>{t("onb.sent.joinedTitle", { name: s.name || "" })}</b>
-          ) : s.rewarded === false ? (
+          ) : s.helloBefore ? (
             <b>{t("onb.sent.sentTitle")}</b>
           ) : (
-            <b>{t("onb.sent.rewardTitle", { n: (s.rewardAmount || 50) + (o.data?.checklist?.items?.find((i) => i.id === "join")?.paidAmount ? 20 : 0) })}</b>
+            <b>{t("onb.sent.rewardTitle", { n: (s.rewardAmount || 50) + (s.joinBonus || 0) })}</b>
           )}
           <br />
-          <span className="onb-muted">{s.joinedOnly ? t("onb.sent.joinedSub") : t("onb.sent.sub", { name: s.name || "" })}</span>
+          <span className="onb-muted">{s.joinedOnly ? (s.helloBefore ? t("onb.sent.joinedTitle", { name: s.name || "" }) : t("onb.sent.joinedSub")) : t("onb.sent.sub", { name: s.name || "" })}</span>
         </div>
-        {undoLeft > 0 ? (
-          <button type="button" className="u" onClick={() => void o.undo()} aria-label={t("onb.sent.undoAria", { n: undoLeft })}>
-            <Undo2 size={14} />
-            {t("onb.sent.undo", { n: undoLeft })}
-          </button>
-        ) : s.messageId ? (
-          <span className="u">
-            <Reply size={14} />
-            {t("onb.sent.replies", { n: tr.replies || 0 })}
-          </span>
-        ) : null}
       </div>
       {s.messageId ? (
         <div className="stats">
           <span className={tr.reactions ? "is-on" : ""}><Heart size={13} />{t("onb.sent.reactions", { n: tr.reactions || 0 })}</span>
           <span className={tr.replies ? "is-on" : ""}><Reply size={13} />{t("onb.sent.replies", { n: tr.replies || 0 })}</span>
-          {!tr.replies ? <span>{t("onb.sent.waiting")}</span> : null}
+          {!tr.replies && undoLeft <= 0 ? <span>{t("onb.sent.waiting")}</span> : null}
+          {undoLeft > 0 ? (
+            <button type="button" className="u" onClick={() => void o.undo()} aria-label={t("onb.sent.undoAria", { n: undoLeft })}>
+              <Undo2 size={14} />
+              {t("onb.sent.undo", { n: undoLeft })}
+            </button>
+          ) : null}
+        </div>
+      ) : undoLeft > 0 ? (
+        <div className="stats">
+          <button type="button" className="u" onClick={() => void o.undo()} aria-label={t("onb.sent.undoAria", { n: undoLeft })}>
+            <Undo2 size={14} />
+            {t("onb.sent.undo", { n: undoLeft })}
+          </button>
         </div>
       ) : null}
       {!compact ? (
@@ -216,7 +219,7 @@ export function PreviewBody({ variant = "panel", onClose }) {
                 onChange={(e) => o.editDraft(e.target.value)}
                 disabled={busy}
               />
-              <div className="row">
+              <div className="row" hidden={phone}>
                 <span className="onb-pill gl"><Sparkles size={12} />{o.draftEdited ? t("onb.preview.edited") : t("onb.preview.prepared")}</span>
                 {rewardNow > 0 ? <span className="onb-pill gd" style={{ marginLeft: "auto" }}><Coin size={11} />+{rewardNow}</span> : null}
               </div>
@@ -319,6 +322,8 @@ export default function PreviewPanel() {
 export function PreviewSheet() {
   const o = useOnboarding();
   const t = useT();
+  const sheetRef = useRef(null);
+  useModalFocus(Boolean(o?.previewTarget), sheetRef);
   useEffect(() => {
     if (!o?.previewTarget) return undefined;
     const onKey = (e) => {
@@ -331,7 +336,7 @@ export function PreviewSheet() {
   return (
     <div className="onb">
       <div className="onb-scrim" onClick={o.closePreview} aria-hidden="true" />
-      <div className="onb-sheet" role="dialog" aria-modal="true" aria-label={t("onb.preview.title")}>
+      <div className="onb-sheet" ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t("onb.preview.title")}>
         <div className="grab" aria-hidden="true" />
         <div className="onb-pv-scroll">
           <PreviewBody variant="sheet" onClose={o.closePreview} />

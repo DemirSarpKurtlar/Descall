@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
+import GlassCheckbox from "../../ui/GlassCheckbox.jsx";
 import { BarList, SERIES_A, SERIES_B, fmtNum, fmtPct } from "./GrowthCharts.jsx";
 
 /**
@@ -167,7 +168,7 @@ export default function OnboardingCard({ days }) {
           <div className="agr-onb-toggles">
             {["enabled", "autoJoin", "rehberEnabled", "rewardsEnabled"].map((k) => (
               <label key={k} className="agr-onb-check">
-                <input type="checkbox" checked={Boolean(cfg[k])} onChange={(e) => setCfg({ ...cfg, [k]: e.target.checked })} />
+                <GlassCheckbox checked={Boolean(cfg[k])} onChange={(e) => setCfg({ ...cfg, [k]: e.target.checked })} />
                 {t(`onb.admin.flag.${k}`)}
               </label>
             ))}

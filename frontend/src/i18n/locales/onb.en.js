@@ -36,7 +36,8 @@ export const ONB_EN = {
   },
   "interests": {
     "label": "Your interests",
-    "onlineHint": "{n} online in this interest"
+    "onlineHint": "{n} online in this interest",
+    "more": "{n, plural, one {# more interest} other {# more interests}}"
   },
   "interest": {
     "study": "Studying",
