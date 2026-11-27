@@ -18,7 +18,8 @@ const LOCALES = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
 
 const strings = readFileSync(join(games, "GameStrings.swift"), "utf8");
 const table = new Map();
-for (const m of strings.matchAll(/^\s*"([^"]+)": \[(.*)\],\s*$/gm)) {
+// One line per key: d["key"] = [locale: text, ...] as [String: String] (see makeTable).
+for (const m of strings.matchAll(/^\s*d\["([^"]+)"\] = \[(.*)\] as \[String: String\]\s*$/gm)) {
   const entry = {};
   for (const p of m[2].matchAll(/"([a-zA-Z-]+)": "((?:[^"\\]|\\.)*)"/g)) entry[p[1]] = p[2];
   table.set(m[1], entry);

@@ -13,5 +13,6 @@ const keys = Object.keys(cat.en).sort();
 for (const id of Object.keys(cat)) assert.deepEqual(Object.keys(cat[id]).sort(), keys, `${id}: same keys as en`);
 const xml = readFileSync(files.find(([p]) => p.endsWith("values-ru/share_strings.xml"))[0], "utf8");
 assert.match(xml, /<item quantity="few">Отправка в %1\$d чата<\/item>/, "Russian plural forms survive");
-assert.match(readFileSync(files[0][0], "utf8"), /"tr": \[/);
+assert.match(readFileSync(files[0][0], "utf8"), /"tr": locale_tr\(\),/);
+assert.match(readFileSync(files[0][0], "utf8"), /t\["cancel"\] = "Vazgeç"/);
 console.log("gen-share-native-strings selftest: ok");
