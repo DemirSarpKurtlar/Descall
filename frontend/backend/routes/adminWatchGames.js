@@ -17,6 +17,7 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const wg = require("../lib/watchGames");
+const { apiError } = require("../lib/apiError");
 
 const router = express.Router();
 const TABLE = "admin_watch_game_scores";
@@ -57,13 +58,13 @@ router.get("/watch-games/scores", async (req, res) => {
     return reply(res, out.rows, "ok", d.days);
   } catch (err) {
     console.error("[adminWatchGames] read", err?.message || err);
-    return res.status(500).json({ error: "Could not load game scores.", code: "WATCH_GAMES_READ_FAILED" });
+    return res.status(500).json(apiError("Internal server error.", null, { code: "WATCH_GAMES_READ_FAILED" }));
   }
 });
 
 router.post("/watch-games/scores", async (req, res) => {
   const incoming = wg.sanitizeScores(req.body?.scores);
-  if (!Array.isArray(req.body?.scores)) return res.status(400).json({ error: "scores must be a list.", code: "BAD_SCORES" });
+  if (!Array.isArray(req.body?.scores)) return res.status(400).json(apiError("Invalid request body.", null, { code: "BAD_SCORES" }));
   try {
     const out = await loadRows(req.user.id);
     if (out.error) {
@@ -92,7 +93,7 @@ router.post("/watch-games/scores", async (req, res) => {
     return reply(res, [...byKey.values()], "ok", days);
   } catch (err) {
     console.error("[adminWatchGames] write", err?.message || err);
-    return res.status(500).json({ error: "Could not save game scores.", code: "WATCH_GAMES_WRITE_FAILED" });
+    return res.status(500).json(apiError("Internal server error.", null, { code: "WATCH_GAMES_WRITE_FAILED" }));
   }
 });
 

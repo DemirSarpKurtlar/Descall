@@ -208,7 +208,7 @@ struct GameIcon: View {
     var size: CGFloat = GT.iconSize
 
     var body: some View {
-        let (a, b) = GT.gradient(game)
+        let colors = GT.gradient(game)
         Canvas { ctx, sz in
             let s = sz.width / 40
             var g = ctx
@@ -216,7 +216,7 @@ struct GameIcon: View {
             GameIcon.draw(game, &g)
         }
         .frame(width: size, height: size)
-        .background(LinearGradient(colors: [a, b], startPoint: .topLeading, endPoint: .bottomTrailing))
+        .background(LinearGradient(colors: [colors.0, colors.1], startPoint: .topLeading, endPoint: .bottomTrailing))
         .clipShape(RoundedRectangle(cornerRadius: size * GT.iconRadiusRatio, style: .continuous))
         .accessibilityHidden(true)
     }

@@ -177,24 +177,25 @@ struct GamePill: View {
     var icon: String? = nil
     var tone: GamePillTone = .brand
 
+    private var colors: (bg: Color, fg: Color) {
+        switch tone {
+        case .brand: return (GT.pillBrand, GT.pillBrandText)
+        case .ok: return (GT.ok.opacity(0.2), GT.okText)
+        case .gold: return (GT.gold.opacity(0.2), GT.goldText)
+        case .red: return (GT.danger.opacity(0.24), GT.dangerText)
+        case .glass: return (Color.white.opacity(0.14), .white)
+        }
+    }
+
     var body: some View {
-        let (bg, fg): (Color, Color) = {
-            switch tone {
-            case .brand: return (GT.pillBrand, GT.pillBrandText)
-            case .ok: return (GT.ok.opacity(0.2), GT.okText)
-            case .gold: return (GT.gold.opacity(0.2), GT.goldText)
-            case .red: return (GT.danger.opacity(0.24), GT.dangerText)
-            case .glass: return (Color.white.opacity(0.14), .white)
-            }
-        }()
         HStack(spacing: 3) {
             if let icon { Image(systemName: icon).font(.system(size: 9, weight: .bold)) }
             Text(text).font(.system(size: 11, weight: .bold)).lineLimit(1)
         }
-        .foregroundStyle(fg)
+        .foregroundStyle(colors.fg)
         .padding(.horizontal, 7)
         .padding(.vertical, 2)
-        .background(Capsule().fill(bg))
+        .background(Capsule().fill(colors.bg))
     }
 }
 
