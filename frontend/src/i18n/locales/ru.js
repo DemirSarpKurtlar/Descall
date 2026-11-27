@@ -19,6 +19,7 @@ import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { PUBPAGE_RU } from "./pubpage.ru.js";
 import { ONB_RU } from "./onb.ru.js";
+import { BHUNT_RU } from "./bhunt.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
@@ -78,6 +79,7 @@ export const nested = {
   "dir": DIR_RU,
   "pubpage": PUBPAGE_RU,
   "onb": ONB_RU,
+  "bhunt": BHUNT_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
   "shareSheet": SHARE_SHEET_RU,
@@ -2775,6 +2777,7 @@ export const nested = {
     "countOther": "У пользователя {n} из {total, plural, one {# значка} few {# значков} many {# значков} other {# значка}}",
     "countSelf": "У вас {n} из {total, plural, one {# значка} few {# значков} many {# значков} other {# значка}}",
     "desc": {
+      "ilkselam": "Те, кто отправил своё первое сообщение в Descall настоящему человеку.",
       "alfa": "Участники закрытой альфы.",
       "beta": "Участники открытой беты.",
       "bughunter": "Те, чьи сообщения о багах подтвердились.",
@@ -2854,6 +2857,7 @@ export const nested = {
     "modeCountry": "Только значок страны",
     "modeSpecial": "Страна + особый значок",
     "names": {
+      "ilkselam": "Первый привет",
       "alfa": "Альфа",
       "beta": "Бета",
       "bughunter": "Охотник за багами",

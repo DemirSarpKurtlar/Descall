@@ -19,6 +19,7 @@ import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
 import { ONB_FR } from "./onb.fr.js";
+import { BHUNT_FR } from "./bhunt.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
@@ -78,6 +79,7 @@ export const nested = {
   "dir": DIR_FR,
   "pubpage": PUBPAGE_FR,
   "onb": ONB_FR,
+  "bhunt": BHUNT_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "shareSheet": SHARE_SHEET_FR,
@@ -2775,6 +2777,7 @@ export const nested = {
     "countOther": "{n, plural, one {Cette personne a # badge sur {total}} other {Cette personne a # badges sur {total}}}",
     "countSelf": "{n, plural, one {Tu as # badge sur {total}} other {Tu as # badges sur {total}}}",
     "desc": {
+      "ilkselam": "Celles et ceux qui ont partagé leur premier message Descall avec une vraie personne.",
       "alfa": "Membres de l'alpha fermée.",
       "beta": "Membres de la bêta ouverte.",
       "bughunter": "Personnes dont les signalements de bug ont été confirmés.",
@@ -2854,6 +2857,7 @@ export const nested = {
     "modeCountry": "Badge de pays uniquement",
     "modeSpecial": "Pays + badge spécial",
     "names": {
+      "ilkselam": "Premier salut",
       "alfa": "Alpha",
       "beta": "Bêta",
       "bughunter": "Chasseur de bugs",

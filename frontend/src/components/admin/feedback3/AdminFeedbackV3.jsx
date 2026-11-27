@@ -22,6 +22,10 @@ import {
 } from "./fbModel.js";
 import "../../../styles/admin-feedback-v3.css";
 import { STATUS } from "../adminPalette.js";
+import {
+  useBugHunter, useCandidates, ConfirmButton, BugBanner, ConfirmSheet, UndoDialog, LeaderCard, CandidatesSheet, AdminBugCard, RowMark,
+} from "./BugHunterPanel.jsx";
+import { onlyConfirmed } from "./bhModel.js";
 
 /** The 10 sections the mockup sidebar lists, then "+N more sections". [id, label key, icon]. */
 export const FB3_NAV = [
@@ -165,6 +169,7 @@ function Thread({ f, now, onZoom }) {
         </div>
       </div>
       {f.replies.map((r) => {
+        if (r.type === "bughunt") return <AdminBugCard key={r.id} r={r} now={now} />;
         if (r.type === "system") return <div key={r.id} className="fb3-sys">{localizedField(r, "text")} · {relTime(r.created_at, locale, now)}</div>;
         const note = r.type === "note";
         if (r.type === "reply" && r.isAdmin === false) {
@@ -240,7 +245,7 @@ function Composer({ onSend, busy }) {
   );
 }
 
-function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile, onZoom, busy }) {
+function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile, onZoom, busy, bug, items, onBugConfirm, onBugUndo }) {
   const { t, locale } = useLocale();
   const userLine = [
     t("adminx.fb.member"),
@@ -256,6 +261,7 @@ function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile
           <Tag map={TYPES} k={f.category} />
           <span className="ti">{titleOf(f, t)}</span>
           <span style={{ marginLeft: "auto" }} />
+          <ConfirmButton confirmed={bug} onClick={onBugConfirm} />
           <button type="button" className="qa g" disabled={f.status === "resolved"} onClick={() => onPatch({ status: "resolved" })}><I name="check" size={14} stroke={2.6} />{t("adminx.fb.status.resolved")}</button>
           <button type="button" className="qa" disabled={f.status === "closed"} onClick={() => onPatch({ status: "closed" })}><I name="x" size={14} stroke={2.4} />{t("adminx.fb.close")}</button>
           <button type="button" className="qa r" aria-label={t("adminx.fb.delete")} onClick={onDelete}><I name="trash" size={15} stroke={2.1} /></button>
@@ -283,6 +289,8 @@ function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile
         {facts.length ? (
           <div className="fb3-facts">{facts.map((x) => <span key={x}>{x}</span>)}</div>
         ) : null}
+        {phone && !bug?.live ? <div className="bh-phone-act"><ConfirmButton confirmed={bug} onClick={onBugConfirm} /></div> : null}
+        <BugBanner f={f} c={bug} items={items} onUndo={onBugUndo} />
         <div className="fb3-ctl">
           <div><div className="lb">{t("adminx.fb.labelStatus")}</div><Pills map={STATUSES} cur={f.status} label={t("adminx.fb.statusAria")} onPick={(status) => onPatch({ status })} /></div>
           <div><div className="lb">{t("adminx.fb.labelPriority")}</div><Pills map={PRIORITIES} cur={f.priority} label={t("adminx.fb.priorityAria")} onPick={(priority) => onPatch({ priority })} /></div>
@@ -294,7 +302,7 @@ function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile
   );
 }
 
-function Row({ f, sel, now, onOpen }) {
+function Row({ f, sel, now, onOpen, bug }) {
   const { t, locale } = useLocale();
   const att = f.attachments.length;
   const rep = replyCount(f);
@@ -304,6 +312,7 @@ function Row({ f, sel, now, onOpen }) {
       <div className="c">
         <div className="l1">
           {isUnread(f) ? <span className="ud" aria-label={t("adminx.fb.unread")} /> : null}
+          <RowMark c={bug} />
           <span className="nm">{f.user.username}</span>
           <span className="fb3-ago">{relTime(f.created_at, locale, now)}</span>
         </div>
@@ -353,6 +362,9 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   const [now, setNow] = useState(() => Date.now());
   const searchRef = useRef(null);
   const toastTimer = useRef(null);
+  const [bugOnly, setBugOnly] = useState(false);
+  const [bugSheet, setBugSheet] = useState(null);
+  const mergeRef = useRef(null);
 
   const flash = useCallback((msg) => {
     setToast(msg);
@@ -360,6 +372,9 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
     toastTimer.current = setTimeout(() => setToast(""), 2200);
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+  // Bug Avcısı: confirmations, leaderboard, past candidates (BugHunterPanel.jsx).
+  const bh = useBugHunter({ socket, flash, onFeedback: (f) => mergeRef.current?.(f) });
+  const cands = useCandidates();
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 60000); return () => clearInterval(id); }, []);
 
   const load = useCallback(async () => {
@@ -388,7 +403,9 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
 
   const all = useMemo(() => countAll(items), [items]);
   useEffect(() => { onUnread?.(all.unread); }, [all.unread, onUnread]);
-  const list = useMemo(() => applyFilters(items, { q, status, type, priority, sort, locale }), [items, q, status, type, priority, sort, locale]);
+  const filtered = useMemo(() => applyFilters(items, { q, status, type, priority, sort, locale }), [items, q, status, type, priority, sort, locale]);
+  const list = useMemo(() => (bugOnly ? onlyConfirmed(filtered, bh.map) : filtered), [filtered, bugOnly, bh.map]);
+  const bugCount = useMemo(() => items.filter((f) => bh.map.get(f.id)?.live).length, [items, bh.map]);
   // Desktop / iPad keep a row open; the first one is shown without marking it read.
   const sel = useMemo(() => {
     const hit = list.find((f) => f.id === selId);
@@ -406,15 +423,16 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
       } else if (e.key === "Escape" && (confirmDel || zoom)) {
         setConfirmDel(false);
         setZoom(null);
-      } else if (e.key === "Escape" && !embedded && !menu) {
+      } else if (e.key === "Escape" && !embedded && !menu && !bugSheet) {
         onClose?.();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phone, embedded, confirmDel, menu, zoom, onClose]);
+  }, [phone, embedded, confirmDel, menu, zoom, onClose, bugSheet]);
 
   const merge = (f) => f && setItems((prev) => prev.map((x) => (x.id === f.id ? f : x)));
+  mergeRef.current = merge;
 
   const open = async (f) => {
     setSelId(f.id);
@@ -511,6 +529,9 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
         <button type="button" className={`fb3-chip${priority !== "all" ? " on" : ""}`} aria-haspopup="menu" onClick={() => setMenu("prio")}>
           {t("adminx.fb.chipPriority", { value: priority === "all" ? allLabel : t(PRIORITIES[priority][0]) })} <I name="down" size={12} stroke={2.4} />
         </button>
+        <button type="button" aria-pressed={bugOnly} className={`fb3-chip bh-chip${bugOnly ? " on" : ""}`} onClick={() => setBugOnly((v) => !v)} data-bh="filter">
+          <em style={{ background: "#587af5" }} />{t("bhunt.filter")} {bugCount}
+        </button>
         {QUICK_TYPES.filter((k) => all.byType[k]).map((k) => (
           <button key={k} type="button" aria-pressed={type === k} className={`fb3-chip${type === k ? " on" : ""}`} onClick={() => setType(type === k ? "all" : k)}>
             <em style={{ background: TYPES[k][1] }} />{t(TYPES[k][0])} {all.byType[k]}
@@ -525,7 +546,16 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
 
   const rows = (
     <div className="fb3-list">
-      {list.map((f) => <Row key={f.id} f={f} now={now} sel={!phone && sel?.id === f.id} onOpen={open} />)}
+      {bh.data.installed !== false ? (
+        <LeaderCard
+          data={bh.data}
+          loaded={bh.loaded}
+          candidateCount={cands.count}
+          onCandidates={() => { cands.load(); setBugSheet("cand"); }}
+          onPickUser={(r) => { setQ(r.username || ""); setBugOnly(true); }}
+        />
+      ) : null}
+      {list.map((f) => <Row key={f.id} f={f} now={now} sel={!phone && sel?.id === f.id} onOpen={open} bug={bh.map.get(f.id)} />)}
       {loaded && !list.length ? (
         <div className="fb3-empty">{loadErr ? t("adminx.fb.loadError") : items.length ? t("adminx.fb.emptyFiltered") : t("adminx.fb.emptyNone")}</div>
       ) : null}
@@ -544,6 +574,10 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
       onCopyId={copyId}
       onProfile={() => onOpenProfile?.(sel.user.id)}
       onZoom={setZoom}
+      bug={bh.map.get(sel.id) || null}
+      items={items}
+      onBugConfirm={() => setBugSheet("confirm")}
+      onBugUndo={() => setBugSheet("undo")}
     />
   ) : null;
 
@@ -565,6 +599,23 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
             </div>
           </div>
         </div>
+      ) : null}
+      {bugSheet === "confirm" && sel ? <ConfirmSheet f={sel} items={items} data={bh.data} map={bh.map} onClose={() => setBugSheet(null)} onConfirm={bh.confirm} /> : null}
+      {bugSheet === "undo" && sel ? <UndoDialog f={sel} c={bh.map.get(sel.id)} onClose={() => setBugSheet(null)} onUndo={bh.undo} /> : null}
+      {bugSheet === "cand" ? (
+        <CandidatesSheet
+          list={cands.list}
+          onClose={() => setBugSheet(null)}
+          onOpen={(i) => {
+            setBugSheet(null);
+            setBugOnly(false);
+            setStatus("all");
+            setType("all");
+            setQ("");
+            const hit = items.find((x) => x.id === i.feedbackId);
+            if (hit) open(hit);
+          }}
+        />
       ) : null}
       {zoom ? <div className="fb3-lightbox" onClick={() => setZoom(null)}><img src={zoom} alt={t("adminx.fb.attachment")} /></div> : null}
       {toast ? <div className="fb3-toast fb3-heavy" role="status"><I name="check" size={16} stroke={2.6} />{toast}</div> : null}

@@ -19,6 +19,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
 import { ONB_PT_BR } from "./onb.pt-BR.js";
+import { BHUNT_PT_BR } from "./bhunt.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { SHARE_SHEET_PT_BR } from "./shareSheet.pt-BR.js";
@@ -78,6 +79,7 @@ export const nested = {
   "dir": DIR_PT_BR,
   "pubpage": PUBPAGE_PT_BR,
   "onb": ONB_PT_BR,
+  "bhunt": BHUNT_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "shareSheet": SHARE_SHEET_PT_BR,
@@ -2775,6 +2777,7 @@ export const nested = {
     "countOther": "Tem {n} de {total, plural, one {# insígnia} other {# insígnias}}",
     "countSelf": "Você tem {n} de {total, plural, one {# insígnia} other {# insígnias}}",
     "desc": {
+      "ilkselam": "Quem compartilhou a primeira mensagem no Descall com uma pessoa real.",
       "alfa": "Quem participou do alfa fechado.",
       "beta": "Quem participou do beta aberto.",
       "bughunter": "Quem teve relatórios de bug confirmados.",
@@ -2854,6 +2857,7 @@ export const nested = {
     "modeCountry": "Só a insígnia de país",
     "modeSpecial": "País + insígnia especial",
     "names": {
+      "ilkselam": "Primeiro oi",
       "alfa": "Alfa",
       "beta": "Beta",
       "bughunter": "Caçador de Bugs",

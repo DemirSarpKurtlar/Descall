@@ -549,7 +549,7 @@ async function workspace({ limit = 5000 } = {}) {
   const sb = deps().supabase;
   const { data, error } = await sb.from("feedback_bug_reports").select("*").order("confirmed_at", { ascending: false }).limit(Math.max(1, Math.min(10000, limit)));
   if (error) {
-    if (isMissing(error)) return { installed: false, confirmations: [], leaderboard: [], totals: model.totals([]), rules: rules() };
+    if (isMissing(error)) return { installed: false, confirmations: [], leaderboard: [], people: {}, totals: model.totals([]), rules: rules() };
     throw error;
   }
   const rows = data || [];
@@ -567,6 +567,8 @@ async function workspace({ limit = 5000 } = {}) {
     installed: true,
     confirmations: rows.map(model.shapeConfirmation),
     leaderboard: model.leaderboard(live, users, { limit: 10, levels }),
+    // Per reporter (for the confirm panel's "what happens" line): level, bugs, also, badge history.
+    people: Object.fromEntries([...levels.entries()].map(([uid, r]) => [uid, model.badgeStats(r)])),
     totals: model.totals(rows),
     rules: rules(),
   };

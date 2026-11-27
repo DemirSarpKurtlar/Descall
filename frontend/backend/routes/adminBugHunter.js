@@ -17,6 +17,7 @@ const supabase = require("../db/supabase");
 const service = require("../lib/bugHunter/service");
 const candidates = require("../lib/bugHunter/candidates");
 const { shapeFeedback } = require("../lib/feedbackAdmin");
+const { apiError } = require("../lib/apiError");
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ function fail(res, err, label) {
     return res.status(err.status).json({ error: MESSAGES[err.code] || err.code, code: err.code, ...(err.count ? { count: err.count } : {}) });
   }
   console.error(`[admin bug-hunter] ${label}:`, err?.message || err);
-  return res.status(500).json({ error: "Something went wrong.", code: "SERVER_ERROR" });
+  return res.status(500).json(apiError("Something went wrong.", null, { code: "SERVER_ERROR" }));
 }
 
 async function reloadFeedback(id) {

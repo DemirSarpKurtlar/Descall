@@ -9,7 +9,7 @@ import { Avatar } from "../ui/Avatar";
 import { CountryBadge, CountryFlag } from "../shop/CountryFlag";
 import { Shop2Badge, shop2AssetSrc } from "../shop/Shop2Cosmetics.jsx";
 import { SpecialBadgeIcon, TIER_ORDER, ART_BY_ID, tierPalette } from "./specialBadgeArt.jsx";
-import { SpecialBadgeChip, useBadgeCopy } from "./SpecialBadge.jsx";
+import { SpecialBadgeChip, useBadgeCopy, useBugHunterTip } from "./SpecialBadge.jsx";
 import {
   BADGE_TOTAL, equipMine, equippedFor, formatSerial, holdersOf, loadCatalog, loadUserBadges,
   sortOwned, useSpecialBadgeStore, userBadgesState,
@@ -66,7 +66,7 @@ export function ProfileBadgeRow({ user, me, size = "md", trailing = null, classN
     <span className={`bp-row bp-row-${size}${className ? ` ${className}` : ""}`}>
       <CountryBadge user={user} special={false} />
       {hasShopBadge ? <Shop2Badge user={user} className="bp-shop-badge" /> : null}
-      {eq ? <SpecialBadgeChip id={eq.id} /> : null}
+      {eq ? <SpecialBadgeChip id={eq.id} entry={eq} /> : null}
       {showPlus ? (
         <button
           type="button"
@@ -107,15 +107,17 @@ function Hero({ me, self, sel, eq, myBadges, onEquip, busy, phone }) {
       : sameId(sel.grantedBy.id, idOf(me)) ? t("badges.viaYou")
         : t("badges.viaBy", { name: sel.grantedBy.displayName || sel.grantedBy.username });
   const now = formatTime(new Date(), locale, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const bh = useBugHunterTip(sel);
   return (
     <section className={`bp-hero t-${tier}`} style={{ "--bp-glow": pal.glow }} aria-live="polite">
-      <div className="bp-hero-art"><SpecialBadgeIcon id={sel.id} size={phone ? 72 : 84} /></div>
+      <div className="bp-hero-art"><SpecialBadgeIcon id={sel.id} size={phone ? 72 : 84} level={bh?.stats.level || 0} /></div>
       <div className="bp-hero-copy">
         <div className="bp-hero-title">
-          <h3>{name(sel.id)}</h3>
+          <h3>{bh ? bh.title : name(sel.id)}</h3>
           <span className={`sb-tier-pill t-${tier}`}>{tierLabel(tier)}</span>
         </div>
         <p className="bp-hero-how">{desc(sel.id)}</p>
+        {bh && bh.line ? <p className="bp-hero-bh">{bh.line}{bh.mix ? <small>{bh.mix}</small> : null}</p> : null}
         <dl className="bp-hero-meta">
           <div><dt>{t("badges.serial")}</dt><dd className="bp-mono">{formatSerial(sel.serial)}</dd></div>
           {holders != null ? <div><dt>{t("badges.holders")}</dt><dd className="tnum">{t("badges.holdersN", { n: num(holders) })}</dd></div> : null}
@@ -165,7 +167,7 @@ function Tile({ it, eq, selId, onSelect }) {
     <button type="button" className={`bp-tile${isEq ? " is-eq" : ""}${isSel ? " is-sel" : ""}`} aria-pressed={isSel} aria-label={label}
       onClick={() => { if (!isSel) hapticSelection(); onSelect(it.id); }}>
       {isEq ? <span className="bp-tile-eq" aria-hidden="true"><Check size={10} strokeWidth={3.2} />{t("badges.wearing")}</span> : null}
-      <SpecialBadgeIcon id={it.id} size={52} />
+      <SpecialBadgeIcon id={it.id} size={52} level={it.id === "bughunter" ? it.level || 1 : 0} />
       <b className="bp-tile-name">{name(it.id)}</b>
       <span className="bp-tile-meta" aria-hidden="true"><span className={`bp-dot t-${tier}`} />{tierLabel(tier)}<span className="bp-mono">{formatSerial(it.serial)}</span></span>
     </button>

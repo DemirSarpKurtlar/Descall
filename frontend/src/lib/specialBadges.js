@@ -31,6 +31,27 @@ export const BADGE_TOTAL = Object.keys(ART_BY_ID).length;
 export const formatSerial = (n) => `#${String(Math.max(0, Number(n) || 0)).padStart(3, "0")}`;
 export const isKnownBadge = (id) => Boolean(id && ART_BY_ID[id]);
 
+/**
+ * Bug Hunter (#11) carries its level and tooltip numbers next to { id, serial }:
+ * { level 1..3, bugs, also, severity: { critical, high, medium, low }, since }.
+ */
+export function bugStatsOf(v) {
+  if (!v || v.id !== "bughunter") return null;
+  const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
+  const sev = v.severity && typeof v.severity === "object" ? v.severity : {};
+  return {
+    level: Math.max(1, Math.min(3, n(v.level) || 1)),
+    bugs: n(v.bugs),
+    also: n(v.also),
+    severity: { critical: n(sev.critical), high: n(sev.high), medium: n(sev.medium), low: n(sev.low) },
+    since: typeof v.since === "string" ? v.since : null,
+  };
+}
+const withBugStats = (base, src) => {
+  const st = bugStatsOf({ ...src, id: base.id });
+  return st ? { ...base, ...st } : base;
+};
+
 // ---- catalog
 export function loadCatalog({ fresh = false } = {}) {
   if (!fresh && catalog.rows && Date.now() - catalog.at < CATALOG_TTL) return Promise.resolve(catalog.rows);
@@ -71,7 +92,7 @@ export function loadUserBadges(userId, { fresh = false } = {}) {
       };
       users.set(userId, { data: clean, at: Date.now(), promise: null, error: null });
       const eq = clean.badges.find((b) => b.id === clean.equipped);
-      live.set(userId, eq ? { id: eq.id, serial: eq.serial } : null);
+      live.set(userId, eq ? withBugStats({ id: eq.id, serial: eq.serial }, eq) : null);
       emit();
       return clean;
     })
@@ -98,9 +119,11 @@ export function invalidateUser(userId) {
 /** Record a profile payload's equippedSpecialBadge (null = took it off). Ignores payloads without the key. */
 export function noteEquipped(userId, value) {
   if (!userId || value === undefined) return;
-  const next = value && isKnownBadge(value.id) ? { id: value.id, serial: Number(value.serial) || 0 } : null;
+  let next = value && isKnownBadge(value.id) ? withBugStats({ id: value.id, serial: Number(value.serial) || 0 }, value) : null;
   const prev = live.get(userId);
-  if (prev === next || (prev && next && prev.id === next.id && prev.serial === next.serial)) return;
+  // A payload without the numbers (e.g. "special-badge:equipped") keeps the ones we know.
+  if (next && prev && prev.id === next.id && next.id === "bughunter" && value.level === undefined) next = { ...prev, serial: next.serial };
+  if (prev === next || (prev && next && prev.id === next.id && prev.serial === next.serial && prev.level === next.level && prev.bugs === next.bugs)) return;
   live.set(userId, next);
   const cur = users.get(userId);
   if (cur?.data) users.set(userId, { ...cur, data: { ...cur.data, equipped: next?.id || null, badges: cur.data.badges.map((b) => ({ ...b, equipped: b.id === next?.id })) } });

@@ -1,5 +1,6 @@
-// Special badge art (approved mockup 2026-10-26, KK22 added 2026-11-06): 37 hand-drawn glyphs on a 24 grid inside a
-// tier frame. Pure presentation: names, descriptions and holder counts come from the server
+// Special badge art (approved mockup 2026-10-26, KK22 added 2026-11-06, İlk Selam 2026-11-27): 38 hand-drawn
+// glyphs on a 24 grid inside a tier frame. #11 Bug Hunter keeps its art; its level (I / II / III confirmed-bug
+// tiers, backend/lib/bugHunter/model.js) is a small pip overlay (LEVEL_PIPS). Pure presentation: names, descriptions and holder counts come from the server
 // catalog (GET /api/special-badges/catalog) and the i18n tables in badges.{en,tr}.js.
 import { useId } from "react";
 
@@ -32,7 +33,7 @@ export const BADGE_ART = [
   { id: "ilk100", tier: "efsanevi", g: [T("100", 8.6), P("M6.5 17.6h11")] },
   { id: "alfa", tier: "epik", g: [P("M17.6 8.3c-.7 4.7-2.3 9.2-5.7 9.2-2.9 0-4.9-2.3-4.9-5.1S9 7 11.9 7c3.6 0 4.6 4.9 6.6 10.5")] },
   { id: "v1", tier: "epik", g: [T("v1", 10.5)] },
-  { id: "bughunter", tier: "epik", g: [{ circle: [12, 12, 7.2] }, P("M12 2.8v3 M12 18.2v3 M2.8 12h3 M18.2 12h3"), P("M12 9.6c1.3 0 2.1 1 2.1 2.6s-.8 2.6-2.1 2.6-2.1-1-2.1-2.6.8-2.6 2.1-2.6z"), P("M9.9 11.4l-1.2-.6 M14.1 11.4l1.2-.6 M9.9 13.4l-1.2.5 M14.1 13.4l1.2.5")] },
+  { id: "bughunter", tier: "epik", leveled: true, g: [{ circle: [12, 12, 7.2] }, P("M12 2.8v3 M12 18.2v3 M2.8 12h3 M18.2 12h3"), P("M12 9.6c1.3 0 2.1 1 2.1 2.6s-.8 2.6-2.1 2.6-2.1-1-2.1-2.6.8-2.6 2.1-2.6z"), P("M9.9 11.4l-1.2-.6 M14.1 11.4l1.2-.6 M9.9 13.4l-1.2.5 M14.1 13.4l1.2.5")] },
   { id: "partner", tier: "epik", g: [{ circle: [9.3, 12, 5] }, { circle: [14.7, 12, 5] }] },
   { id: "yapimci", tier: "epik", g: [P("M12 3.5l5.6 7.2L12 20.5 6.4 10.7z"), P("M12 3.5v7.3"), { circle: [12, 12.3, 1.5] }] },
   { id: "finalist", tier: "epik", g: [P("M8.2 3.5l2.4 6.2 M15.8 3.5l-2.4 6.2"), { circle: [12, 15, 5.6] }, { circle: [12, 15, 2.4] }] },
@@ -56,6 +57,8 @@ export const BADGE_ART = [
   { id: "glitch", tier: "nadir", g: [P("M6.5 5.5h10v4h-10z"), P("M8.8 9.5h10v4h-10z"), P("M5.2 13.5h10v4.5h-10z")] },
   { id: "yil1", tier: "nadir", g: [{ circle: [12, 12, 8] }, T("1", 11)] },
   { id: "hergun", tier: "nadir", g: [P("M5 6.5h14v13H5z M5 10.2h14 M9 4v4 M15 4v4"), P("M9.3 15l1.9 1.9 3.6-3.8")] },
+  // İlk Selam (#38, growth onboarding): two chat bubbles, the front one "typing" its first hello.
+  { id: "ilkselam", tier: "nadir", g: [P("M10.2 4.4h8.6a2.1 2.1 0 0 1 2.1 2.1v4.7a2.1 2.1 0 0 1-2.1 2.1h-.6v2.5l-2.9-2.5"), P("M4.6 8.6h9a2.1 2.1 0 0 1 2.1 2.1v5a2.1 2.1 0 0 1-2.1 2.1H9.4l-3.3 2.9v-2.9H4.6a2.1 2.1 0 0 1-2.1-2.1v-5a2.1 2.1 0 0 1 2.1-2.1z"), { dot: [6.4, 13.2, 1.05] }, { dot: [9.1, 13.2, 1.05] }, { dot: [11.8, 13.2, 1.05] }] },
   { id: "ilkarama", tier: "nadir", g: [P("M8.7 4.8l2 4.2-1.8 1.4a10 10 0 0 0 5 5l1.4-1.8 4.2 2-.5 2.7a2 2 0 0 1-2 1.6A14 14 0 0 1 4.4 7.3a2 2 0 0 1 1.6-2z"), P("M15.2 4.4l.7-1.6 M18.2 7.2l1.6-.7 M17.1 5.6l1.3-1.3")] },
   { id: "facebook", tier: "nadir", tint: { core: ["#2f6fe4", "#0e2a6b"], rim: ["#e3eeff", "#4f8cff"], glow: "rgba(96,160,255,.5)" }, g: [{ d: "M11.3 20.2V10.3a4.4 4.4 0 0 1 4.4-4.4h1.2 M7.9 12.1h7.6", w: 2.9 }] }, 
 ];
@@ -81,8 +84,39 @@ function framePath(tier) {
   }
 }
 
-/** The badge itself. `label` is the accessible name; pass "" when the badge sits next to visible text. */
-export function SpecialBadgeIcon({ id, size = 48, className = "", label }) {
+/**
+ * Bug Hunter level overlay (owner course correction 27 Nov 2026: the existing art stays, the level
+ * is a small overlay): I / II / III pips along the bottom edge of the frame, violet, silver, gold.
+ */
+export const LEVEL_PIPS = {
+  1: { n: 1, fill: ["#f3e9ff", "#a77df0"] },
+  2: { n: 2, fill: ["#ffffff", "#aeb8cc"] },
+  3: { n: 3, fill: ["#fff1b8", "#e0a526"] },
+};
+export const ROMAN = { 1: "I", 2: "II", 3: "III" };
+export const levelOf = (v) => Math.max(0, Math.min(3, Math.floor(Number(v) || 0)));
+
+function LevelPips({ level, small, gradId }) {
+  const spec = LEVEL_PIPS[level];
+  if (!spec) return null;
+  const r = small ? 3.4 : 2.5;
+  const gap = small ? 8.4 : 6.6;
+  const y = small ? 53.2 : 52.4;
+  const x0 = 32 - ((spec.n - 1) * gap) / 2;
+  return (
+    <g className="sb-pips" data-level={level}>
+      {Array.from({ length: spec.n }, (_, i) => (
+        <circle key={i} cx={x0 + i * gap} cy={y} r={r} fill={`url(#${gradId})`} stroke="#140b24" strokeOpacity=".75" strokeWidth={small ? 1.4 : 1} />
+      ))}
+    </g>
+  );
+}
+
+/**
+ * The badge itself. `label` is the accessible name; pass "" when the badge sits next to visible text.
+ * `level` (1..3) draws the Bug Hunter level pips on a leveled badge (#11); other badges ignore it.
+ */
+export function SpecialBadgeIcon({ id, size = 48, className = "", label, level = 0 }) {
   const b = ART_BY_ID[id];
   const raw = useId().replace(/[:]/g, "");
   if (!b) return null;
@@ -93,8 +127,9 @@ export function SpecialBadgeIcon({ id, size = 48, className = "", label }) {
   const glyphScale = b.tier === "efsanevi" ? 1.38 : b.tier === "tekil" ? 1.32 : 1.45;
   const gx = 32 - 12 * glyphScale, gy = (b.tier === "efsanevi" ? 30.5 : 32) - 12 * glyphScale;
   const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true, focusable: "false" };
+  const pips = b.leveled && size >= 14 ? levelOf(level) : 0;
   return (
-    <svg className={`sb-icon sb-${b.tier}${className ? ` ${className}` : ""}`} width={size} height={size} viewBox="0 0 64 64" {...a11y}>
+    <svg className={`sb-icon sb-${b.tier}${pips ? ` sb-lv${pips}` : ""}${className ? ` ${className}` : ""}`} data-level={pips || undefined} width={size} height={size} viewBox="0 0 64 64" {...a11y}>
       {label ? <title>{label}</title> : null}
       <defs>
         <radialGradient id={key("core")} cx="50%" cy="28%" r="78%">
@@ -114,6 +149,12 @@ export function SpecialBadgeIcon({ id, size = 48, className = "", label }) {
           <stop offset="1" stopColor={t.glyph[1]} />
         </linearGradient>
         <clipPath id={key("clip")}><path d={d} /></clipPath>
+        {pips ? (
+          <linearGradient id={key("pip")} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={LEVEL_PIPS[pips].fill[0]} />
+            <stop offset="1" stopColor={LEVEL_PIPS[pips].fill[1]} />
+          </linearGradient>
+        ) : null}
       </defs>
       <path d={d} fill={`url(#${key("core")})`} />
       <g clipPath={`url(#${key("clip")})`}>
@@ -126,6 +167,7 @@ export function SpecialBadgeIcon({ id, size = 48, className = "", label }) {
         <g transform="translate(0 .55)" opacity=".45">{renderGlyph(b.g, "#000", small)}</g>
         {renderGlyph(b.g, `url(#${key("glyph")})`, small)}
       </g>
+      {pips ? <LevelPips level={pips} small={small} gradId={key("pip")} /> : null}
     </svg>
   );
 }
