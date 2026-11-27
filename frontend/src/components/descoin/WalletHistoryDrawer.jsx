@@ -23,6 +23,7 @@ const REASONS = new Set([
   "admin_revoke",
   "referral_invite",
   "referral_welcome",
+  "onboarding_reward",
   "promo",
   "premium_gift",
 ]);

@@ -152,7 +152,7 @@ async function finalize({ io = null, userId, now = Date.now() }) {
     let badge = null;
     try {
       const sb = require("../specialBadges");
-      const g = await sb.grant({ userId, badgeId: model.BADGE_ID, actorId: null, note: "Başla panosu: ilk mesaj" });
+      const g = await sb.grant({ userId, badgeId: model.BADGE_ID, actorId: null, note: "onboarding first message" });
       badge = { id: model.BADGE_ID, serial: g.serial };
       // Our own celebration shows it; skip the generic "badge arrived" popup.
       if (g.rowId) await sb.markNotified(userId, [g.rowId]);

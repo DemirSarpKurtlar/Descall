@@ -118,6 +118,7 @@ export const COINPOP_EN = {
       "admin_revoke": "Descall team correction",
       "referral_invite": "Invite reward",
       "referral_welcome": "Welcome reward",
+      "onboarding_reward": "Start reward",
       "promo": "Promo code",
       "premium_gift": "Descall+ gift",
       "other": "Other"

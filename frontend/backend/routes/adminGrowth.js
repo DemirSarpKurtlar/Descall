@@ -10,6 +10,7 @@
  */
 
 const express = require("express");
+const { apiError } = require("../lib/apiError");
 const supabase = require("../db/supabase");
 const g = require("../lib/growthInsights");
 const { selectPaged } = require("../lib/selectPaged");
@@ -67,9 +68,9 @@ async function rpcAll(fn, args) {
 
 function unavailable(res, err) {
   const missing = err?.code === "PGRST202" || err?.code === "42883";
-  if (missing) return res.status(503).json({ error: "Insights are not enabled yet.", code: "INSIGHTS_UNAVAILABLE" });
+  if (missing) return res.status(503).json(apiError("Insights are not enabled yet.", null, { code: "INSIGHTS_UNAVAILABLE" }));
   console.error("[admin-growth]", err?.message || err);
-  return res.status(500).json({ error: "Could not load insights." });
+  return res.status(500).json(apiError("Could not load insights."));
 }
 
 router.get("/growth/retention", async (req, res) => {
@@ -292,10 +293,10 @@ router.put("/growth/onboarding/config", async (req, res) => {
     const patch = {};
     if ("communityServerId" in body) {
       const id = body.communityServerId ? String(body.communityServerId).trim() : null;
-      if (id && !UUID_RE.test(id)) return res.status(400).json({ error: "Bad server id." });
+      if (id && !UUID_RE.test(id)) return res.status(400).json(apiError("Bad server id."));
       if (id) {
         const { data } = await supabase.from("servers").select("id").eq("id", id).maybeSingle();
-        if (!data) return res.status(404).json({ error: "Server not found." });
+        if (!data) return res.status(404).json(apiError("Server not found."));
       }
       patch.communityServerId = id;
     }
@@ -310,7 +311,7 @@ router.put("/growth/onboarding/config", async (req, res) => {
     res.json({ settings });
   } catch (err) {
     console.error("[admin-growth] onboarding config:", err?.message || err);
-    res.status(500).json({ error: "Onboarding settings could not be saved." });
+    res.status(500).json(apiError("Onboarding settings could not be saved."));
   }
 });
 

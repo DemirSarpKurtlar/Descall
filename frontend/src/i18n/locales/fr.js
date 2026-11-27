@@ -18,6 +18,7 @@ import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
+import { ONB_FR } from "./onb.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
@@ -75,6 +76,7 @@ export const nested = {
   "act": ACT_FR,
   "dir": DIR_FR,
   "pubpage": PUBPAGE_FR,
+  "onb": ONB_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "shareSheet": SHARE_SHEET_FR,
@@ -3057,6 +3059,9 @@ export const nested = {
       "serverOwnerTitle": "Propriété du serveur",
       "timeoutBody": "Tu peux toujours lire et écouter, mais tu ne peux plus envoyer de messages ni parler en vocal pendant un moment.",
       "timeoutTitle": "Tu as été rendu muet"
+    },
+    "onb": {
+      "rehberWelcome": "Bienvenue {user} ! Dis bonjour dans #{channel} : ton prénom et ce qui t'intéresse, l'équipe d'accueil te répond en quelques minutes."
     },
     "opt": {
       "amount": "montant",

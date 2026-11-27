@@ -14,6 +14,7 @@ import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { PUBPAGE_TR } from "./pubpage.tr.js";
+import { ONB_TR } from "./onb.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
 import { SHARE_SHEET_TR } from "./shareSheet.tr.js";
@@ -104,6 +105,7 @@ export const nested = {
   act: ACT_TR,
   dir: DIR_TR,
   pubpage: PUBPAGE_TR,
+  onb: ONB_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
   shareSheet: SHARE_SHEET_TR,

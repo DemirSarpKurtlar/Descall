@@ -5,8 +5,10 @@
  * sees the fact (interests saved, a server joined, the first real message, a voice minute,
  * an accepted friend), once per account (onboarding_rewards primary key), through
  * descoin.creditCapped (reason onboarding_reward), so the wallet freeze and the global
- * daily cap still apply. Suspicious sign-ups (same device as another account) and accounts
- * past their five days never earn. Admins can switch rewards off (onboarding_settings).
+ * daily cap still apply. Idempotency: the onboarding_rewards row (user, step) is claimed
+ * before the credit, and the ledger meta carries idempotencyKey "onboarding:<user>:<step>".
+ * Suspicious sign-ups (same device as another account) and accounts past their five days
+ * never earn. Admins can switch rewards off (onboarding_settings).
  */
 
 const model = require("./model");
@@ -45,7 +47,7 @@ async function payStep({ userId, step, io = null, account = null, settings = nul
   if (!won) return { paid: false, amount: 0, reason: "claimed" };
   let result;
   try {
-    result = await d.descoin.creditCapped(userId, def.reward, "onboarding_reward", { step });
+    result = await d.descoin.creditCapped(userId, def.reward, "onboarding_reward", { step, idempotencyKey: `onboarding:${userId}:${step}` });
   } catch (err) {
     // Nothing was paid: give the claim back so a later refresh can try again.
     await store.releaseClaim(userId, step);

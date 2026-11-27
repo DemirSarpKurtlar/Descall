@@ -118,6 +118,7 @@ export const COINPOP_TR = {
       "admin_revoke": "Descall ekibi düzeltmesi",
       "referral_invite": "Davet ödülü",
       "referral_welcome": "Hoş geldin ödülü",
+      "onboarding_reward": "Başla ödülü",
       "promo": "Promosyon kodu",
       "premium_gift": "Descall+ hediyesi",
       "other": "Diğer"

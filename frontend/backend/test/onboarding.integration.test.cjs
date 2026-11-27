@@ -183,6 +183,7 @@ async function main() {
     assert.equal(s1.community.id, COMM);
     assert.equal(s1.community.joined, true);
     assert.equal(s1.community.joinedNow, true);
+    assert.deepEqual(s1.community.introChannel, { id: CH.commTan, name: "tanışma" });
     assert.ok(s1.myServers.some((x) => x.id === COMM && x.official));
     assert.equal(s1.inviter.id, ZEYNEP);
     assert.equal(s1.inviter.friend, "friend");

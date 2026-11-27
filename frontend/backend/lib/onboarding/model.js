@@ -52,21 +52,29 @@ const INTERESTS = Object.freeze([
 ]);
 const MAX_INTERESTS = 8;
 
-/** Name / description keywords for servers that never picked a directory category. */
+/** Name / description keywords for servers that never picked a directory category (ASCII, see fold()). */
 const CATEGORY_WORDS = [
   ["gaming-minecraft", ["minecraft", "smp", "survival", "skyblock", "bedwars", "craft"]],
   ["gaming-cs2", ["cs2", "csgo", "cs:go", "counter strike", "counter-strike", "faceit"]],
   ["gaming-lol", ["league of legends", "lol tr", "lol ", "summoner", "aram"]],
   ["gaming-fps", ["fps", "pubg", "apex", "fortnite", "overwatch", "battlefield", "call of duty", "warzone"]],
-  ["study", ["ders", "yks", "lgs", "kpss", "ales", "tyt", "ayt", "sinav", "sınav", "study", "pomodoro", "üniversite", "universite", "okul", "matematik"]],
-  ["music", ["müzik", "muzik", "music", "lofi", "lo-fi", "rap", "rock", "playlist", "şarkı", "sarki"]],
+  ["study", ["ders", "yks", "lgs", "kpss", "ales", "tyt", "ayt", "sinav", "study", "pomodoro", "universite", "okul", "matematik"]],
+  ["music", ["muzik", "music", "lofi", "lo-fi", "rap", "rock", "playlist", "sarki"]],
   ["anime", ["anime", "manga", "otaku", "webtoon"]],
-  ["tech", ["kod", "yazılım", "yazilim", "developer", "code", "coding", "tech", "teknoloji", "programlama", "linux", "react"]],
-  ["art", ["çizim", "cizim", "sanat", "art", "drawing", "tasarım", "tasarim", "illüstrasyon"]],
+  ["tech", ["kod", "yazilim", "developer", "code", "coding", "tech", "teknoloji", "programlama", "linux", "react"]],
+  ["art", ["cizim", "sanat", "art", "drawing", "tasarim", "illustrasyon"]],
   ["sports", ["spor", "futbol", "football", "basketbol", "basketball", "fitness", "gym", "efootball", "fifa"]],
-  ["chat-friends", ["sohbet", "chat", "arkadaş", "arkadas", "muhabbet", "cafe", "kafe", "takılma"]],
+  ["chat-friends", ["sohbet", "chat", "arkadas", "muhabbet", "cafe", "kafe", "takilma"]],
   ["gaming-other", ["oyun", "game", "gaming", "roblox", "gta", "rp ", "roleplay", "metin2"]],
 ];
+
+/** Lower case without Turkish diacritics, so "Çizim" and "cizim" match the same word. */
+const FOLD = { "\u00e7": "c", "\u011f": "g", "\u0131": "i", "\u00f6": "o", "\u015f": "s", "\u00fc": "u", "\u0307": "" };
+function fold(text) {
+  return String(text || "")
+    .toLocaleLowerCase("tr")
+    .replace(/[\u00e7\u011f\u0131\u00f6\u015f\u00fc\u0307]/g, (ch) => FOLD[ch] ?? ch);
+}
 
 function clampInt(v, lo, hi, fallback = lo) {
   const n = Math.floor(Number(v));
@@ -114,8 +122,7 @@ function sanitizeInterests(list) {
 /** Category of a server: its directory category, else a keyword guess, else null. */
 function inferCategory({ category, name, description, tags } = {}) {
   if (category && INTERESTS.includes(category)) return category;
-  const hay = ` ${[name, description, ...(Array.isArray(tags) ? tags : [])].filter(Boolean).join(" ")} `
-    .toLocaleLowerCase("tr");
+  const hay = ` ${fold([name, description, ...(Array.isArray(tags) ? tags : [])].filter(Boolean).join(" "))} `;
   if (!hay.trim()) return null;
   for (const [cat, words] of CATEGORY_WORDS) {
     if (words.some((w) => hay.includes(w))) return cat;
@@ -327,4 +334,5 @@ module.exports = {
   isRealHelloText,
   cleanIntroText,
   cleanSlot,
+  fold,
 };

@@ -171,6 +171,7 @@ import { t as tRuntime } from "./i18n/runtime";
 import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
+import { OnboardingProvider } from "./components/onboarding/OnboardingContext";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
@@ -5892,6 +5893,31 @@ export default function App() {
         )}
 
         {/* NEW MODULAR LAYOUT SYSTEM */}
+        <OnboardingProvider
+          me={me}
+          socket={socketApi}
+          servers={myServers}
+          onServerJoined={(server) => {
+            if (!server?.id) return;
+            rememberLocalJoin(localJoinsRef.current, server.id);
+            setMyServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]));
+          }}
+          onOpenChannel={(serverId, channelId) => {
+            if (!serverId) return;
+            setActiveView("servers");
+            const nextPath = serverPath(serverId, channelId || undefined);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onLeaveServer={(serverId) => handleLeaveServer(serverId)}
+          onOpenDm={(user) => {
+            if (!user?.username) return;
+            setActiveView("chat");
+            const nextPath = directPath(user);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onJoinedFromDiscover={handleJoinServer}
+          onRefreshServers={handleRefreshServers}
+        >
         <AppLayout
           me={me}
           socket={socketApi}
@@ -6508,6 +6534,7 @@ export default function App() {
             }
           />
         </AppLayout>
+        </OnboardingProvider>
         {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
             <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />

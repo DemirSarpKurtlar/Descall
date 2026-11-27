@@ -21,6 +21,7 @@
  */
 
 const express = require("express");
+const { apiError } = require("../lib/apiError");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const model = require("../lib/onboarding/model");
@@ -230,6 +231,24 @@ async function greetFromRehber(req, { userId, account, serverId }) {
   return true;
 }
 
+const introCache = new Map();
+/** The community's introductions channel ({ id, name }), cached for five minutes. */
+async function communityIntro(serverId) {
+  const hit = introCache.get(serverId);
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.value;
+  let value = null;
+  try {
+    const { data: server } = await supabase.from("servers").select("welcome_channel_id").eq("id", serverId).maybeSingle();
+    const ch = await publicTextChannels(serverId);
+    const intro = model.pickIntroChannel(ch.text, { welcomeChannelId: server?.welcome_channel_id });
+    value = intro ? { id: intro.id, name: intro.name } : null;
+  } catch {
+    value = null;
+  }
+  introCache.set(serverId, { at: Date.now(), value });
+  return value;
+}
+
 async function joinedToday() {
   try {
     const start = `${model.localDay(Date.now())}T00:00:00+03:00`;
@@ -244,11 +263,11 @@ async function joinedToday() {
 
 router.get("/state", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
-  if (limited(userId)) return res.status(429).json({ error: "Too many requests." });
+  if (limited(userId)) return res.status(429).json(apiError("Too many requests."));
   try {
     live.setIo(io(req));
     const [account, settings] = await Promise.all([store.accountFacts(userId), store.getSettings()]);
-    if (!account) return res.status(404).json({ error: "Account not found." });
+    if (!account) return res.status(404).json(apiError("Account not found."));
     const created = account.signup_at || account.created_at;
     const day = model.dayOfAccount(created);
     const inWin = model.inWindow(created);
@@ -338,6 +357,7 @@ router.get("/state", requireAuth, async (req, res) => {
         autoJoined: Boolean(row?.community_joined_at),
         joinedNow: communityJoinedNow,
         left: Boolean(row?.community_left_at),
+        introChannel: await communityIntro(String(communityId)),
       };
     }
     const myServerIds = [...memberOf].slice(0, 12);
@@ -378,17 +398,17 @@ router.get("/state", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[onboarding] state failed:", err?.message || err);
-    return res.status(500).json({ error: "Could not load the start dashboard." });
+    return res.status(500).json(apiError("Could not load the start dashboard."));
   }
 });
 
 router.put("/interests", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
-  if (limited(userId)) return res.status(429).json({ error: "Too many requests." });
+  if (limited(userId)) return res.status(429).json(apiError("Too many requests."));
   try {
     const interests = model.sanitizeInterests(req.body?.interests);
     const row = await store.getRow(userId);
-    if (!row) return res.status(503).json({ error: "Not available yet.", code: "ONBOARDING_UNAVAILABLE" });
+    if (!row) return res.status(503).json(apiError("Not available yet.", null, { code: "ONBOARDING_UNAVAILABLE" }));
     const patch = { interests };
     if (interests.length && !row.interests_at) patch.interests_at = new Date().toISOString();
     await store.patchRow(userId, patch);
@@ -401,7 +421,7 @@ router.put("/interests", requireAuth, async (req, res) => {
     return res.json({ interests, paid });
   } catch (err) {
     console.error("[onboarding] interests failed:", err?.message || err);
-    return res.status(500).json({ error: "Could not save interests." });
+    return res.status(500).json(apiError("Could not save interests."));
   }
 });
 
@@ -414,8 +434,8 @@ function initials(name) {
 router.get("/servers/:id/preview", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
   const serverId = String(req.params.id || "");
-  if (!UUID_RE.test(serverId)) return res.status(400).json({ error: "Bad server id." });
-  if (limited(userId, 90)) return res.status(429).json({ error: "Too many requests." });
+  if (!UUID_RE.test(serverId)) return res.status(400).json(apiError("Bad server id."));
+  if (limited(userId, 90)) return res.status(429).json(apiError("Too many requests."));
   try {
     const settings = await store.getSettings();
     const { data: server } = await supabase
@@ -425,10 +445,10 @@ router.get("/servers/:id/preview", requireAuth, async (req, res) => {
       .maybeSingle();
     const official = String(settings.communityServerId || "") === serverId;
     if (!server || server.directory_hidden_at || (!server.is_public && !official)) {
-      return res.status(404).json({ error: "Preview not available.", code: "PREVIEW_UNAVAILABLE" });
+      return res.status(404).json(apiError("Preview not available.", null, { code: "PREVIEW_UNAVAILABLE" }));
     }
     const { data: ban } = await supabase.from("server_bans").select("user_id").eq("server_id", serverId).eq("user_id", userId).maybeSingle();
-    if (ban) return res.status(403).json({ error: "You are banned from this server.", code: "BANNED" });
+    if (ban) return res.status(403).json(apiError("You are banned from this server.", null, { code: "BANNED" }));
 
     const snap = await live.snapshot({ extraIds: [serverId] });
     const stats = snap.servers.find((s) => s.id === serverId) || null;
@@ -497,7 +517,7 @@ router.get("/servers/:id/preview", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[onboarding] preview failed:", err?.message || err);
-    return res.status(500).json({ error: "Could not load the preview." });
+    return res.status(500).json(apiError("Could not load the preview."));
   }
 });
 
@@ -506,8 +526,8 @@ router.get("/servers/:id/preview", requireAuth, async (req, res) => {
 router.get("/track", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
   const { serverId, channelId, messageId } = req.query || {};
-  if (![serverId, channelId, messageId].every((v) => UUID_RE.test(String(v || "")))) return res.status(400).json({ error: "Bad ids." });
-  if (limited(userId, 90)) return res.status(429).json({ error: "Too many requests." });
+  if (![serverId, channelId, messageId].every((v) => UUID_RE.test(String(v || "")))) return res.status(400).json(apiError("Bad ids."));
+  if (limited(userId, 90)) return res.status(429).json(apiError("Too many requests."));
   try {
     const { data: mine } = await supabase
       .from("server_messages")
@@ -543,7 +563,7 @@ router.get("/track", requireAuth, async (req, res) => {
     return res.json({ exists: true, replies: replies.length, reactions: Number(reactions) || 0, repliers, activeAfter: others, serverId, channelId, messageId });
   } catch (err) {
     console.error("[onboarding] track failed:", err?.message || err);
-    return res.status(500).json({ error: "Could not load replies." });
+    return res.status(500).json(apiError("Could not load replies."));
   }
 });
 
@@ -559,7 +579,7 @@ router.post("/event", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
   if (limited(userId)) return res.status(204).end();
   const event = String(req.body?.event || "");
-  if (!CLIENT_EVENTS.has(event)) return res.status(400).json({ error: "Unknown event." });
+  if (!CLIENT_EVENTS.has(event)) return res.status(400).json(apiError("Unknown event."));
   const src = req.body?.props && typeof req.body.props === "object" ? req.body.props : {};
   const props = {
     server: UUID_RE.test(String(src.server || "")) ? String(src.server) : "",
@@ -575,10 +595,10 @@ router.post("/event", requireAuth, async (req, res) => {
 
 router.post("/hide", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
-  if (limited(userId)) return res.status(429).json({ error: "Too many requests." });
+  if (limited(userId)) return res.status(429).json(apiError("Too many requests."));
   const hidden = req.body?.hidden !== false;
   const row = await store.getRow(userId);
-  if (!row) return res.status(503).json({ error: "Not available yet.", code: "ONBOARDING_UNAVAILABLE" });
+  if (!row) return res.status(503).json(apiError("Not available yet.", null, { code: "ONBOARDING_UNAVAILABLE" }));
   await store.patchRow(userId, { hidden_at: hidden ? new Date().toISOString() : null });
   if (hidden) analytics(userId, "onboarding_hidden", {});
   return res.json({ hidden });
@@ -586,12 +606,35 @@ router.post("/hide", requireAuth, async (req, res) => {
 
 router.post("/undo", requireAuth, async (req, res) => {
   const userId = String(req.user.id);
-  if (limited(userId)) return res.status(429).json({ error: "Too many requests." });
+  if (limited(userId)) return res.status(429).json(apiError("Too many requests."));
   const messageId = String(req.body?.messageId || "");
   const serverId = String(req.body?.serverId || "");
   const cancelled = await firstHello.cancelPending(userId, UUID_RE.test(messageId) ? messageId : null).catch(() => false);
   analytics(userId, "onboarding_undo", { server: UUID_RE.test(serverId) ? serverId : "" });
   return res.json({ cancelled: Boolean(cancelled) });
+});
+
+/** The personal invite link (same as src/lib/referral.js) and its QR code as SVG. */
+router.get("/invite-qr", requireAuth, async (req, res) => {
+  const userId = String(req.user.id);
+  if (limited(userId, 30)) return res.status(429).json(apiError("Too many requests."));
+  try {
+    const { data: u } = await supabase.from("users").select("username").eq("id", userId).maybeSingle();
+    const name = String(u?.username || req.user.username || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 24);
+    const url = name ? `https://descall.com/register?ref=${encodeURIComponent(name)}` : "https://descall.com/register";
+    const QRCode = require("qrcode");
+    const svg = (await QRCode.toString(`${url}${url.includes("?") ? "&" : "?"}src=qr`, {
+      type: "svg",
+      errorCorrectionLevel: "M",
+      margin: 1,
+      color: { dark: "#0b0c12ff", light: "#ffffffff" },
+    })).replace(/<\?xml[^>]*>/, "").trim();
+    res.set("Cache-Control", "private, max-age=3600");
+    return res.json({ url, svg });
+  } catch (err) {
+    console.error("[onboarding] invite qr failed:", err?.message || err);
+    return res.status(500).json(apiError("Could not load the preview."));
+  }
 });
 
 module.exports = router;
