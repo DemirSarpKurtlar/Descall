@@ -61,7 +61,8 @@ function noticeText(kind, { lang = "tr", count = 1, amount = 0, reasonCode = "ot
   if (reasonCode === "other" && cleanNote) reason = cleanNote;
   const args = { count, countPos: trPossessive(count), amount: model.formatAmount(amount, L), reason };
   if (kind === "revokeInviter" && !(Number(amount) > 0)) return pack.revokeInviterNoMoney(args);
-  const fn = pack[kind];
+  // Only the pack's own entries: an inherited name such as "constructor" must not run.
+  const fn = Object.prototype.hasOwnProperty.call(pack, kind) ? pack[kind] : null;
   return typeof fn === "function" ? fn(args) : "";
 }
 

@@ -34,7 +34,11 @@ const { fulfil } = require("../lib/plus/payments/fulfil");
 const { platformOf } = require("../lib/plus/animatedProfile");
 const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
 
+const { burstLimit } = require("../lib/burstLimit");
+
 const router = express.Router();
+// Coarse per-IP burst cap in front of every Descall+ route; the per-account limits stay.
+router.use(burstLimit({ name: "plus", limit: 300 }));
 router.use(requireAuth);
 router.use((req, _res, next) => {
   notify.bind(req.app?.get?.("io"));

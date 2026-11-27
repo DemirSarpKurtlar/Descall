@@ -19,7 +19,12 @@ const config = require("../lib/plus/config");
 const providers = require("../lib/plus/payments");
 const { fulfil } = require("../lib/plus/payments/fulfil");
 
+const { burstLimit } = require("../lib/burstLimit");
+
 const router = express.Router();
+// Coarse per-IP burst cap: providers retry and batch, so the ceiling is generous; signature
+// checks and event-id idempotency below are the real guards.
+router.use(burstLimit({ name: "plus-webhooks", limit: 600 }));
 const raw = express.raw({ type: () => true, limit: "512kb" });
 
 function parseJson(buf) {

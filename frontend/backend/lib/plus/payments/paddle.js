@@ -20,11 +20,14 @@ function status(env = process.env) {
   return { id: "paddle", configured: missing.length === 0, missing, webhook: "/api/plus/webhooks/paddle" };
 }
 
+// Paddle-Signature is "ts=<unix>;h1=<hex>". Only those two keys are read; the header is
+// attacker-controlled, so other keys (e.g. "__proto__") are never written to an object.
 function parseHeader(h) {
-  const out = {};
+  const out = { ts: undefined, h1: undefined };
   for (const part of String(h || "").split(";")) {
     const [k, v] = part.split("=");
-    if (k && v) out[k.trim()] = v.trim();
+    const key = String(k || "").trim();
+    if ((key === "ts" || key === "h1") && v) out[key] = v.trim();
   }
   return out;
 }
