@@ -20,11 +20,9 @@ class GameScene: SKScene {
 
     required init?(coder aDecoder: NSCoder) { nil }
 
-    override func didMove(to view: SKView) {
-        super.didMove(to: view)
-        layout()
-        render()
-    }
+    // watchOS has no SKView (SpriteView hosts the scene), so there is no didMove(to:):
+    // the nodes are built on the first frame, and again whenever the size changes.
+    private var laidOut = false
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
@@ -33,6 +31,11 @@ class GameScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
+        if !laidOut {
+            laidOut = true
+            layout()
+            render()
+        }
         defer { lastTime = currentTime }
         guard let last = lastTime else { return }
         var dt = currentTime - last
