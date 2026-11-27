@@ -126,8 +126,21 @@ async function ensureTasks(me, d, now) {
   return store.tasksOf(me, day);
 }
 
+/** Owner kill switch (console): shared streak and task DesCoin off. The features still work. */
+async function rewardsOn() {
+  try {
+    return (await store.getConsole()).taskRewards !== false;
+  } catch {
+    return true;
+  }
+}
+
 /** Pay a finished task once (CAS on paid_amount = 0). */
 async function payTask(task, d) {
+  if (!(await rewardsOn())) {
+    d.emit(task.user_id, "streaks:task", { slot: task.slot, kind: task.kind, paid: 0, rewardsOff: true });
+    return 0;
+  }
   const won = await store.casTask(task.user_id, task.day, task.slot, { paid_amount: task.reward, done_at: task.done_at || new Date(d.now()).toISOString() }, { paid_amount: 0 });
   if (!won) return 0;
   let credited = 0;
@@ -209,6 +222,7 @@ async function stateFor(me, opts = {}) {
       bonus: t.kind === "save_streak" ? R.SHARED_BONUS : 0,
     })),
     sharedBonus: R.SHARED_BONUS,
+    rewardsOn: await rewardsOn(),
   };
 }
 
@@ -289,7 +303,12 @@ async function onDm(from, to, opts = {}) {
       const won = await store.casStreak(k, patch, { count: row.count, last_day: row.last_day ?? null, a_day: row.a_day ?? null, b_day: row.b_day ?? null }).catch(() => null);
       if (won && next.completedToday) {
         out.streak = next.count;
+        const pay = await rewardsOn();
         for (const uid of [from, to]) {
+          if (!pay) {
+            d.emit(uid, "streaks:day", { peerId: String(uid) === String(from) ? String(to) : String(from), count: next.count, rewardsOff: true });
+            continue;
+          }
           try {
             const r = await d.descoin.creditCapped(uid, R.SHARED_BONUS, TASK_REASON, {
               kind: "shared_bonus",

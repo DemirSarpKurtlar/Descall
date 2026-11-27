@@ -307,6 +307,11 @@ export default function StreaksPane({ me = null, onOpenDm = null }) {
           {msg.kind === "ok" ? <Check size={13} /> : <AlertTriangle size={13} />} {msg.text}
         </p>
       ) : null}
+      {state?.rewardsOn === false ? (
+        <p className="rg-note" role="status">
+          {t("rg3.streaks.rewardsOff")}
+        </p>
+      ) : null}
       <div className="rg-streaks-grid">
         <div className="col">
           {personalCard}

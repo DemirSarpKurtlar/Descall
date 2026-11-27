@@ -79,8 +79,8 @@ function fixtures(base, now = Date.now()) {
     { id: 'weekly_digest', kind: 'weekly_digest', order: 5, icon: 'mail', channels: ['email'], status: 'live', holdoutPct: 10, audience: 512, reachable: 470, sentWeek: 470, sentToday: 0, returnRate: 12, openRate: 44, log: [] },
     { id: 'streak_reminder', kind: 'streak_reminder', order: 6, icon: 'flame', channels: ['push'], status: 'live', holdoutPct: 0, audience: 63, reachable: 63, sentWeek: 210, sentToday: 63, returnRate: 51, openRate: 57, log: [] },
   ];
-  const mode = { mode: 'live', sending: 'live', envMode: 'off', override: 'live', paused: false };
-  const overview = { ready: true, mode, console: { modeOverride: 'live', paused: false, callReward: 50, gift14Amount: 150 }, today: { sent: 412, returned: 61, net: 9 }, campaigns };
+  const mode = { mode: 'live', sending: 'live', envMode: 'live', ceiling: 'live', capped: false, override: 'live', paused: false };
+  const overview = { ready: true, mode, console: { modeOverride: 'live', paused: false, callReward: 50, gift14Amount: 150, taskRewards: true }, today: { sent: 412, returned: 61, net: 9 }, campaigns };
   const hours = [2, 1, 1, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 6, 5, 6, 8, 10, 12, 15, 24, 31, 27, 9];
   const waveId = uid(700);
   const workspace = {

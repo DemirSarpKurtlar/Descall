@@ -84,6 +84,10 @@ router.put("/growth/reengage/settings", async (req, res) => {
     if (body.modeOverride !== undefined) {
       if (!owner) return res.status(403).json({ error: "owner_only", code: "owner_only" });
       if (body.modeOverride !== null && !lib.mode().MODES.includes(body.modeOverride)) return res.status(400).json({ error: "bad_mode", code: "bad_mode" });
+      // The environment is the ceiling: never above REENGAGE_ENABLED / REENGAGE_DRY_RUN.
+      if (body.modeOverride !== null && !lib.mode().allowedByEnv(body.modeOverride)) {
+        return res.status(409).json({ error: "env_ceiling", code: "env_ceiling", ceiling: lib.mode().envMode() });
+      }
       if (!reason) return res.status(400).json({ error: "reason_required", code: "reason_required" });
       patch.modeOverride = body.modeOverride;
     }
@@ -91,6 +95,13 @@ router.put("/growth/reengage/settings", async (req, res) => {
       if (typeof body.paused !== "boolean") return res.status(400).json({ error: "bad_paused", code: "bad_paused" });
       if (body.paused && !reason) return res.status(400).json({ error: "reason_required", code: "reason_required" });
       patch.paused = body.paused;
+    }
+    if (body.taskRewards !== undefined) {
+      // Kill switch for the DesCoin of shared streaks and daily tasks (owner only, audited).
+      if (!owner) return res.status(403).json({ error: "owner_only", code: "owner_only" });
+      if (typeof body.taskRewards !== "boolean") return res.status(400).json({ error: "bad_taskRewards", code: "bad_taskRewards" });
+      if (!reason) return res.status(400).json({ error: "reason_required", code: "reason_required" });
+      patch.taskRewards = body.taskRewards;
     }
     for (const [k, max] of [["callReward", 200], ["gift14Amount", 500]]) {
       if (body[k] === undefined) continue;
@@ -104,7 +115,7 @@ router.put("/growth/reengage/settings", async (req, res) => {
     const before = await lib.store().getConsole({ fresh: true });
     const after = await lib.store().saveConsole(patch, req.user.id);
     lib.mode().apply(after);
-    audit(req.user, "reengage_settings", "reengage", { before: { modeOverride: before.modeOverride, paused: before.paused, callReward: before.callReward, gift14Amount: before.gift14Amount }, after: patch, reason });
+    audit(req.user, "reengage_settings", "reengage", { before: { modeOverride: before.modeOverride, paused: before.paused, callReward: before.callReward, gift14Amount: before.gift14Amount, taskRewards: before.taskRewards }, after: patch, reason });
     if (patch.callReward !== undefined || patch.gift14Amount !== undefined) {
       await lib
         .campaigns()

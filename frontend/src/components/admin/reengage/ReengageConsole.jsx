@@ -94,7 +94,10 @@ export function ReasonDialog({ title, body, confirmLabel, danger = false, needRe
   );
 }
 
-function ModeSwitch({ mode, paused, onChange, t }) {
+const MODE_RANK = { off: 0, dry_run: 1, live: 2 };
+
+/** Kapalı / Kuru çalıştırma / Canlı; choices above the environment ceiling are disabled. */
+function ModeSwitch({ mode, paused, ceiling = "live", onChange, t }) {
   const opts = [
     { id: "off", label: t("rg3.admin.modeOff") },
     { id: "dry_run", label: t("rg3.admin.modeDry") },
@@ -103,11 +106,23 @@ function ModeSwitch({ mode, paused, onChange, t }) {
   return (
     <div className="rg-mode" role="radiogroup" aria-label={t("rg3.admin.mode")}>
       <span className="lbl">{t("rg3.admin.mode")}</span>
-      {opts.map((o) => (
-        <button key={o.id} type="button" role="radio" aria-checked={mode === o.id} className={`${mode === o.id ? "on" : ""} m-${o.id}`} onClick={() => mode !== o.id && onChange(o.id)}>
-          {o.label}
-        </button>
-      ))}
+      {opts.map((o) => {
+        const blocked = MODE_RANK[o.id] > MODE_RANK[ceiling];
+        return (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={mode === o.id}
+            disabled={blocked}
+            title={blocked ? t("rg3.admin.aboveCeiling") : undefined}
+            className={`${mode === o.id ? "on" : ""} m-${o.id}${blocked ? " blocked" : ""}`}
+            onClick={() => !blocked && mode !== o.id && onChange(o.id)}
+          >
+            {o.label}
+          </button>
+        );
+      })}
       {paused ? <span className="rg-chip red">{t("rg3.admin.paused")}</span> : null}
     </div>
   );
@@ -402,11 +417,29 @@ export default function ReengageConsole({ isOwner = false }) {
       confirmLabel: t("rg3.admin.modeApply"),
       danger: next === "live",
       onConfirm: async (reason) => {
-        await reengageAdmin.settings({ modeOverride: next, reason });
+        try {
+          await reengageAdmin.settings({ modeOverride: next, reason });
+        } catch (e) {
+          throw new Error(e?.code === "env_ceiling" ? t("rg3.admin.envCeilingErr") : e?.message || t("rg3.errors.save"));
+        }
         setNonce((n) => n + 1);
         flash(t("rg3.admin.modeSaved"));
       },
     });
+
+  const toggleTaskRewards = () => {
+    const off = ov?.console?.taskRewards === false;
+    setDialog({
+      title: off ? t("rg3.admin.taskRewardsStart") : t("rg3.admin.taskRewardsStop"),
+      body: t("rg3.admin.taskRewardsBody"),
+      confirmLabel: off ? t("rg3.admin.taskRewardsOn") : t("rg3.admin.taskRewardsOff"),
+      danger: !off,
+      onConfirm: async (reason) => {
+        await reengageAdmin.settings({ taskRewards: off, reason });
+        setNonce((n) => n + 1);
+      },
+    });
+  };
 
   const togglePauseAll = () =>
     setDialog({
@@ -467,7 +500,12 @@ export default function ReengageConsole({ isOwner = false }) {
           <p>{ov ? todayLine(ov, t) : ovErr || t("rg3.common.loading")}</p>
         </div>
         <div className="rg-console-actions">
-          {isOwner ? <ModeSwitch mode={mode} paused={paused} onChange={changeMode} t={t} /> : <span className="rg-chip">{t(`rg3.admin.modeIs_${mode}`)}</span>}
+          {isOwner ? <ModeSwitch mode={mode} paused={paused} ceiling={ov?.mode?.ceiling || ov?.mode?.envMode || "off"} onChange={changeMode} t={t} /> : <span className="rg-chip">{t(`rg3.admin.modeIs_${mode}`)}</span>}
+          {isOwner && ov?.console ? (
+            <button type="button" className={`rg-pill${ov.console.taskRewards === false ? " off" : ""}`} onClick={toggleTaskRewards} aria-pressed={ov.console.taskRewards !== false}>
+              {t("rg3.admin.taskRewards")}: <b>{ov.console.taskRewards === false ? t("rg3.admin.taskRewardsOff") : t("rg3.admin.taskRewardsOn")}</b>
+            </button>
+          ) : null}
           <button type="button" className={`rg-btn ${paused ? "" : "danger-soft"}`} onClick={togglePauseAll}>
             {paused ? <Play size={14} /> : <Pause size={14} />} {paused ? t("rg3.admin.resumeAll") : t("rg3.admin.pauseAll")}
           </button>
@@ -476,7 +514,10 @@ export default function ReengageConsole({ isOwner = false }) {
           </button>
         </div>
       </header>
-      {ov?.mode && ov.mode.envMode !== ov.mode.mode ? <p className="rg-note">{t("rg3.admin.envNote", { env: t(`rg3.admin.modeIs_${ov.mode.envMode}`) })}</p> : null}
+      {ov?.mode && (ov.mode.ceiling || ov.mode.envMode) !== "live" ? (
+        <p className="rg-note">{t("rg3.admin.ceilingNote", { env: t(`rg3.admin.modeIs_${ov.mode.ceiling || ov.mode.envMode}`) })}</p>
+      ) : null}
+      {ov?.mode?.capped ? <p className="rg-note warn">{t("rg3.admin.cappedNote")}</p> : null}
       {toast ? <p className={toast.kind === "ok" ? "rg-ok" : "rg-err"} role="status">{toast.text}</p> : null}
       <div className="rg-bws">
         <nav className="rg-card rg-clist" aria-label={t("rg3.admin.campaigns")}>

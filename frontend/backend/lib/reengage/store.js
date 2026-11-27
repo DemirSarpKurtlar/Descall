@@ -188,6 +188,8 @@ async function getConsole({ fresh = false } = {}) {
     paused: Boolean(data?.paused),
     callReward: Number.isFinite(Number(data?.call_reward)) ? Number(data.call_reward) : R.WINBACK.defaultReward,
     gift14Amount: Number.isFinite(Number(data?.gift14_amount)) ? Number(data.gift14_amount) : R.WINBACK.defaultGift,
+    // Shared streak + daily task DesCoin (owner kill switch); on unless switched off.
+    taskRewards: data?.task_rewards_enabled !== false,
     updatedAt: data?.updated_at || null,
     updatedBy: data?.updated_by || null,
   };
@@ -202,6 +204,7 @@ async function saveConsole(patch, by) {
   if (patch.paused !== undefined) row.paused = Boolean(patch.paused);
   if (patch.callReward !== undefined) row.call_reward = patch.callReward;
   if (patch.gift14Amount !== undefined) row.gift14_amount = patch.gift14Amount;
+  if (patch.taskRewards !== undefined) row.task_rewards_enabled = Boolean(patch.taskRewards);
   const { error } = await db().from("reengage_settings").upsert(row, { onConflict: "id" });
   if (error) throw isMissing(error) ? notReady() : error;
   consoleCache = null;

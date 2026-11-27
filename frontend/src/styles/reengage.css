@@ -517,3 +517,10 @@ button.rg-logrow { cursor: pointer; }
   .rg-dstat { text-align: left; flex-direction: row; align-items: baseline; gap: 6px; width: 100%; padding-left: 78px; }
   .rg-dstat em { margin-left: 4px; }
 }
+
+/* Environment ceiling and the task-reward kill switch (console header). */
+.rg-mode button.blocked { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.rg-note.warn { color: #ffb547; }
+[data-theme="light"] .rg-note.warn { color: #8a5a00; }
+.rg-pill.off b { color: #ff8f8f; }
+[data-theme="light"] .rg-pill.off b { color: #c62828; }

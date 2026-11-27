@@ -200,7 +200,8 @@ export const RG3 = {
       "errWrote": "Bugün zaten yazmış.",
       "errNudgesOff": "Dürtmeleri kapalı.",
       "errFriends": "Yalnız arkadaşlarınla seri tutabilirsin.",
-      "errTooMany": "En fazla 20 ortak seri tutabilirsin."
+      "errTooMany": "En fazla 20 ortak seri tutabilirsin.",
+      "rewardsOff": "Seri ve görev ödülleri şu an kapalı; seriler ve görevler yine sayılır."
     },
     "tasks": {
       "message": "{name} mesaj at",
@@ -381,7 +382,17 @@ export const RG3 = {
       "act_recall": "{detail} mesaj geri çağrıldı",
       "act_reward": "ödül ayarı: {detail}",
       "system": "Sistem",
-      "logEmpty": "Henüz kayıt yok."
+      "logEmpty": "Henüz kayıt yok.",
+      "ceilingNote": "Ortam sınırı: {env}. Konsol bunun üstüne çıkamaz; daha yükseği için sunucuda REENGAGE_ENABLED / REENGAGE_DRY_RUN değişmeli.",
+      "cappedNote": "Kayıtlı konsol seçimi ortam sınırının üstünde olduğu için şu an uygulanmıyor.",
+      "aboveCeiling": "Ortam izin vermiyor",
+      "taskRewards": "Seri ve görev DesCoin'i",
+      "taskRewardsOn": "Açık",
+      "taskRewardsOff": "Kapalı",
+      "taskRewardsStop": "Seri ve görev ödemeleri durdurulsun mu?",
+      "taskRewardsStart": "Seri ve görev ödemeleri açılsın mı?",
+      "taskRewardsBody": "Seriler ve görevler çalışmaya devam eder, yalnız DesCoin ödenmez. Mod anahtarından bağımsızdır. Sebep işlem kaydına yazılır.",
+      "envCeilingErr": "Ortam sınırı buna izin vermiyor."
     },
     "live": {
       "title": "Gönderim canlı · {name}",
@@ -676,7 +687,8 @@ export const RG3 = {
       "errWrote": "They already wrote today.",
       "errNudgesOff": "They turned nudges off.",
       "errFriends": "Streaks are only with friends.",
-      "errTooMany": "You can keep up to 20 shared streaks."
+      "errTooMany": "You can keep up to 20 shared streaks.",
+      "rewardsOff": "Streak and task rewards are off right now; streaks and tasks still count."
     },
     "tasks": {
       "message": "Message {name}",
@@ -857,7 +869,17 @@ export const RG3 = {
       "act_recall": "{detail} messages recalled",
       "act_reward": "reward setting: {detail}",
       "system": "System",
-      "logEmpty": "Nothing logged yet."
+      "logEmpty": "Nothing logged yet.",
+      "ceilingNote": "Environment ceiling: {env}. The console cannot go above it; going higher needs REENGAGE_ENABLED / REENGAGE_DRY_RUN on the server.",
+      "cappedNote": "The stored console choice is above the environment ceiling, so it is not in effect.",
+      "aboveCeiling": "Not allowed by the environment",
+      "taskRewards": "Streak and task DesCoin",
+      "taskRewardsOn": "On",
+      "taskRewardsOff": "Off",
+      "taskRewardsStop": "Stop streak and task payouts?",
+      "taskRewardsStart": "Turn streak and task payouts on?",
+      "taskRewardsBody": "Streaks and tasks keep working; only the DesCoin stops. Independent of the mode switch. The reason is written to the audit log.",
+      "envCeilingErr": "The environment ceiling does not allow this."
     },
     "live": {
       "title": "Sending live · {name}",
@@ -1152,7 +1174,8 @@ export const RG3 = {
       "errWrote": "Hat heute schon geschrieben.",
       "errNudgesOff": "Stupser sind aus.",
       "errFriends": "Serien nur mit Freunden.",
-      "errTooMany": "Höchstens 20 gemeinsame Serien."
+      "errTooMany": "Höchstens 20 gemeinsame Serien.",
+      "rewardsOff": "Serien- und Aufgabenbelohnungen sind gerade aus; sie zählen trotzdem."
     },
     "tasks": {
       "message": "Schreib {name}",
@@ -1333,7 +1356,17 @@ export const RG3 = {
       "act_recall": "{detail} Nachrichten zurückgerufen",
       "act_reward": "Belohnung: {detail}",
       "system": "System",
-      "logEmpty": "Noch nichts protokolliert."
+      "logEmpty": "Noch nichts protokolliert.",
+      "ceilingNote": "Grenze der Umgebung: {env}. Die Konsole kann nicht darüber; dafür muss REENGAGE_ENABLED / REENGAGE_DRY_RUN auf dem Server geändert werden.",
+      "cappedNote": "Die gespeicherte Konsolenwahl liegt über der Grenze und gilt daher nicht.",
+      "aboveCeiling": "Von der Umgebung nicht erlaubt",
+      "taskRewards": "Serien- und Aufgaben-DesCoin",
+      "taskRewardsOn": "An",
+      "taskRewardsOff": "Aus",
+      "taskRewardsStop": "Serien- und Aufgabenauszahlungen stoppen?",
+      "taskRewardsStart": "Serien- und Aufgabenauszahlungen einschalten?",
+      "taskRewardsBody": "Serien und Aufgaben laufen weiter, nur DesCoin wird nicht ausgezahlt. Unabhängig vom Modus. Der Grund wird protokolliert.",
+      "envCeilingErr": "Die Grenze der Umgebung erlaubt das nicht."
     },
     "live": {
       "title": "Versand live · {name}",
@@ -1628,7 +1661,8 @@ export const RG3 = {
       "errWrote": "Ya escribió hoy.",
       "errNudgesOff": "Tiene los toques desactivados.",
       "errFriends": "Solo puedes tener rachas con amigos.",
-      "errTooMany": "Puedes tener hasta 20 rachas."
+      "errTooMany": "Puedes tener hasta 20 rachas.",
+      "rewardsOff": "Las recompensas de rachas y tareas están desactivadas; aún cuentan."
     },
     "tasks": {
       "message": "Escribe a {name}",
@@ -1809,7 +1843,17 @@ export const RG3 = {
       "act_recall": "{detail} mensajes retirados",
       "act_reward": "recompensa: {detail}",
       "system": "Sistema",
-      "logEmpty": "Aún no hay registros."
+      "logEmpty": "Aún no hay registros.",
+      "ceilingNote": "Límite del entorno: {env}. La consola no puede superarlo; para más hay que cambiar REENGAGE_ENABLED / REENGAGE_DRY_RUN en el servidor.",
+      "cappedNote": "La elección guardada supera el límite del entorno, así que no se aplica.",
+      "aboveCeiling": "El entorno no lo permite",
+      "taskRewards": "DesCoin de rachas y tareas",
+      "taskRewardsOn": "Activado",
+      "taskRewardsOff": "Desactivado",
+      "taskRewardsStop": "¿Detener los pagos de rachas y tareas?",
+      "taskRewardsStart": "¿Activar los pagos de rachas y tareas?",
+      "taskRewardsBody": "Las rachas y tareas siguen funcionando; solo se dejan de pagar DesCoin. Es independiente del modo. El motivo queda registrado.",
+      "envCeilingErr": "El límite del entorno no lo permite."
     },
     "live": {
       "title": "Envío en vivo · {name}",
@@ -2104,7 +2148,8 @@ export const RG3 = {
       "errWrote": "Il a déjà écrit aujourd'hui.",
       "errNudgesOff": "Les relances sont désactivées.",
       "errFriends": "Les séries, c'est seulement avec des amis.",
-      "errTooMany": "20 séries communes au maximum."
+      "errTooMany": "20 séries communes au maximum.",
+      "rewardsOff": "Les récompenses des séries et tâches sont désactivées ; elles comptent toujours."
     },
     "tasks": {
       "message": "Écris à {name}",
@@ -2285,7 +2330,17 @@ export const RG3 = {
       "act_recall": "{detail} messages rappelés",
       "act_reward": "récompense : {detail}",
       "system": "Système",
-      "logEmpty": "Rien au journal."
+      "logEmpty": "Rien au journal.",
+      "ceilingNote": "Plafond de l'environnement : {env}. La console ne peut pas aller au-delà ; il faut changer REENGAGE_ENABLED / REENGAGE_DRY_RUN sur le serveur.",
+      "cappedNote": "Le choix enregistré dépasse le plafond, il n'est donc pas appliqué.",
+      "aboveCeiling": "Non autorisé par l'environnement",
+      "taskRewards": "DesCoin des séries et tâches",
+      "taskRewardsOn": "Activé",
+      "taskRewardsOff": "Désactivé",
+      "taskRewardsStop": "Arrêter les paiements des séries et tâches ?",
+      "taskRewardsStart": "Activer les paiements des séries et tâches ?",
+      "taskRewardsBody": "Séries et tâches continuent ; seul le DesCoin s'arrête. Indépendant du mode. La raison va au journal.",
+      "envCeilingErr": "Le plafond de l'environnement ne le permet pas."
     },
     "live": {
       "title": "Envoi en direct · {name}",
@@ -2580,7 +2635,8 @@ export const RG3 = {
       "errWrote": "Já escreveu hoje.",
       "errNudgesOff": "As cutucadas estão desligadas.",
       "errFriends": "Sequências só com amigos.",
-      "errTooMany": "Até 20 sequências."
+      "errTooMany": "Até 20 sequências.",
+      "rewardsOff": "As recompensas estão desligadas agora; sequências e tarefas ainda contam."
     },
     "tasks": {
       "message": "Mande mensagem para {name}",
@@ -2761,7 +2817,17 @@ export const RG3 = {
       "act_recall": "{detail} mensagens retiradas",
       "act_reward": "recompensa: {detail}",
       "system": "Sistema",
-      "logEmpty": "Nada registrado ainda."
+      "logEmpty": "Nada registrado ainda.",
+      "ceilingNote": "Limite do ambiente: {env}. O console não passa disso; para mais, mude REENGAGE_ENABLED / REENGAGE_DRY_RUN no servidor.",
+      "cappedNote": "A escolha salva passa do limite do ambiente, então não vale agora.",
+      "aboveCeiling": "O ambiente não permite",
+      "taskRewards": "DesCoin de sequências e tarefas",
+      "taskRewardsOn": "Ligado",
+      "taskRewardsOff": "Desligado",
+      "taskRewardsStop": "Parar pagamentos de sequências e tarefas?",
+      "taskRewardsStart": "Ligar pagamentos de sequências e tarefas?",
+      "taskRewardsBody": "Sequências e tarefas continuam; só o DesCoin para. Independe do modo. O motivo vai para o registro.",
+      "envCeilingErr": "O limite do ambiente não permite."
     },
     "live": {
       "title": "Envio ao vivo · {name}",
@@ -3056,7 +3122,8 @@ export const RG3 = {
       "errWrote": "Уже писал(а) сегодня.",
       "errNudgesOff": "Напоминания отключены.",
       "errFriends": "Серии только с друзьями.",
-      "errTooMany": "Не больше 20 общих серий."
+      "errTooMany": "Не больше 20 общих серий.",
+      "rewardsOff": "Награды за серии и задания сейчас выключены; они всё равно засчитываются."
     },
     "tasks": {
       "message": "Напишите {name}",
@@ -3237,7 +3304,17 @@ export const RG3 = {
       "act_recall": "отозвано сообщений: {detail}",
       "act_reward": "награда: {detail}",
       "system": "Система",
-      "logEmpty": "Записей пока нет."
+      "logEmpty": "Записей пока нет.",
+      "ceilingNote": "Предел окружения: {env}. Консоль не может его превысить; для этого на сервере нужно изменить REENGAGE_ENABLED / REENGAGE_DRY_RUN.",
+      "cappedNote": "Сохранённый выбор выше предела окружения и сейчас не действует.",
+      "aboveCeiling": "Не разрешено окружением",
+      "taskRewards": "DesCoin за серии и задания",
+      "taskRewardsOn": "Вкл.",
+      "taskRewardsOff": "Выкл.",
+      "taskRewardsStop": "Остановить выплаты за серии и задания?",
+      "taskRewardsStart": "Включить выплаты за серии и задания?",
+      "taskRewardsBody": "Серии и задания продолжают работать, только DesCoin не начисляется. Не зависит от режима. Причина записывается в журнал.",
+      "envCeilingErr": "Предел окружения этого не позволяет."
     },
     "live": {
       "title": "Отправка вживую · {name}",

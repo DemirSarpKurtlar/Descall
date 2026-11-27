@@ -204,4 +204,26 @@ assert.equal(copy.rt("de", "mail.sayHi", { peer: "Ece" }), "Sag Ece Hallo");
 assert.match(copy.rt("ru", "mail.digestIntro", { people: 3, mentions: 2, waiting: 1 }), /3/);
 assert.equal(copy.rt("xx", "push.join"), "Katıl", "unknown language -> Turkish");
 
+// ---- mode: the environment is the ceiling --------------------------------------
+const M = require("./mode");
+const OFF = {};
+const DRY = { REENGAGE_DRY_RUN: "1" };
+const LIVE = { REENGAGE_ENABLED: "1" };
+M.__set({ modeOverride: "live" });
+assert.equal(M.configuredMode(OFF), "off", "env off: console live is not in effect");
+assert.equal(M.configuredMode(DRY), "dry_run", "env dry run caps live");
+assert.equal(M.configuredMode(LIVE), "live");
+assert.equal(M.snapshot(DRY).capped, true);
+M.__set({ modeOverride: "off" });
+assert.equal(M.configuredMode(LIVE), "off", "the console may always go lower");
+M.__set({ modeOverride: null });
+assert.equal(M.configuredMode(DRY), "dry_run", "no override: the environment");
+M.__set({ modeOverride: "live", paused: true });
+assert.equal(M.sendingMode(LIVE), "off", "paused stops everything");
+assert.equal(M.allowedByEnv("live", DRY), false);
+assert.equal(M.allowedByEnv("dry_run", DRY), true);
+assert.equal(M.allowedByEnv("dry_run", OFF), false);
+assert.equal(M.allowedByEnv("off", OFF), true);
+M.__set({});
+
 console.log("reengage rules.selftest: ok");

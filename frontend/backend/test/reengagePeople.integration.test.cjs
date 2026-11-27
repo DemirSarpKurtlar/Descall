@@ -308,7 +308,11 @@ async function main() {
     assert.equal(r.status, 409, "once a day");
 
     /* ---- day-7 friend call ------------------------------------------------- */
+    // The environment is the ceiling (integrator decision): the console override alone is not enough.
     mode.__set({ modeOverride: "live" });
+    assert.equal(mode.sendingMode(), "off", "env off caps the console override");
+    process.env.REENGAGE_ENABLED = "1";
+    assert.equal(mode.sendingMode(), "live");
     const found = await winback.findSuggestions({ now: () => clock, mode: () => "live" });
     assert.equal(found.suggested, 2, JSON.stringify(found));
     const sugg = t.winback_calls.rows.find((x) => x.target_id === GONE);
@@ -390,9 +394,38 @@ async function main() {
     assert.equal(r.status, 403, "owner only");
     r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { modeOverride: "live" } });
     assert.equal(r.status, 400, "reason required");
+    delete process.env.REENGAGE_ENABLED;
+    process.env.REENGAGE_DRY_RUN = "1";
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { modeOverride: "live", reason: "test" } });
+    assert.equal(r.status, 409, "env dry run: the console cannot go live");
+    assert.equal(r.body.code, "env_ceiling");
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { modeOverride: "dry_run", reason: "test" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.mode.ceiling, "dry_run");
+    delete process.env.REENGAGE_DRY_RUN;
+    process.env.REENGAGE_ENABLED = "1";
     r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { modeOverride: "live", reason: "test" } });
     assert.equal(r.status, 200);
     assert.equal(r.body.mode.mode, "live");
+    // Owner kill switch for streak / task DesCoin (independent of the mode).
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ECE, "ece"], body: { taskRewards: false, reason: "x" } });
+    assert.equal(r.status, 403);
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { taskRewards: false } });
+    assert.equal(r.status, 400, "reason required");
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { taskRewards: false, reason: "budget" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.console.taskRewards, false);
+    const ledgerBefore = t.descoin_ledger.rows.filter((x) => x.reason === "reengage_task").length;
+    const pair = t.shared_streaks.rows[0];
+    Object.assign(pair, { last_day: istDay(clock - D), a_day: istDay(clock - D), b_day: istDay(clock - D), count: 5 });
+    await streaks.onDm(ME, ECE);
+    await streaks.onDm(ECE, ME);
+    assert.equal(t.shared_streaks.rows[0].count, 6, "the streak still counts");
+    assert.equal(t.descoin_ledger.rows.filter((x) => x.reason === "reengage_task").length, ledgerBefore, "no DesCoin while switched off");
+    r = await call("GET", "/api/streaks");
+    assert.equal(r.body.rewardsOn, false);
+    r = await call("PUT", "/api/admin/growth/reengage/settings", { as: [ADMIN, "admin"], body: { taskRewards: true, reason: "back" } });
+    assert.equal(r.body.console.taskRewards, true);
     assert.ok(audits.some((a) => a[2] === "reengage_settings"));
 
     // A third absentee for the system message (no friend around).
@@ -453,6 +486,16 @@ async function main() {
     r = await call("GET", "/api/admin/growth/reengage/outcomes", { as: [ADMIN, "admin"] });
     assert.equal(r.status, 200);
     assert.equal(r.body.d7Return48h.target, 18);
+
+    /* ---- weekly digest is a service e-mail: people only, no promotion ---------- */
+    {
+      const digest = await require("../lib/reengage/digest").digestFor(ME, { now: clock, lang: "tr" });
+      const mail = require("../lib/reengageEmail").buildPeopleEmail({ kind: "digest", lang: "tr", ...digest, unsubUrl: "https://descall.com/api/reengage/unsubscribe?x=1" });
+      for (const word of [/Descall\+/i, /premium/i, /ultra/i, /indirim/i, /DesCoin/i, /mağaza/i, /shop/i]) {
+        assert.ok(!word.test(mail.html) && !word.test(mail.text) && !word.test(mail.subject), `digest has no promotional text (${word})`);
+      }
+      assert.ok(mail.headers["List-Unsubscribe-Post"], "one-click unsubscribe");
+    }
 
     /* ---- tracking link -------------------------------------------------------- */
     const token = R.signTrack(SYS, "inactive7:x", process.env);

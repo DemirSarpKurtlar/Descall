@@ -168,10 +168,13 @@ create index if not exists reengage_waves_campaign_idx on public.reengage_waves 
 create table if not exists public.reengage_settings (
   id text primary key default 'default' check (id = 'default'),
   -- null = follow REENGAGE_ENABLED / REENGAGE_DRY_RUN; set by the console (owner only).
+  -- The environment stays the ceiling: the backend never runs above it whatever is stored.
   mode_override text check (mode_override in ('off', 'dry_run', 'live')),
   paused boolean not null default false,
   call_reward integer not null default 50 check (call_reward between 0 and 200),
   gift14_amount integer not null default 150 check (gift14_amount between 0 and 500),
+  -- Owner kill switch for shared-streak and daily-task DesCoin (the features keep working).
+  task_rewards_enabled boolean not null default true,
   updated_at timestamptz not null default now(),
   updated_by uuid
 );

@@ -238,6 +238,7 @@ async function main() {
       await page.locator('.rg-userprev .rg-notif').waitFor({ timeout: 8000 });
       const head = await page.locator('.rg-console-h p').innerText();
       check(head.includes('412 gönderim') && head.includes('net +9'), `header line (${head})`, fails);
+      check(await page.locator('.rg-console-actions .rg-pill', { hasText: "Seri ve görev DesCoin'i" }).isVisible(), 'owner kill switch for task DesCoin', fails);
       await shot(page, '7-admin-konsol', { fullPage: false });
       await page.locator('.rg-btn.primary', { hasText: 'Sıradaki dalgayı' }).click();
       await page.locator('.rg-modal .rg-btn.primary').click();
