@@ -1,0 +1,9 @@
+{
+  "tr": { "okTitle": "Ödeme alındı", "okBody": "Descall'a dönebilirsin.", "failTitle": "Ödeme tamamlanmadı", "failBody": "Descall'a dönüp tekrar deneyebilirsin." },
+  "en": { "okTitle": "Payment received", "okBody": "You can go back to Descall.", "failTitle": "Payment not completed", "failBody": "Go back to Descall and try again." },
+  "de": { "okTitle": "Zahlung erhalten", "okBody": "Du kannst zu Descall zurückkehren.", "failTitle": "Zahlung nicht abgeschlossen", "failBody": "Kehre zu Descall zurück und versuche es erneut." },
+  "es": { "okTitle": "Pago recibido", "okBody": "Puedes volver a Descall.", "failTitle": "Pago no completado", "failBody": "Vuelve a Descall e inténtalo de nuevo." },
+  "fr": { "okTitle": "Paiement reçu", "okBody": "Tu peux revenir sur Descall.", "failTitle": "Paiement non terminé", "failBody": "Reviens sur Descall et réessaie." },
+  "pt-BR": { "okTitle": "Pagamento recebido", "okBody": "Você pode voltar ao Descall.", "failTitle": "Pagamento não concluído", "failBody": "Volte ao Descall e tente de novo." },
+  "ru": { "okTitle": "Оплата получена", "okBody": "Можно вернуться в Descall.", "failTitle": "Оплата не завершена", "failBody": "Вернитесь в Descall и попробуйте ещё раз." }
+}

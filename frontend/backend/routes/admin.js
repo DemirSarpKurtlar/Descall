@@ -84,6 +84,10 @@ router.use(require("./adminServerReview"));
 // Oyunlar / Kredi (section casino): player workspace, ledger, hand history, limits, statistics.
 router.use(require("./adminCasino"));
 router.use(require("./adminGrowth"));
+// Davet ödülleri (growth phase 4, 4A): control board, holds / revokes with undo, rules.
+router.use(require("./adminInvites"));
+// Growth 3B "Yeniden kazanma" console (section "retention").
+router.use(require("./adminReengage"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
@@ -94,6 +98,8 @@ router.use(require("./adminPromo"));
 // Mağaza (remake): catalog desk, storefront, campaigns, gifts, reconciliation fixes.
 router.use(require("./adminShopDesk"));
 router.use(require("./adminSpecialBadges"));
+// Bug Avcısı (section feedback): confirm a real bug, duplicates, undo, leaderboard.
+router.use(require("./adminBugHunter"));
 // Canlı popup (section livepopup): live tracking, schedule, recall, receipts, templates.
 router.use(require("./adminLivePopup"));
 // Güvenlik Merkezi (section security): score, live threat feed, emergency locks, settings history.
@@ -105,6 +111,8 @@ router.use(require("./adminDesktopMigration"));
 // Duyurular (section announcements): board, list + inspector, composer, templates, languages, approvals.
 router.use(require("./adminAnnouncements"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
+// Descall+ 2.0 workspace (draft 5B section 4): before /premium so its own paths win.
+router.use("/premium/plus", require("./adminPlus"));
 router.use("/premium", require("./adminPremium"));
 // Admin Token (owner only): tokens, usage, alerts, auto-pause, and GET /openapi.json.
 router.use(require("./adminTokens"));
@@ -1753,7 +1761,12 @@ router.patch("/feedback/:id", async (req, res) => {
     if (lines.length) update.admin_replies = [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), ...lines];
     const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
-    if (patch.status && patch.status !== before.status && before.userId) {
+    // A confirmed bug marked resolved: the sender gets "Düzeltildi" (and linked duplicates too)
+    // from lib/bugHunter instead of the generic status notification.
+    const fixed = patch.status === "resolved" && patch.status !== before.status
+      ? await require("../lib/bugHunter/service").onResolved({ feedbackId: before.id, actor: req.user, io: getIo(req) }).catch(() => ({ handled: false }))
+      : { handled: false };
+    if (patch.status && patch.status !== before.status && before.userId && !fixed.handled) {
       require("../lib/feedbackNotify").notifyFeedbackStatus(getIo(req), before.userId, { feedbackId: before.id, status: patch.status });
     }
     // İşlem kaydı: one entry per change (status first), never the feedback text.

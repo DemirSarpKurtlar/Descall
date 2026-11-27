@@ -3,6 +3,18 @@
  * (2026-11-14). Keys are the exact English server texts (see api.tr.js). Spread into pt-BR.js phrases.
  */
 export const API_PT_BR = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Este feedback não está confirmado como bug.",
+  "The bug hunter tables are not installed yet.": "As tabelas do Caçador de Bugs ainda não foram instaladas.",
+  "Pick a severity.": "Escolha uma gravidade.",
+  "Pick a confirmed bug to link to.": "Escolha um bug confirmado para vincular.",
+  "The bug you linked to is not confirmed.": "O bug que você vinculou não está confirmado.",
+  "The same person reported the first bug; nothing to credit twice.": "A mesma pessoa relatou o primeiro bug; não conta duas vezes.",
+  "You can't confirm your own feedback.": "Você não pode confirmar o seu próprio feedback.",
+  "This feedback has no sender.": "Este feedback não tem remetente.",
+  "This confirmation was already undone.": "Esta confirmação já foi desfeita.",
+  "Undo the linked duplicate reports first.": "Desfaça primeiro os relatos duplicados vinculados.",
+  "Something went wrong.": "Algo deu errado.",
   "Could not check right now.": "Não foi possível verificar agora.",
   "Complete the security check to continue.": "Conclua a verificação de segurança para continuar.",
   "The security check could not be verified. Please try again.": "Não foi possível confirmar a verificação de segurança. Tente novamente.",
@@ -322,4 +334,20 @@ export const API_PT_BR = {
   "Could not load replies.": "Não foi possível carregar as respostas.",
   "Unknown event.": "Evento desconhecido.",
   "Onboarding settings could not be saved.": "Não foi possível salvar as configurações iniciais.",
+  // Davet Merkezi / Davet ödülleri (growth phase 4).
+  "Inviter not found.": "Quem convidou não foi encontrado.",
+  "Write a note for the reason \"other\".": "Escreva uma nota para o motivo \"Outro\".",
+  "Invite rules are not migrated yet.": "As regras de convite ainda não foram criadas.",
+  "Action not found.": "Ação não encontrada.",
+  "This action was already undone.": "Esta ação já foi desfeita.",
+  "The 10 minute undo window has passed.": "O prazo de 10 minutos para desfazer passou.",
+  "Could not load invite rewards.": "Não foi possível carregar as recompensas de convite.",
+  "Choose a reason.": "Escolha um motivo.",
+  "Invalid action.": "Ação inválida.",
+  "Invalid alert.": "Alerta inválido.",
+  "Could not load invites.": "Não foi possível carregar os convites.",
+  "This invite link is not valid.": "Este link de convite não é válido.",
+  "Invalid invite.": "Convite inválido.",
+  "Your friend already wrote.": "Seu amigo já escreveu.",
+  "You can nudge once a day.": "Você pode cutucar uma vez por dia.",
 };

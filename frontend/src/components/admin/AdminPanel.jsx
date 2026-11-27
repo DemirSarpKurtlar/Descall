@@ -67,7 +67,9 @@ import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
+const ReengageConsole = lazy(() => import("./reengage/ReengageConsole.jsx"));
 const AdminShop2 = lazy(() => import("./shop2/AdminShop2.jsx"));
+const AdminInvites = lazy(() => import("./invites/AdminInvites.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -100,7 +102,11 @@ const TABS = [
   // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
   { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
   { id: "retention", label: "admin.retention", icon: TrendingUp },
+  // Growth 3B "Yeniden kazanma" console (the Elde tutma permission, adminNav TAB_SECTION).
+  { id: "reengage", label: "admin.reengage", icon: RotateCcw },
   { id: "economy", label: "admin.economy", icon: Wallet },
+  // Davet ödülleri (growth phase 4, owner pick 4A): invite rewards control board.
+  { id: "invites", label: "dvt.adminNav", icon: Gift, newLabel: "dvt.adminNew" },
   { id: "topUsers", label: "admin.topUsers", icon: Trophy },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
@@ -122,6 +128,8 @@ const TABS = [
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
   // Premium Yönetimi (phase 1): nine pages under the one "premium" section.
+  // Descall+ 2.0 workspace (owner pick 5B section 4): list + person + plans, payments, funnel.
+  { id: "premiumWorkspace", label: "premiumAdmin.navWorkspace", icon: Gauge },
   { id: "premiumDashboard", label: "premiumAdmin.navDashboard", icon: Gauge },
   { id: "premiumUsers", label: "premiumAdmin.navUsers", icon: Crown },
   { id: "premiumBulk", label: "premiumAdmin.navBulk", icon: UsersThree },
@@ -870,7 +878,23 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
         {tab === "errors" && <ErrorIssuesTab />}
         {tab === "retention" && <RetentionTab />}
+        {tab === "reengage" && (
+          <Suspense fallback={null}>
+            <ReengageConsole isOwner={Boolean(perm.owner)} />
+          </Suspense>
+        )}
         {tab === "economy" && <EconomyTab />}
+        {tab === "invites" && (
+          <Suspense fallback={null}>
+            <AdminInvites
+              socket={socket}
+              onOpenUser={(id) => {
+                setDossierUserId(id);
+                setTab("people");
+              }}
+            />
+          </Suspense>
+        )}
         {tab === "topUsers" && <AdminTopUsers />}
         {tab === "dmReview" && (
           <AdminDmInbox

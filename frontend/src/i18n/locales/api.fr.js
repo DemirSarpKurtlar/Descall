@@ -3,6 +3,18 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into fr.js phrases.
  */
 export const API_FR = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Ce retour n'est pas confirmé comme bug.",
+  "The bug hunter tables are not installed yet.": "Les tables Chasseur de bugs ne sont pas encore installées.",
+  "Pick a severity.": "Choisis une gravité.",
+  "Pick a confirmed bug to link to.": "Choisis un bug confirmé à lier.",
+  "The bug you linked to is not confirmed.": "Le bug que tu as lié n'est pas confirmé.",
+  "The same person reported the first bug; nothing to credit twice.": "La même personne a signalé le premier bug ; il ne compte pas deux fois.",
+  "You can't confirm your own feedback.": "Tu ne peux pas confirmer ton propre retour.",
+  "This feedback has no sender.": "Ce retour n'a pas d'expéditeur.",
+  "This confirmation was already undone.": "Cette confirmation a déjà été annulée.",
+  "Undo the linked duplicate reports first.": "Annule d'abord les doublons liés.",
+  "Something went wrong.": "Un problème est survenu.",
   "Could not check right now.": "Vérification impossible pour le moment.",
   "Complete the security check to continue.": "Termine la vérification de sécurité pour continuer.",
   "The security check could not be verified. Please try again.": "La vérification de sécurité n'a pas pu être confirmée. Réessaie.",
@@ -322,4 +334,20 @@ export const API_FR = {
   "Could not load replies.": "Impossible de charger les réponses.",
   "Unknown event.": "Événement inconnu.",
   "Onboarding settings could not be saved.": "Impossible d'enregistrer les réglages de démarrage.",
+  // Davet Merkezi / Davet ödülleri (growth phase 4).
+  "Inviter not found.": "Parrain introuvable.",
+  "Write a note for the reason \"other\".": "Écris une note pour le motif « Autre ».",
+  "Invite rules are not migrated yet.": "Les règles d'invitation ne sont pas encore créées.",
+  "Action not found.": "Action introuvable.",
+  "This action was already undone.": "Cette action a déjà été annulée.",
+  "The 10 minute undo window has passed.": "Le délai d'annulation de 10 minutes est passé.",
+  "Could not load invite rewards.": "Impossible de charger les récompenses d'invitation.",
+  "Choose a reason.": "Choisis un motif.",
+  "Invalid action.": "Action non valide.",
+  "Invalid alert.": "Alerte non valide.",
+  "Could not load invites.": "Impossible de charger les invitations.",
+  "This invite link is not valid.": "Ce lien d'invitation n'est pas valide.",
+  "Invalid invite.": "Invitation non valide.",
+  "Your friend already wrote.": "Ton ami a déjà écrit.",
+  "You can nudge once a day.": "Tu peux faire signe une fois par jour.",
 };

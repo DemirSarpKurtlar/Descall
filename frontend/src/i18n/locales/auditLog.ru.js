@@ -458,6 +458,7 @@ export const AUDIT_LOG_RU = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Награды за приглашения",
     "adminToken": "Admin Token",
     "nodes": "Сеть серверов",
     "overview": "Обзор",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_RU = {
     "moddesk": "Настройка модерации",
     "flagged": "Решение по отмеченному контенту",
     "popup": "Действие живого окна",
+    "reengage": "Действие возврата пользователей",
     "announcement": "Действие с объявлением",
     "server": "Действие с сервером",
     "dm": "Действие с ЛС",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_RU = {
     "system": "Системное действие"
   },
   "act": {
+    "invite_auto_hold": "Автоматически удержал награды",
+    "invite_hold": "Удержал награды за приглашения",
+    "invite_release": "Снял удержание приглашений",
+    "invite_revoke": "Списал награды за приглашения",
+    "invite_pause_link": "Приостановил ссылку-приглашение",
+    "invite_resume_link": "Открыл ссылку-приглашение",
+    "invite_rules": "Изменил правила приглашений",
+    "invite_undo": "Отменил действие с приглашениями",
+    "invite_alert_ignore": "Проигнорировал сигнал по приглашениям",
+    "invite_export": "Экспортировал награды за приглашения",
     "ban": "Забанил(а)",
     "unban": "Снял(а) бан",
     "timeout": "Заглушил(а)",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_RU = {
     "feedback_reply": "Ответил(а) на отзыв",
     "feedback_note": "Добавил(а) внутреннюю заметку к отзыву",
     "feedback_delete": "Удалил(а) отзыв",
+    "feedback_bug_confirm": "Подтвердил(а) настоящий баг",
+    "feedback_bug_undo": "Отменил(а) подтверждение бага",
+    "feedback_bug_fixed": "Отправил(а) уведомление об исправлении бага",
     "2fa_totp_enabled": "Включил(а) 2FA",
     "2fa_recovery_regenerated": "Обновил(а) коды восстановления",
     "passkey_added": "Добавил(а) ключ доступа",

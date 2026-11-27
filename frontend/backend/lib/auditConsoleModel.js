@@ -97,6 +97,10 @@ const CATALOG = {
   feedback_reply: ["content", "low"],
   feedback_note: ["content", "low"],
   feedback_delete: ["content", "medium"],
+  // Bug Avcısı: a confirmation pays DesCoin and can grant badges, so it is economy-adjacent.
+  feedback_bug_confirm: ["content", "medium"],
+  feedback_bug_undo: ["content", "medium"],
+  feedback_bug_fixed: ["content", "low"],
   "2fa_totp_enabled": ["account", "medium"],
   "2fa_recovery_regenerated": ["account", "medium"],
   passkey_added: ["account", "medium"],
@@ -190,6 +194,8 @@ const PREFIXES = [
   ["shop_", "economy", "low"],
   ["shop2_", "economy", "low"],
   ["descoin_", "economy", "medium"],
+  // Davet ödülleri (growth phase 4): holds, revokes, rules, undo.
+  ["invite_", "economy", "medium"],
   ["credit", "economy", "medium"],
   ["casino_", "economy", "low"],
   ["game_", "economy", "medium"],
@@ -204,6 +210,8 @@ const PREFIXES = [
   ["appeal_", "sanctions", "medium"],
   ["access_", "sanctions", "high"],
   ["live_popup", "content", "medium"],
+  // Growth 3B "Yeniden kazanma" console (mode, campaigns, waves, recall).
+  ["reengage_", "content", "high"],
   ["popup_", "content", "medium"],
   ["announcement_", "content", "medium"],
   ["flagged_", "content", "medium"],
@@ -234,6 +242,7 @@ const UNDO = Object.freeze({
   premium_grant: { reverse: "premium_cancel", section: "premium" },
   special_badge_grant: { reverse: "special_badge_revoke", section: "specialBadges" },
   server_directory_hide: { reverse: "server_directory_show", section: "moderation" },
+  feedback_bug_confirm: { reverse: "feedback_bug_undo", section: "feedback" },
 });
 
 /** Section an action's forward route needs (permission suspension in the anomaly review). */
@@ -530,7 +539,9 @@ function mergeEntries(entries, opts = {}) {
         cand.action === r.action &&
         r.action !== "agent_tool" &&
         String(cand.target ?? "") === String(r.target ?? "") &&
-        sameActor(cand, r)
+        sameActor(cand, r) &&
+        // Two actions on different feedback items of the same person are two actions (Bug Avcısı).
+        String(cand.meta?.feedbackId ?? "") === String(r.meta?.feedbackId ?? "")
       ) {
         prev = cand;
         break;

@@ -185,7 +185,7 @@ class NotificationService {
       if (this.isElectron && window.electronAPI?.showNotification) {
         window.electronAPI.showNotification(title, { body, tag, data, requireInteraction, silent, avatarUrl, ...(style ? { style } : {}) });
       } else {
-        this._showWebNotification({ title, body, tag, requireInteraction, silent, data });
+        this._showWebNotification({ title, body, tag, requireInteraction, silent, data, avatarUrl });
       }
 
       // Track this tag as active; clear after its visible duration
@@ -199,7 +199,7 @@ class NotificationService {
     }
   }
 
-  _showWebNotification({ title, body, tag, requireInteraction, silent, data }) {
+  _showWebNotification({ title, body, tag, requireInteraction, silent, data, avatarUrl = null }) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
       const prev = this._shownByTag.get(tag);
@@ -209,7 +209,8 @@ class NotificationService {
         tag,
         requireInteraction,
         silent,
-        icon: brandIconUrl(),
+        // Growth 3B: a face when the card is about a person (https avatars only).
+        icon: typeof avatarUrl === "string" && /^https:\/\//.test(avatarUrl) ? avatarUrl : brandIconUrl(),
         badge: brandIconUrl(),
         data,
       });

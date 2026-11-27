@@ -458,6 +458,7 @@ export const AUDIT_LOG_DE = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Einladungsbelohnungen",
     "adminToken": "Admin Token",
     "nodes": "Servernetz",
     "overview": "Übersicht",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_DE = {
     "moddesk": "Moderationseinstellung",
     "flagged": "Entscheidung zu markiertem Inhalt",
     "popup": "Live-Pop-up-Aktion",
+    "reengage": "Rückgewinnungsaktion",
     "announcement": "Ankündigungsaktion",
     "server": "Serveraktion",
     "dm": "DM-Aktion",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_DE = {
     "system": "Systemaktion"
   },
   "act": {
+    "invite_auto_hold": "Einladungsbelohnungen automatisch zurückgehalten",
+    "invite_hold": "Einladungsbelohnungen zurückgehalten",
+    "invite_release": "Zurückhaltung aufgehoben",
+    "invite_revoke": "Einladungsbelohnungen zurückgebucht",
+    "invite_pause_link": "Einladungslink pausiert",
+    "invite_resume_link": "Einladungslink wieder geöffnet",
+    "invite_rules": "Einladungsregeln geändert",
+    "invite_undo": "Einladungsaktion rückgängig gemacht",
+    "invite_alert_ignore": "Einladungswarnung ignoriert",
+    "invite_export": "Einladungsbelohnungen exportiert",
     "ban": "Gesperrt",
     "unban": "Sperre aufgehoben",
     "timeout": "Stummgeschaltet",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_DE = {
     "feedback_reply": "Auf Feedback geantwortet",
     "feedback_note": "Interne Feedback-Notiz hinzugefügt",
     "feedback_delete": "Feedback gelöscht",
+    "feedback_bug_confirm": "Echten Bug bestätigt",
+    "feedback_bug_undo": "Bug-Bestätigung zurückgenommen",
+    "feedback_bug_fixed": "Behoben-Nachricht zum Bug gesendet",
     "2fa_totp_enabled": "2FA eingeschaltet",
     "2fa_recovery_regenerated": "Wiederherstellungscodes erneuert",
     "passkey_added": "Passkey hinzugefügt",

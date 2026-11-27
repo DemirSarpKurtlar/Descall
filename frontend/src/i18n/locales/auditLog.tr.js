@@ -458,6 +458,7 @@ export const AUDIT_LOG_TR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Davet ödülleri",
     "adminToken": "Admin Token",
     "nodes": "Sunucu Ağı",
     "overview": "Genel bakış",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_TR = {
     "moddesk": "Moderasyon ayarı",
     "flagged": "İşaretli içerik kararı",
     "popup": "Canlı popup işlemi",
+    "reengage": "Yeniden kazanma işlemi",
     "announcement": "Duyuru işlemi",
     "server": "Sunucu işlemi",
     "dm": "DM işlemi",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_TR = {
     "system": "Sistem işlemi"
   },
   "act": {
+    "invite_auto_hold": "Davet ödüllerini otomatik bekletti",
+    "invite_hold": "Davet ödüllerini bekletti",
+    "invite_release": "Davet bekletmesini kaldırdı",
+    "invite_revoke": "Davet ödüllerini geri aldı",
+    "invite_pause_link": "Davet bağlantısını durdurdu",
+    "invite_resume_link": "Davet bağlantısını açtı",
+    "invite_rules": "Davet kurallarını değiştirdi",
+    "invite_undo": "Davet işlemini geri aldı",
+    "invite_alert_ignore": "Davet uyarısını yoksaydı",
+    "invite_export": "Davet ödüllerini dışa aktardı",
     "ban": "Yasakladı",
     "unban": "Yasağı kaldırdı",
     "timeout": "Susturdu",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_TR = {
     "feedback_reply": "Geri bildirime yanıt verdi",
     "feedback_note": "Geri bildirime dahili not ekledi",
     "feedback_delete": "Geri bildirimi sildi",
+    "feedback_bug_confirm": "Gerçek bug olarak doğruladı",
+    "feedback_bug_undo": "Bug doğrulamasını geri aldı",
+    "feedback_bug_fixed": "Bug düzeltildi bildirimini gönderdi",
     "2fa_totp_enabled": "2FA açtı",
     "2fa_recovery_regenerated": "Kurtarma kodlarını yeniledi",
     "passkey_added": "Passkey ekledi",

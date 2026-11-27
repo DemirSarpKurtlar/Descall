@@ -16,6 +16,8 @@ import { buildFriendInviteUrl } from "../../lib/referral";
 import { copyText } from "../../lib/copyText";
 import { getInviteQr } from "../../api/onboarding";
 import { Check, Copy, HandWaving, Link, MessageSquare, QrCode, Send, Share, UserPlus, X, Lock } from "../ui/Icon.jsx";
+// Davet Merkezi (growth 4A): the invited friend's gift card under the inviter greeting.
+import InviteGiftSlot from "../invites/InviteGiftSlot.jsx";
 
 /** Share links always point at the public site: inside the apps the page origin is a local shell
  * (tauri.localhost, https://localhost on Android) that a friend could not open. */
@@ -198,6 +200,7 @@ export default function FriendsCard() {
         ) : null}
       </div>
       {d.inviter ? <GreetRow inviter={d.inviter} /> : null}
+      {d.inviter ? <InviteGiftSlot /> : null}
       {peers.length ? (
         <div className="onb-frow">
           <span className="onb-stack">
@@ -248,6 +251,7 @@ export function FriendsFinder() {
   return (
     <div className="onb onb-friends" data-testid="onb-friends">
       {d.inviter ? <GreetRow inviter={d.inviter} page /> : null}
+      {d.inviter ? <InviteGiftSlot compact={false} /> : null}
       {peers.length ? (
         <>
           <div className="onb-psec">{t("onb.friends.sameInviteTitle", { n: peers.length })}</div>

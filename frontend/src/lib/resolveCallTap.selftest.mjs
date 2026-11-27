@@ -57,6 +57,10 @@ assert.equal(notificationTapAction({ actionId: "tap", data: dmPush, ios: true })
 assert.equal(notificationTapAction({ actionId: "tap", data: { type: "call", action: "answer" } }), "call-tap", "payload's default 'answer' no longer accepts a body tap");
 assert.equal(notificationTapAction({ actionId: "answer", data: dmPush }), "answer");
 assert.equal(notificationTapAction({ actionId: "JOIN", data: groupPush }), "answer");
+// Growth 3B people buttons keep their ids (App.jsx joins voice muted, opens the DM...).
+assert.equal(notificationTapAction({ actionId: "rg_quiet", data: { type: "friend-voice" }, ios: true }), "rg_quiet");
+assert.equal(notificationTapAction({ actionId: "rg_reply", data: { type: "friend-call" } }), "rg_reply");
+assert.equal(notificationTapAction({ actionId: "rg_<script>", data: {} , ios: true }), "open", "unknown ids never pass");
 assert.equal(notificationTapAction({ actionId: "DECLINE", data: dmPush }), "decline");
 assert.equal(notificationTapAction({ actionId: "tap", data: { type: "dm" }, ios: true }), "open");
 assert.equal(notificationTapAction({ actionId: "tap", data: { type: "dm", action: "reply" } }), "reply");

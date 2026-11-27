@@ -170,11 +170,19 @@ async function hasAcceptedFriend(userId) {
   try {
     const { data } = await db()
       .from("friendships")
-      .select("id")
+      .select("id, user_id, friend_id")
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq("status", "accepted")
-      .limit(1);
-    return Array.isArray(data) && data.length > 0;
+      .limit(50);
+    if (!Array.isArray(data) || !data.length) return false;
+    // The friendship a friend-invite sign-up creates by itself does not count: the invite
+    // reward unlocks only after the first message + next-day return (lib/referrals/autoFriend.js).
+    const auto = await require("../referrals/autoFriend").inviteAutoFriendIds(userId);
+    const uid = String(userId);
+    return data.some((r) => {
+      const other = String(r.user_id) === uid ? String(r.friend_id) : String(r.user_id);
+      return !auto.has(other);
+    });
   } catch {
     return false;
   }

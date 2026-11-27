@@ -119,6 +119,8 @@ export const COINPOP_TR = {
       "referral_invite": "Davet ödülü",
       "referral_welcome": "Hoş geldin ödülü",
       "onboarding_reward": "Başla ödülü",
+      "bug_bounty": "Bug ödülü",
+      "bug_bounty_revoke": "Bug ödülü geri alındı",
       "promo": "Promosyon kodu",
       "premium_gift": "Descall+ hediyesi",
       "other": "Diğer"

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, useSyncExternalStore, cloneElement, isValidElement } from "react";
+import { Suspense, lazy, useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, useSyncExternalStore, cloneElement, isValidElement } from "react";
 import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -48,6 +48,7 @@ import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 import { HELLO_STICKER_TOKEN } from "../../lib/descallStickers";
 import { typingFlareKey } from "../../lib/typingFlare.js";
+const DmGiftStrip = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.DmGiftStrip })));
 
 function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -987,6 +988,8 @@ export default function ChatPanel({
       {/* Typing + composer only on real chat surfaces, never under Activity */}
       {activeView !== "activity" && showComposer && (
         <>
+          {/* Descall+ 2.0 (moment 11): gift cards between you two (open / live status), above the composer. */}
+          {activeDmUser?.id && !dmBlockedByMe ? <Suspense fallback={null}><DmGiftStrip otherUserId={activeDmUser.id} /></Suspense> : null}
 
           {dmBlockedByMe && (
             <div className="dm-blocked-banner" role="status">

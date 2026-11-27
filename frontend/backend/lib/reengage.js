@@ -107,7 +107,10 @@ function createReengage(deps = {}) {
   const dryRunSeen = new Set();
   const joinCooldown = new Map();
 
-  const mode = () => P.mode(getEnv());
+  // Kapalı / Kuru çalıştırma / Canlı: environment default, console override, "Hepsini duraklat".
+  const mode = () => (deps.mode ? deps.mode() : require("./reengage/mode").sendingMode(getEnv()));
+  const people = deps.people || require("./reengage/store");
+  const R = require("./reengage/rules");
   const on = (feature) => mode() !== "off" && P.featureOn(feature, getEnv());
   const emailConfigured = () => Boolean(getEnv().RESEND_API_KEY);
 
@@ -173,8 +176,11 @@ function createReengage(deps = {}) {
     return out;
   }
 
-  /** "claimed" | "dry_run" | "exists" | "unavailable" */
-  async function claim(userId, kind, channel, meta = {}) {
+  /**
+   * "claimed" | "dry_run" | "exists" | "unavailable". `extra` = 20261125a columns
+   * (campaign, wave_id, lang, holdout); dropped when that migration has not run yet.
+   */
+  async function claim(userId, kind, channel, meta = {}, extra = {}) {
     const key = `${userId}|${kind}`;
     if (mode() === "dry_run") {
       if (dryRunSeen.has(key)) return "exists";
@@ -183,9 +189,9 @@ function createReengage(deps = {}) {
       return "dry_run";
     }
     if (tableMissing) return "unavailable";
-    const { error } = await getDb()
-      .from(TABLE)
-      .insert({ user_id: userId, kind, channel, status: "claimed", meta, sent_at: new Date(now()).toISOString() });
+    const row = { user_id: userId, kind, channel, status: "claimed", meta, sent_at: new Date(now()).toISOString() };
+    let { error } = await getDb().from(TABLE).insert({ ...row, ...extra });
+    if (error && Object.keys(extra).length && isMissingColumnErr(error)) ({ error } = await getDb().from(TABLE).insert(row));
     if (!error) return "claimed";
     if (isUniqueViolation(error)) return "exists";
     if (isMissingTableErr(error, TABLE)) {
@@ -201,31 +207,97 @@ function createReengage(deps = {}) {
     if (error) log.warn("[reengage] status update failed:", error.message);
   }
 
-  /** Map userId -> [sent_at] of friend-in-voice pushes in the last 24 h. */
-  async function friendVoiceHistory(ids) {
+  /**
+   * Friend-in-voice pushes in the last 24 h: Map userId -> { normal: [sent_at], vip: [sent_at] }.
+   * "vip" = pushes about `peerId` as an important person (friend_voice_vip:<peer>:<slot>);
+   * they never count towards the daily budget.
+   */
+  async function friendVoiceHistory(ids, peerId = null) {
     const out = new Map();
+    const slot = (id) => {
+      if (!out.has(id)) out.set(id, { normal: [], vip: [] });
+      return out.get(id);
+    };
     if (tableMissing) return out;
     const since = new Date(now() - DAY_MS).toISOString();
     for (const part of chunks(ids)) {
       const { data, error } = await getDb()
         .from(TABLE)
-        .select("user_id, sent_at")
+        .select("user_id, kind, sent_at")
         .in("user_id", part)
-        .like("kind", "friend_voice:%")
+        .like("kind", "friend_voice%")
         .gte("sent_at", since);
       if (error) {
         if (isMissingTableErr(error, TABLE)) tableMissing = true;
         // Unknown history: treat as "just sent" so nobody is pushed twice.
-        for (const id of part) out.set(id, [now()]);
+        for (const id of part) Object.assign(slot(id), { normal: [now()], vip: [now()] });
         continue;
       }
       for (const r of data || []) {
         const id = String(r.user_id);
-        if (!out.has(id)) out.set(id, []);
-        out.get(id).push(r.sent_at);
+        const kind = String(r.kind || "");
+        if (kind.startsWith("friend_voice:")) slot(id).normal.push(r.sent_at);
+        else if (peerId && kind.startsWith(`friend_voice_vip:${peerId}:`)) slot(id).vip.push(r.sent_at);
       }
     }
     return out;
+  }
+
+  /** Up to 4 faces (joiner first) of the people in the channel, for the push and desktop card. */
+  async function voiceFaces(joiner, channelId) {
+    const { activeServerVoiceCalls } = getState();
+    const ids = [String(joiner)];
+    for (const call of activeServerVoiceCalls?.values?.() || []) {
+      if (String(call?.channelId || "") !== String(channelId)) continue;
+      for (const uid of call?.participants?.keys?.() || []) if (!ids.includes(String(uid))) ids.push(String(uid));
+    }
+    const pick = ids.slice(0, 4);
+    const { data } = await getDb().from("users").select("id, username, display_name, avatar_url").in("id", pick);
+    const byId = new Map((data || []).map((u) => [String(u.id), u]));
+    return {
+      total: ids.length,
+      faces: pick
+        .map((id) => byId.get(id))
+        .filter(Boolean)
+        .map((u) => ({ id: String(u.id), name: u.display_name || u.username || "", avatar: /^https:\/\//.test(String(u.avatar_url || "")) ? u.avatar_url : null })),
+    };
+  }
+
+  /**
+   * Desktop (Electron / Tauri) and open-but-idle tabs: the same "in voice" card with faces,
+   * localized per recipient, through the socket (lib/notificationService shows it).
+   */
+  function emitDesktopVoiceCard(recipients, payload) {
+    const copy = require("./reengage/copy");
+    const emit = deps.emitToUser || require("./reengage/io").emitToUser;
+    const names = (payload.faces || []).map((f) => f.name).filter(Boolean);
+    for (const r of recipients) {
+      const others = names.slice(1, 3).join(", ");
+      emit(r.id, "reengage:notify", {
+        type: "friend-voice",
+        tag: `friend-voice-${payload.channelId}`,
+        title: copy.voiceTitle(r.lang, names.length ? names : [payload.friendName || ""], payload.total),
+        body: others
+          ? copy.rt(r.lang, "push.voiceWhereWith", { server: payload.serverName || "", channel: payload.channelName || "", others })
+          : copy.rt(r.lang, "push.voiceWhere", { server: payload.serverName || "", channel: payload.channelName || "" }),
+        avatarUrl: payload.faces?.[0]?.avatar || null,
+        faces: payload.faces || [],
+        primary: payload.primary,
+        actions: [
+          { action: payload.primary === "quiet_join" ? "rg_quiet" : "rg_join", title: copy.rt(r.lang, payload.primary === "quiet_join" ? "push.quietJoin" : "push.join") },
+          { action: payload.primary === "quiet_join" ? "rg_join" : "rg_quiet", title: copy.rt(r.lang, payload.primary === "quiet_join" ? "push.join" : "push.quietJoin") },
+        ],
+        data: {
+          type: "friend-voice",
+          serverId: payload.serverId,
+          channelId: payload.channelId,
+          serverName: payload.serverName,
+          channelName: payload.channelName,
+          fromId: payload.friendId,
+          rgKind: payload.rgKind,
+        },
+      });
+    }
   }
 
   function dryLog(what, userId, extra = {}) {
@@ -286,13 +358,15 @@ function createReengage(deps = {}) {
       cands = cands.filter((id) => levelOf.has(id));
       if (!cands.length) return { ...result, skipped: "no_members" };
 
-      const [users, mutesRes, bits, pushTargets, history, serverRes] = await Promise.all([
+      const [users, mutesRes, bits, pushTargets, history, serverRes, settingsMap, personMap] = await Promise.all([
         loadUsers([...cands, joiner]),
         db.from("server_channel_mutes").select("user_id").eq("channel_id", channelId).in("user_id", cands),
         channelBits(db, serverId, channelId, cands),
         usersWithPushTargets(cands),
-        friendVoiceHistory(cands),
+        friendVoiceHistory(cands, joiner),
         db.from("servers").select("id, name").eq("id", serverId).maybeSingle(),
+        Promise.resolve(people.getSettingsMany(cands)).catch(() => new Map()),
+        Promise.resolve(people.personsFor(cands, joiner)).catch(() => new Map()),
       ]);
       if (!liveReady()) return { ...result, skipped: "not_ready" };
       const muted = new Set((mutesRes?.data || []).map((r) => String(r.user_id)));
@@ -306,16 +380,20 @@ function createReengage(deps = {}) {
         const u = users.get(id);
         if (!u) continue;
         result.considered += 1;
+        const person = personMap.get(id) || R.normalizePerson(null);
+        const settings = settingsMap.get(id) || R.normalizeSettings(null);
         const [muteDm, level] = await Promise.all([
           Promise.resolve(dmMuted(id, joiner)).catch(() => false),
           Promise.resolve(dmLevel(id, joiner)).catch(() => "all"),
         ]);
-        const verdict = P.friendVoiceEligible(
+        // Account, presence, access, server / channel / DM mutes and the system quiet hours.
+        const base = P.friendVoiceEligible(
           {
             presence: presenceOf(id),
             inVoice: inVoice.has(id),
             storedStatus: u.presence_status,
-            optIn: u.notify_friend_voice !== false,
+            // An important person is "always", even when the general "friend in voice" type is off.
+            optIn: u.notify_friend_voice !== false || person.important,
             banned: Boolean(u.is_banned),
             deleted: Boolean(u.deleted_at || u.deletion_requested_at),
             blocksJoiner: Array.isArray(u.blocked_users) && u.blocked_users.map(String).includes(joiner),
@@ -325,36 +403,57 @@ function createReengage(deps = {}) {
             channelMuted: muted.has(id),
             dmMuted: Boolean(muteDm),
             dmLevel: level,
-            hasPushTarget: pushTargets.has(id),
+            hasPushTarget: pushTargets.has(id) || presenceOf(id) === "idle",
             timezone: u.timezone,
-            sentAt: history.get(id) || [],
+            sentAt: [],
           },
           t
         );
-        if (verdict.ok) eligible.push(id);
+        if (!base.ok) {
+          result.reasons[base.reason] = (result.reasons[base.reason] || 0) + 1;
+          continue;
+        }
+        // People-first budget: important people skip the daily cap (one per person per 6 h).
+        const verdict = R.voiceVerdict({ person, settings, history: history.get(id) || {}, tz: u.timezone }, t);
+        if (verdict.ok) eligible.push({ id, vip: verdict.vip, quiet: person.primaryAction === "quiet_join", lang: u.language, hasPush: pushTargets.has(id) });
         else result.reasons[verdict.reason] = (result.reasons[verdict.reason] || 0) + 1;
       }
       if (!eligible.length) return result;
 
-      const kind = P.friendVoiceKind(t);
+      const faces = await voiceFaces(joiner, channelId).catch(() => ({ total: 1, faces: [] }));
       const meta = { serverId, channelId, fromId: joiner };
-      const toSend = [];
-      for (const id of eligible) {
-        const c = await claim(id, kind, "push", meta);
-        if (c === "claimed") toSend.push(id);
-        else if (c === "dry_run") dryLog("friend_voice push", id, { serverId, channelId, fromId: joiner });
+      const groups = new Map(); // "quiet|vip" -> ids
+      for (const e of eligible) {
+        const kind = R.voiceKind(t, { vipPeer: e.vip ? joiner : null });
+        const c = await claim(e.id, kind, "push", meta, { campaign: "friend_voice" });
+        if (c === "dry_run") dryLog("friend_voice push", e.id, { serverId, channelId, fromId: joiner, vip: e.vip });
+        if (c !== "claimed") continue;
+        const g = `${e.quiet ? 1 : 0}|${kind}`;
+        if (!groups.has(g)) groups.set(g, { kind, quiet: e.quiet, ids: [], desktop: [] });
+        const entry = groups.get(g);
+        if (e.hasPush) entry.ids.push(e.id);
+        // Idle on a desktop / open tab: the app shows the same card with faces (socket).
+        if (presenceOf(e.id) === "idle") entry.desktop.push({ id: e.id, lang: e.lang });
       }
-      if (!toSend.length) return result;
-      await getPush().sendFriendVoicePush(toSend, {
-        friendId: joiner,
-        friendName,
-        serverId,
-        serverName,
-        channelId,
-        channelName,
-      });
-      await Promise.all(toSend.map((id) => mark(id, kind, "sent")));
-      result.sent = toSend.length;
+      for (const g of groups.values()) {
+        const payload = {
+          friendId: joiner,
+          friendName,
+          serverId,
+          serverName,
+          channelId,
+          channelName,
+          faces: faces.faces,
+          total: faces.total,
+          primary: g.quiet ? "quiet_join" : "join",
+          rgKind: g.kind,
+        };
+        if (g.ids.length) await getPush().sendFriendVoicePush(g.ids, payload);
+        if (g.desktop.length) emitDesktopVoiceCard(g.desktop, payload);
+        const all = [...new Set([...g.ids, ...g.desktop.map((d) => d.id)])];
+        await Promise.all(all.map((id) => mark(id, g.kind, "sent")));
+        result.sent += all.length;
+      }
       return result;
     } catch (err) {
       log.warn("[reengage] friend voice push skipped:", err?.message || err);
@@ -581,6 +680,13 @@ function createReengage(deps = {}) {
     first.unref?.();
     every.unref?.();
     timer = { first, every };
+    // Growth 3B: console mode refresh, win-back / digest / streak / campaign ticks.
+    try {
+      require("./reengage/mode").start();
+      require("./reengage/engine").start();
+    } catch (err) {
+      log.warn("[reengage] growth engine not started:", err?.message || err);
+    }
     log.log?.(`[reengage] scheduler every ${minutes} min, mode ${mode()}`);
   }
 

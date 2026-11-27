@@ -2821,3 +2821,12 @@ html[data-theme="light"] .has-pcolor .s2-name-colour {
 .pc-s2-set-lav-akisi { --pc-name-l: linear-gradient(100deg, #b82e00, #a30e0e); }
 .pc-s2-set-inci-kiyisi { --pc-name-l: linear-gradient(100deg, #4e6a7a, #a04a6c); }
 .pc-s2-set-yildiz-tozu { --pc-name-l: linear-gradient(100deg, #4b3aa0, #7a5c0e); }
+
+/* Davet ödülleri, 25 active friends (exclusive, never on sale): "Halka Parıltısı". The brand
+   blue, teal and violet of the "Halka" banner flow through the name with a soft glow. */
+.cosmetic-name-effect.effect-s2-ref-halka {
+  --ne: linear-gradient(100deg, #a9bbff, #587af5 22%, #2ad4b8 46%, #8c5cf6 70%, #a9bbff 100%);
+  --ne-size: 220% 100%;
+  --ne-glow: drop-shadow(0 0 3px rgba(88, 122, 245, 0.55));
+  animation: s2ne-pan 8s linear infinite;
+}

@@ -7,6 +7,21 @@ enum DescallNotify {
     static let appGroup = "group.com.descall.app"
     static let messageCategory = "MESSAGE"
     static let callCategory = "INCOMING_CALL"
+    /// Growth 3B people notifications: a friend in voice (Katıl / Sessiz katıl / Yanıtla),
+    /// a friend calling you back (Gel / Yanıtla), a shared-streak nudge (Yanıtla).
+    static let peopleCategory = "PEOPLE"
+    static let peopleCallCategory = "PEOPLE_CALL"
+    static let peopleNudgeCategory = "PEOPLE_NUDGE"
+
+    /// Category for a rich push of `type` (lib/iosAlertPush.js sets the same one).
+    static func category(for type: String) -> String {
+        switch type {
+        case "friend-voice": return peopleCategory
+        case "friend-call": return peopleCallCategory
+        case "streak-nudge": return peopleNudgeCategory
+        default: return messageCategory
+        }
+    }
     /// Same order as the chat's quick reactions (heart, laugh, like, wow, sad).
     static let quickReactions = ["❤️", "😂", "👍", "😮", "😢"]
     static let maxAttachmentBytes = 10 * 1024 * 1024
@@ -19,6 +34,11 @@ enum DescallNotify {
         static let read = "read"
         static let mute = "mute_1h"
         static let open = "open"
+        // Growth 3B (handled by the web app: src/lib/callTap.js keeps rg_* ids).
+        static let join = "rg_join"
+        static let quietJoin = "rg_quiet"
+        static let reply = "rg_reply"
+        static let come = "rg_come"
     }
 
     /// Hosts the scoped token may be sent to. Anything else is refused.
@@ -134,6 +154,11 @@ struct DescallNotifyStrings {
         "call.openToConnect": [.en: "Open Descall to connect", .tr: "Bağlanmak için Descall'u açın", .de: "Öffne Descall, um dich zu verbinden", .es: "Abre Descall para conectarte", .fr: "Ouvre Descall pour te connecter", .ptBR: "Abra o Descall para se conectar", .ru: "Откройте Descall, чтобы подключиться"],
         "call.unlockToJoin": [.en: "Unlock your iPhone and tap Descall to join the call.", .tr: "Aramaya bağlanmak için iPhone'un kilidini açıp Descall'a dokunun.", .de: "Entsperre dein iPhone und tippe auf Descall, um dem Anruf beizutreten.", .es: "Desbloquea tu iPhone y toca Descall para unirte a la llamada.", .fr: "Déverrouille ton iPhone et touche Descall pour rejoindre l'appel.", .ptBR: "Desbloqueie seu iPhone e toque no Descall para entrar na chamada.", .ru: "Разблокируйте iPhone и нажмите Descall, чтобы присоединиться к звонку."],
         "call.joinFailedLocked": [.en: "Couldn't connect the call while your iPhone was locked. Open Descall to call back.", .tr: "Arama bağlanamadı: telefon kilitliyken katılınamadı. Geri aramak için Descall'u açın.", .de: "Der Anruf konnte nicht verbunden werden, solange dein iPhone gesperrt war. Öffne Descall, um zurückzurufen.", .es: "No se pudo conectar la llamada con el iPhone bloqueado. Abre Descall para devolver la llamada.", .fr: "Impossible de connecter l'appel pendant que ton iPhone était verrouillé. Ouvre Descall pour rappeler.", .ptBR: "Não foi possível conectar a chamada com o iPhone bloqueado. Abra o Descall para retornar a ligação.", .ru: "Не удалось подключить звонок, пока iPhone был заблокирован. Откройте Descall, чтобы перезвонить."],
+        // Growth 3B people notifications (AppDelegate PEOPLE* categories).
+        "people.join": [.en: "Join", .tr: "Katıl", .de: "Beitreten", .es: "Unirme", .fr: "Rejoindre", .ptBR: "Entrar", .ru: "Войти"],
+        "people.quietJoin": [.en: "Join muted", .tr: "Sessiz katıl", .de: "Stumm beitreten", .es: "Unirme en silencio", .fr: "Rejoindre en sourdine", .ptBR: "Entrar mudo", .ru: "Войти без микрофона"],
+        "people.reply": [.en: "Reply", .tr: "Yanıtla", .de: "Antworten", .es: "Responder", .fr: "Répondre", .ptBR: "Responder", .ru: "Ответить"],
+        "people.come": [.en: "Join", .tr: "Gel", .de: "Komm", .es: "Ven", .fr: "Viens", .ptBR: "Vem", .ru: "Зайти"],
         "call.accept": [.en: "Accept", .tr: "Kabul et", .de: "Annehmen", .es: "Aceptar", .fr: "Accepter", .ptBR: "Aceitar", .ru: "Принять"],
         "call.decline": [.en: "Decline", .tr: "Reddet", .de: "Ablehnen", .es: "Rechazar", .fr: "Refuser", .ptBR: "Recusar", .ru: "Отклонить"],
     ]

@@ -142,6 +142,8 @@ app.use(securityHeadersMiddleware);
 app.use(canonicalHostMiddleware);
 app.use(compression({ threshold: 1024 }));
 
+// Descall+ 2.0 payment webhooks need the raw body for signature checks: mounted before express.json().
+app.use("/api/plus/webhooks", require("./routes/plusWebhooks"));
 app.use(express.json());
 app.use(require("./middleware/gzipJson"));
 
@@ -190,6 +192,10 @@ app.use("/api/promo", promoRoutes);
 // Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
 app.use("/api/premium/gaming", require("./routes/premiumGaming"));
 app.use("/api/premium", require("./routes/premium"));
+// Descall+ 2.0 (owner pick 5B): hub, boosts, gifts, tickets, checkout. Selling stays off until the
+// admin turns it on per platform (lib/plus/config.js).
+app.use("/api/plus", require("./routes/plus"));
+require("./lib/plus").init({ getIo: () => app.get("io") });
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
 // 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed
 // older apps get a clean 410 instead of an HTML 404.
@@ -613,6 +619,15 @@ app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
 // Everything is off until REENGAGE_ENABLED=1 (or REENGAGE_DRY_RUN=1 to only log).
 app.use("/api/reengage", require("./routes/reengage"));
+// Davet Merkezi (growth phase 4): invite dashboard, landing /r/<user>, rewards that unlock
+// after the invitee's first message + next-day return (lib/referrals), and its sweeper.
+app.use("/api/invites", require("./routes/invites"));
+require("./lib/referrals/engine").startSweeper(io);
+// Growth 3B "Önce insanlar": notification center, shared streaks + tasks, friend win-back.
+app.use("/api/notify-center", require("./routes/notifyCenter"));
+app.use("/api/streaks", require("./routes/streaks"));
+app.use("/api/winback", require("./routes/winback"));
+require("./lib/reengage/io").setIo(app.get("io"));
 if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
@@ -664,6 +679,14 @@ app.put("/api/user/profile", requireAuth, async (req, res) => {
     });
     if (!built.ok) return res.status(built.status).json({ success: false, ...built.body });
     const updateData = built.patch;
+    // Descall+ 2.0: switching to an animated (.gif) avatar or banner URL follows the same gate as the upload.
+    for (const [col, kind] of [["avatar_url", "avatar"], ["banner_url", "banner"]]) {
+      if (updateData[col] && updateData[col] !== current?.[col]) {
+        const animatedGate = require("./lib/plus/animatedProfile");
+        const verdict = await animatedGate.check(req, { url: updateData[col], kind });
+        if (!verdict.allowed) return res.status(403).json({ success: false, ...animatedGate.refusal(kind) });
+      }
+    }
     if (!Object.keys(updateData).length) {
       const { data: same } = await supabase.from("users").select().eq("id", req.user.id).single();
       return res.json({ success: true, user: toPublicUser(cacheUserProfile(same || { id: req.user.id })) });

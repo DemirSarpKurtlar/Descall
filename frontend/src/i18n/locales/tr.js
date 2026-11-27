@@ -12,9 +12,11 @@ import { MSG4_TR } from "./msg4.tr.js";
 import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
+import { PLUS2_TR } from "./plus2.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { PUBPAGE_TR } from "./pubpage.tr.js";
 import { ONB_TR } from "./onb.tr.js";
+import { BHUNT_TR } from "./bhunt.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
 import { SHARE_SHEET_TR } from "./shareSheet.tr.js";
@@ -46,6 +48,9 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -104,9 +109,11 @@ export const nested = {
   a11y: A11Y_TR,
   msg5: MSG5_TR,
   act: ACT_TR,
+  plus2: PLUS2_TR,
   dir: DIR_TR,
   pubpage: PUBPAGE_TR,
   onb: ONB_TR,
+  bhunt: BHUNT_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
   shareSheet: SHARE_SHEET_TR,
@@ -138,6 +145,8 @@ export const nested = {
   agentOps: AGENT_OPS_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
+  dvt: INVITES_I18N.tr,
+  rg3: RG3.tr,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
@@ -924,6 +933,7 @@ export const nested = {
     "read": "Okundu",
     "vs": "{a} ↔ {b}",
     "retention": "Elde tutma",
+    "reengage": "Yeniden kazanma",
     "economy": "DesCoin ekonomisi",
     "grRange": "Zaman aralığı",
     "grDays": "{n} gün",

@@ -4,7 +4,8 @@
 // a live preview of what the friend gets (phone notification, opening, desktop chat), the
 // total with owned pieces deducted for sets, drafts, and send tracking with a 5-minute
 // recall ring. The tab also lists received gifts to open.
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import shop2Api from "../../lib/shop2Api.js";
@@ -45,6 +46,8 @@ import {
   User,
   Users,
 } from "./shop2Icons.jsx";
+
+const StoreGiftCard = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.StoreGiftCard })));
 
 export const WRAPS = ["#587af5", "#f0567a", "#2fbf8a", "#f2c230", "#a77bff"];
 const sameId = (a, b) => a != null && b != null && String(a) === String(b);
@@ -650,6 +653,8 @@ export default function Shop2Gifts({ onClose }) {
           <CloseX onClick={onClose} label={t("shop2.common.close")} />
         </div>
       ) : null}
+      {/* Descall+ 2.0 (moment 8): the Descall+ gift card heads the gifts tab (only while it is on sale). */}
+      <Suspense fallback={null}><StoreGiftCard /></Suspense>
       <Received />
       <GiftComposer variant="tab" />
       <Tracking />

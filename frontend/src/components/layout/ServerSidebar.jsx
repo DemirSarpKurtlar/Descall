@@ -57,6 +57,7 @@ import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
 import { isContextMenuKey, menuArrowKeys, useKeyboardMenuFocus } from "../../lib/menuKeys";
 import { friendMatcher, foldIncludes } from "../../lib/friendFilter";
+import WinbackCallCard from "../reengage/WinbackCallCard.jsx";
 
 
 
@@ -430,6 +431,8 @@ export default function ServerSidebar({
         <div className="sidebar-content">
           <PullToRefresh enabled={isMobile} onRefresh={refreshList}>
           {(activeView === "chat" || activeView === "dms") && <OnbListSlot isMobile={isMobile} />}
+          {/* Growth 3B "Arkadaştan çağrı": nothing unless a friend has been away a week. */}
+          {activeView === "chat" && <WinbackCallCard compact={!isMobile} />}
           {(activeView === "chat" || activeView === "dms") && !(onboarding?.active && friendsLoaded && !filteredDms.length) && (
             <DMList
               dms={filteredDms}

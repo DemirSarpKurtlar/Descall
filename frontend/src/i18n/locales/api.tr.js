@@ -8,6 +8,18 @@
  * Messages that were Turkish before keep their exact old wording.
  */
 export const API_TR = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Bu geri bildirim bug olarak doğrulanmamış.",
+  "The bug hunter tables are not installed yet.": "Bug Avcısı tabloları henüz kurulmadı.",
+  "Pick a severity.": "Bir önem derecesi seç.",
+  "Pick a confirmed bug to link to.": "Bağlamak için doğrulanmış bir bug seç.",
+  "The bug you linked to is not confirmed.": "Bağladığın bug doğrulanmamış.",
+  "The same person reported the first bug; nothing to credit twice.": "İlk bug'ı da aynı kişi bildirmiş; iki kez sayılmaz.",
+  "You can't confirm your own feedback.": "Kendi geri bildirimini doğrulayamazsın.",
+  "This feedback has no sender.": "Bu geri bildirimin göndereni yok.",
+  "This confirmation was already undone.": "Bu doğrulama zaten geri alınmış.",
+  "Undo the linked duplicate reports first.": "Önce bağlı kopya bildirimleri geri al.",
+  "Something went wrong.": "Bir şeyler ters gitti.",
   "Could not check right now.": "Şu an kontrol edilemedi.",
   "Complete the security check to continue.": "Devam etmek için güvenlik doğrulamasını tamamla.",
   "The security check could not be verified. Please try again.": "Güvenlik doğrulaması onaylanamadı. Lütfen tekrar dene.",
@@ -1052,4 +1064,20 @@ export const API_TR = {
   "Could not load replies.": "Yanıtlar yüklenemedi.",
   "Unknown event.": "Bilinmeyen olay.",
   "Onboarding settings could not be saved.": "Başla panosu ayarları kaydedilemedi.",
+  // Davet Merkezi / Davet ödülleri (growth phase 4).
+  "Inviter not found.": "Davet eden bulunamadı.",
+  "Write a note for the reason \"other\".": "\"Diğer\" sebebi için bir not yaz.",
+  "Invite rules are not migrated yet.": "Davet kuralları henüz kurulmadı.",
+  "Action not found.": "İşlem bulunamadı.",
+  "This action was already undone.": "Bu işlem zaten geri alındı.",
+  "The 10 minute undo window has passed.": "10 dakikalık geri alma süresi geçti.",
+  "Could not load invite rewards.": "Davet ödülleri yüklenemedi.",
+  "Choose a reason.": "Bir sebep seç.",
+  "Invalid action.": "Geçersiz işlem.",
+  "Invalid alert.": "Geçersiz uyarı.",
+  "Could not load invites.": "Davetler yüklenemedi.",
+  "This invite link is not valid.": "Bu davet bağlantısı geçerli değil.",
+  "Invalid invite.": "Geçersiz davet.",
+  "Your friend already wrote.": "Arkadaşın zaten yazdı.",
+  "You can nudge once a day.": "Günde bir kez dürtebilirsin.",
 };

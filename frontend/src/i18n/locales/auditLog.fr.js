@@ -458,6 +458,7 @@ export const AUDIT_LOG_FR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Récompenses d'invitation",
     "adminToken": "Admin Token",
     "nodes": "Réseau de serveurs",
     "overview": "Vue d'ensemble",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_FR = {
     "moddesk": "Réglage de modération",
     "flagged": "Décision sur contenu signalé",
     "popup": "Action popup en direct",
+    "reengage": "Action de réengagement",
     "announcement": "Action annonce",
     "server": "Action serveur",
     "dm": "Action MP",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_FR = {
     "system": "Action système"
   },
   "act": {
+    "invite_auto_hold": "A retenu des récompenses automatiquement",
+    "invite_hold": "A retenu des récompenses d'invitation",
+    "invite_release": "A levé une retenue d'invitation",
+    "invite_revoke": "A repris des récompenses d'invitation",
+    "invite_pause_link": "A mis en pause un lien d'invitation",
+    "invite_resume_link": "A rouvert un lien d'invitation",
+    "invite_rules": "A modifié les règles d'invitation",
+    "invite_undo": "A annulé une action d'invitation",
+    "invite_alert_ignore": "A ignoré une alerte d'invitation",
+    "invite_export": "A exporté les récompenses d'invitation",
     "ban": "A banni",
     "unban": "A levé le ban",
     "timeout": "A mis en sourdine",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_FR = {
     "feedback_reply": "A répondu à un retour",
     "feedback_note": "A ajouté une note interne à un retour",
     "feedback_delete": "A supprimé un retour",
+    "feedback_bug_confirm": "A confirmé un vrai bug",
+    "feedback_bug_undo": "A annulé une confirmation de bug",
+    "feedback_bug_fixed": "A envoyé le suivi de bug corrigé",
     "2fa_totp_enabled": "A activé la 2FA",
     "2fa_recovery_regenerated": "A renouvelé les codes de secours",
     "passkey_added": "A ajouté une clé d'accès",

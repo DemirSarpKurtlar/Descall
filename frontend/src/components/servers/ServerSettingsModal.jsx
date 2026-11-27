@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { serverInitials } from "../../lib/serverInitials.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -14,6 +14,7 @@ import ImageCropModal from "../ui/LazyImageCropModal";
 import { ServerDangerZone } from "./OwnershipTransfer";
 import { ServerIcon } from "./ServerIcon";
 import useEscapeClose from "../../hooks/useEscapeClose";
+const ServerBoostSettings = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.ServerBoostSettings })));
 
 /**
  * Unified server settings: name, description, icon, banner.
@@ -378,6 +379,9 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
               </label>
             </div>
           )}
+
+          {/* Descall+ 2.0 (moment 9): owner's boost goal and switches; renders only for the owner while boosts are on. */}
+          {server?.id ? <Suspense fallback={null}><ServerBoostSettings serverId={server.id} /></Suspense> : null}
 
           {/* O3 (2.12.2): owner-only danger zone, approved glass mockup. */}
           <ServerDangerZone

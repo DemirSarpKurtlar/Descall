@@ -16,9 +16,11 @@ import { AMP_RU } from "./profileMediaPicker.ru.js";
 import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
+import { PLUS2_RU } from "./plus2.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { PUBPAGE_RU } from "./pubpage.ru.js";
 import { ONB_RU } from "./onb.ru.js";
+import { BHUNT_RU } from "./bhunt.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
@@ -50,6 +52,9 @@ import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
@@ -75,9 +80,11 @@ export const nested = {
   },
   "msg5": MSG5_RU,
   "act": ACT_RU,
+  "plus2": PLUS2_RU,
   "dir": DIR_RU,
   "pubpage": PUBPAGE_RU,
   "onb": ONB_RU,
+  "bhunt": BHUNT_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
   "shareSheet": SHARE_SHEET_RU,
@@ -109,6 +116,8 @@ export const nested = {
   "agentOps": AGENT_OPS_RU,
   "invl": INVL_RU,
   "sgx": SIGNUP_GROWTH.ru.nested,
+  "dvt": INVITES_I18N.ru,
+  rg3: RG3.ru,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -454,6 +463,7 @@ export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Управление премиумом",
+    "navWorkspace": "Рабочая область Descall+",
     "navDashboard": "Панель премиума",
     "navUsers": "Подписки участников",
     "navBulk": "Массовые действия",
@@ -2306,6 +2316,7 @@ export const nested = {
     "reportsSubtitle": "Кто на кого пожаловался, с фрагментом сообщения и временем. Отклонить, выдать тайм-аут или забанить — в один клик. При трёх открытых жалобах на одного человека открывается его досье.",
     "reportsTitle": "Входящие жалобы",
     "retention": "Удержание",
+    "reengage": "Возврат пользователей",
     "risk": {
       "critical": "Критический",
       "high": "Высокий",
@@ -2775,6 +2786,7 @@ export const nested = {
     "countOther": "У пользователя {n} из {total, plural, one {# значка} few {# значков} many {# значков} other {# значка}}",
     "countSelf": "У вас {n} из {total, plural, one {# значка} few {# значков} many {# значков} other {# значка}}",
     "desc": {
+      "ilkselam": "Те, кто отправил своё первое сообщение в Descall настоящему человеку.",
       "alfa": "Участники закрытой альфы.",
       "beta": "Участники открытой беты.",
       "bughunter": "Те, чьи сообщения о багах подтвердились.",
@@ -2854,6 +2866,7 @@ export const nested = {
     "modeCountry": "Только значок страны",
     "modeSpecial": "Страна + особый значок",
     "names": {
+      "ilkselam": "Первый привет",
       "alfa": "Альфа",
       "beta": "Бета",
       "bughunter": "Охотник за багами",
@@ -2962,6 +2975,18 @@ export const nested = {
     "wearingOther": "Носит"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Ошибка, о которой ты сообщил, оказалась настоящим багом. Команда уже исправляет её.",
+      "confirmedFixed": "Ошибка, о которой ты сообщил, оказалась настоящим багом, и мы её исправили.",
+      "also": "Ошибка, о которой ты сообщил, оказалась настоящим багом. Кто-то сообщил о ней чуть раньше, но твоё сообщение тоже засчитано. Спасибо!",
+      "fixed": "Исправлено: баг, о котором ты сообщил, устранён в последней версии. Спасибо!",
+      "badgeNew": "Ты получил значок «Охотник за багами».",
+      "badgeUp": "Твой значок вырос до уровня «Охотник за багами {level}».",
+      "badgeMore": "Ещё один настоящий баг на значке «Охотник за багами»: всего {count}.",
+      "badgeGlitch": "Ещё ты получил значок «Глитч».",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} отменил подтверждение бага: {reason}",
+    },
     "cmd": {
       "avatar": "Показать аватар крупно, скачать его или открыть на весь экран.",
       "ban": "Забанить участника на сервере.",
@@ -3044,6 +3069,14 @@ export const nested = {
       "slotUsage": "**Слот**\n\nИспользование: `/slot <сумма>`\nМин. **{min}** · Макс. **{max}** · {lines, plural, one {# линия выплат} few {# линии выплат} many {# линий выплат} other {# линии выплат}}"
     },
     "notify": {
+      "bugConfirmedTitle": "Ты нашёл настоящий баг",
+      "bugNewBadgeBody": "Ты получил значок «Охотник за багами»",
+      "bugLevelUpBody": "Теперь твой значок «Охотник за багами {level}»",
+      "bugMoreBody": "Найдено настоящих багов: {count}",
+      "bugAlsoTitle": "Твоё сообщение о баге подтверждено",
+      "bugAlsoBody": "Спасибо за сообщение, +{amount} DesCoin",
+      "bugFixedTitle": "Исправлено",
+      "bugFixedBody": "Баг, о котором ты сообщил, исправлен",
       "feedbackClosed": "Ваш отзыв закрыт",
       "feedbackInProgress": "Ваш отзыв рассматривается",
       "feedbackReplyTitle": "Команда Descall ответила",

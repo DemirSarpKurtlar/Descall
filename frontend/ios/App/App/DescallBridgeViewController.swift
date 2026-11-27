@@ -140,6 +140,8 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AppleSignInPlugin())
         bridge?.registerPluginInstance(DescallCallKitPlugin())
         bridge?.registerPluginInstance(DescallDisplayPlugin())
+        // Descall+ 2.0 in-app purchases (StoreKit 2): src/plus2/storeKit.js.
+        bridge?.registerPluginInstance(DescallStorePlugin())
         bridge?.registerPluginInstance(glassTabBarPlugin)
         bridge?.registerPluginInstance(DescallKeychainPlugin())
         bridge?.registerPluginInstance(DescallNotifyPlugin())

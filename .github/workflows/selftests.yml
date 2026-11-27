@@ -449,6 +449,8 @@ jobs:
           node test/specialBadges.integration.test.cjs
           node test/adminAudit.db.test.cjs | tee /tmp/aa.log
           grep -q "adminAudit.db.test.cjs: ok" /tmp/aa.log
+          node test/bugHunter.db.test.cjs | tee /tmp/bh.log
+          grep -q "bugHunter.db.test.cjs: ok" /tmp/bh.log
 
   # Descall+ / Ultra: memberships, DesCoin gifts per 30-day cycle, bulk, campaigns and their races
   # live in Postgres functions, so run the migration (on top of the promo one) against a throwaway Postgres.

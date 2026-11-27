@@ -113,6 +113,8 @@ async function handleHeartbeat({ socket, userId, payload = {}, dmScreenSharingUs
   if (type === "voice" && !speaking) return null; // only pay for actual talking, not idle presence
   const ok = await validateHeartbeat({ userId, socketId: socket?.id || null, payload, dmScreenSharingUsers });
   if (!ok) return null;
+  // Growth 3B: a verified speaking minute (voice task, return tracking, friend-call reward).
+  if (type === "voice") require("../lib/reengage/hooks").onVoiceSpeaking(userId, ok.others, { serverId: ok.meta?.serverId || null, channelName: ok.meta?.channelName || null });
 
   const throttleKey = `${userId}:${type}`;
   const last = lastAt.get(throttleKey) || 0;

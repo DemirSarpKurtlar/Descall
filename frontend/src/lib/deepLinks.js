@@ -107,6 +107,8 @@ function invitePathForSegments(rawSegments) {
     return `/invite/${value}`;
   }
   if (head === "s" && VANITY_SLUG_RE.test(value)) return `/s/${value.toLowerCase()}`;
+  // Davet Merkezi: personal friend invite (/r/<username>).
+  if (head === "r" && /^[A-Za-z0-9_.-]{2,24}$/.test(value)) return `/r/${value}`;
   return null;
 }
 

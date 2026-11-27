@@ -93,6 +93,10 @@ module.exports = {
   },
 
   push: {
+    bugHuntConfirmed: "Le problème que tu as signalé était un vrai bug. Les détails sont dans ton retour.",
+    bugHuntLevelUp: "Encore un vrai bug ! Ton badge est maintenant Chasseur de bugs {level}.",
+    bugHuntAlso: "Ton signalement de bug est confirmé, +{amount} DesCoin.",
+    bugHuntFixed: "Corrigé : le bug que tu as signalé a disparu.",
     someone: "Quelqu'un",
     newMessage: "Nouveau message",
     voice: "🎤 Message vocal",

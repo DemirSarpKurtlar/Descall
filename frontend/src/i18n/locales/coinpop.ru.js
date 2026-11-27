@@ -119,6 +119,8 @@ export const COINPOP_RU = {
       "referral_invite": "Награда за приглашение",
       "referral_welcome": "Приветственная награда",
       "onboarding_reward": "Награда за старт",
+      "bug_bounty": "Награда за баг",
+      "bug_bounty_revoke": "Награда за баг отозвана",
       "promo": "Промокод",
       "premium_gift": "Подарок Descall+",
       "other": "Другое"

@@ -458,6 +458,7 @@ export const AUDIT_LOG_EN = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Invite rewards",
     "adminToken": "Admin Token",
     "nodes": "Server network",
     "overview": "Overview",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_EN = {
     "moddesk": "Moderation setting",
     "flagged": "Flagged content decision",
     "popup": "Live popup action",
+    "reengage": "Re-engagement action",
     "announcement": "Announcement action",
     "server": "Server action",
     "dm": "DM action",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_EN = {
     "system": "System action"
   },
   "act": {
+    "invite_auto_hold": "Held invite rewards automatically",
+    "invite_hold": "Held invite rewards",
+    "invite_release": "Released an invite hold",
+    "invite_revoke": "Took invite rewards back",
+    "invite_pause_link": "Paused an invite link",
+    "invite_resume_link": "Reopened an invite link",
+    "invite_rules": "Changed the invite rules",
+    "invite_undo": "Undid an invite action",
+    "invite_alert_ignore": "Ignored an invite alert",
+    "invite_export": "Exported invite rewards",
     "ban": "Banned",
     "unban": "Lifted ban",
     "timeout": "Muted",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_EN = {
     "feedback_reply": "Replied to feedback",
     "feedback_note": "Added an internal feedback note",
     "feedback_delete": "Deleted feedback",
+    "feedback_bug_confirm": "Confirmed a real bug",
+    "feedback_bug_undo": "Undid a bug confirmation",
+    "feedback_bug_fixed": "Sent the bug fixed follow-up",
     "2fa_totp_enabled": "Turned on 2FA",
     "2fa_recovery_regenerated": "Renewed recovery codes",
     "passkey_added": "Added a passkey",

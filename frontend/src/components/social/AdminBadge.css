@@ -8,16 +8,28 @@
   --staff-tint: rgba(88, 122, 245, 0.16);
   --staff-edge: rgba(134, 160, 255, 0.35);
 
+  position: relative;
   display: inline-flex;
   align-items: stretch;
   flex-shrink: 0;
   vertical-align: middle;
   overflow: hidden;
   border-radius: 5px;
-  box-shadow: 0 0 0 1px var(--staff-edge);
   line-height: 1;
   user-select: none;
   white-space: nowrap;
+}
+
+/* The 1px edge is drawn inside the badge, on top of both parts. An outer ring
+   (box-shadow 0 0 0 1px) sat outside the box, so any row with overflow: hidden
+   (chat header, list rows) cut its top or bottom line off (iPad / iPhone DM header). */
+.dsc-admin-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--staff-edge);
+  pointer-events: none;
 }
 
 .dsc-admin-badge-mark {
@@ -44,6 +56,13 @@
   height: 18px;
   margin-left: 6px;
   transform: translateY(-1px);
+}
+
+/* In a flex row (chat header, peer name, friend and member rows) the row centers
+   the badge; the 1px text-baseline nudge would only push it past a clipping edge. */
+:where(.header-title, .g-peer-name, .g-call-name, .friend-name, .member-name) > .dsc-admin-badge--inline {
+  align-self: center;
+  transform: none;
 }
 
 .dsc-admin-badge--inline .dsc-admin-badge-mark {

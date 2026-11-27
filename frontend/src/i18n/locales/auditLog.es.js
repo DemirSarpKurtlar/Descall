@@ -458,6 +458,7 @@ export const AUDIT_LOG_ES = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Recompensas por invitación",
     "adminToken": "Admin Token",
     "nodes": "Red de servidores",
     "overview": "Resumen",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_ES = {
     "moddesk": "Ajuste de moderación",
     "flagged": "Decisión sobre contenido marcado",
     "popup": "Acción de popup en directo",
+    "reengage": "Acción de reactivación",
     "announcement": "Acción de anuncio",
     "server": "Acción de servidor",
     "dm": "Acción de DM",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_ES = {
     "system": "Acción del sistema"
   },
   "act": {
+    "invite_auto_hold": "Retuvo recompensas automáticamente",
+    "invite_hold": "Retuvo recompensas por invitación",
+    "invite_release": "Quitó una retención de invitación",
+    "invite_revoke": "Retiró recompensas por invitación",
+    "invite_pause_link": "Pausó un enlace de invitación",
+    "invite_resume_link": "Reactivó un enlace de invitación",
+    "invite_rules": "Cambió las reglas de invitación",
+    "invite_undo": "Deshizo una acción de invitación",
+    "invite_alert_ignore": "Ignoró una alerta de invitación",
+    "invite_export": "Exportó recompensas por invitación",
     "ban": "Baneó",
     "unban": "Levantó el baneo",
     "timeout": "Silenció",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_ES = {
     "feedback_reply": "Respondió a un comentario",
     "feedback_note": "Añadió una nota interna a un comentario",
     "feedback_delete": "Borró un comentario",
+    "feedback_bug_confirm": "Confirmó un bug real",
+    "feedback_bug_undo": "Deshizo la confirmación de un bug",
+    "feedback_bug_fixed": "Envió el aviso de bug arreglado",
     "2fa_totp_enabled": "Activó 2FA",
     "2fa_recovery_regenerated": "Renovó códigos de recuperación",
     "passkey_added": "Añadió una llave de acceso",
