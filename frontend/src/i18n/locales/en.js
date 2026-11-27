@@ -915,6 +915,7 @@ export const nested = {
     "read": "Read",
     "vs": "{a} ↔ {b}",
     "retention": "Retention",
+    "reengage": "Re-engagement",
     "economy": "DesCoin economy",
     "grRange": "Time range",
     "grDays": "{n} days",

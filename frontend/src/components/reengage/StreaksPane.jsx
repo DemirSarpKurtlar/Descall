@@ -6,6 +6,7 @@ import { Flame, Plus, Check, X, Search, Headphones, MessageCircle, Loader2, Aler
 import { streaksApi, notifyCenter } from "../../api/reengage";
 import { filterBySearch } from "./notifyCenterModel.js";
 import { taskTitle, taskSub, sharedSub, doneCount, ringPct } from "./streaksModel.js";
+import { useModalFocusRef } from "../../hooks/useModalFocus.js";
 import "../../styles/reengage.css";
 
 function Coin({ amount }) {
@@ -37,6 +38,7 @@ function Ring({ value, pct }) {
 
 function FriendPicker({ onPick, onClose, exclude, t }) {
   const [q, setQ] = useState("");
+  const trapRef = useModalFocusRef();
   const [list, setList] = useState(null);
   useEffect(() => {
     let alive = true;
@@ -50,7 +52,7 @@ function FriendPicker({ onPick, onClose, exclude, t }) {
   }, [exclude]);
   const shown = filterBySearch(list || [], q);
   return createPortal(
-    <div className="rg-sheet-wrap" role="dialog" aria-modal="true" aria-label={t("rg3.streaks.pickTitle")} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div ref={trapRef} className="rg-sheet-wrap" role="dialog" aria-modal="true" aria-label={t("rg3.streaks.pickTitle")} onClick={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
       <div className="rg-sheet">
         <div className="rg-sheet-grab" aria-hidden="true" />
         <div className="rg-sheet-h">

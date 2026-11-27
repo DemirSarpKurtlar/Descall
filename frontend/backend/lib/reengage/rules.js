@@ -625,7 +625,7 @@ function liftVsHoldout(rows = []) {
 /* ---- tracking tokens ----------------------------------------------------- */
 
 function trackSecret(env = process.env) {
-  return String(env.REENGAGE_TRACK_SECRET || env.REENGAGE_UNSUB_SECRET || env.JWT_SECRET || "");
+  return String(env.REENGAGE_UNSUB_SECRET || env.JWT_SECRET || "");
 }
 
 /** Signed token for one lifecycle_messages row: "<userId>.<kind b64>.<sig>". */

@@ -4582,7 +4582,12 @@ export default function App() {
         return;
       }
 
-      if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner" || type === "friend-call" || type === "rg-campaign") && data.serverId) {
+      // Growth 3B: "Gel" on a friend's call / a console message with a server opens that server.
+      if ((type === "friend-call" || type === "rg-campaign") && data.serverId && !data.channelId) {
+        onNotifClick({ detail: { ...data, type: "server-owner" } });
+        return;
+      }
+      if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
         setReplyTo(null);

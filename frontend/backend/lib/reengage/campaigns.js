@@ -196,7 +196,7 @@ function render(c, lang, f) {
 
 function trackUrls(userId, kind, env) {
   const token = R.signTrack(userId, kind, env);
-  const api = String(env.PUBLIC_API_URL || env.API_PUBLIC_URL || "").replace(/\/+$/, "");
+  const api = String(env.PUBLIC_API_URL || "").replace(/\/+$/, "");
   const base = api || P.publicOrigin(env);
   return {
     token,

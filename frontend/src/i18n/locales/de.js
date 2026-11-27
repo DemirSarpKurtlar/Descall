@@ -2308,6 +2308,7 @@ export const nested = {
     "reportsSubtitle": "Wer wen gemeldet hat, mit Nachrichtenausschnitt und Zeitpunkt. Ablehnen, Timeout oder Bann mit einem Klick. Bei drei offenen Meldungen zur selben Person öffnet sich ihre Akte.",
     "reportsTitle": "Meldungseingang",
     "retention": "Retention",
+    "reengage": "Rückgewinnung",
     "risk": {
       "critical": "Kritisch",
       "high": "Hoch",

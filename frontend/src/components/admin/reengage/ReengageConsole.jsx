@@ -23,6 +23,8 @@ import { reengageAdmin } from "../../../api/reengage";
 import LiveWaveWindow from "./LiveWaveWindow.jsx";
 import FriendCallPanel from "./FriendCallPanel.jsx";
 import { LANG_ROWS, PLACEHOLDERS, campaignSub, rateLabel, openRateTone, splitTokens, excludedRows, hourBars, todayLine } from "./reengageModel.js";
+import { useModalFocusRef } from "../../../hooks/useModalFocus.js";
+import GlassCheckbox from "../../ui/GlassCheckbox.jsx";
 import "../../../styles/reengage.css";
 
 /** The app name as iOS prints it on a notification (same in every language). */
@@ -39,6 +41,7 @@ export function ReasonDialog({ title, body, confirmLabel, danger = false, needRe
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const ref = useRef(null);
+  const trapRef = useModalFocusRef();
   useEffect(() => {
     ref.current?.focus();
     const onKey = (e) => e.key === "Escape" && !busy && onClose();
@@ -58,7 +61,7 @@ export function ReasonDialog({ title, body, confirmLabel, danger = false, needRe
   };
   return (
     <div className="rg-modal-wrap" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.target === e.currentTarget && !busy && onClose()}>
-      <div className="rg-modal">
+      <div className="rg-modal" ref={trapRef}>
         <b className="rg-modal-h">{title}</b>
         {body ? <p className="rg-pop-sub">{body}</p> : null}
         {number ? (
@@ -684,10 +687,10 @@ function LimitsPane({ c, t, onSave }) {
           <b>{t("rg3.admin.channels")}</b>
         </div>
         <label className="rg-check-l">
-          <input type="checkbox" checked={push} onChange={(e) => setPush(e.target.checked)} /> {t("rg3.admin.chPush")}
+          <GlassCheckbox checked={push} onChange={(e) => setPush(e.target.checked)} /> {t("rg3.admin.chPush")}
         </label>
         <label className="rg-check-l">
-          <input type="checkbox" checked={mail} onChange={(e) => setMail(e.target.checked)} /> {t("rg3.admin.chEmail")}
+          <GlassCheckbox checked={mail} onChange={(e) => setMail(e.target.checked)} /> {t("rg3.admin.chEmail")}
         </label>
       </div>
       <button

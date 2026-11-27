@@ -926,6 +926,7 @@ export const nested = {
     "read": "Okundu",
     "vs": "{a} ↔ {b}",
     "retention": "Elde tutma",
+    "reengage": "Yeniden kazanma",
     "economy": "DesCoin ekonomisi",
     "grRange": "Zaman aralığı",
     "grDays": "{n} gün",

@@ -102,7 +102,7 @@ const TABS = [
   { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
   { id: "retention", label: "admin.retention", icon: TrendingUp },
   // Growth 3B "Yeniden kazanma" console (the Elde tutma permission, adminNav TAB_SECTION).
-  { id: "reengage", label: "rg3.admin.navTitle", icon: RotateCcw },
+  { id: "reengage", label: "admin.reengage", icon: RotateCcw },
   { id: "economy", label: "admin.economy", icon: Wallet },
   { id: "topUsers", label: "admin.topUsers", icon: Trophy },
   { id: "people", label: "admin.people", icon: FolderSearch },

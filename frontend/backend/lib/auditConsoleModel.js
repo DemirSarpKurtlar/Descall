@@ -204,6 +204,8 @@ const PREFIXES = [
   ["appeal_", "sanctions", "medium"],
   ["access_", "sanctions", "high"],
   ["live_popup", "content", "medium"],
+  // Growth 3B "Yeniden kazanma" console (mode, campaigns, waves, recall).
+  ["reengage_", "content", "high"],
   ["popup_", "content", "medium"],
   ["announcement_", "content", "medium"],
   ["flagged_", "content", "medium"],

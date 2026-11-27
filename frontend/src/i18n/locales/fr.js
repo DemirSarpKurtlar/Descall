@@ -2308,6 +2308,7 @@ export const nested = {
     "reportsSubtitle": "Qui a signalé qui, avec l'extrait du message et l'heure. Rejette, exclus temporairement ou bannis en un clic. Trois signalements ouverts sur la même personne ouvrent son dossier.",
     "reportsTitle": "Boîte des signalements",
     "retention": "Rétention",
+    "reengage": "Réengagement",
     "risk": {
       "critical": "Critique",
       "high": "Élevé",

@@ -2308,6 +2308,7 @@ export const nested = {
     "reportsSubtitle": "Quem denunciou quem, com o trecho da mensagem e o horário. Descarte, aplique castigo ou bana com um clique. Três denúncias em aberto sobre a mesma pessoa abrem a ficha dela.",
     "reportsTitle": "Caixa de denúncias",
     "retention": "Retenção",
+    "reengage": "Reengajamento",
     "risk": {
       "critical": "Crítico",
       "high": "Alto",

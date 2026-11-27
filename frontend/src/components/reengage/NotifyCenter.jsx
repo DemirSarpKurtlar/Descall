@@ -37,6 +37,7 @@ import {
   digestLabel,
   applyPersonPatch,
 } from "./notifyCenterModel.js";
+import { useModalFocusRef } from "../../hooks/useModalFocus.js";
 import "../../styles/reengage.css";
 
 /** The app name as iOS prints it on a notification (same in every language). */
@@ -520,9 +521,10 @@ function QuietPopover({ settings, onSave, onClose, t, anchor }) {
 
 function ImportantPicker({ people, onPick, onClose, t }) {
   const [q, setQ] = useState("");
+  const trapRef = useModalFocusRef();
   const list = filterBySearch(people.filter((p) => !p.prefs.important && p.friend), q);
   return createPortal(
-    <div className="rg-sheet-wrap" role="dialog" aria-modal="true" aria-label={t("rg3.phone.addImportant")} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div ref={trapRef} className="rg-sheet-wrap" role="dialog" aria-modal="true" aria-label={t("rg3.phone.addImportant")} onClick={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
       <div className="rg-sheet">
         <div className="rg-sheet-grab" aria-hidden="true" />
         <div className="rg-sheet-h">
@@ -573,6 +575,7 @@ export default function NotifyCenter({ deviceSection = null }) {
   const [pop, setPop] = useState(false);
   const [picker, setPicker] = useState(false);
   const popAnchor = useRef(null);
+  const sheetRef = useModalFocusRef();
 
   useEffect(() => {
     let alive = true;
@@ -871,7 +874,7 @@ export default function NotifyCenter({ deviceSection = null }) {
         ) : null}
         {selected
           ? createPortal(
-              <div className="rg-sheet-wrap" role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && setSel(null)}>
+              <div ref={sheetRef} className="rg-sheet-wrap" role="dialog" aria-modal="true" aria-label={selected.name} onClick={(e) => e.target === e.currentTarget && setSel(null)} onKeyDown={(e) => e.key === "Escape" && setSel(null)}>
                 <div className="rg-sheet tall">
                   <div className="rg-sheet-grab" aria-hidden="true" />
                   {drawer}

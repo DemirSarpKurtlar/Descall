@@ -478,7 +478,8 @@ export const RG3 = {
         "desc": "Ortak seri riskteyse 20:00'de tek bildirim: arkadaşının adı ve yüzüyle.",
         "audience": "Ortak serisi süren ama bugün henüz yazmamış kişiler."
       }
-    }
+    },
+    "navTitle": "Yeniden kazanma"
   },
   "en": {
     "common": {
@@ -953,7 +954,8 @@ export const RG3 = {
         "desc": "If a shared streak is at risk: one notification at 20:00, with the friend's name and face.",
         "audience": "People with a running shared streak who have not written today."
       }
-    }
+    },
+    "navTitle": "Re-engagement"
   },
   "de": {
     "common": {
@@ -1428,7 +1430,8 @@ export const RG3 = {
         "desc": "Ist eine gemeinsame Serie in Gefahr: eine Benachrichtigung um 20:00 mit Name und Gesicht.",
         "audience": "Personen mit laufender Serie, die heute nicht geschrieben haben."
       }
-    }
+    },
+    "navTitle": "Rückgewinnung"
   },
   "es": {
     "common": {
@@ -1903,7 +1906,8 @@ export const RG3 = {
         "desc": "Si una racha peligra: una notificación a las 20:00 con nombre y cara del amigo.",
         "audience": "Personas con racha activa que hoy aún no escribieron."
       }
-    }
+    },
+    "navTitle": "Reactivación"
   },
   "fr": {
     "common": {
@@ -2378,7 +2382,8 @@ export const RG3 = {
         "desc": "Si une série est en danger : une notification à 20:00 avec le nom et le visage de l'ami.",
         "audience": "Personnes avec une série en cours qui n'ont pas écrit aujourd'hui."
       }
-    }
+    },
+    "navTitle": "Réengagement"
   },
   "pt-BR": {
     "common": {
@@ -2853,7 +2858,8 @@ export const RG3 = {
         "desc": "Se uma sequência está em risco: uma notificação às 20:00 com nome e rosto do amigo.",
         "audience": "Pessoas com sequência ativa que ainda não escreveram hoje."
       }
-    }
+    },
+    "navTitle": "Reengajamento"
   },
   "ru": {
     "common": {
@@ -3328,6 +3334,7 @@ export const RG3 = {
         "desc": "Если общая серия под угрозой: одно уведомление в 20:00 с именем и лицом друга.",
         "audience": "Люди с идущей серией, которые сегодня ещё не писали."
       }
-    }
+    },
+    "navTitle": "Возврат"
   }
 };
