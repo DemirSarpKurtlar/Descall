@@ -22,11 +22,25 @@ assert.match(auth, /code: "EMAIL_REQUIRED"/);
 assert.match(auth, /code: "EMAIL_INVALID"/);
 
 // Every sign-up form asks for it, checks it before sending, and no longer says "optional".
-for (const file of ["components/AuthView.jsx", "site/MarketingAuthModal.jsx", "components/download/DownloadPage.jsx"]) {
+for (const file of ["components/AuthView.jsx", "components/download/DownloadPage.jsx"]) {
   const code = readFileSync(join(src, file), "utf8");
   assert.ok(!code.includes('t("Email (optional)")'), `${file}: no "(optional)" label`);
   assert.match(code, /signupEmailError\(email\)/, `${file}: checks the email before register`);
   assert.match(code, /type="email"[\s\S]{0,400}required/, `${file}: email input is required`);
+}
+
+// The sign-up card (growth 1B, AuthView and the web site's MarketingAuthModal): the email is
+// its first step; nothing else opens until it is a valid address (or a username, which
+// only signs in), and the sign-up sends that email.
+{
+  const card = readFileSync(join(src, "components/auth/adaptive/AdaptiveAuthCard.jsx"), "utf8");
+  assert.match(card, /identifierKind\(identifier\)/, "card: classifies the first field");
+  assert.match(card, /if \(kind !== "email"\) \{/, "card: sign-up only after a valid email");
+  assert.match(card, /setAccount\(\{ kind: "username", value \}\);\s*setStep\("login"\)/, "card: a username only signs in");
+  assert.match(card, /termsAccepted: true,\s*birthDate,\s*email,/, "card: register sends the email");
+  for (const file of ["site/MarketingAuthModal.jsx", "components/AuthView.jsx"]) {
+    assert.match(readFileSync(join(src, file), "utf8"), /<AdaptiveAuthCard/, `${file}: uses the card`);
+  }
 }
 
 for (const [file, lang] of [["i18n/locales/tr.js", "tr"], ["site/marketingPhrases.tr.js", "tr"], ["i18n/locales/en.js", "en"]]) {

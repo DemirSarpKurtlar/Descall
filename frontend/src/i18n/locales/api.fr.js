@@ -3,6 +3,7 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into fr.js phrases.
  */
 export const API_FR = {
+  "Could not check right now.": "Vérification impossible pour le moment.",
   "Complete the security check to continue.": "Termine la vérification de sécurité pour continuer.",
   "The security check could not be verified. Please try again.": "La vérification de sécurité n'a pas pu être confirmée. Réessaie.",
   "Appeals are not available yet. Try again later.": "Les recours ne sont pas encore disponibles. Réessaie plus tard.",

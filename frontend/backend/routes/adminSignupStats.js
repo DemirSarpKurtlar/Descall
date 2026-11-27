@@ -45,13 +45,17 @@ async function loadStats(query, lang = "tr") {
   if (users.error) throw new Error("users");
 
   const attemptsQuery = (cols) => pageAll(() => supabase.from("signup_attempts").select(cols).gte("created_at", sinceIso).order("created_at", { ascending: true }));
-  const [events, attemptsFull, active] = await Promise.all([
+  const [events, attemptsFull, active, cardEvents] = await Promise.all([
     pageAll(() => supabase.from("analytics_events").select("visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", sinceIso).order("occurred_at", { ascending: true })),
-    attemptsQuery("created_at, status, attempt_key, reason, reason_detail"),
+    attemptsQuery("created_at, status, attempt_key, reason, reason_detail, flow"),
     pageAll(() => supabase.from("user_active_days").select("user_id, day").gte("day", range.from).order("day", { ascending: true })),
+    // Uyarlanan kart Ölçüm (lib/adaptiveSignup.js CARD_EVENTS).
+    pageAll(() => supabase.from("analytics_events").select("event, occurred_at, props").in("event", ["identifier_routed", "breach_warned_inline", "breach_fixed"]).gte("occurred_at", sinceIso).order("occurred_at", { ascending: true })),
   ]);
-  // reason_detail not migrated yet: the coarse reason still splits validation / conflict.
-  const attempts = attemptsFull.error && isMissingColumnError(attemptsFull.error) ? await attemptsQuery("created_at, status, attempt_key, reason") : attemptsFull;
+  // flow / reason_detail not migrated yet: fall back to the older column sets.
+  let attempts = attemptsFull;
+  if (attempts.error && isMissingColumnError(attempts.error)) attempts = await attemptsQuery("created_at, status, attempt_key, reason, reason_detail");
+  if (attempts.error && isMissingColumnError(attempts.error)) attempts = await attemptsQuery("created_at, status, attempt_key, reason");
   // One "started" per visitor per day (reloads of the form are not new starts).
   const seen = new Set();
   const startedDays = [];
@@ -70,6 +74,7 @@ async function loadStats(query, lang = "tr") {
     startedDays,
     attempts: attempts.error ? [] : attempts.data,
     activeDays: active.error ? [] : active.data,
+    cardEvents: cardEvents.error ? [] : cardEvents.data,
     range,
   });
 }

@@ -3,6 +3,7 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into de.js phrases.
  */
 export const API_DE = {
+  "Could not check right now.": "Gerade konnte nicht geprüft werden.",
   "Complete the security check to continue.": "Schließe die Sicherheitsprüfung ab, um fortzufahren.",
   "The security check could not be verified. Please try again.": "Die Sicherheitsprüfung konnte nicht bestätigt werden. Bitte versuche es erneut.",
   "Appeals are not available yet. Try again later.": "Einsprüche sind noch nicht verfügbar. Versuch es später noch einmal.",

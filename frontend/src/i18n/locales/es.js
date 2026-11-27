@@ -52,6 +52,7 @@ import { INVL_ES } from "./invl.es.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_ES,
   passkey: PASSKEY_ES,
@@ -11155,6 +11156,7 @@ export const phrases = {
   ...CONV_START_I18N.es,
   ...SERVER_TEMPLATE_TOPICS_I18N.es,
   ...SIGNUP_GROWTH.es.phrases,
+  ...ADAPTIVE_SIGNUP.es,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall no está afiliado a Discord Inc. Discord es una marca comercial de Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "La fila de la API se comprueba en vivo desde tu navegador cada vez que abres esta página.",
   "Author": "Autor",
