@@ -119,6 +119,7 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Giriş yap",
     "Not taken": "Boşta",
     "By continuing you accept the {terms} and the {privacy}.": "Devam ederek {terms} ve {privacy}'nı kabul edersin.",
+    "{count} in the room": "{count} kişi",
   },
   "de": {
     "1 thing to fix": "1 Sache zu korrigieren",
@@ -233,6 +234,7 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Anmelden",
     "Not taken": "Frei",
     "By continuing you accept the {terms} and the {privacy}.": "Wenn du fortfährst, akzeptierst du die {terms} und die {privacy}.",
+    "{count} in the room": "{count} im Raum",
   },
   "es": {
     "1 thing to fix": "1 cosa por corregir",
@@ -347,6 +349,7 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Iniciar sesión",
     "Not taken": "Libre",
     "By continuing you accept the {terms} and the {privacy}.": "Al continuar aceptas los {terms} y la {privacy}.",
+    "{count} in the room": "{count} en la sala",
   },
   "fr": {
     "1 thing to fix": "1 chose à corriger",
@@ -461,6 +464,7 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Se connecter",
     "Not taken": "Libre",
     "By continuing you accept the {terms} and the {privacy}.": "En continuant, tu acceptes les {terms} et la {privacy}.",
+    "{count} in the room": "{count} dans le salon",
   },
   "pt-BR": {
     "1 thing to fix": "1 coisa para corrigir",
@@ -575,6 +579,7 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Entrar",
     "Not taken": "Livre",
     "By continuing you accept the {terms} and the {privacy}.": "Ao continuar, você aceita os {terms} e a {privacy}.",
+    "{count} in the room": "{count} na sala",
   },
   "ru": {
     "1 thing to fix": "Нужно исправить 1 пункт",
@@ -689,5 +694,6 @@ export const ADAPTIVE_SIGNUP = {
     "Sign in": "Войти",
     "Not taken": "Свободен",
     "By continuing you accept the {terms} and the {privacy}.": "Продолжая, вы принимаете {terms} и {privacy}.",
+    "{count} in the room": "В комнате: {count}",
   },
 };

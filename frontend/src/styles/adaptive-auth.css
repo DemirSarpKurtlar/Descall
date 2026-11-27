@@ -139,7 +139,7 @@
   overflow: hidden;
   background: rgba(8, 9, 14, 0.32);
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t2);
   position: relative;
 }
@@ -157,7 +157,7 @@
   padding: 0 14px;
   height: 100%;
   font-weight: 750;
-  font-size: 10.5px;
+  font-size: var(--fs-11);
   letter-spacing: 0.08em;
   color: var(--asu-ok);
   background: #0d0e15;
@@ -281,7 +281,7 @@
 
 .asu-head h1 {
   margin: 6px 0 0;
-  font-size: 26px;
+  font-size: var(--fs-28);
   font-weight: 750;
   letter-spacing: -0.03em;
   line-height: 1.15;
@@ -289,7 +289,7 @@
 
 .asu-head p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-13);
   color: var(--asu-t3);
 }
 
@@ -299,7 +299,7 @@
   gap: 8px;
   padding: 5px 12px 5px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t2);
   font-weight: 600;
   background: var(--asu-glass);
@@ -311,7 +311,7 @@
 
 .asu-legal {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   color: var(--asu-t4);
   text-align: center;
   line-height: 1.5;
@@ -345,7 +345,7 @@
 }
 
 .asu-ptop b {
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 720;
   letter-spacing: -0.02em;
 }
@@ -362,7 +362,7 @@
   height: 26px;
   padding: 0 10px;
   border-radius: 13px;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   font-weight: 650;
   color: var(--asu-t2);
   background: var(--asu-glass);
@@ -408,7 +408,7 @@ a.asu-snip:hover {
 
 .asu-snip-hd > div > b {
   display: block;
-  font-size: 13.5px;
+  font-size: var(--fs-13);
   font-weight: 650;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -417,7 +417,7 @@ a.asu-snip:hover {
 
 .asu-snip-hd > div > span {
   display: block;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   color: var(--asu-t3);
   margin-top: 1px;
 }
@@ -430,7 +430,7 @@ a.asu-snip:hover {
   height: 36px;
   border-radius: 12px;
   font-weight: 750;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: #fff;
   overflow: hidden;
   background: linear-gradient(135deg, hsl(var(--h, 228) 66% 58%), hsl(calc(var(--h, 228) + 28) 60% 40%));
@@ -461,7 +461,7 @@ a.asu-snip:hover {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t2);
   font-weight: 600;
   min-width: 0;
@@ -477,14 +477,14 @@ a.asu-snip:hover {
 .asu-vc-ch em {
   margin-left: auto;
   color: var(--asu-ok);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-style: normal;
   white-space: nowrap;
 }
 
 .asu-pin {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-13);
   line-height: 1.4;
   color: var(--asu-t2);
   display: -webkit-box;
@@ -500,7 +500,7 @@ a.asu-snip:hover {
 }
 
 .asu-flags span {
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 999px;
@@ -516,7 +516,7 @@ a.asu-snip:hover {
 
 .asu-sidenote {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   color: var(--asu-t4);
   line-height: 1.45;
   display: flex;
@@ -581,19 +581,19 @@ a.asu-snip:hover {
 
 .asu-title h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-17);
   font-weight: 720;
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .asu-title > span:not(.asu-pill) {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t3);
 }
 
 .asu-pill {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   padding: 4px 9px;
   border-radius: 8px;
@@ -630,7 +630,7 @@ a.asu-snip:hover {
   justify-content: center;
   gap: 8px;
   font-weight: 650;
-  font-size: 14px;
+  font-size: var(--fs-15);
   width: 100%;
   white-space: nowrap;
   text-align: center !important;
@@ -695,7 +695,7 @@ a.asu-snip:hover {
 .asu-btn.is-sm {
   height: 40px;
   border-radius: 13px;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .asu-row2 {
@@ -759,7 +759,7 @@ a.asu-snip:hover {
 .asu-root .asu-social .google-signin-wrap--glass .google-signin-glass-face {
   height: 46px;
   border-radius: 15px;
-  font-size: 14px;
+  font-size: var(--fs-15);
   font-weight: 650;
   padding: 0 12px;
   gap: 8px;
@@ -784,7 +784,7 @@ a.asu-snip:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--fs-15);
   font-weight: 650;
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
@@ -825,7 +825,7 @@ a.asu-snip:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--fs-15);
   font-weight: 650;
   border: 0;
 }
@@ -834,7 +834,7 @@ a.asu-snip:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t4);
 }
 
@@ -863,7 +863,7 @@ a.asu-snip:hover {
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--asu-t2);
 }
@@ -875,7 +875,7 @@ a.asu-snip:hover {
 .asu-fl em {
   font-style: normal;
   font-weight: 650;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -895,7 +895,7 @@ a.asu-snip:hover {
   border-radius: 15px;
   background: var(--asu-field);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px var(--asu-field-ring);
-  font-size: 14px;
+  font-size: var(--fs-15);
   transition: box-shadow 0.15s ease, background 0.15s ease;
 }
 
@@ -941,14 +941,14 @@ a.asu-snip:hover {
   appearance: none;
   color: var(--asu-t1);
   font: inherit;
-  font-size: 16px;
+  font-size: 1rem;
   padding: 0;
   letter-spacing: inherit;
 }
 
 @media (min-width: 700px) {
   .asu-root .asu-fi input {
-    font-size: 14px;
+    font-size: var(--fs-15);
   }
 }
 
@@ -989,7 +989,7 @@ a.asu-snip:hover {
 .asu-c-br { color: var(--asu-brand-hi); }
 
 .asu-fh {
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--asu-t3);
   display: flex;
@@ -1017,7 +1017,7 @@ a.asu-snip:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   padding: 5px 10px;
   border-radius: 999px;
@@ -1044,7 +1044,7 @@ a.asu-snip:hover {
 }
 
 .asu-morph {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t3);
   display: flex;
   gap: 7px;
@@ -1068,7 +1068,7 @@ a.asu-snip:hover {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
-  font-size: 13.5px;
+  font-size: var(--fs-13);
 }
 
 [data-theme="light"] .asu-idrow {
@@ -1093,7 +1093,7 @@ a.asu-snip:hover {
   height: 32px;
   padding: 0 10px;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--asu-brand-hi);
   display: flex;
@@ -1110,7 +1110,7 @@ a.asu-snip:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 650;
   padding: 3px 8px;
   border-radius: 7px;
@@ -1154,7 +1154,7 @@ a.asu-snip:hover {
 }
 
 .asu-meter span {
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   margin-left: 6px;
   color: var(--asu-t2);
   white-space: nowrap;
@@ -1192,13 +1192,13 @@ a.asu-snip:hover {
   box-shadow: inset 0 0 0 1px var(--asu-field-ring);
   border: 0;
   color: var(--asu-t1);
-  font-size: 14px;
+  font-size: var(--fs-15);
 }
 
 /* terms */
 .asu-root .asu-terms .legal-consent {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.45;
   color: var(--asu-t2);
 }
@@ -1231,7 +1231,7 @@ a.asu-snip:hover {
 
 .asu-bp p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-13);
   line-height: 1.5;
   color: var(--asu-t2);
 }
@@ -1239,7 +1239,7 @@ a.asu-snip:hover {
 .asu-bp ul {
   margin: 0;
   padding: 0 0 0 16px;
-  font-size: 12.5px;
+  font-size: var(--fs-13);
   line-height: 1.5;
   color: var(--asu-t2);
 }
@@ -1264,7 +1264,7 @@ a.asu-snip:hover {
   gap: 5px;
   height: 30px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--asu-t3);
   white-space: nowrap;
@@ -1302,7 +1302,7 @@ a.asu-snip:hover {
   flex: 1;
   min-width: 0;
   font-family: var(--asu-mono);
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 600;
   color: #e9fff2;
   letter-spacing: 0.01em;
@@ -1339,7 +1339,7 @@ a.asu-snip:hover {
 .asu-bp-f {
   display: flex;
   gap: 7px;
-  font-size: 11.5px;
+  font-size: var(--fs-11);
   line-height: 1.45;
   color: var(--asu-t3);
 }
@@ -1382,13 +1382,13 @@ a.asu-snip:hover {
 
 .asu-bp-h b {
   display: block;
-  font-size: 13.5px;
+  font-size: var(--fs-13);
   font-weight: 700;
 }
 
 .asu-bp-h span {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t3);
   margin-top: 1px;
 }
@@ -1398,7 +1398,7 @@ a.asu-snip:hover {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--asu-t3);
   flex-wrap: wrap;
 }
@@ -1409,7 +1409,7 @@ a.asu-snip:hover {
 
 .asu-alert {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   padding: 9px 11px;
   border-radius: 12px;
@@ -1465,7 +1465,7 @@ a.asu-snip:hover {
 
 .asu-pk-hero p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.5;
   color: var(--asu-t2);
 }
@@ -1507,7 +1507,7 @@ a.asu-snip:hover {
 }
 
 .asu-page.is-phone .asu-head h1 {
-  font-size: 22px;
+  font-size: var(--fs-20);
 }
 
 .asu-page.is-phone .asu-head-logo {
@@ -1579,7 +1579,7 @@ body:not(.electron-app) .asu-page {
 }
 
 .asu-modal .asu-head h1 {
-  font-size: 22px;
+  font-size: var(--fs-20);
 }
 
 .asu-modal .asu-head-logo {
@@ -1677,7 +1677,7 @@ body:not(.electron-app) .asu-page {
 
 .login-modal .asu-root .asu-title h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-17);
   font-weight: 720;
   letter-spacing: -0.02em;
   text-align: left;
@@ -1685,7 +1685,7 @@ body:not(.electron-app) .asu-page {
 }
 
 .login-modal .asu-root .asu-head h1 {
-  font-size: 24px;
+  font-size: var(--fs-20);
   font-weight: 740;
   letter-spacing: -0.03em;
 }

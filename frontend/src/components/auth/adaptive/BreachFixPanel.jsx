@@ -15,6 +15,7 @@ import { Zap, Pencil, KeyRound, RefreshCw, Copy, Check, Lock, Info } from "../..
 import { suggestPassphrase, PASSPHRASE_WORDS } from "../../../lib/adaptiveSignup/passphrase.js";
 import { checkPasswordBreach } from "../../../lib/adaptiveSignup/breach.js";
 import { fetchBreachRange } from "../../../api/adaptiveSignup.js";
+import { copyText } from "../../../lib/copyText.js";
 
 const TABS = ["suggested", "own", "passwordless"];
 
@@ -81,13 +82,9 @@ export default function BreachFixPanel({
 
   const copy = async () => {
     if (!suggestion) return;
-    try {
-      await navigator.clipboard.writeText(suggestion.value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
-    }
+    const ok = await copyText(suggestion.value);
+    setCopied(ok);
+    if (ok) setTimeout(() => setCopied(false), 1800);
   };
 
   const onKeyTabs = (e) => {

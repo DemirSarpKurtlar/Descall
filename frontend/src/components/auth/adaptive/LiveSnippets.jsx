@@ -135,7 +135,7 @@ function ServerSnippet({ s }) {
           <div className="asu-vc-ch">
             <Mic size={13} aria-hidden="true" />
             <span>{s.voice.name}</span>
-            <em>{t("{count} people", { count: n(s.voice.count) })}</em>
+            <em>{t("{count} in the room", { count: n(s.voice.count) })}</em>
           </div>
         </div>
       ) : null}

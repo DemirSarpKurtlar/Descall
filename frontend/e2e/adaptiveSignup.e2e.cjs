@@ -18,7 +18,7 @@
  * Admin: Kayıt İstatistikleri shows the card's Ölçüm (aggregated by the real backend code).
  * Light theme shots for the desktop card.
  *
- *   VITE_API_BASE_URL=http://127.0.0.1:5371 VITE_SOCKET_URL=http://127.0.0.1:5371 npx vite build --outDir dist-e2e
+ *   VITE_API_BASE_URL=http://127.0.0.1:5361 VITE_SOCKET_URL=http://127.0.0.1:5361 npx vite build --outDir dist-e2e
  *   node e2e/adaptiveSignup.e2e.cjs [--dist=dist-e2e] [--out=/tmp/adaptive-signup-e2e]
  */
 
@@ -35,7 +35,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] 
 const pw = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
 const DIST = path.resolve(args.dist || path.join(__dirname, '../dist-e2e'));
 const OUT = path.resolve(args.out || process.env.DESCALL_E2E_SHOTS || '/tmp/descall-adaptive-signup-e2e');
-const PORT = Number(args.port || 5371);
+const PORT = Number(args.port || 5361);
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
 const BREACHED = 'galatasaray1905';
