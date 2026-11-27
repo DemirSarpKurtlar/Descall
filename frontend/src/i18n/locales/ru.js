@@ -49,6 +49,7 @@ import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
   passkey: PASSKEY_RU,
@@ -11147,6 +11148,7 @@ export const phrases = {
   ...CONV_START_I18N.ru,
   ...SERVER_TEMPLATE_TOPICS_I18N.ru,
   ...SIGNUP_GROWTH.ru.phrases,
+  ...ADAPTIVE_SIGNUP.ru,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
   "Author": "Автор",

@@ -1,0 +1,1691 @@
+/* Uyarlanan kart (growth draft 1B): the email-first sign-in / sign-up card, its page
+   (desktop: live ribbon + snippets either side, phone: compact top bar) and the modal
+   variant on the web site. Geometry follows the approved draft (card 480 / r30, fields 46 /
+   r15, buttons 46 / r15, chips r999). Dark first; [data-theme="light"] below. */
+
+.asu-root {
+  --asu-brand: #587af5;
+  --asu-brand-hi: #a9bbff;
+  --asu-cta-t: #6e8cff;
+  --asu-cta-b: #4e6ff2;
+  --asu-t1: rgba(255, 255, 255, 0.96);
+  --asu-t2: rgba(237, 240, 255, 0.8);
+  --asu-t3: rgba(232, 236, 255, 0.62);
+  --asu-t4: rgba(235, 238, 255, 0.38);
+  --asu-ok: #3ddc84;
+  --asu-okf: #23a55a;
+  --asu-warn: #f0b232;
+  --asu-warn-hi: #ffe1a3;
+  --asu-err: #ff7b7b;
+  --asu-mono: "SF Mono", ui-monospace, "JetBrains Mono", Consolas, monospace;
+  --asu-field: rgba(0, 0, 0, 0.26);
+  --asu-field-ring: rgba(255, 255, 255, 0.1);
+  --asu-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)), rgba(22, 24, 36, 0.4);
+  --asu-glass-heavy: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.045)), rgba(20, 22, 32, 0.7);
+  --asu-glass-ring: rgba(255, 255, 255, 0.16);
+  --asu-shadow: 0 30px 70px -26px rgba(0, 0, 0, 0.8);
+  --asu-chip: rgba(88, 122, 245, 0.16);
+  --asu-chip-ring: rgba(143, 166, 255, 0.45);
+  --asu-chip-t: #ccd6ff;
+  --asu-white: #fff;
+  --asu-white-t: #0d0e13;
+  color: var(--asu-t1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.008em;
+}
+
+[data-theme="light"] .asu-root {
+  --asu-brand: #3a66ee;
+  --asu-brand-hi: #2f57d6;
+  --asu-cta-t: #4a74f2;
+  --asu-cta-b: #2f57d6;
+  --asu-t1: #12131a;
+  --asu-t2: rgba(18, 19, 26, 0.8);
+  --asu-t3: rgba(18, 19, 26, 0.62);
+  --asu-t4: rgba(18, 19, 26, 0.44);
+  --asu-ok: #15803d;
+  --asu-okf: #16a34a;
+  --asu-warn: #a16207;
+  --asu-warn-hi: #7c4a03;
+  --asu-err: #c62828;
+  --asu-field: rgba(255, 255, 255, 0.82);
+  --asu-field-ring: rgba(18, 19, 26, 0.14);
+  --asu-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.7));
+  --asu-glass-heavy: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.8));
+  --asu-glass-ring: rgba(18, 19, 26, 0.1);
+  --asu-shadow: 0 30px 70px -30px rgba(30, 40, 90, 0.35);
+  --asu-chip: rgba(58, 102, 238, 0.1);
+  --asu-chip-ring: rgba(58, 102, 238, 0.35);
+  --asu-chip-t: #2649bc;
+  --asu-white: #12131a;
+  --asu-white-t: #fff;
+}
+
+.asu-root *,
+.asu-root *::before,
+.asu-root *::after {
+  box-sizing: border-box;
+}
+
+/* Zero-specificity reset: the card's own classes set sizes (a plain ".asu-root button"
+   would override them, e.g. the chips' 12px). */
+:where(.asu-root) button {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(.asu-root) button:disabled {
+  cursor: default;
+}
+
+.asu-root :focus-visible {
+  outline: 2px solid var(--asu-brand);
+  outline-offset: 2px;
+}
+
+/* A field's focus ring is its rounded box (.asu-fi:focus-within), not a second one. */
+.asu-root .asu-fi input:focus-visible {
+  outline: none;
+}
+
+.asu-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- page ---------- */
+
+.asu-page {
+  position: relative;
+  min-height: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(60% 42% at 8% 4%, rgba(88, 122, 245, 0.4), transparent 70%),
+    radial-gradient(55% 38% at 100% 22%, rgba(124, 92, 255, 0.26), transparent 70%),
+    radial-gradient(70% 40% at 20% 86%, rgba(88, 122, 245, 0.15), transparent 70%),
+    radial-gradient(60% 35% at 95% 96%, rgba(124, 92, 255, 0.2), transparent 70%),
+    linear-gradient(170deg, #151724 0%, #17181f 45%, #101118 100%);
+}
+
+[data-theme="light"] .asu-page {
+  background:
+    radial-gradient(60% 42% at 8% 4%, rgba(88, 122, 245, 0.22), transparent 70%),
+    radial-gradient(55% 38% at 100% 22%, rgba(124, 92, 255, 0.14), transparent 70%),
+    radial-gradient(70% 40% at 20% 86%, rgba(88, 122, 245, 0.1), transparent 70%),
+    linear-gradient(170deg, #f4f6fd 0%, #eef0f8 50%, #e9ecf6 100%);
+}
+
+.asu-ribbon {
+  flex: none;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: rgba(8, 9, 14, 0.32);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+  color: var(--asu-t2);
+  position: relative;
+}
+
+[data-theme="light"] .asu-ribbon {
+  background: rgba(255, 255, 255, 0.55);
+  border-bottom-color: rgba(18, 19, 26, 0.08);
+}
+
+.asu-ribbon-tag {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  font-weight: 750;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--asu-ok);
+  background: #0d0e15;
+  position: relative;
+  z-index: 2;
+  box-shadow: 14px 0 16px -4px #0d0e15;
+  text-transform: uppercase;
+}
+
+[data-theme="light"] .asu-ribbon-tag {
+  background: #f4f6fd;
+  box-shadow: 14px 0 16px -4px #f4f6fd;
+}
+
+.asu-ribbon-track {
+  display: flex;
+  gap: 34px;
+  white-space: nowrap;
+  padding-left: 20px;
+  animation: asu-tick 48s linear infinite;
+  will-change: transform;
+}
+
+.asu-ribbon:hover .asu-ribbon-track {
+  animation-play-state: paused;
+}
+
+.asu-ribbon-track > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.asu-ribbon-track b {
+  color: var(--asu-t1);
+  font-weight: 650;
+}
+
+@keyframes asu-tick {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes asu-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(61, 220, 132, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0); }
+}
+
+@keyframes asu-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes asu-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.asu-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--asu-ok);
+  flex: none;
+}
+
+.asu-dot.is-pulse {
+  animation: asu-pulse 1.8s infinite;
+}
+
+.asu-body {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 480px) minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px 30px 30px;
+  align-items: start;
+}
+
+.asu-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 70px;
+  min-width: 0;
+  animation: asu-in 0.5s ease both;
+}
+
+.asu-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  grid-column: 2;
+  min-width: 0;
+}
+
+.asu-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.asu-head-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px -10px rgba(88, 122, 245, 0.75);
+}
+
+.asu-head-logo img,
+.asu-head-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.asu-head h1 {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.asu-head p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--asu-t3);
+}
+
+.asu-herepill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--asu-t2);
+  font-weight: 600;
+  background: var(--asu-glass);
+  box-shadow: inset 0 0 0 0.5px var(--asu-glass-ring);
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  animation: asu-in 0.4s ease both;
+}
+
+.asu-legal {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--asu-t4);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.asu-legal button {
+  color: var(--asu-brand-hi);
+  font-weight: 600;
+  padding: 0;
+}
+
+.asu-ptop {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 2px 0;
+  width: 100%;
+}
+
+.asu-ptop .asu-ptop-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.asu-ptop .asu-ptop-logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.asu-ptop b {
+  font-size: 15px;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.asu-ptop .asu-sp {
+  flex: 1;
+}
+
+.asu-livepill {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--asu-t2);
+  background: var(--asu-glass);
+  box-shadow: inset 0 0 0 0.5px var(--asu-glass-ring);
+}
+
+/* Side snippet cards */
+.asu-snip {
+  border-radius: 20px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.94;
+  background: var(--asu-glass);
+  box-shadow: inset 0 0 0 0.5px var(--asu-glass-ring), 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+a.asu-snip:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .asu-snip {
+  box-shadow: inset 0 0 0 0.5px var(--asu-glass-ring), 0 20px 50px -28px rgba(30, 40, 90, 0.3);
+}
+
+.asu-snip-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.asu-snip-hd > div {
+  min-width: 0;
+}
+
+.asu-snip-hd > div > b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asu-snip-hd > div > span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--asu-t3);
+  margin-top: 1px;
+}
+
+.asu-sv {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  font-weight: 750;
+  font-size: 13px;
+  color: #fff;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--h, 228) 66% 58%), hsl(calc(var(--h, 228) + 28) 60% 40%));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+}
+
+.asu-sv img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.asu-vc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+[data-theme="light"] .asu-vc {
+  background: rgba(18, 19, 26, 0.05);
+}
+
+.asu-vc-ch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--asu-t2);
+  font-weight: 600;
+  min-width: 0;
+}
+
+.asu-vc-ch > span:first-of-type {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asu-vc-ch em {
+  margin-left: auto;
+  color: var(--asu-ok);
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.asu-pin {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--asu-t2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.asu-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.asu-flags span {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  color: var(--asu-t2);
+}
+
+[data-theme="light"] .asu-flags span {
+  background: rgba(18, 19, 26, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(18, 19, 26, 0.1);
+}
+
+.asu-sidenote {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--asu-t4);
+  line-height: 1.45;
+  display: flex;
+  gap: 7px;
+}
+
+.asu-sidenote svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---------- card ---------- */
+
+.asu-card {
+  position: relative;
+  width: 100%;
+  border-radius: 30px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  background: var(--asu-glass-heavy);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.17), var(--asu-shadow);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+}
+
+[data-theme="light"] .asu-card {
+  box-shadow: inset 0 0 0 0.5px var(--asu-glass-ring), var(--asu-shadow);
+}
+
+.asu-card > * {
+  flex: none;
+}
+
+.asu-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: asu-in 0.28s ease both;
+}
+
+.asu-ready {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, var(--asu-brand), #7ff0dc);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 12px rgba(88, 122, 245, 0.8);
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.asu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.asu-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.asu-title > span:not(.asu-pill) {
+  font-size: 12px;
+  color: var(--asu-t3);
+}
+
+.asu-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.asu-pill.is-new {
+  background: rgba(61, 220, 132, 0.14);
+  color: var(--asu-ok);
+  box-shadow: inset 0 0 0 0.5px rgba(61, 220, 132, 0.4);
+}
+
+.asu-pill.is-known {
+  background: rgba(88, 122, 245, 0.18);
+  color: var(--asu-brand-hi);
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.45);
+}
+
+.asu-pill.is-fix {
+  background: rgba(240, 178, 50, 0.14);
+  color: var(--asu-warn);
+  box-shadow: inset 0 0 0 0.5px rgba(240, 178, 50, 0.45);
+}
+
+/* buttons */
+.asu-btn {
+  height: 46px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 14px;
+  width: 100%;
+  white-space: nowrap;
+  text-align: center !important;
+  transition: filter 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  position: relative;
+}
+
+.asu-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.asu-btn svg {
+  flex: none;
+}
+
+.asu-btn.is-prim {
+  background: linear-gradient(180deg, var(--asu-cta-t), var(--asu-cta-b));
+  color: #fff;
+  box-shadow: 0 10px 24px -10px rgba(88, 122, 245, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.asu-btn.is-prim:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.asu-btn.is-prim:disabled {
+  opacity: 0.55;
+  filter: saturate(0.75);
+}
+
+.asu-btn.is-glass {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .asu-btn.is-glass {
+  background: rgba(18, 19, 26, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(18, 19, 26, 0.14);
+}
+
+.asu-btn.is-glass:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.asu-btn.is-white {
+  background: var(--asu-white);
+  color: var(--asu-white-t);
+  box-shadow: 0 10px 24px -12px rgba(255, 255, 255, 0.5);
+}
+
+.asu-btn.is-dis {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--asu-t3);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .asu-btn.is-dis {
+  background: rgba(18, 19, 26, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(18, 19, 26, 0.12);
+}
+
+.asu-btn.is-sm {
+  height: 40px;
+  border-radius: 13px;
+  font-size: 13px;
+}
+
+.asu-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.asu-row2 > :only-child {
+  grid-column: 1 / -1;
+}
+
+.asu-spin {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #fff;
+  animation: asu-spin 0.8s linear infinite;
+  flex: none;
+}
+
+.asu-btn.is-glass .asu-spin,
+.asu-leak .asu-spin {
+  width: 11px;
+  height: 11px;
+  border-color: rgba(255, 255, 255, 0.18);
+  border-top-color: var(--asu-brand-hi);
+}
+
+.asu-lnk {
+  color: var(--asu-brand-hi);
+  font-weight: 600;
+  padding: 0;
+}
+
+.asu-lnk:hover {
+  text-decoration: underline;
+}
+
+/* social buttons reuse the existing Google / Apple / passkey components */
+.asu-social {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asu-social .google-signin-wrap,
+.asu-social .apple-signin-wrap,
+.asu-social .pk-signin {
+  width: 100%;
+  margin: 0;
+  min-width: 0;
+}
+
+.asu-root .asu-social .google-signin-wrap--glass,
+.asu-root .asu-social .google-signin-wrap--glass .google-signin-glass-face {
+  min-height: 46px;
+}
+
+.asu-root .asu-social .google-signin-wrap--glass .google-signin-glass-face {
+  height: 46px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 0 12px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+  color: var(--asu-t1);
+}
+
+.asu-root .asu-social .is-primary .google-signin-wrap--glass .google-signin-glass-face {
+  background: var(--asu-white);
+  color: var(--asu-white-t);
+  box-shadow: 0 10px 24px -12px rgba(255, 255, 255, 0.5);
+}
+
+.asu-root .asu-social .apple-signin-btn,
+.asu-root .asu-social .pk-signin-btn {
+  height: 46px;
+  min-height: 46px;
+  width: 100%;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+  color: var(--asu-t1);
+  border: 0;
+  margin: 0;
+}
+
+[data-theme="light"] .asu-root .asu-social .google-signin-wrap--glass .google-signin-glass-face,
+[data-theme="light"] .asu-root .asu-social .apple-signin-btn,
+[data-theme="light"] .asu-root .asu-social .pk-signin-btn {
+  background: rgba(18, 19, 26, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(18, 19, 26, 0.14);
+}
+
+.asu-root .asu-social .is-primary .apple-signin-btn,
+.asu-root .asu-social .is-primary .pk-signin-btn,
+.asu-root .asu-pk-white .pk-signin-btn {
+  background: var(--asu-white);
+  color: var(--asu-white-t);
+  box-shadow: 0 10px 24px -12px rgba(255, 255, 255, 0.5);
+}
+
+.asu-root .pk-signin-note {
+  display: none;
+}
+
+.asu-root .asu-pk-white .pk-signin {
+  width: 100%;
+  margin: 0;
+}
+
+.asu-root .asu-pk-white .pk-signin-btn {
+  height: 46px;
+  width: 100%;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  border: 0;
+}
+
+.asu-dv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--asu-t4);
+}
+
+.asu-dv::before,
+.asu-dv::after {
+  content: "";
+  flex: 1;
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="light"] .asu-dv::before,
+[data-theme="light"] .asu-dv::after {
+  background: rgba(18, 19, 26, 0.14);
+}
+
+/* fields */
+.asu-f {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asu-fl {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--asu-t2);
+}
+
+.asu-fl label {
+  cursor: default;
+}
+
+.asu-fl em {
+  font-style: normal;
+  font-weight: 650;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.asu-fl em.is-muted {
+  color: var(--asu-t3);
+  font-weight: 500;
+}
+
+.asu-fi {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 13px;
+  border-radius: 15px;
+  background: var(--asu-field);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px var(--asu-field-ring);
+  font-size: 14px;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+[data-theme="light"] .asu-fi {
+  box-shadow: inset 0 1px 2px rgba(18, 19, 26, 0.06), inset 0 0 0 1px var(--asu-field-ring);
+}
+
+.asu-fi:focus-within {
+  box-shadow: inset 0 0 0 2px rgba(88, 122, 245, 0.92);
+}
+
+.asu-f.is-ok .asu-fi {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(61, 220, 132, 0.42);
+}
+
+.asu-f.is-err .asu-fi {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 123, 123, 0.72);
+  background: rgba(218, 55, 60, 0.08);
+}
+
+.asu-f.is-warn .asu-fi {
+  box-shadow: inset 0 0 0 1.5px rgba(240, 178, 50, 0.78);
+  background: rgba(240, 178, 50, 0.07);
+}
+
+.asu-fi > svg {
+  color: var(--asu-t3);
+  flex: none;
+}
+
+.asu-root .asu-fi input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0;
+  outline: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  color: var(--asu-t1);
+  font: inherit;
+  font-size: 16px;
+  padding: 0;
+  letter-spacing: inherit;
+}
+
+@media (min-width: 700px) {
+  .asu-root .asu-fi input {
+    font-size: 14px;
+  }
+}
+
+.asu-fi input::placeholder {
+  color: var(--asu-t4);
+}
+
+.asu-fi input:-webkit-autofill {
+  -webkit-text-fill-color: var(--asu-t1);
+  transition: background-color 9999s ease-out 0s;
+}
+
+.asu-fi .asu-tr {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--asu-t3);
+  flex: none;
+}
+
+.asu-fi .asu-tr button {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--asu-t3);
+}
+
+.asu-fi .asu-tr button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--asu-t1);
+}
+
+.asu-c-ok { color: var(--asu-ok); }
+.asu-c-err { color: var(--asu-err); }
+.asu-c-warn { color: var(--asu-warn); }
+.asu-c-br { color: var(--asu-brand-hi); }
+
+.asu-fh {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--asu-t3);
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.asu-fh svg {
+  margin-top: 1px;
+  flex: none;
+}
+
+.asu-fh.is-err { color: var(--asu-err); }
+.asu-fh.is-warn { color: var(--asu-warn); }
+.asu-fh.is-ok { color: var(--asu-ok); }
+
+.asu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.asu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--asu-chip);
+  box-shadow: inset 0 0 0 0.5px var(--asu-chip-ring);
+  color: var(--asu-chip-t);
+  transition: background 0.15s;
+}
+
+.asu-chip:hover {
+  background: rgba(88, 122, 245, 0.28);
+}
+
+.asu-chip.is-sel {
+  background: var(--asu-brand);
+  color: #fff;
+  box-shadow: none;
+}
+
+.asu-chip.is-gray {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  color: var(--asu-t2);
+}
+
+.asu-morph {
+  font-size: 12px;
+  color: var(--asu-t3);
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.asu-morph svg {
+  margin-top: 2px;
+  color: var(--asu-brand-hi);
+  flex: none;
+}
+
+.asu-idrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 6px 0 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  font-size: 13.5px;
+}
+
+[data-theme="light"] .asu-idrow {
+  background: rgba(18, 19, 26, 0.04);
+  box-shadow: inset 0 0 0 0.5px rgba(18, 19, 26, 0.12);
+}
+
+.asu-idrow > svg {
+  color: var(--asu-brand-hi);
+  flex: none;
+}
+
+.asu-idrow .asu-v {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asu-idrow .asu-ed {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--asu-brand-hi);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+.asu-idrow .asu-ed:hover {
+  background: rgba(88, 122, 245, 0.12);
+}
+
+.asu-leak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(61, 220, 132, 0.12);
+  color: var(--asu-ok);
+  white-space: nowrap;
+  font-style: normal;
+}
+
+.asu-leak.is-bad {
+  background: rgba(240, 178, 50, 0.14);
+  color: var(--asu-warn);
+}
+
+.asu-leak.is-chk {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--asu-t3);
+}
+
+[data-theme="light"] .asu-leak.is-chk {
+  background: rgba(18, 19, 26, 0.06);
+}
+
+/* strength meter */
+.asu-meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.asu-meter i {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.2s ease;
+}
+
+[data-theme="light"] .asu-meter i {
+  background: rgba(18, 19, 26, 0.1);
+}
+
+.asu-meter span {
+  font-size: 11.5px;
+  margin-left: 6px;
+  color: var(--asu-t2);
+  white-space: nowrap;
+}
+
+.asu-meter.is-1 i:nth-child(1) { background: var(--asu-err); }
+.asu-meter.is-2 i:nth-child(-n + 2) { background: var(--asu-warn); }
+.asu-meter.is-3 i:nth-child(-n + 3) { background: #8bd86a; }
+.asu-meter.is-4 i:nth-child(-n + 4) { background: var(--asu-ok); }
+
+/* date of birth: the shared picker, card geometry */
+.asu-root .asu-birth .birth-input {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.asu-root .asu-birth .birth-input-legend {
+  display: none;
+}
+
+.asu-root .asu-birth .birth-input-row {
+  display: grid;
+  grid-template-columns: 0.8fr 1.3fr 1fr;
+  gap: 8px;
+}
+
+.asu-root .asu-birth .birth-select,
+.asu-root .asu-birth .birth-select-trigger,
+.asu-root .asu-birth button.birth-select {
+  height: 46px;
+  border-radius: 15px;
+  background: var(--asu-field);
+  box-shadow: inset 0 0 0 1px var(--asu-field-ring);
+  border: 0;
+  color: var(--asu-t1);
+  font-size: 14px;
+}
+
+/* terms */
+.asu-root .asu-terms .legal-consent {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--asu-t2);
+}
+
+.asu-root .asu-terms .legal-consent-link {
+  color: var(--asu-brand-hi);
+}
+
+.asu-root .asu-terms .legal-consent-note {
+  display: block;
+  color: var(--asu-t4);
+  margin-top: 2px;
+}
+
+/* breach fix panel (warn) and the reset / info panel (brand) */
+.asu-bp {
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: linear-gradient(180deg, rgba(240, 178, 50, 0.1), rgba(240, 178, 50, 0.04)), rgba(10, 11, 16, 0.35);
+  box-shadow: inset 0 0 0 0.5px rgba(240, 178, 50, 0.45);
+  animation: asu-in 0.25s ease both;
+}
+
+[data-theme="light"] .asu-bp {
+  background: linear-gradient(180deg, rgba(240, 178, 50, 0.14), rgba(240, 178, 50, 0.06)), #fff;
+}
+
+.asu-bp p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--asu-t2);
+}
+
+.asu-bp ul {
+  margin: 0;
+  padding: 0 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--asu-t2);
+}
+
+.asu-seg3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .asu-seg3 {
+  background: rgba(18, 19, 26, 0.06);
+}
+
+.asu-seg3 button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--asu-t3);
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.asu-seg3 button[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.13);
+  color: var(--asu-t1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .asu-seg3 button[aria-selected="true"] {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(18, 19, 26, 0.12);
+}
+
+.asu-gen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 6px 0 13px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(61, 220, 132, 0.38);
+}
+
+[data-theme="light"] .asu-gen {
+  background: #f4fbf6;
+}
+
+.asu-gen-v {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--asu-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: #e9fff2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: all;
+}
+
+[data-theme="light"] .asu-gen-v {
+  color: #0f3d22;
+}
+
+.asu-gen-v.is-loading {
+  color: var(--asu-t4);
+}
+
+.asu-gen button {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--asu-t2);
+  background: rgba(255, 255, 255, 0.06);
+  flex: none;
+}
+
+.asu-gen button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--asu-t1);
+}
+
+.asu-bp-f {
+  display: flex;
+  gap: 7px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--asu-t3);
+}
+
+.asu-bp-f svg {
+  margin-top: 2px;
+  flex: none;
+}
+
+.asu-tp {
+  border-radius: 16px;
+  padding: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: linear-gradient(180deg, rgba(88, 122, 245, 0.14), rgba(88, 122, 245, 0.05)), rgba(10, 11, 16, 0.35);
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.45);
+}
+
+[data-theme="light"] .asu-tp {
+  background: linear-gradient(180deg, rgba(58, 102, 238, 0.1), rgba(58, 102, 238, 0.04)), #fff;
+}
+
+.asu-bp-h {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.asu-bp-h .asu-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: rgba(88, 122, 245, 0.22);
+  color: var(--asu-brand-hi);
+}
+
+.asu-bp-h b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.asu-bp-h span {
+  display: block;
+  font-size: 12px;
+  color: var(--asu-t3);
+  margin-top: 1px;
+}
+
+.asu-lead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--asu-t3);
+  flex-wrap: wrap;
+}
+
+.asu-lead .asu-sep {
+  color: var(--asu-t4);
+}
+
+.asu-alert {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(218, 55, 60, 0.12);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 123, 123, 0.4);
+  color: var(--asu-err);
+  display: flex;
+  gap: 7px;
+}
+
+.asu-alert svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.asu-alert.is-info {
+  background: rgba(88, 122, 245, 0.12);
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.4);
+  color: var(--asu-t2);
+}
+
+.asu-alert.is-ok {
+  background: rgba(61, 220, 132, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(61, 220, 132, 0.35);
+  color: var(--asu-ok);
+}
+
+.asu-code {
+  font-family: var(--asu-mono);
+  letter-spacing: 0.3em;
+}
+
+/* passkey setup (after a passwordless sign-up) */
+.asu-pk-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 6px 4px 2px;
+}
+
+.asu-pk-hero .asu-pk-ico {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, var(--asu-cta-t), var(--asu-cta-b));
+  color: #fff;
+  box-shadow: 0 14px 30px -12px rgba(88, 122, 245, 0.9);
+}
+
+.asu-pk-hero p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--asu-t2);
+}
+
+/* ---------- layouts ---------- */
+
+/* Between phone and the three columns: the card alone, ribbon kept. */
+@media (max-width: 1179px) {
+  .asu-page .asu-body {
+    grid-template-columns: minmax(0, 480px);
+    justify-content: center;
+  }
+
+  .asu-page .asu-side {
+    display: none;
+  }
+
+  .asu-page .asu-center {
+    grid-column: 1;
+  }
+}
+
+/* Phone (iOS / Android app, narrow web): compact top bar after the first step, sticky submit. */
+.asu-page.is-phone .asu-ribbon {
+  display: none;
+}
+
+.asu-page.is-phone .asu-body {
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.asu-page.is-phone .asu-center {
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.asu-page.is-phone .asu-head h1 {
+  font-size: 22px;
+}
+
+.asu-page.is-phone .asu-head-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+}
+
+.asu-page.is-phone .asu-head p {
+  display: none;
+}
+
+.asu-page.is-phone.is-compact .asu-head {
+  display: none;
+}
+
+.asu-page.is-phone.is-compact .asu-ptop {
+  display: flex;
+}
+
+.asu-page.is-phone .asu-card {
+  border-radius: 26px;
+  padding: 14px;
+  gap: 10px;
+}
+
+.asu-page.is-phone .asu-step {
+  gap: 10px;
+}
+
+.asu-page.is-phone .asu-fi,
+.asu-page.is-phone .asu-gen {
+  height: 44px;
+  border-radius: 14px;
+}
+
+.asu-page.is-phone .asu-btn {
+  height: 44px;
+  border-radius: 14px;
+}
+
+.asu-page.is-phone .asu-sticky {
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+  z-index: 3;
+  padding-top: 18px;
+  margin-top: -6px;
+  background: linear-gradient(180deg, transparent, rgba(20, 22, 32, 0.92) 46%);
+}
+
+[data-theme="light"] .asu-page.is-phone .asu-sticky {
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95) 46%);
+}
+
+/* Browser and phone: the page fills the screen even when #root is shorter. The desktop
+   apps pad the body for their title bar and size #root to the rest (titlebar.css), so
+   there the page stays at the #root height and scrolls inside it. */
+body:not(.electron-app) .asu-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Web site modal: the card alone, no snippets. */
+.asu-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.asu-modal .asu-head h1 {
+  font-size: 22px;
+}
+
+.asu-modal .asu-head-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+}
+
+.asu-modal .asu-card {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 4px 0 0;
+  overflow: visible;
+}
+
+.asu-modal .asu-ready {
+  top: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asu-ribbon-track {
+    animation: none;
+    overflow-x: auto;
+  }
+
+  .asu-step,
+  .asu-side,
+  .asu-bp,
+  .asu-herepill {
+    animation: none;
+  }
+
+  .asu-dot.is-pulse {
+    animation: none;
+  }
+
+  .asu-ready {
+    transition: none;
+  }
+}
+
+/* The web site's sign-in modal styles every input and form button inside it; inside the
+   card the card's own field and button geometry wins. */
+.login-modal .asu-root form.asu-step {
+  display: flex;
+  gap: 12px;
+}
+
+.login-modal .asu-root .asu-fi input,
+.login-modal .asu-root .asu-fi input:focus,
+.login-modal .asu-root .asu-fi input:focus-visible {
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: auto !important;
+}
+
+.login-modal .asu-root form > button,
+.login-modal .asu-root .asu-sticky > button {
+  font-family: inherit;
+  letter-spacing: inherit;
+  min-height: 0;
+}
+
+.login-modal .asu-root form > button.asu-btn.is-prim {
+  background: linear-gradient(180deg, var(--asu-cta-t), var(--asu-cta-b));
+}
+
+.login-modal .asu-root .asu-sr,
+.asu-root input.asu-sr {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.login-modal .asu-root .asu-head h1 {
+  margin: 4px 0 0;
+}
+
+.login-modal .asu-root .asu-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  text-align: left;
+  padding: 0;
+}
+
+.login-modal .asu-root .asu-head h1 {
+  font-size: 24px;
+  font-weight: 740;
+  letter-spacing: -0.03em;
+}

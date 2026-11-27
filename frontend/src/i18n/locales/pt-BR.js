@@ -49,6 +49,7 @@ import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
 import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_PT_BR,
   passkey: PASSKEY_PT_BR,
@@ -11147,6 +11148,7 @@ export const phrases = {
   ...CONV_START_I18N["pt-BR"],
   ...SERVER_TEMPLATE_TOPICS_I18N["pt-BR"],
   ...SIGNUP_GROWTH["pt-BR"].phrases,
+  ...ADAPTIVE_SIGNUP["pt-BR"],
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "O Descall não tem afiliação com a Discord Inc. Discord é uma marca comercial da Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",
   "Author": "Autor",

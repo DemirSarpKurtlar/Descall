@@ -45,6 +45,7 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -4647,6 +4648,7 @@ export const phrases = {
   ...CONV_START_I18N.tr,
   ...SERVER_TEMPLATE_TOPICS_I18N.tr,
   ...SIGNUP_GROWTH.tr.phrases,
+  ...ADAPTIVE_SIGNUP.tr,
 };
 
 const locale = { nested, phrases };

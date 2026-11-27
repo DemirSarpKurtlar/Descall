@@ -2143,6 +2143,13 @@ router.post("/heard-about", requireAuth, async (req, res) => {
 // ─── Uyarlanan kart (growth 1B): email-first sign-in / sign-up ──────────
 
 const identifyBurst = burstLimit({ name: "identify", limit: 60 });
+// Server texts are English; the apps translate them (serverMessage + api.<locale>.js).
+const CARD_ERR = Object.freeze({
+  internal: "Internal server error.",
+  email: "Enter a valid email address.",
+  badInput: "Invalid request body.",
+  range: "Could not check right now.",
+});
 const IDENTIFY_OPTS = { windowMs: adaptive.IDENTIFY_WINDOW_MS, max: adaptive.IDENTIFY_MAX };
 
 /**
@@ -2161,7 +2168,7 @@ router.post("/identify", identifyBurst, async (req, res) => {
       return;
     }
     const email = adaptive.normalizeEmail(req.body?.email);
-    if (!email) return res.status(400).json({ error: "Enter a valid email address.", code: "EMAIL_INVALID" });
+    if (!email) return res.status(400).json({ error: CARD_ERR.email, code: "EMAIL_INVALID" });
     if (recentCount(key, { windowMs: adaptive.IDENTIFY_WINDOW_MS }) >= adaptive.IDENTIFY_STEPUP) {
       if (await turnstile.rejectUnlessHuman(req, res, { action: "register", ip })) return;
     }
@@ -2178,7 +2185,7 @@ router.post("/identify", identifyBurst, async (req, res) => {
     return res.json({ status: "new", ...(closed.ok ? {} : { registrationClosed: true }) });
   } catch (err) {
     console.error("[AUTH] identify error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: CARD_ERR.internal });
   }
 });
 
@@ -2197,19 +2204,19 @@ router.get("/password/range/:prefix", async (req, res) => {
     if (guard(res, `pwrange:ip:${ip}`, null, RANGE_OPTS)) return;
     recordFailure(`pwrange:ip:${ip}`, RANGE_OPTS);
     const prefix = adaptive.cleanPrefix(req.params.prefix);
-    if (!prefix) return res.status(400).json({ error: "Invalid request body.", code: "BAD_PREFIX" });
+    if (!prefix) return res.status(400).json({ error: CARD_ERR.badInput, code: "BAD_PREFIX" });
     res.set("Cache-Control", "private, max-age=600");
     res.type("text/plain");
     if (String(process.env.PASSWORD_HIBP || "1") === "0") return res.send("");
     const r = await breachRanges.get(prefix);
     if (!r.ok) {
       res.set("Cache-Control", "no-store");
-      return res.status(503).json({ error: "Could not check right now.", code: "RANGE_UNAVAILABLE" });
+      return res.status(503).json({ error: CARD_ERR.range, code: "RANGE_UNAVAILABLE" });
     }
     return res.send(r.body);
   } catch (err) {
     console.error("[AUTH] password range error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: CARD_ERR.internal });
   }
 });
 
@@ -2233,7 +2240,7 @@ router.post("/username/ideas", async (req, res) => {
     return res.json({ free });
   } catch (err) {
     console.error("[AUTH] username ideas error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: CARD_ERR.internal });
   }
 });
 
