@@ -74,6 +74,7 @@ export default {
   "Copy": "Копировать",
   "Copyright": "Авторские права",
   "Cosmetic shop (core free)": "Магазин косметики (основное бесплатно)",
+  "Could not copy to clipboard": "Не удалось скопировать в буфер обмена",
   "Could not load Google sign-in. You can still sign in with your username and password.": "Не удалось загрузить вход через Google. Вы по-прежнему можете войти с именем пользователя и паролем.",
   "Could not reset password.": "Не удалось сбросить пароль.",
   "Could not send reset code.": "Не удалось отправить код для сброса.",

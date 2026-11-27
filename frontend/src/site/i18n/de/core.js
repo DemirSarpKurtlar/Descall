@@ -74,6 +74,7 @@ export default {
   "Copy": "Kopieren",
   "Copyright": "Urheberrecht",
   "Cosmetic shop (core free)": "Kosmetik-Shop (Kernfunktionen kostenlos)",
+  "Could not copy to clipboard": "Kopieren in die Zwischenablage fehlgeschlagen",
   "Could not load Google sign-in. You can still sign in with your username and password.": "Die Google-Anmeldung konnte nicht geladen werden. Du kannst dich weiterhin mit Benutzername und Passwort anmelden.",
   "Could not reset password.": "Das Passwort konnte nicht zurückgesetzt werden.",
   "Could not send reset code.": "Der Code zum Zurücksetzen konnte nicht gesendet werden.",

@@ -74,6 +74,7 @@ export default {
   "Copy": "Copier",
   "Copyright": "Droits d'auteur",
   "Cosmetic shop (core free)": "Boutique cosmétique (base gratuite)",
+  "Could not copy to clipboard": "Impossible de copier dans le presse-papiers",
   "Could not load Google sign-in. You can still sign in with your username and password.": "Impossible de charger la connexion Google. Tu peux toujours te connecter avec ton nom d'utilisateur et ton mot de passe.",
   "Could not reset password.": "Impossible de réinitialiser le mot de passe.",
   "Could not send reset code.": "Impossible d'envoyer le code de réinitialisation.",

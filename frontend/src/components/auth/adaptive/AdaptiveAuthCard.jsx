@@ -54,7 +54,9 @@ function errText(err, t, fallback) {
 }
 
 function isOfflineError(err) {
-  return err?.code === "transient" || err?.status === 0 || (typeof navigator !== "undefined" && navigator.onLine === false);
+  // A network failure (no status). A 502 / 503 from a busy server is not "offline": the
+  // caller falls back to the sign-up card.
+  return (err?.code === "transient" && !err?.status) || (typeof navigator !== "undefined" && navigator.onLine === false);
 }
 
 /** "Very strong · 14 characters" for the meter under the password. */
@@ -250,12 +252,13 @@ export default function AdaptiveAuthCard({
         goRegister(email, { closed: Boolean(r?.registrationClosed) });
       }
     } catch (err) {
-      if (err?.status === 429 || err?.status === 403 || err?.status === 400) {
+      if (err?.status === 403 || err?.status === 400) {
         setStartError(errText(err, t, "Something went wrong"));
       } else if (isOfflineError(err)) {
         setStartError(t("No connection. Try again when you are back online."));
       } else {
-        // The lookup failed: the sign-up card still works, a taken email routes on submit.
+        // The lookup failed or is rate limited (a shared carrier address): the sign-up card
+        // still works, and a taken email turns into sign-in on submit (409 email_taken).
         goRegister(email);
       }
     } finally {

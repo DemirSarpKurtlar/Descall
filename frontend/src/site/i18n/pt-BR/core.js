@@ -74,6 +74,7 @@ export default {
   "Copy": "Copiar",
   "Copyright": "Direitos autorais",
   "Cosmetic shop (core free)": "Loja cosmética (o essencial é grátis)",
+  "Could not copy to clipboard": "Não foi possível copiar para a área de transferência",
   "Could not load Google sign-in. You can still sign in with your username and password.": "Não foi possível carregar o login do Google. Você ainda pode entrar com seu nome de usuário e senha.",
   "Could not reset password.": "Não foi possível redefinir a senha.",
   "Could not send reset code.": "Não foi possível enviar o código de redefinição.",

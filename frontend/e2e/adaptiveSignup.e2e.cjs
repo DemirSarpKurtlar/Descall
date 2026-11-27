@@ -116,6 +116,7 @@ async function main() {
       if (/\/auth\/identify$/.test(p)) {
         const body = JSON.parse(req.postData() || '{}');
         identifies.push(body);
+        if (body.email === 'busy@example.com') return json(503, { error: 'Service unavailable' });
         return json(200, body.email === REGISTERED ? { status: 'registered', emailHint: 'e***@outlook.com' } : { status: 'new' });
       }
       const range = p.match(/\/auth\/password\/range\/([0-9A-Fa-f]{5})$/);
@@ -273,6 +274,12 @@ async function main() {
       await page.goto(`${base}/login?gd=1`, { waitUntil: 'load' });
       await page.locator('.asu-card').waitFor({ timeout: 20000 });
       await page.locator('.asu-side .asu-snip').first().waitFor({ timeout: 10000 }).catch(() => {});
+      // A busy server on the lookup: the sign-up card still opens (no dead end).
+      await page.fill('#asu-identifier', 'busy@example.com');
+      await page.click('button[type=submit]:has-text("Devam")');
+      await page.locator('.asu-card[data-step="register"]').waitFor({ timeout: 15000 }).catch(() => fails.push('login: a failed lookup does not fall back to the sign-up card'));
+      await page.click('.asu-idrow .asu-ed');
+      await page.locator('.asu-card[data-step="start"]').waitFor({ timeout: 5000 });
       await page.fill('#asu-identifier', REGISTERED);
       await page.click('button[type=submit]:has-text("Devam")');
       await page.locator('.asu-card[data-step="login"]').waitFor({ timeout: 10000 });

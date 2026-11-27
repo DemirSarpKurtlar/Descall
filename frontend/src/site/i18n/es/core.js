@@ -74,6 +74,7 @@ export default {
   "Copy": "Copiar",
   "Copyright": "Derechos de autor",
   "Cosmetic shop (core free)": "Tienda cosmética (lo básico es gratis)",
+  "Could not copy to clipboard": "No se pudo copiar al portapapeles",
   "Could not load Google sign-in. You can still sign in with your username and password.": "No se pudo cargar el inicio de sesión con Google. Aún puedes iniciar sesión con tu nombre de usuario y contraseña.",
   "Could not reset password.": "No se pudo restablecer la contraseña.",
   "Could not send reset code.": "No se pudo enviar el código de restablecimiento.",
