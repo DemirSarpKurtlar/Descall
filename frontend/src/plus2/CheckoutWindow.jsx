@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useT } from "../context/LocaleContext";
 import { Check, Gift, Loader2, ShieldCheck, Users, Sparkles, ExternalLink, Calendar } from "../components/ui/Icon.jsx";
 import { formatDate } from "../i18n/format.js";
+import GlassCheckbox from "../components/ui/GlassCheckbox.jsx";
 import { PAvatar, PlusWindow, Switch, ErrorLine } from "./ui.jsx";
 import { usePlus, refreshHub } from "./plusStore.js";
 import { createCheckout, getCheckout } from "./plusApi.js";
@@ -275,7 +276,7 @@ export default function CheckoutWindow({ initialTab = "self", initialPlan = "plu
         ) : null}
 
         {needsAgreement && !session ? (
-          <label className="p2-check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span>{t("plus2.ck.agree")}</span></label>
+          <label className="p2-check"><GlassCheckbox checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span>{t("plus2.ck.agree")}</span></label>
         ) : null}
 
         <ErrorLine code={err} />

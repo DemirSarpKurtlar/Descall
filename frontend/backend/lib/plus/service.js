@@ -253,7 +253,7 @@ async function moveBoost(userId, boostId, toServerId) {
   if (from?.owner_id && from.owner_id !== userId) {
     notify.toUser(from.owner_id, { kind: "boost_leaving", serverId: from.id, serverName: from.name, at: res.boost.move_at });
   }
-  notify.audit(userId, "plus_boost_move", boostId, { from: res.boost.server_id, to: toServerId, at: res.boost.move_at });
+  notify.audit(userId, "premium_plus_boost_move", boostId, { from: res.boost.server_id, to: toServerId, at: res.boost.move_at });
   return { boost: boostView(res.boost, cfg) };
 }
 
@@ -508,7 +508,7 @@ async function recallGift(userId, giftId) {
     .eq("id", giftId).in("status", ["scheduled", "delivered"]).is("opened_at", null).select("*").maybeSingle();
   if (!done) fail("gift_not_recallable");
   if (g.status === "delivered") notify.toUser(g.recipient_id, { kind: "gift_recalled", giftId });
-  notify.audit(userId, "plus_gift_recall", giftId, { status: g.status });
+  notify.audit(userId, "premium_plus_gift_recall", giftId, { status: g.status });
   // The money: a recalled gift becomes a refund request the team approves through the provider.
   if (g.amount_minor) {
     await db().from("premium_refund_requests").insert({ user_id: userId, amount_minor: g.amount_minor, currency: g.currency, reason: "gift_recalled" });

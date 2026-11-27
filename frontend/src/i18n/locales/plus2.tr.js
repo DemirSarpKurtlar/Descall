@@ -217,7 +217,7 @@ export const PLUS2_TR = {
     "payTrial": "{days} gün ücretsiz başla",
     "payApple": "App Store ile öde",
     "payAmount": "{amount} öde",
-    "waiting": "Ödeme bekleniyor...",
+    "waiting": "Ödeme bekleniyor…",
     "foot": "Ödeme {provider} güvencesinde · e-Arşiv fatura e-postana gelir",
     "footApple": "Satın alma Apple tarafından işlenir. Aboneliği App Store ayarlarından yönetebilirsin.",
     "storeMissing": "Bu sürümde App Store satın alma desteği yok; uygulamayı güncelle."
@@ -483,7 +483,7 @@ export const PLUS2_TR = {
     "origin": { "admin": "Yönetici", "campaign": "Kampanya", "web": "Web", "store": "Mağaza", "gift": "Hediye", "trial": "Deneme", "ticket": "Bilet", "payment": "Ödeme" },
     "extend": "Süre ekle",
     "boostFix": "Takviye düzelt",
-    "refund": "İade et...",
+    "refund": "İade et…",
     "days": "Gün",
     "boost": "Takviye",
     "action": "İşlem",

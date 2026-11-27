@@ -171,7 +171,7 @@ function PersonDetail({ id, t, locale, onChanged }) {
       </div>
 
       <div className="p2-card" style={{ padding: 12 }}>
-        <div className="p2-row"><b style={{ fontSize: 13.5 }} className="p2-grow">{t("plus2.admin.timeline")}</b><button type="button" className="p2-btn is-sm is-ghost" onClick={reload}><RefreshCw /></button></div>
+        <div className="p2-row"><b style={{ fontSize: 13.5 }} className="p2-grow">{t("plus2.admin.timeline")}</b><button type="button" className="p2-btn is-sm is-ghost" onClick={reload} aria-label={t("plus2.admin.refresh")} title={t("plus2.admin.refresh")}><RefreshCw /></button></div>
         {(data.timeline || []).length === 0 ? <div className="p2-small p2-muted">{t("plus2.admin.none")}</div> : (
           <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             {data.timeline.slice(0, 30).map((ev, i) => (

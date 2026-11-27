@@ -10,7 +10,7 @@ const crypto = require("crypto");
 const { keyFor } = require("./products");
 
 function status(env = process.env) {
-  const missing = ["REVENUECAT_WEBHOOK_AUTH"].filter((k) => !env[k]);
+  const missing = env.REVENUECAT_WEBHOOK_AUTH ? [] : ["REVENUECAT_WEBHOOK_AUTH"];
   return { id: "revenuecat", configured: missing.length === 0, missing, webhook: "/api/plus/webhooks/revenuecat" };
 }
 
