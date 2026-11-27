@@ -611,6 +611,11 @@ app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
 // Everything is off until REENGAGE_ENABLED=1 (or REENGAGE_DRY_RUN=1 to only log).
 app.use("/api/reengage", require("./routes/reengage"));
+// Growth 3B "Önce insanlar": notification center, shared streaks + tasks, friend win-back.
+app.use("/api/notify-center", require("./routes/notifyCenter"));
+app.use("/api/streaks", require("./routes/streaks"));
+app.use("/api/winback", require("./routes/winback"));
+require("./lib/reengage/io").setIo(app.get("io"));
 if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.

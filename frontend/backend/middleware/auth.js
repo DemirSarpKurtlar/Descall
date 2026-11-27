@@ -112,6 +112,8 @@ async function requireAuth(req, res, next) {
     };
     touchLastSeen(req.user.id).catch(() => {});
     recordActiveDay(req.user.id).catch(() => {});
+    // Growth 3B: best send hour, 48 h return tracking, friend-call reward (lib/reengage/hooks.js).
+    require("../lib/reengage/hooks").onRequest(req.user.id);
     if (childCheckExempt(req)) return next();
     ageGate.enforceChildClosure(req.user.id).then((block) => {
       if (!block) return next();

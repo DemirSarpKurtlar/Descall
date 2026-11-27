@@ -84,6 +84,8 @@ router.use(require("./adminServerReview"));
 // Oyunlar / Kredi (section casino): player workspace, ledger, hand history, limits, statistics.
 router.use(require("./adminCasino"));
 router.use(require("./adminGrowth"));
+// Growth 3B "Yeniden kazanma" console (section "retention").
+router.use(require("./adminReengage"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));

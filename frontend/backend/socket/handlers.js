@@ -1599,6 +1599,9 @@ function registerSocketHandlers(io) {
         }
       }
 
+      // Growth 3B: shared streak, today's tasks, return tracking (lib/reengage/hooks.js).
+      require("../lib/reengage/hooks").onDm(myId, toUserId);
+
       // Wake backgrounded clients (web push + FCM) when the recipient isn't
       // looking at this DM. Mentions get a distinct payload for notification UX.
       if (recipientActivePeer !== myId) {
