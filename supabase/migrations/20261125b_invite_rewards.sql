@@ -188,7 +188,15 @@ BEGIN
   IF position('referral_milestone' IN def) > 0 AND position('referral_revoke' IN def) > 0 THEN
     RETURN;
   END IF;
-  SELECT array_agg(DISTINCT m[1]) INTO reasons FROM regexp_matches(def, '''([a-z_]+)''', 'g') AS m;
+  -- Both stored forms: '{a,b}'::text[] (format(%L) rebuilds) and 'a'::text quoted words (older).
+  -- Reading only the quoted words left ANY (NULL::text[]) on the literal form, a CHECK that
+  -- blocks nothing. 20261125f rebuilds the full superset afterwards either way.
+  IF (regexp_match(def, '''\{([^}]*)\}'''))[1] IS NOT NULL THEN
+    reasons := string_to_array(replace((regexp_match(def, '''\{([^}]*)\}'''))[1], '"', ''), ',');
+  ELSE
+    SELECT array_agg(DISTINCT m[1]) INTO reasons FROM regexp_matches(def, '''([a-z_]+)''', 'g') AS m;
+  END IF;
+  reasons := coalesce(reasons, ARRAY[]::text[]);
   IF NOT ('referral_milestone' = ANY (reasons)) THEN reasons := array_append(reasons, 'referral_milestone'); END IF;
   IF NOT ('referral_revoke' = ANY (reasons)) THEN reasons := array_append(reasons, 'referral_revoke'); END IF;
   ALTER TABLE public.descoin_ledger DROP CONSTRAINT descoin_ledger_reason_check;
