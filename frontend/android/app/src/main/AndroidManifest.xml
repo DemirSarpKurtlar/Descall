@@ -84,6 +84,41 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- 4.3 "Paylaş > Descall": share target (any app's share sheet and Direct Share, the
+             <share-target> in res/xml/shortcuts.xml). Hosts the web share sheet (/share); the
+             send runs in share/ShareWorker (WorkManager), so closing the sheet never stops it. -->
+        <activity
+            android:name=".DescallShareActivity"
+            android:exported="true"
+            android:label="@string/share_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale|fontWeightAdjustment"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/*" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/*" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Share notification buttons: Durdur, Gizle, Geri al, Tekrar dene, Gönder (draft). -->
+        <receiver
+            android:name=".share.ShareActionReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

@@ -89,6 +89,13 @@ jobs:
           set -euo pipefail
           swiftc -o "$RUNNER_TEMP/kit" App/DescallKit/*.swift selftest/kit/main.swift
           "$RUNNER_TEMP/kit"
+      - name: Share extension logic selftest (Swift, sheet rules / send job / strings)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/share" App/DescallShare/ShareLogic.swift App/DescallShare/ShareText.swift App/DescallShare/ShareStrings.swift selftest/share/main.swift
+          "$RUNNER_TEMP/share"
+
       - name: Widgets logic selftest (Swift, favourites / refresh / Live Activity state)
         working-directory: frontend/ios
         run: |
@@ -185,6 +192,17 @@ jobs:
             ls "$BAPPEX/Frameworks"
           fi
           echo "Broadcast extension: $(du -sh "$BAPPEX" | cut -f1), app Frameworks: $(ls "$APP/Frameworks" | tr '\n' ' ')"
+          # 4.3 "Paylaş > Descall": share extension (SwiftUI sheet, Siri share suggestions).
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          test -d "$SAPPEX" || { echo "::error::DescallShare.appex not embedded"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$SAPPEX/Info.plist")" = "com.descall.app.share"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$SAPPEX/Info.plist")" = "com.apple.share-services"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:IntentsSupported' "$SAPPEX/Info.plist" | grep -q INSendMessageIntent
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SAPPEX/Info.plist")" = "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")"
+          grep -q 'com.descall.shared' DescallShare/DescallShare.entitlements
+          grep -q 'group.com.descall.app' DescallShare/DescallShare.entitlements
+          if [ -d "$SAPPEX/Frameworks" ]; then echo "::error::DescallShare.appex carries its own Frameworks folder"; ls "$SAPPEX/Frameworks"; exit 1; fi
+          echo "Share extension: $(du -sh "$SAPPEX" | cut -f1)"
           # Widgets draft B: WidgetKit extension (widgets + Live Activity), strings in every language.
           WAPPEX="$APP/PlugIns/DescallWidgets.appex"
           test -d "$WAPPEX" || { echo "::error::DescallWidgets.appex not embedded"; exit 1; }

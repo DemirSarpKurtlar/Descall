@@ -47,7 +47,7 @@ assert.ok(group.includes("const replyMeta = forwardedReplyMeta(forwarded) || awa
 assert.ok(group.includes(".insert(replyMeta ? { ...baseRow, reply_to: replyMeta } : baseRow)"), "group reply_to is stored");
 assert.ok(/isMissingColumn\(error, "reply_to"\)\) \{[\s\S]{0,260}\.insert\(baseRow\)/.test(group), "group send retries without reply_to before the migration");
 const channel = read("socket/serverChannelHandlers.js");
-assert.ok(/async \(\{[^}]*\breplyTo, forwarded, poll: pollInput \} = \{\}\) =>/.test(channel), "server:channel:message reads forwarded");
+assert.ok(/async \(\{[^}]*\breplyTo, forwarded, poll: pollInput(?:, silent)? \} = \{\}\) =>/.test(channel), "server:channel:message reads forwarded");
 assert.ok(channel.includes("const replyMeta = forwardedReplyMeta(forwarded) || await resolveServerReplyMeta(replyTo, channelId);"));
 const groups = read("routes/groups.js");
 assert.ok(groups.includes("messages = await withGroupReplyMeta(messages);"), "group history merges reply_to");

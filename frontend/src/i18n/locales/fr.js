@@ -20,6 +20,7 @@ import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
+import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
 import { VSC_FR } from "./vsc.fr.js";
 import { LX_FR } from "./lx.fr.js";
 import { USET_FR } from "./uset.fr.js";
@@ -76,6 +77,7 @@ export const nested = {
   "pubpage": PUBPAGE_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
+  "shareSheet": SHARE_SHEET_FR,
   "vsc": VSC_FR,
   "lx": LX_FR,
   "uset": USET_FR,

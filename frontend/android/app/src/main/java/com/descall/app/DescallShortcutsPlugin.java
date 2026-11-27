@@ -202,6 +202,8 @@ public class DescallShortcutsPlugin extends Plugin {
           infos.add(buildInfo(ctx, list.get(i), openChat, i));
         }
         ShortcutManagerCompat.setDynamicShortcuts(ctx, infos);
+        // 4.3: the replace above drops the Direct Share groups / channels; put them back.
+        com.descall.app.share.ShareShortcuts.reapply(ctx);
         resolveOnMain(call, null);
       } catch (RuntimeException e) {
         synchronized (lock) {
@@ -262,6 +264,7 @@ public class DescallShortcutsPlugin extends Plugin {
         // nothing published, or the launcher is unavailable
       }
       avatars.evictAll();
+      com.descall.app.share.ShareShortcuts.clear(ctx);
       resolveOnMain(call, null);
     });
   }
@@ -288,6 +291,8 @@ public class DescallShortcutsPlugin extends Plugin {
       .setPerson(person)
       .setLongLived(true)
       .setRank(rank)
+      // 4.3: the same shortcut is a Direct Share target (share sheet first row).
+      .setCategories(com.descall.app.share.ShareShortcuts.categories())
       .build();
   }
 

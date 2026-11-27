@@ -6,6 +6,17 @@
      live call keeps going). Recent DMs are dynamic shortcuts (DescallShortcutsPlugin.java). -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 4.3 Direct Share: recent chats (share/ShareShortcuts.java, DM shortcuts of
+         DescallShortcutsPlugin) show in the Android share sheet's first row and open
+         DescallShareActivity with that chat picked. -->
+    <share-target android:targetClass="com.descall.app.DescallShareActivity">
+        <data android:mimeType="image/*" />
+        <data android:mimeType="video/*" />
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="application/*" />
+        <category android:name="com.descall.app.category.SHARE_TARGET" />
+    </share-target>
+
     <capability android:name="actions.intent.OPEN_APP_FEATURE">
         <intent
             android:action="com.descall.app.action.OPEN_FEATURE"

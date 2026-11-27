@@ -586,6 +586,9 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 // 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
 app.use("/api/watch", require("./routes/watch"));
+// 4.3: "Paylaş > Descall" share sheet (iOS extension, Android / web share target), routes/share.js.
+// Before /api/native so that router's limiter and 404 never see these paths.
+app.use("/api/native/share", require("./routes/share"));
 // 4.2: Siri / Shortcuts / widgets / Android shortcuts glance data, routes/native.js.
 app.use("/api/native", require("./routes/native"));
 app.use("/dm", dmPrefsRoutes);

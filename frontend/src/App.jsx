@@ -2450,7 +2450,8 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith)) {
+          // "Sessiz gönder" (share sheet): unread, but no sound and no notification.
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith) && !message?.silent) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || t("Someone"),
@@ -2671,6 +2672,8 @@ export default function App() {
       if (!isFromMe && isBlockedByMe(normalized.from?.id)) return;
       if (!isFromMe && !isActiveGroup) {
         setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
+        // "Sessiz gönder" (share sheet): counted as unread, no sound, no notification.
+        if (message?.silent) return;
         if (allowNotify("group", groupId)) playUiSound("message");
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
@@ -2688,6 +2691,7 @@ export default function App() {
           pendingGroupReadRef.current = groupId;
           setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
         }
+        if (message?.silent) return;
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),

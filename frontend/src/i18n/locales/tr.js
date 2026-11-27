@@ -16,6 +16,7 @@ import { DIR_TR } from "./dir.tr.js";
 import { PUBPAGE_TR } from "./pubpage.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { SHARE_SHEET_TR } from "./shareSheet.tr.js";
 import { VSC_TR } from "./vsc.tr.js";
 import { LX_TR } from "./lx.tr.js";
 import { USET_TR } from "./uset.tr.js";
@@ -105,6 +106,7 @@ export const nested = {
   pubpage: PUBPAGE_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
+  shareSheet: SHARE_SHEET_TR,
   vsc: VSC_TR,
   lx: LX_TR,
   uset: USET_TR,

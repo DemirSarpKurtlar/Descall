@@ -20,6 +20,7 @@ import { DIR_ES, DIR_API_ES } from "./dir.es.js";
 import { PUBPAGE_ES } from "./pubpage.es.js";
 import { BAN_ES } from "./ban.es.js";
 import { IOS_SHARE_ES } from "./iosShare.es.js";
+import { SHARE_SHEET_ES } from "./shareSheet.es.js";
 import { VSC_ES } from "./vsc.es.js";
 import { LX_ES } from "./lx.es.js";
 import { USET_ES } from "./uset.es.js";
@@ -76,6 +77,7 @@ export const nested = {
   "pubpage": PUBPAGE_ES,
   "ban": BAN_ES,
   "iosShare": IOS_SHARE_ES,
+  "shareSheet": SHARE_SHEET_ES,
   "vsc": VSC_ES,
   "lx": LX_ES,
   "uset": USET_ES,

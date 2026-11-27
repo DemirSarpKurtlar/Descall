@@ -16,6 +16,7 @@ import { DIR_EN } from "./dir.en.js";
 import { PUBPAGE_EN } from "./pubpage.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
+import { SHARE_SHEET_EN } from "./shareSheet.en.js";
 import { VSC_EN } from "./vsc.en.js";
 import { LX_EN } from "./lx.en.js";
 import { USET_EN } from "./uset.en.js";
@@ -95,6 +96,7 @@ export const nested = {
   pubpage: PUBPAGE_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
+  shareSheet: SHARE_SHEET_EN,
   vsc: VSC_EN,
   lx: LX_EN,
   uset: USET_EN,

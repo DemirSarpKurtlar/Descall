@@ -74,6 +74,7 @@ function toItem(row) {
     content: attachment ? String(row.content || "").trim() : row.content,
     attachment,
     sendAt: row.send_at,
+    silent: row.silent === true,
     status: row.status,
     error: row.error || null,
     createdAt: row.created_at || null,
@@ -247,11 +248,16 @@ function createScheduledMessages(deps = {}) {
     const media = attachment
       ? { media_ref: attachment.ref, media_type: attachment.mediaType, mime_type: attachment.mimeType, file_size: attachment.size, original_name: attachment.originalName }
       : {};
-    const { data, error } = await db
+    // "Sessiz gönder" from the share sheet (20261124s migration): the row goes out without
+    // a push. Before that migration the column is missing and the row is stored without it.
+    const silent = body.silent === true ? { silent: true } : {};
+    const insertRow = (extra) => db
       .from("scheduled_messages")
-      .insert({ user_id: userId, conv_type: convType, conv_id: convId, content, send_at: sendAt, status: "pending", created_at: stamp, updated_at: stamp, ...media })
+      .insert({ user_id: userId, conv_type: convType, conv_id: convId, content, send_at: sendAt, status: "pending", created_at: stamp, updated_at: stamp, ...media, ...extra })
       .select("*")
       .single();
+    let { data, error } = await insertRow(silent);
+    if (error && silent.silent && isMissingColumn(error, "silent")) ({ data, error } = await insertRow({}));
     if (error && attachment && isMissingColumn(error, "media_ref")) throw new ScheduleError(503, "attach_not_ready");
     if (error || !data) throw fail(error);
     return toItem(data);
@@ -337,6 +343,7 @@ function createScheduledMessages(deps = {}) {
           text: media ? String(claimed.content || "").trim() : claimed.content,
           markRead: false,
           ...(media ? { media } : {}),
+          ...(claimed.silent === true ? { silent: true } : {}),
         });
         const done = { status: "sent", sent_at: new Date(now()).toISOString(), updated_at: new Date(now()).toISOString(), message_id: out?.messageId ? String(out.messageId) : null, error: null };
         const { data } = await db.from("scheduled_messages").update(done).eq("id", claimed.id).select("*").maybeSingle();

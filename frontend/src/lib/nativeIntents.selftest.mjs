@@ -307,7 +307,9 @@ const read = (rel) => readFileSync(join(front, rel), "utf8");
   for (const m of xml.matchAll(/android:action="(com\.descall\.app\.action\.[A-Z_]+)"/g)) {
     assert.ok(activity.includes(`"${m[1]}"`), `${m[1]} handled by the trampoline`);
   }
-  for (const m of xml.matchAll(/android:targetClass="([^"]+)"/g)) assert.equal(m[1], "com.descall.app.DescallShortcutActivity");
+  // Launcher shortcuts go through the trampoline; the Direct Share <share-target> (4.3) opens the share sheet.
+  for (const m of xml.matchAll(/<intent\b[^>]*android:targetClass="([^"]+)"/g)) assert.equal(m[1], "com.descall.app.DescallShortcutActivity");
+  assert.match(xml, /<share-target android:targetClass="com\.descall\.app\.DescallShareActivity">/);
   for (const m of xml.matchAll(/android:targetPackage="([^"]+)"/g)) assert.equal(m[1], "com.descall.app");
   assert.match(xml, /actions\.intent\.OPEN_APP_FEATURE/, "App Actions capability (shortcuts.xml, not actions.xml)");
   assert.ok(!existsSync(join(front, "android/app/src/main/res/xml/actions.xml")), "no deprecated actions.xml");
