@@ -7,6 +7,7 @@
  * Public, no auth, rate limited per IP:
  *   GET  /s/:slug                 page data for the edge worker (404 while the page is off)
  *   POST /s/:slug/hit             page counters: { type: view|join_click, ref, src }
+ *   GET  /live                    live snippets around the sign-up card (growth 1B), 30 s cache
  *   GET  /sitemap-servers.xml     every shown page (served at descall.com/sitemap-servers.xml)
  *   GET  /og/s/:slug.png          1200x630 server card (vanity link)
  *   GET  /og/invite/:code.png     1200x630 server card (server invite) or the invalid card
@@ -36,6 +37,7 @@ const { createSingleflight } = require("../lib/singleflight");
 const pp = require("../lib/serverPublicPage");
 const og = require("../lib/publicPageOg");
 const { getPublicPageStats } = require("../lib/publicPageStatsInstance");
+const adaptive = require("../lib/adaptiveSignup");
 
 const READ_LIMIT = { windowMs: 60 * 1000, max: 120 };
 const HIT_LIMIT = { windowMs: 10 * 60 * 1000, max: 60 };
@@ -306,6 +308,70 @@ async function shownSlugs() {
     return entries;
   });
 }
+
+// ---------------------------------------------------------------------------
+// Live snippets around the sign-up card (growth 1B "canlı kesitler").
+// Only shown public pages, only what those pages already show (lib/adaptiveSignup.js
+// snippetFromPage): name, icon, counts, the busiest voice channel's name and head count,
+// the next event, the owner's pinned note. Plus three platform aggregates: people online
+// now, sign-ups today, today's top sign-up countries. No names, no messages.
+
+const LIVE_TTL_MS = 30 * 1000;
+const LIVE_SCAN = 40;
+let liveCache = null;
+
+/** Istanbul midnight of today as an ISO instant (Turkey has no DST, UTC+3). */
+function istanbulMidnightIso(now = new Date()) {
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  return new Date(`${day}T00:00:00+03:00`).toISOString();
+}
+
+async function platformPulse() {
+  let online = null;
+  try {
+    online = countVisibleOnline([...livePresence.keys()], livePresence, ioRef);
+  } catch {
+    online = null;
+  }
+  let joinedToday = null;
+  let countries = [];
+  try {
+    const since = istanbulMidnightIso();
+    const { count, error } = await supabase.from("users").select("id", { count: "exact", head: true }).gte("created_at", since);
+    if (!error) joinedToday = count || 0;
+    const { data, error: cErr } = await supabase.from("users").select("signup_country").gte("created_at", since).limit(1000);
+    if (!cErr) countries = adaptive.topCountries(data);
+  } catch {
+    /* counts stay null */
+  }
+  return { online, joinedToday, countries };
+}
+
+async function buildLive() {
+  let servers = [];
+  try {
+    const entries = await shownSlugs();
+    const pages = await Promise.all(entries.slice(0, LIVE_SCAN).map((e) => pageFor(e.slug).catch(() => null)));
+    servers = adaptive.rankSnippets(pages.map((p) => (p?.payload ? adaptive.snippetFromPage(p.payload) : null)));
+  } catch (err) {
+    if (!pp.isMissingSchemaError(err)) console.warn("[public-page] live snippets:", err?.message || err);
+  }
+  return { servers, platform: await platformPulse(), builtAt: new Date().toISOString() };
+}
+
+router.get("/live", async (req, res) => {
+  try {
+    if (limited(req, res, "read", READ_LIMIT)) return;
+    if (!liveCache || Date.now() - liveCache.at >= LIVE_TTL_MS) {
+      const value = await flight.run("live", buildLive);
+      liveCache = { at: Date.now(), value };
+    }
+    publicCache(res, { maxAge: 30, sMaxAge: 30, swr: 60 });
+    return res.json(liveCache.value);
+  } catch (err) {
+    return sendFailure(res, err, "Could not load the page.");
+  }
+});
 
 router.get("/sitemap-servers.xml", async (req, res) => {
   try {

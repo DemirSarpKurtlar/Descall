@@ -45,7 +45,7 @@ function GoogleMark() {
  * onCredential(credentialJwt) is called after successful Google picker.
  * appearance="glass" paints a frosted face and keeps the official button as the hit target.
  */
-function GoogleSignInButtonInner({ onCredential, onUnavailable, hideWhenUnavailable = false, disabled = false, appearance = "standard" }) {
+function GoogleSignInButtonInner({ onCredential, onUnavailable, hideWhenUnavailable = false, disabled = false, appearance = "standard", label = "" }) {
   const t = useT();
   const buttonRef = useRef(null);
   const callbackRef = useRef(onCredential);
@@ -149,7 +149,7 @@ function GoogleSignInButtonInner({ onCredential, onUnavailable, hideWhenUnavaila
       {glass && (
         <div className="google-signin-glass-face" aria-hidden="true">
           <GoogleMark />
-          <span>{t("Continue with Google")}</span>
+          <span>{label || t("Continue with Google")}</span>
         </div>
       )}
       {!glass && status === "loading" && <p className="google-signin-hint">{t("Loading Google…")}</p>}

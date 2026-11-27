@@ -67,7 +67,7 @@ export function usePasskeyAvailability() {
 
 const STYLE_ICON = { face: ScanFace, finger: Fingerprint, hello: WindowsLogo, passkey: Fingerprint };
 
-export default function PasskeySignInButton({ onSignedIn, onError, onUsePassword, disabled = false, className = "", showNote = true }) {
+export default function PasskeySignInButton({ onSignedIn, onError, onUsePassword, disabled = false, className = "", showNote = true, label = "" }) {
   const t = useT();
   const avail = usePasskeyAvailability();
   const [busy, setBusy] = useState(false);
@@ -174,7 +174,7 @@ export default function PasskeySignInButton({ onSignedIn, onError, onUsePassword
     <div className={`pk-signin ${className}`.trim()} data-path={avail.path} data-style={style}>
       <button type="button" className="pk-signin-btn" onClick={() => start()} disabled={disabled || busy} aria-busy={busy || undefined}>
         <Icon size={18} aria-hidden="true" />
-        <span>{t(`passkey.login.button.${style}`)}</span>
+        <span>{label || t(`passkey.login.button.${style}`)}</span>
       </button>
       {showNote && avail.path === "web" ? <p className="pk-signin-note">{t("passkey.login.note")}</p> : null}
       {card && typeof document !== "undefined"

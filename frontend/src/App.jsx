@@ -3416,7 +3416,10 @@ export default function App() {
     }
   };
 
-  const handleRegister = async (payload) => {
+  const handleRegister = async (rawPayload) => {
+    // Uyarlanan kart (growth 1B): beforeCommit(reg) runs once the account exists and before
+    // the app opens (the passkey of a passwordless account, saving the new password).
+    const { beforeCommit, ...payload } = rawPayload || {};
     try {
       setAuthLoading(true);
       setAuthError("");
@@ -3426,6 +3429,16 @@ export default function App() {
         ...payload,
         ...(invitedBy ? { invitedBy } : {}),
       });
+      if (typeof beforeCommit === "function" && reg?.token) {
+        setToken(reg.token);
+        setAuthLoading(false);
+        try {
+          await beforeCommit(reg);
+        } catch {
+          /* the account exists either way */
+        }
+        setAuthLoading(true);
+      }
       if (invitedBy) consumeInviteRef();
       try {
         sessionStorage.setItem("descall:justRegistered", "1");
@@ -3473,6 +3486,7 @@ export default function App() {
       } catch {
         /* analytics optional */
       }
+      if (!payload.password) throw new Error("Registration succeeded but sign-in did not. Please log in.");
       await handleLogin({ username: payload.username, password: payload.password });
     } catch (error) {
       // An access ban on the sign-up answers ACCESS_BANNED: the ban screen (with its

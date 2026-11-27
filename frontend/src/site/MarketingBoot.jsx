@@ -102,11 +102,24 @@ export default function MarketingBoot() {
   );
 
   const onRegister = useCallback(
-    async (payload) => {
+    async (rawPayload) => {
+      // Uyarlanan kart (growth 1B): beforeCommit runs after the account exists, before the
+      // page moves into the app (passkey of a passwordless account, saving the password).
+      const { beforeCommit, ...payload } = rawPayload || {};
       setAuthLoading(true);
       setAuthError("");
       try {
         const res = await apiRegister(payload);
+        if (typeof beforeCommit === "function" && res?.token) {
+          setToken(res.token);
+          setAuthLoading(false);
+          try {
+            await beforeCommit(res);
+          } catch {
+            /* the account exists either way */
+          }
+          setAuthLoading(true);
+        }
         if (!res?.token && payload?.username && payload?.password) {
           const loggedIn = await apiLogin({ username: payload.username, password: payload.password });
           if (loggedIn?.requires2fa || loggedIn?.pendingToken) return loggedIn;

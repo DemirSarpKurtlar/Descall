@@ -3,6 +3,7 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into ru.js phrases.
  */
 export const API_RU = {
+  "Could not check right now.": "Сейчас проверить не удалось.",
   "Complete the security check to continue.": "Пройдите проверку безопасности, чтобы продолжить.",
   "The security check could not be verified. Please try again.": "Не удалось подтвердить проверку безопасности. Повторите попытку.",
   "Appeals are not available yet. Try again later.": "Апелляции пока недоступны. Попробуй позже.",

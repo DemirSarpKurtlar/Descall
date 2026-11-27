@@ -34,6 +34,33 @@ import PasskeySignInButton, { passkeyErrorForParent } from "./passkeys/PasskeySi
 import usePasskeyAutofill, { PASSKEY_AUTOCOMPLETE } from "../hooks/usePasskeyAutofill";
 import { normalizePasskeyError, passkeyErrorKey } from "../lib/passkeys/index.js";
 import { SPRINGS } from "../lib/fluid/springs";
+import { isNativeAndroid } from "../lib/platform";
+import AdaptiveAuthShell from "./auth/adaptive/AdaptiveAuthShell.jsx";
+import AdaptiveAuthCard from "./auth/adaptive/AdaptiveAuthCard.jsx";
+
+/** Phone layout of the sign-up card: the native apps and narrow windows. */
+function usePhoneLayout(native) {
+  const query = "(max-width: 699px)";
+  const [narrow, setNarrow] = useState(() => {
+    try {
+      return window.matchMedia(query).matches;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    let mq = null;
+    try {
+      mq = window.matchMedia(query);
+    } catch {
+      return undefined;
+    }
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  return native || narrow;
+}
 
 export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, onPasskeyLogin, onPasskeyError, loading, error: errorProp }) {
   const t = useT();
@@ -137,7 +164,10 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     const key = passkeyErrorKey(err);
     if (key) setFormError(t(key));
   };
-  usePasskeyAutofill({ enabled: mode === "login" && !twoFa && !socialSignup && Boolean(onPasskeyLogin), onSignedIn: handlePasskeyBody, onError: handlePasskeyError });
+  // The card's first field carries the passkey autofill (Uyarlanan kart, growth 1B).
+  usePasskeyAutofill({ enabled: !twoFa && !socialSignup && mode !== "forgot" && Boolean(onPasskeyLogin), onSignedIn: handlePasskeyBody, onError: handlePasskeyError });
+  const phoneLayout = usePhoneLayout(isNativeApp);
+  const cardSurface = isElectron ? "desktop" : isNativeIOS() ? "ios" : isNativeAndroid() ? "android" : "app";
 
   useEffect(() => {
     if (mode !== "register" && !socialSignup) return;
@@ -592,6 +622,72 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       )}
     </>
   );
+
+  // Uyarlanan kart (growth 1B): sign-in and sign-up are one adaptive card. The two-factor
+  // step and the Apple / Google "finish your account" step keep their own screens below.
+  if (!twoFa && !socialSignup) {
+    const startGoogle = async (credential) => {
+      const invitedBy = inviteRef || peekInviteRef();
+      try {
+        const res = await onGoogleLogin?.(credential, invitedBy ? { invitedBy } : {});
+        openTwoFa(res);
+      } catch (err) {
+        if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
+      }
+    };
+    const startApple = async (apple) => {
+      const invitedBy = inviteRef || peekInviteRef();
+      try {
+        const res = await onAppleLogin?.(apple, invitedBy ? { invitedBy } : {});
+        openTwoFa(res);
+      } catch (err) {
+        if (isSocialSignupRequired(err)) {
+          const fromName = usernameFromName([apple?.givenName, apple?.familyName].filter(Boolean).join(""));
+          setSocialSignup({ provider: "apple", credential: apple, suggestedUsername: err?.body?.suggestedUsername || fromName || "" });
+        }
+      }
+    };
+    return (
+      <>
+        <AdaptiveAuthShell
+          phone={phoneLayout}
+          desktopShell={isElectron}
+          onOpenLegal={setLegalModal}
+          renderCard={({ onStepChange, compact }) => (
+            <AdaptiveAuthCard
+              intent={mode === "register" ? "register" : "login"}
+              surface={cardSurface}
+              compact={compact}
+              onLogin={onLogin}
+              onRegister={async (payload) => {
+                const invitedBy = inviteRef || peekInviteRef();
+                await onRegister({ ...payload, ...(invitedBy ? { invitedBy } : {}) });
+              }}
+              onGoogle={onGoogleLogin ? startGoogle : null}
+              onApple={onAppleLogin ? startApple : null}
+              onPasskeyLogin={onPasskeyLogin ? (body) => handlePasskeyBody(body) : null}
+              onPasskeyError={(err) => (passkeyErrorForParent(err) ? onPasskeyError?.(normalizePasskeyError(err).cause || err) : handlePasskeyError(err))}
+              onTwoFa={openTwoFa}
+              loading={loading}
+              error={error || formError}
+              onDismissError={() => {
+                setErrorDismissed(true);
+                setFormError("");
+              }}
+              inviteRef={inviteRef}
+              onOpenLegal={setLegalModal}
+              onStepChange={onStepChange}
+              onRegisterIntent={() =>
+                Funnel.registerStart({ mode: "register", source: "native_auth", has_invite: Boolean(inviteRef) })
+              }
+            />
+          )}
+        />
+        <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
+        <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
+      </>
+    );
+  }
 
   if (glass) {
     return (
