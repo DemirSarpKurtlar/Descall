@@ -23,9 +23,16 @@ func testPong() {
             let dt = 1.0 / 60.0
             var frames = 0
             var hitsAI = 0, hitsPlayer = 0
-            while !s.over && frames < 60 * 600 {
-                // A wobbly player who follows the ball with noise.
-                s.setPlayer(fraction: GameMath.clamp((s.ballX - PongState.minX) / (PongState.maxX - PongState.minX) + rng.range(-0.25, 0.25), 0, 1))
+            var playerError = 0.0
+            var incoming = false
+            // A match is first to eleven with long rallies at the harder levels: allow an hour of play.
+            while !s.over && frames < 60 * 3600 {
+                // A human-like player: follows the ball, but with one aim error per incoming
+                // ball (drawn when the ball turns towards the player), so some balls are missed.
+                // A fresh error every frame averaged out and the rallies never ended.
+                if s.vy < 0 && !incoming { playerError = rng.range(-0.3, 0.3) }
+                incoming = s.vy < 0
+                s.setPlayer(fraction: GameMath.clamp((s.ballX - PongState.minX) / (PongState.maxX - PongState.minX) + playerError, 0, 1))
                 let beforeX = s.aiX
                 let events = s.step(dt)
                 frames += 1
@@ -49,7 +56,7 @@ func testPong() {
                 sinceRetarget += dt
             }
             check(s.over, "\(level) seed \(seed): the match ends")
-            check(s.playerScore == PongState.winScore || s.aiScore == PongState.winScore, "first to seven")
+            check(s.playerScore == PongState.winScore || s.aiScore == PongState.winScore, "first to eleven")
             check(hitsAI > 0 && hitsPlayer > 0, "both sides return the ball")
             // Retargets come at most once per reaction window (one frame of slack).
             check(minGap + dt >= level.reaction - 1e-9 || minGap == .infinity, "\(level) reaction delay respected (\(minGap))")
@@ -62,7 +69,8 @@ func testPong() {
         for seed in UInt64(10)...15 {
             var s = PongState(level: level, seed: seed)
             var frames = 0
-            while !s.over && frames < 60 * 600 {
+            // A match is first to eleven with long rallies at the harder levels: allow an hour of play.
+            while !s.over && frames < 60 * 3600 {
                 s.setPlayer(fraction: GameMath.clamp((s.ballX - PongState.minX) / (PongState.maxX - PongState.minX), 0, 1))
                 _ = s.step(1.0 / 60.0)
                 frames += 1

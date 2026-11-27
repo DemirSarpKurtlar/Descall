@@ -58,7 +58,7 @@ func testSudoku() {
     var hints = 0
     while !s.solved && hints < 81 { _ = s.hint(); hints += 1 }
     check(s.solved && s.values == solved, "hints finish the board")
-    eq(s.resultSeconds, max(1, Int(s.elapsed.rounded(.up))) + s.hints * 30, "hint penalty")
+    eq(s.resultSeconds, max(1, Int(s.elapsed.rounded(.up)) + s.hints * 30), "hint penalty")
     var lose = SudokuState(level: .hard, puzzle: known, solution: solved)
     lose.selected = empty
     for d in 1...9 where d != solved[empty] { _ = lose.enter(d) }
