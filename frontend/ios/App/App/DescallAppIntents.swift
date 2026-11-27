@@ -387,7 +387,8 @@ struct DescallWhoIsOnlineIntent: AppIntent {
 // MARK: - Call controls (the running app, through DescallIntentBridge)
 
 @available(iOS 17.0, *)
-enum DescallCallControl {
+/// Named apart from DescallCallControl (WidgetShared), the Live Activity button handler.
+enum DescallSiriCallControl {
     /// Runs mute / deafen / leave in the web app's active call and returns its answer.
     static func run(_ type: String) async throws -> DescallIntentOutcome {
         let bridge = DescallIntentBridge.shared
@@ -407,7 +408,7 @@ struct DescallToggleMuteIntent: AppIntent {
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let outcome = try await DescallCallControl.run("toggleMute")
+        let outcome = try await DescallSiriCallControl.run("toggleMute")
         let muted = (outcome.state["muted"] as? Bool) ?? !DescallIntentBridge.shared.callState.muted
         return .result(dialog: DescallIntentText.dialog(muted ? "dialog.mute.on" : "dialog.mute.off"))
     }
@@ -420,7 +421,7 @@ struct DescallToggleDeafenIntent: AppIntent {
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let outcome = try await DescallCallControl.run("toggleDeafen")
+        let outcome = try await DescallSiriCallControl.run("toggleDeafen")
         let deafened = (outcome.state["deafened"] as? Bool) ?? !DescallIntentBridge.shared.callState.deafened
         return .result(dialog: DescallIntentText.dialog(deafened ? "dialog.deafen.on" : "dialog.deafen.off"))
     }
@@ -434,7 +435,7 @@ struct DescallLeaveCallIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let title = DescallIntentBridge.shared.callState.title
-        _ = try await DescallCallControl.run("leave")
+        _ = try await DescallSiriCallControl.run("leave")
         return .result(dialog: title.isEmpty
             ? DescallIntentText.dialog("dialog.leave.generic")
             : DescallIntentText.dialog("dialog.leave.done", [title]))
