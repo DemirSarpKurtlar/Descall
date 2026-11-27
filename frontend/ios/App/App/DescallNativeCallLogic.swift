@@ -247,8 +247,11 @@ enum DescallNativeCallLogic {
 
     /// Aggregate `call:telemetry` payload for a natively answered call: the
     /// timeline marks plus fixed tags. No ids, names or uuids.
-    static func telemetry(_ t: Timeline, video: Bool, result: String, turn: Bool) -> [String: Any] {
+    static func telemetry(_ t: Timeline, video: Bool, result: String, turn: Bool, remoteIce: Int? = nil, iceReplay: Int? = nil) -> [String: Any] {
         var d = t.dictionary
+        // 27 Nov 2026: caller candidates this phone received (0 = ICE could never connect).
+        if let n = remoteIce { d["remoteIce"] = max(0, n) }
+        if let n = iceReplay, n > 0 { d["iceReplay"] = n }
         d["kind"] = "dm"
         d["direction"] = "incoming"
         d["path"] = "native"
@@ -274,6 +277,18 @@ enum DescallNativeCallLogic {
     static func mediaVerified(sent: Int, received: Int, baseSent: Int, baseReceived: Int) -> Bool {
         sent > baseSent && received > baseReceived
     }
+
+    // MARK: - Late-peer ICE (27 Nov 2026)
+
+    /// Re-send our gathered candidates now? Only after our answer went out,
+    /// while ICE is not up, within a small budget.
+    static func shouldReplayLocalIce(answerSent: Bool, iceConnected: Bool, gathered: Int, replays: Int, maxReplays: Int = 3) -> Bool {
+        answerSent && !iceConnected && gathered > 0 && replays < maxReplays
+    }
+
+    /// Seconds after the answer at which a still-unconnected engine asks the
+    /// caller for its state again (the caller then re-sends its candidates).
+    static let iceNudgeDelays: [TimeInterval] = [5, 12]
 
     /// Offline queue for summaries the native socket could not send (max 10).
     static func appendPending(_ list: [[String: Any]], _ item: [String: Any], max: Int = 10) -> [[String: Any]] {

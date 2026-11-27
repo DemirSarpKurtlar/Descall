@@ -84,6 +84,17 @@ check((tl.dictionary["answerToAudioMs"] as? Int) == 750, "dictionary")
 
 // Telemetry (3.0.0 A0): aggregate tags only, no ids
 let tel = L.telemetry(tl, video: false, result: L.telemetryResult(tl, failure: nil), turn: true)
+// 27 Nov 2026: remote candidate count and local replays ride along.
+let telIce = L.telemetry(tl, video: false, result: "connect-timeout", turn: true, remoteIce: 0, iceReplay: 2)
+check((telIce["remoteIce"] as? Int) == 0, "remoteIce 0 kept (the failure signal)")
+check((telIce["iceReplay"] as? Int) == 2, "iceReplay count")
+check(L.telemetry(tl, video: false, result: "done", turn: true, remoteIce: 5, iceReplay: 0)["iceReplay"] == nil, "no replay key when none")
+check(L.shouldReplayLocalIce(answerSent: true, iceConnected: false, gathered: 3, replays: 0), "replay while checking")
+check(!L.shouldReplayLocalIce(answerSent: false, iceConnected: false, gathered: 3, replays: 0), "not before the answer")
+check(!L.shouldReplayLocalIce(answerSent: true, iceConnected: true, gathered: 3, replays: 0), "not once connected")
+check(!L.shouldReplayLocalIce(answerSent: true, iceConnected: false, gathered: 0, replays: 0), "nothing gathered")
+check(!L.shouldReplayLocalIce(answerSent: true, iceConnected: false, gathered: 3, replays: 3), "budget")
+check(L.iceNudgeDelays.allSatisfy { $0 > 0 && $0 < 30 }, "nudges before the 30 s connect timeout")
 check((tel["path"] as? String) == "native" && (tel["entry"] as? String) == "callkit" && (tel["push"] as? String) == "voip", "telemetry tags")
 check((tel["result"] as? String) == "done" && (tel["callType"] as? String) == "voice" && (tel["turn"] as? Bool) == true, "telemetry result")
 check((tel["answerToAudioMs"] as? Int) == 750 && tel["callerId"] == nil && tel["uuid"] == nil, "telemetry marks, no ids")
