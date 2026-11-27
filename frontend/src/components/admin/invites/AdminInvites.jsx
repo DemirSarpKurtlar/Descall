@@ -17,7 +17,7 @@ import { useToast } from "../../../context/ToastContext";
 import { nameVars, trPossessiveNumber } from "../../../lib/trCase.js";
 import BanDialog from "../BanDialog.jsx";
 import { Brand, Coin, Dc, Ico, PAvatar, Pill, Seg } from "../../invites/ui.jsx";
-import { clockTime, fmtNum, isTr, pctText, relTime } from "../../invites/format.js";
+import { clockTime, fmtNum, isTr, pctLabel, pctText, relTime } from "../../invites/format.js";
 import { bandTone, deltaText, funnelRows, logText, signalRows } from "./invitesAdminModel.js";
 import "../../../styles/invites.css";
 
@@ -176,9 +176,9 @@ export default function AdminInvites({ onOpenUser, socket }) {
 
         <div className="dvt-kpis six">
           <AKpi icon="eye" label={t("dvt.adm.kOpens")} value={fmtNum(k.opens.value, locale)} sub={t("dvt.adm.kOpensSub", { delta: deltaText(k.opens.delta, locale), range: rangeLabel })} up={k.opens.delta > 0} />
-          <AKpi icon="uplus" label={t("dvt.adm.kSignups")} value={fmtNum(k.signups.value, locale)} sub={t("dvt.adm.kSignupsSub", { pct: pctText(k.signups.rate) })} />
-          <AKpi icon="msg" label={t("dvt.adm.kFirst")} value={fmtNum(k.firstMessage.value, locale)} sub={t("dvt.adm.kFirstSub", { pct: pctText(k.firstMessage.rate), base: pctText(k.firstMessage.baseline) })} up />
-          <AKpi icon="check" label={t("dvt.adm.kActive")} value={fmtNum(k.active.value, locale)} sub={t("dvt.adm.kActiveSub", { pct: pctText(k.active.rate) })} up />
+          <AKpi icon="uplus" label={t("dvt.adm.kSignups")} value={fmtNum(k.signups.value, locale)} sub={t("dvt.adm.kSignupsSub", { pct: pctText(k.signups.rate, locale) })} />
+          <AKpi icon="msg" label={t("dvt.adm.kFirst")} value={fmtNum(k.firstMessage.value, locale)} sub={t("dvt.adm.kFirstSub", { pct: pctText(k.firstMessage.rate, locale), base: pctText(k.firstMessage.baseline, locale) })} up />
+          <AKpi icon="check" label={t("dvt.adm.kActive")} value={fmtNum(k.active.value, locale)} sub={t("dvt.adm.kActiveSub", { pct: pctText(k.active.rate, locale) })} up />
           <AKpi coin label={t("dvt.adm.kPaid")} value={fmtNum(k.paid.value, locale)} sub={t("dvt.adm.kPaidSub", { count: k.paid.count, a: k.paid.inviterReward, b: k.paid.inviteeReward })} />
           <AKpi icon="shield" label={t("dvt.adm.kHeld")} value={<>{fmtNum(k.held.value, locale)} <span className="mu4 slash">/ {k.held.inviters}</span></>} sub={t("dvt.adm.kHeldSub", { amount: fmtNum(k.held.protected, locale) })} amb={k.held.value > 0} dn />
         </div>
@@ -239,7 +239,7 @@ export default function AdminInvites({ onOpenUser, socket }) {
                     <span className="num">{fmtNum(r.opens, locale)}</span>
                     <span className="num">{fmtNum(r.signups, locale)}</span>
                     <span className={`num ${r.band === "high" ? "dgt" : "okt"}`}>{fmtNum(r.active, locale)}</span>
-                    <span className={`num ${r.band === "high" ? "dgt" : ""}`}>%{r.returnRate}</span>
+                    <span className={`num ${r.band === "high" ? "dgt" : ""}`}>{pctLabel(r.returnRate, locale)}</span>
                     <span><Pill tone={bandTone(r.band)}>{t(`dvt.adm.band${r.band[0].toUpperCase()}${r.band.slice(1)}`)} {r.risk}</Pill></span>
                   </button>
                 ))}
@@ -382,7 +382,7 @@ function Funnel({ data, t, locale }) {
         <Ico name="filter" />
         {t("dvt.adm.funnel")}
         <small className="mu">{t(`dvt.adm.r${data.range}`)}</small>
-        <span className="r"><Pill>{t("dvt.adm.baseline", { pct: pctText(data.kpis.firstMessage.baseline) })}</Pill></span>
+        <span className="r"><Pill>{t("dvt.adm.baseline", { pct: pctText(data.kpis.firstMessage.baseline, locale) })}</Pill></span>
       </div>
       <div className="dvt-col dvt-funnel">
         {rows.map((r) => (
@@ -390,7 +390,7 @@ function Funnel({ data, t, locale }) {
             <span className="dvt-flabel">{t(`dvt.adm.${r.label}`)}</span>
             <div className="dvt-fbar"><i className={r.tone} style={{ width: `${Math.max(3, Math.round((r.value / max) * 100))}%` }} /></div>
             <span className="num dvt-fval">{fmtNum(r.value, locale)}</span>
-            <small className={`dvt-frate ${r.rateTone}`}>{r.rateKey ? t(`dvt.adm.${r.rateKey}`, { pct: pctText(r.rate), n: r.extra }) : "100%"}</small>
+            <small className={`dvt-frate ${r.rateTone}`}>{r.rateKey ? t(`dvt.adm.${r.rateKey}`, { pct: pctText(r.rate, locale), n: r.extra }) : pctLabel(100, locale)}</small>
           </div>
         ))}
       </div>
@@ -398,21 +398,21 @@ function Funnel({ data, t, locale }) {
         <Ico name="target" />
         <div className="dvt-col sp" style={{ gap: 4 }}>
           <b>{t("dvt.adm.measure")}</b>
-          <MeasureBar label={t("dvt.adm.mShare")} m={m.inviteShare} t={t} />
-          <MeasureBar label={t("dvt.adm.mFirst")} m={m.invitedFirstMessage} t={t} />
+          <MeasureBar label={t("dvt.adm.mShare")} m={m.inviteShare} t={t} locale={locale} />
+          <MeasureBar label={t("dvt.adm.mFirst")} m={m.invitedFirstMessage} t={t} locale={locale} />
         </div>
       </div>
     </section>
   );
 }
 
-function MeasureBar({ label, m, t }) {
+function MeasureBar({ label, m, t, locale }) {
   const v = Number(m.value) || 0;
   return (
     <div className="dvt-col dvt-mbar">
       <div className="dvt-row small">
         <span className="sp">{label}</span>
-        <b>%{pctText(m.value)}</b>
+        <b>{pctLabel(m.value, locale)}</b>
         <small className="mu">{t("dvt.adm.mStartTarget", { s: m.start, t: m.target })}</small>
       </div>
       <div className="dvt-bar ok dvt-mtrack">

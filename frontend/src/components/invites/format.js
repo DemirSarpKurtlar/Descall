@@ -47,10 +47,24 @@ export function fmtNum(n, locale) {
 }
 
 /** Percent number for "%{pct}" / "{pct}%" templates (one decimal only when it matters). */
-export function pctText(v) {
+export function pctText(v, locale) {
   if (v == null || !Number.isFinite(Number(v))) return "–";
   const n = Number(v);
-  return n >= 10 || Number.isInteger(n) ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, "");
+  const digits = n >= 10 || Number.isInteger(n) ? 0 : 1;
+  try {
+    return new Intl.NumberFormat(locale || undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 }).format(digits ? n : Math.round(n));
+  } catch {
+    return digits ? n.toFixed(1) : String(Math.round(n));
+  }
+}
+
+/** "%58" in Turkish, "58%" / "58 %" elsewhere. */
+export function pctLabel(v, locale) {
+  const n = pctText(v, locale);
+  const l = String(locale || "").toLowerCase();
+  if (l.startsWith("tr")) return `%${n}`;
+  if (l.startsWith("de") || l.startsWith("fr") || l.startsWith("es")) return `${n}\u00a0%`;
+  return `${n}%`;
 }
 
 export function channelLabel(ch, t) {

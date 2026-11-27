@@ -508,3 +508,13 @@ button.dvt-tr.top:hover { background: rgba(255, 255, 255, 0.04); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 1200px) { .dvt-adm { grid-template-columns: 1fr; } .dvt-adm-panel { position: static; max-height: none; } .dvt-kpis.six { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .dvt-adm-grid { grid-template-columns: 1fr; } .dvt-kpis.six { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dvt-rgrid { grid-template-columns: 1fr; } }
+
+.dvt-chtxt.wa { color: #6ef29a; }
+.dvt-chtxt.ig { color: #f59bc8; }
+.dvt-chtxt.tt { color: #7fe9f2; }
+.dvt-chtxt.qr, .dvt-chtxt.link { color: #c3cfff; }
+.dvt-chtxt.other { color: var(--dvt-t2); }
+[data-theme="light"] .dvt-chtxt.wa { color: #12793a; }
+[data-theme="light"] .dvt-chtxt.ig { color: #b3245c; }
+[data-theme="light"] .dvt-chtxt.tt { color: #0b7d86; }
+[data-theme="light"] .dvt-chtxt.qr, [data-theme="light"] .dvt-chtxt.link { color: #2f4fd0; }

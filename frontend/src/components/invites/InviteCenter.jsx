@@ -28,7 +28,7 @@ import {
   whatsappShareUrl,
 } from "../../lib/inviteShare.js";
 import { BadgeArt, Brand, Dc, Ico, PAvatar, Pill, Ring, Seg, Spark, StageBar } from "./ui.jsx";
-import { channelLabel, fmtCountdown, fmtNum, pctText, relTime } from "./format.js";
+import { channelLabel, fmtCountdown, fmtNum, pctLabel, pctText, relTime } from "./format.js";
 import InviteLandingView from "./InviteLandingView.jsx";
 
 const CACHE_KEY = "descall:inviteCenter:last";
@@ -57,7 +57,6 @@ function openUrl(url) {
 }
 
 const SHARE_TINT = { wa: "#2DCB66", ig: "#D4366F", tt: "#25C4CE", qr: "#8FA6FF", link: "#8FA6FF", other: "#B5BCD6" };
-const SHARE_TEXT = { wa: "#6EF29A", ig: "#F59BC8", tt: "#7FE9F2", qr: "#C3CFFF", link: "#C3CFFF", other: "var(--dvt-t2)" };
 
 function statusPill(f, t, nowLeft) {
   switch (f.status) {
@@ -539,9 +538,9 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
       {banners}
       <div className="dvt-kpis four">
         <Kpi icon="eye" label={t("dvt.kpi.opened")} value={fmtNum(f.opened, locale)} em={t("dvt.kpi.today", { n: f.openedToday || 0 })} up={(f.openedToday || 0) > 0} series={f.series?.opened} />
-        <Kpi icon="uplus" label={t("dvt.kpi.signedUp")} value={fmtNum(f.signedUp, locale)} em={t("dvt.kpi.ofOpens", { pct: pctText(f.rates?.signup) })} series={f.series?.signedUp} />
-        <Kpi icon="msg" label={t("dvt.kpi.firstMessage")} value={fmtNum(f.firstMessage, locale)} em={t("dvt.kpi.ofSignups", { pct: pctText(f.rates?.firstMessage) })} series={f.series?.firstMessage} />
-        <Kpi icon="check" label={t("dvt.kpi.active")} value={fmtNum(f.active, locale)} em={t("dvt.kpi.reward", { pct: pctText(f.rates?.active) })} up series={f.series?.active} color="#4BE07A" hl />
+        <Kpi icon="uplus" label={t("dvt.kpi.signedUp")} value={fmtNum(f.signedUp, locale)} em={t("dvt.kpi.ofOpens", { pct: pctText(f.rates?.signup, locale) })} series={f.series?.signedUp} />
+        <Kpi icon="msg" label={t("dvt.kpi.firstMessage")} value={fmtNum(f.firstMessage, locale)} em={t("dvt.kpi.ofSignups", { pct: pctText(f.rates?.firstMessage, locale) })} series={f.series?.firstMessage} />
+        <Kpi icon="check" label={t("dvt.kpi.active")} value={fmtNum(f.active, locale)} em={t("dvt.kpi.reward", { pct: pctText(f.rates?.active, locale) })} up series={f.series?.active} color="#4BE07A" hl />
       </div>
       <div className="dvt-mid">
         <section className="dvt-gl dvt-card">
@@ -580,8 +579,8 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
               <span className="sp" />
               {bar.length ? (
                 bar.map((b) => (
-                  <span key={b.channel} style={{ color: SHARE_TEXT[b.channel] }}>
-                    {channelLabel(b.channel, t)} %{b.pct}
+                  <span key={b.channel} className={`dvt-chtxt ${b.channel}`}>
+                    {channelLabel(b.channel, t)} {pctLabel(b.pct, locale)}
                   </span>
                 ))
               ) : (
