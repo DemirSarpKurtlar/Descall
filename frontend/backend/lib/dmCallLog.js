@@ -49,6 +49,66 @@ const RESUME_MAX_AGE_MS = 60_000;
  */
 const ANSWERING_MAX_AGE_MS = 120_000;
 const MAX_BUFFERED_ICE = 64;
+/**
+ * Caller ICE that reaches the server while its call:offer is still being
+ * checked (block list / friendship lookups await the database). The ring
+ * record does not exist yet, so bufferCallerIce used to drop those
+ * candidates. A callee whose app was not running (VoIP wake, call:resume-
+ * pending) then got the offer with NO caller candidates, answered, and ICE
+ * never connected: "Bağlanıyor..." on the caller until the iPhone's 30 s
+ * connect timeout hung up (27 Nov 2026 incident, first call after a deploy:
+ * cold block-list cache + slow database).
+ */
+const EARLY_ICE_MS = 30_000;
+/** pendingKey → { at, list } for offers that arrived but are not tracked yet. */
+const earlyCallerIce = new Map();
+
+/** The `a=ice-ufrag` of an SDP (one per ICE session), or "". */
+function iceUfrag(sdpOrDesc) {
+  const sdp = typeof sdpOrDesc === "string" ? sdpOrDesc : sdpOrDesc && typeof sdpOrDesc.sdp === "string" ? sdpOrDesc.sdp : "";
+  const m = /a=ice-ufrag:([^\s]+)/.exec(sdp);
+  return m ? m[1].slice(0, 64) : "";
+}
+
+/** Keep only candidates of this ICE session (no ufrag on either side = keep). */
+function sameIceSession(candidate, ufrag) {
+  if (!ufrag || !candidate || typeof candidate !== "object") return true;
+  const own = typeof candidate.usernameFragment === "string" ? candidate.usernameFragment : "";
+  if (own) return own === ufrag;
+  const m = /\bufrag\s+([^\s]+)/.exec(String(candidate.candidate || ""));
+  return m ? m[1] === ufrag : true;
+}
+
+function pruneEarlyIce(now = clock.now()) {
+  for (const [key, entry] of earlyCallerIce) {
+    if (now - entry.at > EARLY_ICE_MS) earlyCallerIce.delete(key);
+  }
+}
+
+/**
+ * call:offer arrived from `callerId` (before its async checks). From now its
+ * ICE to `calleeId` is kept until trackOffer takes it or EARLY_ICE_MS passes.
+ */
+function noteOfferStarted(callerId, calleeId) {
+  if (!callerId || !calleeId) return;
+  const now = clock.now();
+  pruneEarlyIce(now);
+  const key = pendingKey(callerId, calleeId);
+  const entry = earlyCallerIce.get(key);
+  if (entry) entry.at = now;
+  else earlyCallerIce.set(key, { at: now, list: [] });
+}
+
+/** An offer from caller → callee is being checked right now (not tracked yet). */
+function hasOfferInFlight(callerId, calleeId) {
+  const entry = earlyCallerIce.get(pendingKey(callerId, calleeId));
+  return Boolean(entry && clock.now() - entry.at <= EARLY_ICE_MS);
+}
+
+/** The offer was refused (blocked / not friends): forget its early ICE. */
+function dropEarlyIce(callerId, calleeId) {
+  earlyCallerIce.delete(pendingKey(callerId, calleeId));
+}
 /** A caller that was suspended (locked iPhone) can fetch the answer this long. */
 const ANSWER_REPLAY_MS = 60_000;
 
@@ -77,6 +137,9 @@ function newCallUuid() {
 function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation = false }) {
   if (!callerId || !calleeId) return { callUuid: "", renegotiation: false };
   const key = pendingKey(callerId, calleeId);
+  // Early ICE (see EARLY_ICE_MS) belongs to this offer, whatever it turns out to be.
+  const early = earlyCallerIce.get(key);
+  earlyCallerIce.delete(key);
   const existing = findPending(callerId, calleeId);
   if (renegotiation && existing && existing.call.status === "active") {
     if (callType === "video") existing.call.callType = "video";
@@ -98,6 +161,17 @@ function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation 
   const reuseUuid =
     prev && prev.callUuid && prev.status === "ringing" && prevAge < RING_UUID_REUSE_MS;
   const callUuid = reuseUuid ? prev.callUuid : newCallUuid();
+  const ufrag = iceUfrag(offer);
+  // A re-sent offer of the same ring (ack retry, caller-resume "unknown")
+  // carries the same SDP: its candidates were trickled once and will not be
+  // sent again, so they must survive. A new peer connection (new ufrag) does
+  // not reuse them.
+  const kept =
+    reuseUuid && Array.isArray(prev.callerIce) && (!ufrag || !prev.offerUfrag || prev.offerUfrag === ufrag)
+      ? prev.callerIce.filter((c) => sameIceSession(c, ufrag))
+      : [];
+  const earlyList = early && clock.now() - early.at <= EARLY_ICE_MS ? early.list.filter((c) => sameIceSession(c, ufrag)) : [];
+  const callerIce = dedupeCandidates([...kept, ...earlyList]).slice(0, MAX_BUFFERED_ICE);
   pendingDmCalls.set(key, {
     callerId,
     calleeId,
@@ -107,9 +181,27 @@ function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation 
     startedAt: null,
     callUuid,
     offer: offer || null,
-    callerIce: [],
+    offerUfrag: ufrag,
+    callerIce,
   });
-  return { callUuid, renegotiation: false };
+  return { callUuid, renegotiation: false, keptIce: kept.length, earlyIce: earlyList.length };
+}
+
+function candidateKey(c) {
+  if (!c || typeof c !== "object") return String(c);
+  return `${c.sdpMid ?? ""}|${c.sdpMLineIndex ?? ""}|${c.candidate ?? ""}`;
+}
+
+function dedupeCandidates(list) {
+  const seen = new Set();
+  const out = [];
+  for (const c of list) {
+    const k = candidateKey(c);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(c);
+  }
+  return out;
 }
 
 /** Pending record for caller → callee (either direction), or null. */
@@ -117,11 +209,34 @@ function getPendingCall(userA, userB) {
   return findPending(userA, userB)?.call || null;
 }
 
-/** Remember caller ICE while ringing so a late (VoIP-woken) callee gets it too. */
+/**
+ * Remember caller ICE while ringing so a late (VoIP-woken) callee gets it too.
+ * Candidates that arrive while the offer is still being checked go to the
+ * early buffer and join the ring in trackOffer.
+ * @returns {"ringing"|"early"|"full"|"ignored"} where the candidate went
+ */
 function bufferCallerIce({ callerId, calleeId, candidate }) {
+  if (!candidate) return "ignored";
+  const key = pendingKey(callerId, calleeId);
+  const call = pendingDmCalls.get(key);
+  if (call && call.status === "ringing") {
+    if (!Array.isArray(call.callerIce)) call.callerIce = [];
+    if (call.callerIce.length >= MAX_BUFFERED_ICE) return "full";
+    call.callerIce.push(candidate);
+    return "ringing";
+  }
+  if (call && call.status === "active") return "ignored";
+  const early = earlyCallerIce.get(key);
+  if (!early || clock.now() - early.at > EARLY_ICE_MS) return "ignored";
+  if (early.list.length >= MAX_BUFFERED_ICE) return "full";
+  early.list.push(candidate);
+  return "early";
+}
+
+/** Caller candidates a VoIP-woken callee would get with the offer right now. */
+function bufferedCallerIceCount(callerId, calleeId) {
   const call = pendingDmCalls.get(pendingKey(callerId, calleeId));
-  if (!call || call.status !== "ringing" || !candidate) return;
-  if (call.callerIce.length < MAX_BUFFERED_ICE) call.callerIce.push(candidate);
+  return call && Array.isArray(call.callerIce) ? call.callerIce.length : 0;
 }
 
 /** Callee ICE right after the answer (same replay purpose as `answer`). */
@@ -291,6 +406,8 @@ async function persistCall(row) {
  * @returns {Promise<object|null>} public call record (without peer join)
  */
 async function finalizeCall(userA, userB, status) {
+  earlyCallerIce.delete(pendingKey(userA, userB));
+  earlyCallerIce.delete(pendingKey(userB, userA));
   const hit = findPending(userA, userB);
   if (!hit) return null;
   pendingDmCalls.delete(hit.key);
@@ -583,6 +700,7 @@ function buildGroupCallHistoryRecord({ callRow, group, meId, joined = true }) {
 function _resetDmCallStateForTests() {
   pendingDmCalls.clear();
   recentlyEndedPairs.clear();
+  earlyCallerIce.clear();
 }
 
 module.exports = {
@@ -591,6 +709,13 @@ module.exports = {
   recentlyEndedPairs,
   _resetDmCallStateForTests,
   trackOffer,
+  noteOfferStarted,
+  hasOfferInFlight,
+  dropEarlyIce,
+  bufferedCallerIceCount,
+  iceUfrag,
+  sameIceSession,
+  EARLY_ICE_MS,
   getPendingCall,
   endedRecently,
   bufferCallerIce,
