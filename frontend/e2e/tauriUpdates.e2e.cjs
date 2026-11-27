@@ -253,6 +253,8 @@ async function main() {
     // in_flight_result), not "up to date".
     await clickEl('.rail-btn[aria-label="Kullanıcı Ayarları"]');
     const desktopRow = page.locator('.s3-row[data-nav="desktop"]');
+    // Settings opens with an animation; on a slow runner count() ran before it rendered.
+    await desktopRow.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     if (await desktopRow.count()) {
       await desktopRow.first().click({ timeout: 10000 });
       await page.evaluate(() => { window.__answers.updates_check = { success: true, available: true, updateInfo: { version: '4.2.0' }, updateReady: false, updateVersion: null }; });
@@ -262,6 +264,8 @@ async function main() {
       const paneText = await page.evaluate(() => document.querySelector('.s3-desktop-update').innerText);
       check(!/güncel/i.test(paneText.split('\n').slice(0, 4).join(' ')) || /indiriliyor/i.test(paneText), `Check during a download does not read up to date (${paneText.replace(/\s+/g, ' ').slice(0, 120)})`);
       await page.keyboard.press('Escape');
+      // Settings closes with an animation over the update card: wait until it is gone.
+      await page.waitForFunction(() => !document.querySelector('.s3-row[data-nav="desktop"]'), null, { timeout: 10000 }).catch(() => {});
       await sleep(300);
     } else {
       problems.push('Settings has no Desktop app row (data-nav="desktop")');
