@@ -375,6 +375,9 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   // Bug Avcısı: confirmations, leaderboard, past candidates (BugHunterPanel.jsx).
   const bh = useBugHunter({ socket, flash, onFeedback: (f) => mergeRef.current?.(f) });
   const cands = useCandidates();
+  // The past-candidates count on the Bug Avcıları card (one read-only call).
+  const loadCands = cands.load;
+  useEffect(() => { loadCands(); }, [loadCands]);
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 60000); return () => clearInterval(id); }, []);
 
   const load = useCallback(async () => {

@@ -271,12 +271,11 @@ export function ConfirmSheet({ f, items, data, map, onClose, onConfirm }) {
               })}
             </div>
           </section>
-          <label className="bh-toggle">
-            <input type="checkbox" checked={visual} onChange={(e) => setVisual(e.target.checked)} disabled={dupMode} />
+          <button type="button" role="switch" aria-checked={visual} className={`bh-toggle${visual ? " is-on" : ""}`} disabled={dupMode} onClick={() => setVisual((v) => !v)}>
             <span className="bh-switch" aria-hidden="true" />
             <span className="bh-toggle-t"><b>{t("bhunt.visual")}</b><small>{t("bhunt.visualHint")}</small></span>
             <SpecialBadgeIcon id="glitch" size={26} label="" />
-          </label>
+          </button>
           <section className="bh-field">
             <div className="bh-lb">{t("bhunt.note")}</div>
             <input className="bh-input" value={note} maxLength={280} onChange={(e) => setNote(e.target.value)} placeholder={t("bhunt.notePh")} aria-label={t("bhunt.note")} />
