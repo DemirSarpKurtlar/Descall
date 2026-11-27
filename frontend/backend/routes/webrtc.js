@@ -265,7 +265,7 @@ router.all("/livekit-token", requireAuth, async (req, res) => {
       seat,
       resolved,
     });
-    const data = await ve.mintVoiceToken({ userId, channelId: channel.id, seat });
+    const data = await ve.mintVoiceToken({ userId, channelId: channel.id, seat, platform: require("../lib/plus/animatedProfile").platformOf(req) });
     if (!data) return res.json({ enabled: false });
     return res.json(data);
   } catch (err) {
@@ -343,7 +343,10 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
       canPublishSources: [TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO],
     });
     markCompanionIssued(channel.id, userId);
+    // Descall+ 2.0: the iOS broadcast caps its encode to this (null = no limit; iOS sales flag).
+    const screenCeiling = await ve.screenCeilingOf(userId, channel.id, "ios");
     return res.json({
+      screenCeiling,
       enabled: true,
       livekitUrl: process.env.LIVEKIT_URL,
       livekitUrls: liveKitEndpoints(),
@@ -388,6 +391,11 @@ router.post(
       const identity = event?.participant?.identity || "";
       if (event?.event === "participant_joined" && channelId && identity && !ve.identityAllowedInRoom(channelId, identity)) {
         await ve.removeLiveKitIdentity(channelId, identity);
+      }
+      // Descall+ 2.0: a screen track above the person's ceiling (a modified client) is logged and the
+      // client told to re-apply its cap; it is muted only when the admin turned screenEnforce.mute on.
+      if (event?.event === "track_published" && channelId && identity) {
+        await require("../lib/plus/screenGuard").onTrackPublished({ channelId, identity, track: event.track, room: roomName });
       }
     } catch (err) {
       console.warn("[webrtc] livekit webhook failed:", err?.message || err);

@@ -336,6 +336,12 @@ router.post("/avatar", uploadGate, upload.single("avatar"), async (req, res) => 
       return res.status(400).json({ error: "Avatar must be 8 MB or smaller." });
     }
 
+    // Descall+ 2.0: a new animated avatar is Descall+ where it is on sale (old GIFs stay; lib/plus/animatedProfile.js).
+    {
+      const animatedGate = require("../lib/plus/animatedProfile");
+      const verdict = await animatedGate.check(req, { buffer: req.file.buffer, kind: "avatar" });
+      if (!verdict.allowed) return res.status(403).json(animatedGate.refusal("avatar"));
+    }
     // picker: an animated GIF arrives whole with its crop and is cut here, every frame kept.
     await applyGifCrop(req.file, req.body?.crop, "avatar");
 
@@ -375,6 +381,12 @@ router.post("/banner", uploadGate, upload.single("banner"), async (req, res) => 
       return res.status(400).json({ error: "Banner must be an image." });
     }
 
+    // Descall+ 2.0: a new animated banner is Descall+ where it is on sale (old GIFs stay; lib/plus/animatedProfile.js).
+    {
+      const animatedGate = require("../lib/plus/animatedProfile");
+      const verdict = await animatedGate.check(req, { buffer: req.file.buffer, kind: "banner" });
+      if (!verdict.allowed) return res.status(403).json(animatedGate.refusal("banner"));
+    }
     const userId = req.user.id;
     const { url } = await uploadPublicImage(req.file, "banners", "banner");
 
@@ -405,6 +417,12 @@ router.post("/banner-image", uploadGate, upload.single("banner"), async (req, re
     }
     if (req.file.size > MAX_AVATAR_SIZE) {
       return res.status(400).json({ error: "too_large" });
+    }
+    // Descall+ 2.0: a new animated banner is Descall+ where it is on sale (old GIFs stay; lib/plus/animatedProfile.js).
+    {
+      const animatedGate = require("../lib/plus/animatedProfile");
+      const verdict = await animatedGate.check(req, { buffer: req.file.buffer, kind: "banner" });
+      if (!verdict.allowed) return res.status(403).json(animatedGate.refusal("banner"));
     }
     await applyGifCrop(req.file, req.body?.crop, "banner");
     const { url, path: storagePath } = await uploadPublicImage(req.file, "banners", "banner");

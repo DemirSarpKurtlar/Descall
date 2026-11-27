@@ -142,6 +142,8 @@ app.use(securityHeadersMiddleware);
 app.use(canonicalHostMiddleware);
 app.use(compression({ threshold: 1024 }));
 
+// Descall+ 2.0 payment webhooks need the raw body for signature checks: mounted before express.json().
+app.use("/api/plus/webhooks", require("./routes/plusWebhooks"));
 app.use(express.json());
 app.use(require("./middleware/gzipJson"));
 
@@ -190,6 +192,10 @@ app.use("/api/promo", promoRoutes);
 // Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
 app.use("/api/premium/gaming", require("./routes/premiumGaming"));
 app.use("/api/premium", require("./routes/premium"));
+// Descall+ 2.0 (owner pick 5B): hub, boosts, gifts, tickets, checkout. Selling stays off until the
+// admin turns it on per platform (lib/plus/config.js).
+app.use("/api/plus", require("./routes/plus"));
+require("./lib/plus").init({ getIo: () => app.get("io") });
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
 // 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed
 // older apps get a clean 410 instead of an HTML 404.
@@ -662,6 +668,14 @@ app.put("/api/user/profile", requireAuth, async (req, res) => {
     });
     if (!built.ok) return res.status(built.status).json({ success: false, ...built.body });
     const updateData = built.patch;
+    // Descall+ 2.0: switching to an animated (.gif) avatar or banner URL follows the same gate as the upload.
+    for (const [col, kind] of [["avatar_url", "avatar"], ["banner_url", "banner"]]) {
+      if (updateData[col] && updateData[col] !== current?.[col]) {
+        const animatedGate = require("./lib/plus/animatedProfile");
+        const verdict = await animatedGate.check(req, { url: updateData[col], kind });
+        if (!verdict.allowed) return res.status(403).json({ success: false, ...animatedGate.refusal(kind) });
+      }
+    }
     if (!Object.keys(updateData).length) {
       const { data: same } = await supabase.from("users").select().eq("id", req.user.id).single();
       return res.json({ success: true, user: toPublicUser(cacheUserProfile(same || { id: req.user.id })) });

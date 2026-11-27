@@ -105,6 +105,8 @@ router.use(require("./adminDesktopMigration"));
 // Duyurular (section announcements): board, list + inspector, composer, templates, languages, approvals.
 router.use(require("./adminAnnouncements"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
+// Descall+ 2.0 workspace (draft 5B section 4): before /premium so its own paths win.
+router.use("/premium/plus", require("./adminPlus"));
 router.use("/premium", require("./adminPremium"));
 // Admin Token (owner only): tokens, usage, alerts, auto-pause, and GET /openapi.json.
 router.use(require("./adminTokens"));

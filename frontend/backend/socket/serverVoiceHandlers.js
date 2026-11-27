@@ -776,7 +776,7 @@ function registerServerVoiceHandlers(io, socket) {
       // exists, with grants that match it. Older clients still use /livekit-token.
       let livekit = null;
       try {
-        livekit = await ve.mintVoiceToken({ userId: myUid, channelId, seat: mePublic });
+        livekit = await ve.mintVoiceToken({ userId: myUid, channelId, seat: mePublic, platform: socket?.handshake?.auth?.app || socket?.handshake?.auth?.platform || null });
       } catch (err) {
         console.warn("[ServerVoice] token mint failed:", err?.message || err);
       }
