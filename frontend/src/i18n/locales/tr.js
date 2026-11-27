@@ -46,6 +46,8 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -137,6 +139,7 @@ export const nested = {
   agentOps: AGENT_OPS_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
+  dvt: INVITES_I18N.tr,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {

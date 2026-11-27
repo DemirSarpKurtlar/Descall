@@ -59,6 +59,8 @@ function isAppBootPath(path) {
   if (APP_BOOT_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return true;
   if (path === "/i" || path.startsWith("/i/")) return true;
   if (path === "/s" || path.startsWith("/s/")) return true;
+  // Davet Merkezi: personal invite landing /r/<username>.
+  if (path.startsWith("/r/")) return true;
   return false;
 }
 

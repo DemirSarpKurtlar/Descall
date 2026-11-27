@@ -50,6 +50,8 @@ import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
   passkey: PASSKEY_RU,
@@ -108,6 +110,7 @@ export const nested = {
   "agentOps": AGENT_OPS_RU,
   "invl": INVL_RU,
   "sgx": SIGNUP_GROWTH.ru.nested,
+  "dvt": INVITES_I18N.ru,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

@@ -174,6 +174,7 @@ import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { OnboardingProvider } from "./components/onboarding/OnboardingContext";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
+import { landingUsernameFromPath } from "./lib/inviteShare.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -234,6 +235,9 @@ const AppLayout = memoStableProps(AppLayoutView, "AppLayout");
 const CallTapCard = memoStableProps(CallTapCardView, "CallTapCard");
 const SpecialBadgeHost = memoStableProps(SpecialBadgeHostView, "SpecialBadgeHost");
 const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
+// Davet Merkezi (growth phase 4, 4A): dashboard host + the /r/<username> invite landing.
+const InviteCenterHost = lazy(() => import("./components/invites/InviteCenterHost.jsx"));
+const FriendInviteLanding = lazy(() => import("./components/invites/FriendInviteLanding.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
@@ -5262,6 +5266,20 @@ export default function App() {
   // 3.7.32: vanity and group landings use the same flow as server invites:
   // the value waits in its pending slot and the web opens /login or /register
   // instead of falling through to the marketing home page.
+  // Davet Merkezi: descall.com/r/<username> (personal invite landing). The sign-up buttons
+  // hand off to the normal auth flow with the invite ref already stored (lib/inviteShare.js).
+  const friendInviteUser = landingUsernameFromPath(location.pathname);
+  const [friendInviteAuth, setFriendInviteAuth] = useState(false);
+  const openFriendInviteAuth = useCallback(
+    (mode) => {
+      setFriendInviteAuth(true);
+      if (!Capacitor.isNativePlatform() && !isDesktopShell()) {
+        const ref = friendInviteUser ? `?ref=${encodeURIComponent(friendInviteUser)}` : "";
+        navigate(mode === "login" ? "/login" : `/register${ref}`);
+      }
+    },
+    [navigate, friendInviteUser]
+  );
   const openLandingAuth = useCallback(
     (kind, mode) => {
       if (kind === "vanity") setServerVanityAuthOpen(true);
@@ -5401,6 +5419,28 @@ export default function App() {
             onJoined={handleServerVanityJoined}
             onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
             onDismiss={dismissServerVanity}
+          />
+        </Suspense>
+      </>
+    );
+  }
+
+  // Personal friend invite landing (/r/<username>): logged out shows the invite and sign-up,
+  // logged in a short "you are already here" card.
+  if (friendInviteUser && !(friendInviteAuth && !me)) {
+    return (
+      <>
+        <SeoHead forceNoindex title={t("dvt.land.personal")} description={t("dvt.land.tagline")} />
+        <TitleBar />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <FriendInviteLanding
+            username={friendInviteUser}
+            search={location.search}
+            me={me}
+            appleAvailable={!Capacitor.isNativePlatform() || Capacitor.getPlatform() === "ios"}
+            onSignup={() => openFriendInviteAuth("register")}
+            onLogin={() => openFriendInviteAuth("login")}
+            onDismiss={() => navigate("/", { replace: true })}
           />
         </Suspense>
       </>
@@ -5853,6 +5893,12 @@ export default function App() {
         {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+          </Suspense>
+        ) : null}
+
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <InviteCenterHost socket={socketApi} meId={me.id} onNavigate={navigate} />
           </Suspense>
         ) : null}
 
