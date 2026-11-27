@@ -62,7 +62,15 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+          # Public Android signing fingerprints -> /.well-known/assetlinks.json (passkeys + App
+          # Links, scripts/write-assetlinks.mjs). Not a secret; a Vercel project env var of the
+          # same name works too (Git-integration deploys).
+          ANDROID_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 }}
+        run: |
+          vercel build --prod --token="$VERCEL_TOKEN"
+          if [ -n "$ANDROID_CERT_SHA256" ]; then
+            test -f .vercel/output/static/.well-known/assetlinks.json && echo "assetlinks.json built" || echo "::warning::ANDROID_CERT_SHA256 is set but no assetlinks.json was built"
+          fi
 
       - name: Deploy prebuilt production
         if: steps.gate.outputs.configured == 'true'

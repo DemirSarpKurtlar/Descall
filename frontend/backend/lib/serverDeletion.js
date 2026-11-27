@@ -11,6 +11,7 @@
  */
 const supabase = require("../db/supabase");
 const privateMedia = require("./privateMedia");
+const imageVariants = require("./imageVariants");
 const { serverRoomNames, evictFromServerRooms } = require("./serverRooms");
 
 const PAGE = 1000;
@@ -81,7 +82,8 @@ async function removePrivateObjects(paths) {
   let removed = 0;
   for (let i = 0; i < paths.length; i += 100) {
     const chunk = paths.slice(i, i + 100);
-    const { error } = await supabase.storage.from(privateMedia.PRIVATE_BUCKET).remove(chunk);
+    // AVIF siblings of still images go with their originals (not counted).
+    const { error } = await supabase.storage.from(privateMedia.PRIVATE_BUCKET).remove(imageVariants.withVariantPaths(chunk));
     if (error) console.warn("[serverDeletion] private media remove failed:", error.message);
     else removed += chunk.length;
   }

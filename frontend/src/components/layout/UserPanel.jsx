@@ -7,6 +7,8 @@ import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palett
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
+import VoiceShortcutsPane from "../settings/VoiceShortcutsPane";
+import { nativePlatform } from "../../lib/nativeIntents.js";
 import { hasDesktopUpdater } from "../../lib/desktopUpdateState.js";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
 import { isTabletLayout, readStoredSettings } from "../../lib/appearancePrefs";
@@ -64,6 +66,9 @@ import { nativeShellPlatform } from "../../lib/glassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
+import PasskeyEntry from "../passkeys/center/PasskeyEntry.jsx";
+// Draft A "Güvenlik kontrol merkezi": Ayarlar > Güvenlik > Passkey'ler (wide sub-page).
+const PasskeyCenter = lazy(() => import("../passkeys/center/PasskeyCenter.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { serverMessage } from "../../i18n/serverText.js";
 import LegalContentModal from "../legal/LazyLegalContentModal";
@@ -102,6 +107,7 @@ import {
 } from "../../lib/noiseSuppression";
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 import RangeSlider from "../../premium/ui/RangeSlider.jsx";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -343,6 +349,8 @@ const NAV_GROUPS_DEF = [
     items: [
       { id: "appearance", labelKey: "settings.appearance", icon: Palette, hintKey: "settings.appearanceHint" },
       { id: "notifications", labelKey: "settings.notifications", icon: Bell, hintKey: "settings.notificationsHint" },
+      // 4.2: Siri / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows Electron).
+      { id: "shortcuts", labelKey: "vsc.navTitle", icon: Mic, hintKey: "vsc.navHint" },
       { id: "language", labelKey: "settings.language", icon: Globe, hintKey: "settings.languageHint" },
       { id: "licenses", labelKey: "settings.licenses", icon: FileText, hintKey: "settings.licensesHint" },
       // Desktop shells only (Electron, Tauri): version and "Check for updates".
@@ -381,6 +389,7 @@ const S3_NAV_TILES = {
   language: ["globe", "blue"],
   licenses: ["book", "gray"],
   desktop: ["win", "blue"],
+  shortcuts: ["bolt", "brand"],
   voice: ["volume", "green"],
   sound: ["music", "teal"],
   premium: ["sparkle", "purple"],
@@ -417,6 +426,7 @@ const TAB_TITLE_KEYS = {
   language: "settings.language",
   licenses: "settings.licenses",
   desktop: "updateToast.settings_title",
+  shortcuts: "vsc.navTitle",
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
@@ -462,6 +472,8 @@ const UserPanel = forwardRef(function UserPanel({
   onTabChange,
   activity = {},
 }, ref) {
+  // Performans: samples taken while Ayarlar is open belong to "app/ayarlar".
+  useRumView("app/ayarlar");
   const { isMobile: isMobileViewport } = useMobile();
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();
@@ -471,6 +483,25 @@ const UserPanel = forwardRef(function UserPanel({
   const reduceMotion = useReducedMotion();
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
+  // Ayarlar > Güvenlik > Passkey'ler: the control center replaces the security page.
+  const [pkCenter, setPkCenter] = useState(() => {
+    try {
+      return initialTab === "security" && new URLSearchParams(window.location.search).get("passkeys") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (activeTab !== "security") setPkCenter(false);
+  }, [activeTab]);
+  useEffect(() => {
+    const open = () => {
+      setActiveTab("security");
+      setPkCenter(true);
+    };
+    window.addEventListener("descall:open-passkeys", open);
+    return () => window.removeEventListener("descall:open-passkeys", open);
+  }, []);
   const [mobileDetail, setMobileDetail] = useState(false);
   const stored = loadSettings();
   // Promosyon Kodu row: badge = codes you haven't seen yet, mobile hint = codes you can use now.
@@ -503,17 +534,23 @@ const UserPanel = forwardRef(function UserPanel({
   const premiumPlan = useSyncExternalStore(subscribePremium, () => getPremiumState().plan, () => getPremiumState().plan);
   const hidePremiumNav = isNativeIOS() && !premiumPlan;
   const showDesktopNav = useMemo(() => hasDesktopUpdater(typeof window !== "undefined" ? window.electronAPI : null), []);
+  const showShortcutsNav = useMemo(
+    () => Boolean(nativePlatform()) || (typeof window !== "undefined" && typeof window.electronAPI?.setJumpList === "function"),
+    []
+  );
   const navGroups = useMemo(
     () =>
       NAV_GROUPS_DEF.map((g) => ({
         label: t(g.labelKey),
-        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav) && !(item.id === "desktop" && !showDesktopNav)).map((item) => ({
+        items: g.items
+          .filter((item) => !(item.id === "premium" && hidePremiumNav) && !(item.id === "desktop" && !showDesktopNav) && !(item.id === "shortcuts" && !showShortcutsNav))
+          .map((item) => ({
           ...item,
           label: t(item.labelKey),
           hint: t(item.hintKey),
         })),
       })),
-    [t, hidePremiumNav, showDesktopNav]
+    [t, hidePremiumNav, showDesktopNav, showShortcutsNav]
   );
 
   const tabTitles = useMemo(() => {
@@ -2106,6 +2143,15 @@ const UserPanel = forwardRef(function UserPanel({
       }
 
       case "security":
+        if (pkCenter) {
+          return (
+            <div className="us-tab us-tab-pkc">
+              <Suspense fallback={<ConversationListSkeleton count={3} label={t("Loading…")} />}>
+                <PasskeyCenter me={me} onBack={() => setPkCenter(false)} onHidden={() => setPkCenter(false)} />
+              </Suspense>
+            </div>
+          );
+        }
         return (
           <div className="us-tab">
             <p className="us-lead">{t("Protect your account with email verification, password reset, and two-factor sign-in.")}</p>
@@ -2431,6 +2477,10 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
+            {/* Passkeys (owner item 9): an extra way in, the password stays. The row opens
+                the control center (draft A). */}
+            <PasskeyEntry onOpen={() => setPkCenter(true)} />
+
             <section className="us-section">
               <div className="us-section-label-row">
                 <h4 className="us-section-label">{t("Active sessions")}</h4>
@@ -2454,6 +2504,7 @@ const UserPanel = forwardRef(function UserPanel({
                         <span className="us-row-title">
                           {session.device}
                           {session.current && <em className="us-current-tag"> · {t("This device")}</em>}
+                          {session.method === "passkey" && <em className="us-current-tag"> · {t("passkey.settings.sessionMethod")}</em>}
                         </span>
                         <span className="us-row-desc">
                           {session.ip} • {t("Last active")}{" "}
@@ -2731,6 +2782,9 @@ const UserPanel = forwardRef(function UserPanel({
 
       case "desktop":
         return <DesktopUpdatePane />;
+
+      case "shortcuts":
+        return <VoiceShortcutsPane />;
 
       case "licenses":
         return (
@@ -3185,7 +3239,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}${activeTab === "security" && pkCenter ? " is-pk-center" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -3401,7 +3455,7 @@ const UserPanel = forwardRef(function UserPanel({
             >
               {/* UI audit #40 / #152: Hesabım and Görünüm get the same left-aligned
                   page title as every other desktop settings page. */}
-              {!isMobile && (
+              {!isMobile && !(activeTab === "security" && pkCenter) && (
                 <h3 className="us-page-title">{tabTitles[activeTab]}</h3>
               )}
               <ErrorBoundary scope="pane" resetKey={activeTab}>

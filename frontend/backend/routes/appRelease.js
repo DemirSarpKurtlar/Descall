@@ -65,6 +65,48 @@ function pickAndroidApkUrl(release) {
   return apk?.browser_download_url || null;
 }
 
+/**
+ * The latest tag without the REST API: github.com/<repo>/releases/latest answers with a
+ * redirect to /releases/tag/<tag>. That page is not under the API's 60 requests/hour
+ * limit, so a rate-limited server still shows "v4.1.4" instead of a bare "Latest release"
+ * (screenshot 77, Nov 2026: production served the fallback with no version for days).
+ */
+function tagFromLocation(location) {
+  const m = String(location || "").match(/\/releases\/tag\/([^/?#]+)/);
+  if (!m) return null;
+  const tag = decodeURIComponent(m[1]);
+  return /^v?\d+\.\d+\.\d+[\w.-]*$/i.test(tag) ? tag : null;
+}
+
+async function latestTagFromRedirect(fetchImpl = fetch) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetchImpl(`https://github.com/${GITHUB_REPO}/releases/latest`, {
+      method: "HEAD",
+      redirect: "manual",
+      headers: { "User-Agent": "Descall-Server" },
+      signal: controller.signal,
+    });
+    return tagFromLocation(res.headers.get("location"));
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** The fallback payload, with the version when the redirect gives it. */
+function fallbackWithTag(tag) {
+  if (!tag) return FALLBACK_RELEASE;
+  return {
+    ...FALLBACK_RELEASE,
+    tagName: tag,
+    version: tag.replace(/^v/i, ""),
+    htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/${encodeURIComponent(tag)}`,
+  };
+}
+
 function githubHeaders() {
   const headers = {
     Accept: "application/vnd.github+json",
@@ -138,14 +180,17 @@ router.get("/latest-release", async (_req, res) => {
     }
     // Cached under the same CACHE_MS window as a successful lookup, so a
     // rate-limited GitHub API is retried at most once every 5 minutes.
-    cache = { at: Date.now(), payload: FALLBACK_RELEASE };
+    const fallback = fallbackWithTag(await latestTagFromRedirect());
+    cache = { at: Date.now(), payload: fallback };
     res.set("Cache-Control", "public, max-age=60");
-    return res.json(FALLBACK_RELEASE);
+    return res.json(fallback);
   } catch (err) {
     console.warn("[latest-release] error:", err.message, "— serving fallback");
+    const fallback = fallbackWithTag(await latestTagFromRedirect());
     res.set("Cache-Control", "public, max-age=60");
-    return res.json(FALLBACK_RELEASE);
+    return res.json(fallback);
   }
 });
 
 module.exports = router;
+module.exports._test = { tagFromLocation, latestTagFromRedirect, fallbackWithTag, FALLBACK_RELEASE };

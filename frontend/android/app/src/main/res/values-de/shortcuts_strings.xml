@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 4.2 launcher shortcuts (xml/shortcuts.xml) and App Actions synonyms. -->
+    <string name="shortcut_new_message_short">Neue Nachricht</string>
+    <string name="shortcut_new_message_long">Neue Nachricht schreiben</string>
+    <string name="shortcut_dnd_short">Nicht stören</string>
+    <string name="shortcut_dnd_long">Nicht stören an/aus</string>
+    <string name="shortcut_friends_short">Freunde</string>
+    <string name="shortcut_friends_long">Freunde öffnen</string>
+    <string name="shortcut_open_chat">Chat öffnen</string>
+    <string-array name="shortcut_new_message_synonyms">
+        <item>neue Nachricht</item>
+        <item>Nachricht</item>
+        <item>Nachricht schreiben</item>
+    </string-array>
+    <string-array name="shortcut_dnd_synonyms">
+        <item>nicht stören</item>
+        <item>Status</item>
+    </string-array>
+    <string-array name="shortcut_friends_synonyms">
+        <item>Freunde</item>
+        <item>Freundesliste</item>
+        <item>wer ist online</item>
+    </string-array>
+</resources>

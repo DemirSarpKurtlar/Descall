@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "You are here" pill in a voice room (success tint). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#3323A55A" />
+    <corners android:radius="100dp" />
+</shape>

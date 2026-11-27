@@ -28,6 +28,7 @@
 //! | `main_errors`       | mainErrors.cjs (+ crash file)           | mainErrors.selftest.mjs               |
 //! | `deep_link`         | (new: descall:// from argv)             | (new)                                 |
 //! | `secrets`           | (new) tokens out of main.log / reports  | (new)                                 |
+//! | `durable`           | (new) token file replace / remove       | locked target never leaves a stale token |
 
 pub mod bridge;
 pub mod clipboard;
@@ -37,6 +38,7 @@ pub mod deep_link;
 pub mod deferral;
 pub mod dist_path;
 pub mod download;
+pub mod durable;
 pub mod i18n;
 pub mod ipc_policy;
 pub mod launch;

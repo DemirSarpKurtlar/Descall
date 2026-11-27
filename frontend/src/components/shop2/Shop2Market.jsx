@@ -44,6 +44,7 @@ import {
   X,
 } from "./shop2Icons.jsx";
 import "../../styles/shop2-ui.css";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 const TABS = [
   { id: "vitrin", icon: LayoutGrid },
@@ -179,6 +180,8 @@ export default function Shop2Market({
   onEarn,
   initialTab = "vitrin",
 }) {
+  // Performans: samples taken here belong to "app/market" (lib/perf/useRumTiming.js).
+  useRumView("app/market");
   const { t, locale } = useLocale();
   const rootRef = useRef(null);
   const { layout, width, embedded } = useLayout(rootRef);

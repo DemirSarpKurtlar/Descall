@@ -49,6 +49,8 @@ mod tests {
         assert_eq!(tauri_directive("connect-src"), electron_directive("CONNECT", "connect-src"), "connect-src");
         assert_eq!(tauri_directive("img-src"), electron_directive("IMG", "img-src"), "img-src");
         assert_eq!(tauri_directive("media-src"), electron_directive("MEDIA", "media-src"), "media-src");
+        // Cloudflare Turnstile: the API's bridge page and Cloudflare's challenge frames.
+        assert_eq!(tauri_directive("frame-src"), electron_directive("FRAME", "frame-src"), "frame-src");
         let mut script = sources(&electron_const("SCRIPT_REMOTE"));
         script.insert("'self'".to_string());
         let mut tauri_script = tauri_directive("script-src");
@@ -115,5 +117,23 @@ mod tests {
         let wf = include_str!("../../../../.github/workflows/tauri-release.yml");
         assert!(wf.contains("updater = @{ pubkey = $env:UPDATER_PUB }") && wf.contains("desktop/keys/tauri-updater.pub"));
         assert!(!updates.contains("version_comparator"), "no custom comparator (downgrades stay refused)");
+    }
+
+    /// An automatic update installs without a setup window and starts Descall again: the
+    /// updater runs the NSIS setup with `/S /UPDATE /R` in "quiet" mode. "passive" (the plugin's
+    /// default) is `/P`, which showed the installer's progress screen on every auto-update.
+    /// A manual install (no switches) still shows the full setup.
+    #[test]
+    fn auto_update_installs_silently() {
+        let conf: serde_json::Value = serde_json::from_str(TAURI_CONF).unwrap();
+        assert_eq!(conf["plugins"]["updater"]["windows"]["installMode"], "quiet");
+        assert!(conf["plugins"]["updater"]["windows"].get("installerArgs").is_none(), "no extra switches (a /P would bring the window back)");
+        // The release build merges only the pubkey into plugins.updater (JSON merge patch), so
+        // the install mode above is what ships.
+        let wf = include_str!("../../../../.github/workflows/tauri-release.yml");
+        assert!(wf.contains("$conf.plugins = @{ updater = @{ pubkey = $env:UPDATER_PUB } }"));
+        // Every in-app install relaunches except a quit (commands/updates.rs).
+        let updates = include_str!("../../../app/src-tauri/src/commands/updates.rs");
+        assert!(updates.contains("update.restart_after_install(relaunch)"));
     }
 }

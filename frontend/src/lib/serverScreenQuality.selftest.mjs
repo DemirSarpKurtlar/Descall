@@ -6,13 +6,13 @@ const mem = () => {
   const m = new Map();
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) };
 };
-assert.deepEqual(cleanServerScreenQuality(null), { resolution: "720p", fps: 20, contentHint: "motion" }, "mesh default");
+assert.deepEqual(cleanServerScreenQuality(null), { resolution: "1080p", fps: 30, contentHint: "motion" }, "group default: 1080p / 30 (owner: herkes en yüksek kalite)");
 assert.deepEqual(cleanServerScreenQuality({ resolution: "1080p", fps: 30, contentHint: "text" }), { resolution: "1080p", fps: 30, contentHint: "text" });
-assert.deepEqual(cleanServerScreenQuality({ resolution: "8k", fps: 999, contentHint: "<b>" }), { resolution: "720p", fps: 20, contentHint: "motion" });
+assert.deepEqual(cleanServerScreenQuality({ resolution: "8k", fps: 999, contentHint: "<b>" }), { resolution: "1080p", fps: 30, contentHint: "motion" });
 const store = mem();
-assert.deepEqual(readServerScreenQuality(store), { resolution: "720p", fps: 20, contentHint: "motion" });
+assert.deepEqual(readServerScreenQuality(store), { resolution: "1080p", fps: 30, contentHint: "motion" });
 writeServerScreenQuality({ resolution: "1440p", fps: 15, contentHint: "detail" }, store);
 assert.deepEqual(readServerScreenQuality(store), { resolution: "1440p", fps: 15, contentHint: "detail" });
 store.setItem("descall:serverScreenQuality", "{broken");
-assert.deepEqual(readServerScreenQuality(store).resolution, "720p");
+assert.deepEqual(readServerScreenQuality(store).resolution, "1080p");
 console.log("serverScreenQuality selftest ok");

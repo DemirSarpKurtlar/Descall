@@ -359,6 +359,18 @@ async function check(name, fn) {
     assert.equal(seat("ch-voice", "u-bob").cameraOn, false);
   });
 
+  // ---- Screen share codec choice: a member's video decode list rides on the seat
+  await check("codecs: decode list is whitelisted, stored on the seat, junk dropped", async () => {
+    await bob.fire("server:voice:codecs", { channelId: "ch-voice", videoDecode: ["AV1", "vp9", "vp9", "<script>", 42, "vp8"] });
+    assert.deepEqual(seat("ch-voice", "u-bob").videoDecode, ["av1", "vp9", "vp8"]);
+    const mutedBefore = seat("ch-voice", "u-bob").muted;
+    await bob.fire("server:voice:codecs", { channelId: "ch-voice", videoDecode: "av1" });
+    assert.equal(seat("ch-voice", "u-bob").videoDecode, undefined, "a non-list clears it");
+    assert.equal(seat("ch-voice", "u-bob").muted, mutedBefore, "codecs never touch mute state");
+    await bob.fire("server:voice:codecs", { channelId: "ch-voice", videoDecode: ["vp9", "vp8", "h264"] });
+    assert.deepEqual(seat("ch-voice", "u-bob").videoDecode, ["vp9", "vp8", "h264"]);
+  });
+
   // ---- SC-6: the AFK clock starts on self-mute
   await check("SC-6 self-mute starts the AFK clock", async () => {
     await bob.fire("server:voice:media-state", { channelId: "ch-voice", muted: false });

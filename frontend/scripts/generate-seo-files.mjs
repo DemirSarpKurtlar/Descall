@@ -99,6 +99,17 @@ export const AI_CRAWLERS = [
   "CCBot",
 ];
 
+/** Live sitemap of public server pages (public/_worker.js, backend routes/publicPages.js). */
+export const SERVER_SITEMAP_FILE = "sitemap-servers.xml";
+
+/**
+ * Link-preview fetchers (X, Facebook / WhatsApp / Instagram, LinkedIn, Slack, Telegram,
+ * Discord) read invite pages for their cards and never index them. X skips a card when
+ * robots.txt disallows the URL, so they may read invite paths and the generated /og/ cards;
+ * the app, API and admin stay closed.
+ */
+export const LINK_PREVIEW_BOTS = ["Twitterbot", "facebookexternalhit", "LinkedInBot", "Slackbot-LinkExpanding", "TelegramBot", "Discordbot"];
+
 /** Private and ephemeral paths, closed for every crawler. */
 export const ROBOTS_DISALLOW = `Disallow: /app/
 Disallow: /api/
@@ -119,6 +130,15 @@ export function buildRobots() {
   const childAllows = SITEMAP_TABLES.map((t) => `Allow: /${t.file}`).join("\n");
   return `# Descall robots.txt — production (static, served from descall.com)
 # Ownership facts for language models: https://descall.com/llms.txt
+
+# Link previews (invite cards); they never index
+${LINK_PREVIEW_BOTS.map((ua) => `User-agent: ${ua}`).join("\n")}
+Allow: /
+Disallow: /app/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /debug/
 
 # AI assistants and AI search
 ${AI_CRAWLERS.map((ua) => `User-agent: ${ua}`).join("\n")}
@@ -158,6 +178,9 @@ Allow: /humans.txt
 Allow: /.well-known/security.txt
 Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
+Allow: /${SERVER_SITEMAP_FILE}
+Allow: /s/
+Allow: /og/
 ${SITEMAP_LANG_TABLES.map((t) => `Allow: /${t.file}`).join("\n")}
 ${childAllows}
 Allow: /sitemap
@@ -267,6 +290,11 @@ function buildSitemapIndex(now) {
     <lastmod>${xmlEscape(newest || now)}</lastmod>
   </sitemap>`;
   });
+  // Public server pages (descall.com/s/<slug>, owner opt-in "Google'da göster"): built live
+  // by the Pages worker from the backend, so only enabled, shown servers are listed.
+  children.push(`  <sitemap>
+    <loc>${xmlEscape(`${SITE}/${SERVER_SITEMAP_FILE}`)}</loc>
+  </sitemap>`);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

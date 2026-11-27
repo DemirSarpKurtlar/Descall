@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Message bubble that mentions you, blue edge, light surface. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#0F14183C" />
+    <corners
+        android:bottomLeftRadius="5dp"
+        android:bottomRightRadius="16dp"
+        android:topLeftRadius="16dp"
+        android:topRightRadius="16dp" />
+    <stroke
+        android:width="1.5dp"
+        android:color="#B3587AF5" />
+</shape>

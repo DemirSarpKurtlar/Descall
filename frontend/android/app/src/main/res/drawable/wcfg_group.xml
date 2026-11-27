@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grouped section of the widget settings screen (draft: #1C1C1F rounded groups). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/wcfg_group" />
+    <corners android:radius="14dp" />
+</shape>

@@ -307,7 +307,7 @@ export const TR_LANDINGS_NOV13 = {
         h: "Kalite ayarları: sayıyla değil, ne paylaştığınla seç",
         p: [
           "Paylaşım başlamadan önce açılan panel tek bir soru sorar: Ne paylaşıyorsun? “Oyun, video” akıcı hareketi, “Yazı, kod” keskin harfleri öne alır, “Uygulama” ikisinin arasındadır. İnce ayar için çözünürlüğü 480p, 720p, 1080p ya da 1440p, kare hızını saniyede 15, 20, 30 ya da 60 olarak seçersin. Panel yaklaşık bir bit hızı tahmini de gösterir; yükleme hızının yetip yetmeyeceğini buradan anlarsın.",
-          "Grup aramasında her izleyici yayını ayrı aldığı için Descall paylaşımı 720p ve saniyede 20 kareyle başlatır, kalabalık bir aramada daha yükseğe çıkarsan uyarır. Birebir aramada paylaşım daha yüksek kalitede başlar; saniyede 60 kare bunun için düşünüldü. Yayındayken kaliteyi değiştirirsen paylaşım yeni ayarlarla bir anlığına yeniden başlar.",
+          "Grup aramasında her izleyici yayını ayrı aldığı için Descall paylaşımı 1080p ve saniyede 30 kareyle başlatır, kalabalık bir aramada daha yükseğe çıkarsan uyarır. Birebir aramada paylaşım daha yüksek kalitede başlar; saniyede 60 kare bunun için düşünüldü. Yayındayken kaliteyi değiştirirsen paylaşım yeni ayarlarla bir anlığına yeniden başlar.",
         ],
       },
       {
@@ -379,7 +379,7 @@ export const TR_LANDINGS_NOV13 = {
       },
       {
         q: "En yüksek kalite nedir?",
-        a: "1440p çözünürlük ve saniyede 60 kareye kadar seçebilirsin. Grup aramalarında paylaşım 720p ve saniyede 20 kareyle başlar; 60 kare birebir aramalar için düşünüldü.",
+        a: "1440p çözünürlük ve saniyede 60 kareye kadar seçebilirsin. Grup aramalarında paylaşım 1080p ve saniyede 30 kareyle başlar; 60 kare birebir aramalar için düşünüldü.",
       },
     ],
     related: [L.guideScreen, L.guideClasses, L.group, L.program, L.voiceApp, L.alt, L.guideDevices, L.download],
@@ -413,7 +413,7 @@ export const TR_LANDINGS_NOV13 = {
         h: "Grup sohbetinden grup araması",
         p: [
           "Bir grup sohbeti oluştur, arkadaşlarını ekle ve sohbetteki arama düğmesiyle sesli ya da görüntülü aramayı başlat. Gruptaki herkes aramanın başladığını görür ve katılabilir; geç gelen biri de arama sürerken içeri girebilir. Bir grup sohbetinde seninle birlikte en fazla 15 kişi olabilir. Daha kalabalık bir topluluk için sunucu ve ses kanalı daha uygun.",
-          "Aramada kamerasını açmak isteyen açar, istemeyen sadece sesle katılır. Ekranını paylaşmak isteyen biri Windows uygulamasından ya da bilgisayardaki bir tarayıcıdan paylaşabilir; grup aramalarında paylaşım herkesin bağlantısını yormamak için 720p ve saniyede 20 kareyle başlar.",
+          "Aramada kamerasını açmak isteyen açar, istemeyen sadece sesle katılır. Ekranını paylaşmak isteyen biri Windows uygulamasından ya da bilgisayardaki bir tarayıcıdan paylaşabilir; grup aramalarında paylaşım herkesin bağlantısını yormamak için 1080p ve saniyede 30 kareyle başlar.",
         ],
       },
       {
@@ -551,7 +551,7 @@ export const TR_LANDINGS_NOV13 = {
       {
         h: "Yapılarını ekran paylaşımıyla göster",
         p: [
-          "Biri bir yapıyı bitirdiğinde ses odasında ekranını paylaşıp herkesi gezdirebilir. Kalite panelinde hareketli görüntü için “Oyun, video”yu seç. Grup halinde paylaşım herkesin bağlantısını yormamak için 720p ve saniyede 20 kareyle başlar; birebir aramada daha yüksek kalite seçebilirsin. Windows uygulamasında oyunun sesi de görüntüyle birlikte gider. Ekranını Windows uygulamasından ya da bilgisayardaki bir tarayıcıdan paylaşırsın; telefondakiler paylaşımı izleyebilir.",
+          "Biri bir yapıyı bitirdiğinde ses odasında ekranını paylaşıp herkesi gezdirebilir. Kalite panelinde hareketli görüntü için “Oyun, video”yu seç. Grup halinde paylaşım herkesin bağlantısını yormamak için 1080p ve saniyede 30 kareyle başlar; birebir aramada daha yüksek kalite seçebilirsin. Windows uygulamasında oyunun sesi de görüntüyle birlikte gider. Ekranını Windows uygulamasından ya da bilgisayardaki bir tarayıcıdan paylaşırsın; telefondakiler paylaşımı izleyebilir.",
         ],
       },
       {
@@ -668,7 +668,7 @@ export const TR_LANDINGS_NOV13 = {
       {
         h: "Maçtan sonra tekrar izlemek",
         p: [
-          "Takımlar en çok kaybettikleri raundları izleyerek gelişir. Maçtan sonra biri ses odasında tekrarı ya da klibi paylaşır, diğerleri hataları gösterir. Kalite panelinde “Oyun, video”yu seç. Grup halinde paylaşım 720p ve saniyede 20 kareyle başlar; birebir koçlukta DM aramasında daha yüksek kalite ve saniyede 60 kare seçebilirsin. Windows uygulamasında oyunun sesi de paylaşıma gider, adım sesleri ve silah sesleri tekrarla birlikte duyulur.",
+          "Takımlar en çok kaybettikleri raundları izleyerek gelişir. Maçtan sonra biri ses odasında tekrarı ya da klibi paylaşır, diğerleri hataları gösterir. Kalite panelinde “Oyun, video”yu seç. Grup halinde paylaşım 1080p ve saniyede 30 kareyle başlar; birebir koçlukta DM aramasında daha yüksek kalite ve saniyede 60 kare seçebilirsin. Windows uygulamasında oyunun sesi de paylaşıma gider, adım sesleri ve silah sesleri tekrarla birlikte duyulur.",
         ],
       },
       {
@@ -787,7 +787,7 @@ export const TR_LANDINGS_NOV13 = {
       {
         h: "Maçı birlikte izlemek",
         p: [
-          "Bir oyuncu tekrarı ya da kaydettiği klibi ses odasında paylaşırken diğerleri yorum yapabilir. Kalite panelinde “Oyun, video”yu seç; grup halinde paylaşım 720p ve saniyede 20 kareyle başlar. Birebir koçlukta DM aramasında daha yüksek kalite ve saniyede 60 kare seçebilirsin. Windows uygulamasında oyunun sesi de görüntüyle birlikte gider. İzleyenler paylaşımın sesini, paylaşan kişinin konuşmasından ayrı olarak kendi taraflarında ayarlayabilir.",
+          "Bir oyuncu tekrarı ya da kaydettiği klibi ses odasında paylaşırken diğerleri yorum yapabilir. Kalite panelinde “Oyun, video”yu seç; grup halinde paylaşım 1080p ve saniyede 30 kareyle başlar. Birebir koçlukta DM aramasında daha yüksek kalite ve saniyede 60 kare seçebilirsin. Windows uygulamasında oyunun sesi de görüntüyle birlikte gider. İzleyenler paylaşımın sesini, paylaşan kişinin konuşmasından ayrı olarak kendi taraflarında ayarlayabilir.",
         ],
       },
       {

@@ -39,8 +39,11 @@ const PAGES = [
   {
     jsx: "src/site/pages/MarketingDownloadPage.jsx",
     path: "/download",
-    // Shown only after the release lookup, on Android or on iPhone.
-    later: ["{label} available", "Latest release", "Download APK", "Download on the App Store"],
+    // Shown only after the release lookup, on Android or on iPhone, or after a download click.
+    later: [
+      "{label} available", "Latest release", "Download APK", "Download on the App Store",
+      "Your download should start now.", "Not starting?", "Direct link", "All releases on GitHub",
+    ],
   },
   {
     jsx: "src/site/pages/StatusPage.jsx",
@@ -101,8 +104,11 @@ for (const src of Object.values(PREVIEW_SHOT_FILES)) {
   }
 }
 for (const f of ["hero-ios-chats-480.webp", "hero-ios-dm-480.webp"]) assert.ok(existsSync(join(frontend, "public/brand/previews", f)), f);
-assert.match(lcpImagePreload(corePageBody("/features")), /<link rel="preload" as="image" href="\/brand\/previews\/06-server\.webp" imagesrcset="[^"]*-720\.webp 720w/);
-assert.match(lcpImagePreload(corePageBody("/")), /imagesrcset="\/brand\/previews\/hero-ios-chats-480\.webp 480w[^"]*" imagesizes="[^"]+" media="\(max-width: 768px\)"/);
+// AVIF first (feat-ci): only the AVIF is preloaded, typed, so no browser downloads both.
+assert.match(lcpImagePreload(corePageBody("/features")), /<link rel="preload" as="image" type="image\/avif" imagesrcset="[^"]*06-server-720\.avif 720w[^"]*" imagesizes="[^"]+" fetchpriority="high" \/>/);
+assert.doesNotMatch(lcpImagePreload(corePageBody("/features")), /\.webp/, "no WebP preload next to the AVIF one");
+assert.match(lcpImagePreload(corePageBody("/")), /type="image\/avif" imagesrcset="\/brand\/previews\/hero-ios-chats-480\.avif 480w[^"]*" imagesizes="[^"]+" media="\(max-width: 768px\)"/);
+assert.match(lcpImagePreload(corePageBody("/")), /type="image\/avif" href="\/brand\/previews\/hero-desktop-dm\.avif" media="\(min-width: 769px\)"/);
 assert.equal(lcpImagePreload(corePageBody("/status")), "", "no image, no preload");
 // 8. Fonts: the marketing CSS no longer declares Inter (the shell head does).
 assert.doesNotMatch(read("src/site/marketing-entry.css"), /@fontsource\/inter\/latin/);

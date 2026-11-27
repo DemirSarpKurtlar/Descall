@@ -227,7 +227,7 @@ export function homeHero(loc) {
         h1: "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
         lead: "Descall, arkadaşlarınla konuşman için ücretsiz bir sesli sohbet uygulaması: ses kanalları, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
-        voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
+        voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 1080p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
         serversTitle: "Rol ve kanallı sunucular",
         serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Yönetici, Moderatör, Üye rolleri vardır.",
         serversPoints: [
@@ -299,7 +299,7 @@ export function homeHero(loc) {
         h1: "Descall: voice chat, servers and screen sharing for friends",
         lead: "Descall is a free voice chat app for you and your friends: voice channels, screen sharing, and servers. One account on iPhone, Android, Windows, and the browser.",
         voiceTitle: "Voice next to the chat",
-        voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
+        voiceBody: "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.",
         serversTitle: "Servers with roles and channels",
         serversBody: "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.",
         serversPoints: [

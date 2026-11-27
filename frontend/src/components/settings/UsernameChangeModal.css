@@ -333,4 +333,14 @@
   .un-actions .un-btn {
     flex: 1;
   }
+  /* Typing the new username: the sheet and its buttons end on the keyboard
+     (over a full-height layout they sat behind the keys); the home-indicator
+     padding is behind the keys too. */
+  html.kb-open .un-overlay {
+    padding-bottom: var(--kb-gap, 0px);
+  }
+  html.kb-open .un-modal {
+    padding-bottom: 16px;
+    max-height: min(92dvh, calc(var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - 12px));
+  }
 }

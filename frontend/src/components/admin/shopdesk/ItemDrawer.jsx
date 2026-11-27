@@ -16,6 +16,17 @@ import { EFFECT_KEY_OPTIONS, THEME_KEY_GROUPS } from "./catalogKeys.js";
 import { CATEGORIES, EFFECT_CATEGORIES, IMAGE_CATEGORIES, RARITIES, discounted, fromLocalInput, num, toLocalInput } from "./shopDeskModel.js";
 import { Ava, Bars, Empty, ItemThumb, NewTag, Pill, RarityPill, Seg, Skel, Toggle, UserPicker, errMsg } from "./ui.jsx";
 import ItemPreview from "./ItemPreview.jsx";
+import { isDesktopShell } from "../../../lib/desktopShell.js";
+import { PUBLIC_SITE_ORIGIN } from "../../../lib/referral.js";
+
+/**
+ * "Open in shop" from the admin window. In the desktop apps a relative link resolved to the
+ * app's own scheme (descall://app/...), which the new-window handler refuses to hand to the
+ * browser, so the button did nothing; there it opens the web shop instead.
+ */
+export function shopPageHref(desktop = isDesktopShell()) {
+  return desktop ? `${PUBLIC_SITE_ORIGIN}/settings/shop` : "/settings/shop";
+}
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 const MAX_ASSET_BYTES = 700_000;
@@ -308,7 +319,7 @@ export default function ItemDrawer({ open, state, items, sections, onClose, onSa
             <p>{creating ? t("shopDesk.createSub") : <><code>{item?.sku}</code> · {t(`shopDesk.cat.${form.category}`)} · {t("shopDesk.addedOn", { date: created })}</>}</p>
           </div>
           {!creating ? (
-            <a className="sdk-btn" href="/settings/shop" target="_blank" rel="noreferrer">
+            <a className="sdk-btn" href={shopPageHref()} target="_blank" rel="noreferrer">
               <ExternalLink size={17} />
               {t("shopDesk.openInShop")}
             </a>

@@ -86,6 +86,15 @@ function signBanTicket({ id }) {
   return sign({ sub: id, scope: "ban" }, BAN_TICKET_TTL);
 }
 
+/**
+ * Passkey re-authentication proof (routes/passkeys.js): the password, an e-mail code, an
+ * authenticator code or an existing passkey was just checked for this session. Bound to the
+ * session id, 5 minutes; requireAuth and socket auth refuse it (it carries a scope).
+ */
+function signPasskeyReauthToken({ id, sid }) {
+  return sign({ sub: id, sid: sid || null, scope: "passkey_reauth" }, "5m");
+}
+
 function headerAlg(token) {
   try {
     const head = JSON.parse(Buffer.from(String(token).split(".")[0] || "", "base64url").toString("utf8"));
@@ -113,6 +122,7 @@ module.exports = {
   signPending2faToken,
   signStepUpToken,
   signBanTicket,
+  signPasskeyReauthToken,
   verifyToken,
   publicJwks,
   signAlg,

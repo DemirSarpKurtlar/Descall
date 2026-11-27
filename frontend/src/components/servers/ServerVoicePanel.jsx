@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import TransientTopHint from "../ui/TransientTopHint.jsx";
 import { motion, useReducedMotion } from "framer-motion";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
@@ -54,6 +55,7 @@ import { getToken } from "../../lib/storage";
 import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
 import { mergeVoiceRoster } from "../../lib/voiceRoster";
 import { VOICE_GRID_FIT_FROM, avatarSizeFor, fitVoiceGrid, gridBand, sameVoiceGridFit } from "../../lib/voiceGridLayout";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 /**
  * 10+ people: measure the room and pick equal tiles that fill it
@@ -644,9 +646,9 @@ function ServerScreenShareStage({
               />
             </div>
           )}
-          <div className="server-voice-screen-hint is-expanded">
+          <TransientTopHint className="server-voice-screen-hint is-expanded">
             {t("Click anywhere to exit fullscreen")}
-          </div>
+          </TransientTopHint>
         </div>,
         document.body
       )
@@ -701,7 +703,7 @@ function ServerScreenShareStage({
           </div>
         )}
 
-        <div className="server-voice-screen-hint">{expandHint}</div>
+        <TransientTopHint key={active.id} className="server-voice-screen-hint">{expandHint}</TransientTopHint>
       </div>
 
       {/* One share: the stage already shows it, a filmstrip would only repeat it. */}
@@ -738,6 +740,8 @@ export default function ServerVoicePanel({
   me,
   serverVoice,
 }) {
+  // Performans: samples taken here belong to "app/ses" (lib/perf/useRumTiming.js).
+  useRumView("app/ses");
   const t = useT();
   const { toast } = useToast();
   const inThis =
@@ -1069,9 +1073,9 @@ export default function ServerVoicePanel({
                 <Monitor size={14} />
                 <span>{tileFullscreen.label}</span>
               </div>
-              <div className="server-voice-screen-hint is-expanded">
+              <TransientTopHint className="server-voice-screen-hint is-expanded">
                 {t("Click anywhere to exit fullscreen")}
-              </div>
+              </TransientTopHint>
             </div>,
             document.body
           )

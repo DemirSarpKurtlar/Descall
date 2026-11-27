@@ -23,7 +23,7 @@ export const TR_GUIDE_BODIES = {
       },
       {
         h: "Grup aramasında işe yarayan ayarlar",
-        p: "Grup aramasında izleyen herkes yayını ayrı ayrı alır; grup büyüdükçe senin yükleme hızının taşıması gereken yük de artar. Bu yüzden Descall grup paylaşımlarını 720p ve saniyede 20 kareyle başlatır, kalabalık bir aramada çözünürlüğü ya da kare hızını yükseltirsen de uyarı gösterir. Saniyede 60 kare birebir aramalar için düşünüldü. Arkadaşların görüntünün takıldığını söylerse önce çözünürlüğü, sonra kare hızını düşür. Slayt, belge ya da kod paylaşıyorsan “Yazı, kod”u seç: orada akıcılıktan çok harflerin net olması önemli ve bir sunum için saniyede 15 kare fazlasıyla yeter.",
+        p: "Grup aramasında izleyen herkes yayını ayrı ayrı alır; grup büyüdükçe senin yükleme hızının taşıması gereken yük de artar. Bu yüzden Descall grup paylaşımlarını 1080p ve saniyede 30 kareyle başlatır, kalabalık bir aramada çözünürlüğü ya da kare hızını yükseltirsen de uyarı gösterir. Saniyede 60 kare birebir aramalar için düşünüldü. Arkadaşların görüntünün takıldığını söylerse önce çözünürlüğü, sonra kare hızını düşür. Slayt, belge ya da kod paylaşıyorsan “Yazı, kod”u seç: orada akıcılıktan çok harflerin net olması önemli ve bir sunum için saniyede 15 kare fazlasıyla yeter.",
       },
       {
         h: "Görüntüyle birlikte sesi de paylaşmak",
@@ -384,7 +384,7 @@ export const TR_GUIDE_BODIES = {
       },
       {
         h: "Raundları ve yapıları birlikte incele",
-        p: "Takım ekran paylaşımıyla öğrenir. Maçtan sonra biri ses odasında bir tekrarı ya da klibi paylaşırken diğerleri hataları gösterebilir. Hızlı hareket için kalite panelinde “Oyun, video”yu seç. Grup aramasında Descall paylaşımı 720p ve saniyede 20 kareyle başlatır, kalabalık bir aramada daha yükseğe çıkarsan seni uyarır. DM aramasındaki birebir koçlukta paylaşım daha yüksek kalitede başlar; saniyede 60 kare tam da bunun için. Windows uygulamasında oyunun sesi görüntüyle birlikte gider; diğerleri senin duyduğunu duyar.",
+        p: "Takım ekran paylaşımıyla öğrenir. Maçtan sonra biri ses odasında bir tekrarı ya da klibi paylaşırken diğerleri hataları gösterebilir. Hızlı hareket için kalite panelinde “Oyun, video”yu seç. Grup aramasında Descall paylaşımı 1080p ve saniyede 30 kareyle başlatır, kalabalık bir aramada daha yükseğe çıkarsan seni uyarır. DM aramasındaki birebir koçlukta paylaşım daha yüksek kalitede başlar; saniyede 60 kare tam da bunun için. Windows uygulamasında oyunun sesi görüntüyle birlikte gider; diğerleri senin duyduğunu duyar.",
       },
       {
         h: "Ne oynadığını göster",
@@ -483,7 +483,7 @@ export const TR_GUIDE_FAQ = {
   "screen-share-with-friends": [
     { q: "Descall’da ekran paylaşımı ücretsiz mi?", a: "Evet. DM aramalarında, grup aramalarında ve sunucu ses kanallarında ekranını üyelik olmadan paylaşabilirsin; paylaşımı izlemek de ücretsiz." },
     { q: "iPhone ya da iPad’den ekranımı paylaşabilir miyim?", a: "Şu an hayır. iPhone ve iPad uygulaması başkalarının paylaşımlarını izleyebilir, ama kendi ekranını paylaşamaz. Bunun için Windows uygulamasını ya da bilgisayardaki bir tarayıcıyı kullan." },
-    { q: "Grup aramasında hangi kaliteyi seçmeliyim?", a: "Descall’ın grup aramaları için önerdiği 720p ve saniyede 20 kareyle başla. Takılan olursa düşür; slayt ya da belge için “Yazı, kod”u seç." },
+    { q: "Grup aramasında hangi kaliteyi seçmeliyim?", a: "Descall’ın grup aramaları için önerdiği 1080p ve saniyede 30 kareyle başla. Takılan olursa düşür; slayt ya da belge için “Yazı, kod”u seç." },
   ],
   "online-study-group-voice-chat": [
     { q: "Descall ders grupları için ücretsiz mi?", a: "Evet. Sunucular, Ders & kampüs şablonu, ses odaları, ekran paylaşımı, anketler ve zamanlanmış mesajların hepsi ücretsiz." },

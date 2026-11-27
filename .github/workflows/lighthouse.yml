@@ -1,0 +1,264 @@
+# Lighthouse CI: speed, accessibility, best-practices and SEO scores of the public pages
+# (landing, login, features, blog, one blog post) on mobile and desktop, for every pull
+# request that changes the web frontend.
+#
+# How it works
+#  1. Builds the frontend once (vite + SEO prerender), pointed at a local stub API so no
+#     request reaches production; analytics / ads hosts are blocked in the test browser
+#     (BLOCKED_URL_PATTERNS in frontend/scripts/lhci/config.mjs), so no fake visits are counted.
+#  2. Serves dist/ like descall.com does (frontend/scripts/lhci/serve-dist.mjs) and runs
+#     Lighthouse 3 times per page and preset; the median run counts.
+#  3. Budgets (LCP, CLS, TBT, total bytes, category floors) are WARNINGS for now: they show
+#     in the log and the comment but never fail. To enforce them, set the repository
+#     variable LHCI_BUDGET_LEVEL=error (Settings > Secrets and variables > Actions >
+#     Variables), see frontend/scripts/lhci/config.mjs.
+#  4. Full HTML reports are a workflow artifact (never temporary-public-storage).
+#  5. One sticky PR comment (in Turkish, owner decision) with a scores table, deltas against
+#     the latest main run, budgets, the entry bundle size and the TBT change. Runs on main save
+#     that baseline in the Actions cache (and as an artifact).
+#  6. Every run's summary (PR number, sha, page, form factor, 4 scores, LCP / CLS / TBT, bytes,
+#     bundle) goes to public.lighthouse_runs for Yönetici Paneli > Performans > Lighthouse CI,
+#     like cloudflare-turnstile.yml writes turnstile_config: a separate "store" job with
+#     SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. Fork pull requests have no secrets: skipped.
+name: Lighthouse
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/src/**"
+      - "frontend/public/**"
+      - "frontend/index.html"
+      - "frontend/vite.config.*"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/scripts/prerender-seo.mjs"
+      - "frontend/scripts/lhci/**"
+      - ".github/workflows/lighthouse.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/src/**"
+      - "frontend/public/**"
+      - "frontend/index.html"
+      - "frontend/vite.config.*"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/scripts/prerender-seo.mjs"
+      - "frontend/scripts/lhci/**"
+      - ".github/workflows/lighthouse.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  LHCI_VERSION: "0.16.1"
+  LHCI_PORT: "4173"
+  LHCI_BUDGET_LEVEL: ${{ vars.LHCI_BUDGET_LEVEL || 'warn' }}
+
+jobs:
+  lighthouse:
+    name: Lighthouse (mobile + desktop)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps (lockfile)
+        run: npm ci --no-audit --no-fund --ignore-scripts
+
+      - name: Build (marketing prerender, stub API on 127.0.0.1)
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:${{ env.LHCI_PORT }}
+          VITE_SOCKET_URL: http://127.0.0.1:${{ env.LHCI_PORT }}
+          VITE_WORLD3D: "0"
+        run: |
+          node scripts/check-marketing-locale.mjs
+          npx vite build
+          node scripts/prerender-seo.mjs
+          node scripts/generate-seo-files.mjs
+
+      - name: Check the measured pages exist
+        run: node scripts/lhci/config.mjs check-pages --dist dist
+
+      - name: Restore main baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/lhci-baseline
+          key: lhci-baseline-main-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            lhci-baseline-main-
+
+      - name: Lighthouse mobile
+        run: |
+          node scripts/lhci/config.mjs rc mobile --port "$LHCI_PORT" --out "$RUNNER_TEMP/lhci/mobile" > "$RUNNER_TEMP/lhci-mobile.json"
+          npx --yes "@lhci/cli@$LHCI_VERSION" autorun --config="$RUNNER_TEMP/lhci-mobile.json"
+
+      - name: Lighthouse desktop
+        if: ${{ !cancelled() }}
+        run: |
+          node scripts/lhci/config.mjs rc desktop --port "$LHCI_PORT" --out "$RUNNER_TEMP/lhci/desktop" > "$RUNNER_TEMP/lhci-desktop.json"
+          npx --yes "@lhci/cli@$LHCI_VERSION" autorun --config="$RUNNER_TEMP/lhci-desktop.json"
+
+      - name: Summary and PR comment text
+        if: ${{ !cancelled() }}
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node scripts/lhci/report.mjs \
+            --mobile "$RUNNER_TEMP/lhci/mobile" \
+            --desktop "$RUNNER_TEMP/lhci/desktop" \
+            --baseline "$RUNNER_TEMP/lhci-baseline/summary.json" \
+            --out "$RUNNER_TEMP/lhci/out" \
+            --sha "$HEAD_SHA" \
+            --dist dist \
+            --run-url "$RUN_URL"
+          cat "$RUNNER_TEMP/lhci/out/comment.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Lighthouse reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: ${{ runner.temp }}/lhci
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Hand the summary to the store job
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-summary
+          path: ${{ runner.temp }}/lhci/out/summary.json
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Hand the comment to the comment job
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-comment
+          path: ${{ runner.temp }}/lhci/out/comment.md
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Prepare main baseline
+        if: ${{ success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/lhci-baseline"
+          cp "$RUNNER_TEMP/lhci/out/summary.json" "$RUNNER_TEMP/lhci-baseline/summary.json"
+
+      - name: Save main baseline
+        if: ${{ success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/lhci-baseline
+          key: lhci-baseline-main-${{ github.sha }}
+
+  comment:
+    name: Sticky PR comment
+    needs: lighthouse
+    # Fork pull requests get a read-only token: they keep the job summary instead.
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: lighthouse-comment
+          path: ${{ runner.temp }}/lhci-comment
+
+      - name: Create or update the comment
+        uses: actions/github-script@v9
+        env:
+          COMMENT_FILE: ${{ runner.temp }}/lhci-comment/comment.md
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- descall-lighthouse-ci -->";
+            const file = process.env.COMMENT_FILE;
+            if (!fs.existsSync(file)) {
+              core.notice("No Lighthouse comment produced; nothing to post.");
+              return;
+            }
+            const body = fs.readFileSync(file, "utf8");
+            if (!body.startsWith(marker)) {
+              core.setFailed("Lighthouse comment is missing its marker");
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const mine = comments.find((c) => c.user && c.user.type === "Bot" && typeof c.body === "string" && c.body.startsWith(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+              core.info(`Updated comment ${mine.id}`);
+            } else {
+              const { data } = await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              core.info(`Created comment ${data.id}`);
+            }
+
+  store:
+    name: Store results (Performans panel)
+    needs: lighthouse
+    # Fork pull requests get no secrets: their results stay in the job summary only.
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            frontend/scripts/lhci
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: lighthouse-summary
+          path: ${{ runner.temp }}/lhci-summary
+
+      - name: Write the run into public.lighthouse_runs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: node scripts/lhci/store.mjs --summary "$RUNNER_TEMP/lhci-summary/summary.json"

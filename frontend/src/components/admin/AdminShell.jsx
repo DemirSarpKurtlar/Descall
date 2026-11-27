@@ -41,7 +41,8 @@ function NavList({ tabs, current, onPick, badges, query, t, big = false }) {
           >
             <Icon size={big ? 20 : 17} weight={on ? "fill" : "regular"} aria-hidden="true" />
             <span>{t(tab.label)}</span>
-            {n > 0 ? <em className="tnum">{n > 99 ? "99+" : n}</em> : null}
+            {tab.newLabel ? <i className="adm-nav-new">{t(tab.newLabel)}</i> : null}
+            {n > 0 ? <em className={`tnum${tab.badgeTone === "red" ? " is-red" : ""}`}>{n > 99 ? "99+" : n}</em> : null}
           </button>
         );
       })}

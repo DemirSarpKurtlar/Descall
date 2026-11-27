@@ -237,6 +237,7 @@ export default {
   "Sign in to your account": "Войдите в свой аккаунт",
   "Sign-in and security. Always on.": "Вход и безопасность. Всегда включены.",
   "Sitemap": "Карта сайта",
+  "Something went wrong.": "Что-то пошло не так.",
   "Sound better in voice chat": "Как звучать лучше в голосовом чате",
   "Start free": "Начать бесплатно",
   "Status": "Статус",

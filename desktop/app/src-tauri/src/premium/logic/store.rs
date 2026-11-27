@@ -136,10 +136,10 @@ impl Store {
         if let Some(dir) = file.parent() {
             let _ = fs::create_dir_all(dir);
         }
-        let mut tmp = file.as_os_str().to_owned();
-        tmp.push(".tmp");
-        let tmp = PathBuf::from(tmp);
-        if fs::write(&tmp, text).is_err() || fs::rename(&tmp, &file).is_err() {
+        // Flushed temp file + rename, retried while Windows refuses the rename (the file open
+        // in a scanner); a failed rename used to keep the change only in memory until the next
+        // flush, and quitting first lost it (descall_shell::durable).
+        if !descall_shell::durable::replace(&file, text.as_bytes()) {
             return false;
         }
         self.dirty = false;

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home screen widgets, their settings screen and the ongoing call notification
+         (draft B "Yuzler", com.descall.app.widget). Same keys in all seven languages
+         (frontend/src/lib/androidWidgets.selftest.mjs checks it). -->
+    <string name="widget_friends_label">Amigos online</string>
+    <string name="widget_friends_desc">Seus rostos favoritos: quem está online e o que está fazendo</string>
+    <string name="widget_unread_label">Mensagens não lidas</string>
+    <string name="widget_unread_desc">Quem escreveu para você, em balões com o rosto</string>
+    <string name="widget_voice_label">Quem está na voz</string>
+    <string name="widget_voice_desc">Salas de voz como grupos de rostos, entre com um toque</string>
+    <string name="widget_call_label">Chamada ao vivo</string>
+    <string name="widget_call_desc">Quem está falando, o tempo, silenciar e sair</string>
+    <string name="w_online">Online</string>
+    <string name="w_favorites">Rostos favoritos</string>
+    <string name="w_new_messages_title">Novas mensagens</string>
+    <string name="w_who_in_voice">Quem está na voz</string>
+    <string name="w_join">Entrar</string>
+    <string name="w_here">Você está aqui</string>
+    <string name="w_talking">%s está falando</string>
+    <string name="w_talking_short">falando</string>
+    <string name="w_you">Você</string>
+    <string name="w_mic_on">Microfone ligado</string>
+    <string name="w_mic_off">Silenciado</string>
+    <string name="w_edit">Editar</string>
+    <string name="w_reply">Responder</string>
+    <string name="w_more_one">+ %s</string>
+    <string name="w_names_two">%1$s e %2$s</string>
+    <string name="w_presence_online">Online</string>
+    <string name="w_presence_idle">Ausente</string>
+    <string name="w_presence_dnd">Não perturbe</string>
+    <string name="w_presence_offline">Offline</string>
+    <string name="w_in_voice">Na voz · %s</string>
+    <string name="w_act_screen">Compartilhando a tela</string>
+    <string name="w_act_game">Jogando %s</string>
+    <string name="w_act_music">Ouvindo %s</string>
+    <string name="w_just_now">agora</string>
+    <string name="w_minutes_ago">há %d min</string>
+    <string name="w_hours_ago">há %d h</string>
+    <string name="w_minutes">%d min</string>
+    <string name="w_hours">%d h</string>
+    <string name="w_stale_offline">Offline, dados das %s. Toque para atualizar.</string>
+    <string name="w_stale_error">Não foi possível atualizar, dados das %s. Toque para tentar de novo.</string>
+    <string name="w_loading">Carregando</string>
+    <string name="w_empty_friends">Ninguém está online</string>
+    <string name="w_empty_friends_sub">Os rostos aparecem aqui quando seus amigos entram</string>
+    <string name="w_empty_friends_none">Ainda sem amigos</string>
+    <string name="w_empty_friends_none_sub">Adicione amigos no Descall para ver os rostos aqui</string>
+    <string name="w_empty_unread">Tudo lido</string>
+    <string name="w_empty_unread_sub">Nenhuma mensagem nova</string>
+    <string name="w_empty_voice">Ninguém na voz</string>
+    <string name="w_empty_voice_sub">As salas aparecem aqui quando seus amigos entram</string>
+    <string name="w_call_idle">Você não está em uma chamada</string>
+    <string name="w_call_idle_sub">Ninguém na voz agora</string>
+    <string name="w_connecting">Conectando…</string>
+    <string name="w_signed_out">Entre no Descall</string>
+    <string name="w_signed_out_sub">Abra o app uma vez para ver seus amigos aqui</string>
+    <string name="w_sign_in">Entrar</string>
+    <string name="w_offline">Você está offline</string>
+    <string name="w_error">Não foi possível carregar</string>
+    <string name="w_error_sub">O widget tenta de novo sozinho</string>
+    <string name="w_retry">Tentar de novo</string>
+    <string name="w_cd_wave">Acenar para %s</string>
+    <string name="w_cd_waved">Você acenou para %s</string>
+    <string name="w_cd_edit">Editar rostos favoritos</string>
+    <string name="w_cd_join">Entrar em %s</string>
+    <string name="w_cd_mute">Silenciar</string>
+    <string name="w_cd_unmute">Ativar microfone</string>
+    <string name="w_cd_deafen">Desligar o som</string>
+    <string name="w_cd_undeafen">Ligar o som</string>
+    <string name="w_cd_leave">Sair da chamada</string>
+    <string name="w_wave_sent">Você acenou para %s</string>
+    <string name="w_wave_limit">Limite de acenos de hoje atingido</string>
+    <string name="w_wave_offline">Você está offline, o aceno não foi enviado</string>
+    <string name="w_wave_failed">Não foi possível acenar. Tente de novo.</string>
+    <string name="n_call_channel">Chamadas em andamento</string>
+    <string name="n_call_channel_desc">Mantém as chamadas do Descall em segundo plano, com silenciar e sair</string>
+    <string name="n_in_progress">Chamada em andamento</string>
+    <string name="n_voice_call">Chamada de voz</string>
+    <string name="n_mute">Silenciar</string>
+    <string name="n_unmute">Ativar</string>
+    <string name="n_leave">Sair</string>
+    <string name="n_chip_connecting">Conectando</string>
+    <string name="cfg_title_friends">Rostos favoritos</string>
+    <string name="cfg_title_widget">Ajustes do widget</string>
+    <string name="cfg_preview">Prévia</string>
+    <string name="cfg_pick_header">Escolha e ordene · %1$d/%2$d</string>
+    <string name="cfg_pick_footer">Toque em um rosto para adicionar ou remover. Toque e segure, depois arraste para mudar a ordem. Os widgets pequenos mostram os primeiros.</string>
+    <string name="cfg_show_activity">Mostrar atividade</string>
+    <string name="cfg_show_activity_sub">Jogo, música, canal de voz, compartilhamento de tela</string>
+    <string name="cfg_wave">Botão de acenar</string>
+    <string name="cfg_wave_sub">No máximo 5 vezes por dia por amigo</string>
+    <string name="cfg_color">Cor</string>
+    <string name="cfg_color_dark">Descall escuro</string>
+    <string name="cfg_color_light">Descall claro</string>
+    <string name="cfg_color_dynamic">Cor dinâmica</string>
+    <string name="cfg_color_note">A cor dinâmica usa as cores do seu papel de parede e segue o modo claro e escuro.</string>
+    <string name="cfg_dynamic_unavailable">A cor dinâmica precisa do Android 12 ou mais recente.</string>
+    <string name="cfg_servers">Servidores</string>
+    <string name="cfg_servers_sub">Mostrar só as salas de voz destes servidores. Sem seleção, todas aparecem.</string>
+    <string name="cfg_done">Concluir</string>
+    <string name="cfg_cancel">Cancelar</string>
+    <string name="cfg_loading">Carregando seus amigos…</string>
+    <string name="cfg_error">Não foi possível carregar a lista.</string>
+    <string name="cfg_offline">Você está offline. Mostrando a última lista.</string>
+    <string name="cfg_signed_out">Primeiro entre no app do Descall.</string>
+    <string name="cfg_open_app">Abrir o Descall</string>
+    <string name="cfg_no_friends">Você ainda não tem amigos.</string>
+    <string name="cfg_limit">Você pode escolher até 8 rostos.</string>
+    <string name="cfg_cd_selected">%1$s, número %2$d</string>
+    <string name="cfg_cd_not_selected">%s, não selecionado</string>
+    <string name="cfg_move_earlier">Mover para antes</string>
+    <string name="cfg_move_later">Mover para depois</string>
+    <string name="wprev_ece">Ece</string>
+    <string name="wprev_kaan">Kaan</string>
+    <string name="wprev_selin">Selin</string>
+    <string name="wprev_arda">Arda</string>
+    <string name="wprev_count">8 pessoas</string>
+    <string name="wprev_unread">4 conversas</string>
+    <string name="wprev_people">9 pessoas</string>
+    <string name="wprev_msg1">Vem pra voz às 9 hoje?</string>
+    <string name="wprev_msg2">Mandei as anotações, vejam antes da prova</string>
+    <string name="wprev_room">Noite de jogos</string>
+    <string name="wprev_server">Corujas · 5 pessoas</string>
+    <string name="wprev_talking">Kaan está falando</string>
+    <string name="wprev_room_time">Noite de jogos · 12:06</string>
+    <plurals name="w_people_count">
+        <item quantity="one">%d pessoa</item>
+        <item quantity="other">%d pessoas</item>
+    </plurals>
+    <plurals name="w_online_count">
+        <item quantity="one">%d online</item>
+        <item quantity="other">%d online</item>
+    </plurals>
+    <plurals name="w_new_messages">
+        <item quantity="one">%d mensagem nova</item>
+        <item quantity="other">%d mensagens novas</item>
+    </plurals>
+    <plurals name="w_chats">
+        <item quantity="one">%d conversa</item>
+        <item quantity="other">%d conversas</item>
+    </plurals>
+    <plurals name="w_channels">
+        <item quantity="one">%d canal</item>
+        <item quantity="other">%d canais</item>
+    </plurals>
+    <plurals name="w_more_channels">
+        <item quantity="one">+%d canal</item>
+        <item quantity="other">+%d canais</item>
+    </plurals>
+    <plurals name="w_more_chats">
+        <item quantity="one">+%d conversa a mais</item>
+        <item quantity="other">+%d conversas a mais</item>
+    </plurals>
+    <plurals name="w_more_named">
+        <item quantity="one">+ %1$s e mais %2$d conversa</item>
+        <item quantity="other">+ %1$s e mais %2$d conversas</item>
+    </plurals>
+    <plurals name="w_names_more">
+        <item quantity="one">%1$s, %2$s e mais %3$d</item>
+        <item quantity="other">%1$s, %2$s e mais %3$d</item>
+    </plurals>
+</resources>

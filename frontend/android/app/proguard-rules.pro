@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Passkeys (DescallPasskeyPlugin): Credential Manager loads its Google Play services provider
+# by reflection on Android 13 and lower; R8 must keep it (androidx.credentials docs).
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** {
+  *;
+}

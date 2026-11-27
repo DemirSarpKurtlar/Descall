@@ -50,9 +50,9 @@ export const SEC_CENTER_DE = {
   "check": {
     "humanCheck": {
       "name": "Menschenprüfung bei der Registrierung",
-      "ok": "Menschenprüfung bei der Registrierung ist an",
-      "fail": "Menschenprüfung bei der Registrierung ist aus",
-      "why": "Um Bot-Registrierungen direkt zu stoppen, braucht es einen Prüfdienst (z. B. Cloudflare Turnstile). Er ist noch nicht eingerichtet; bis dahin schützen Registrierungsstopp und die Sperre für Wegwerf-E-Mails vor Bot-Wellen."
+      "ok": "Menschenprüfung bei der Registrierung ist an (Cloudflare Turnstile)",
+      "fail": "Menschenprüfung bei der Registrierung wird nicht erzwungen",
+      "why": "Cloudflare Turnstile prüft bei Registrierung, Passwort-Reset und bei der Anmeldung nach wiederholt falschen Passwörtern auf Bots; die meisten sehen davon nichts. Der Schlüssel wird automatisch vom GitHub-Workflow \"Cloudflare Turnstile\" eingerichtet. Ist er eingerichtet, aber der Modus Überwachen oder Aus, macht die Empfehlung ihn wieder verpflichtend."
     },
     "admin2fa": {
       "name": "2FA für Admins",
@@ -323,7 +323,8 @@ export const SEC_CENTER_DE = {
     "signup_denied": {
       "title": "Registrierung abgelehnt",
       "lineDisposable": "{email} · Wegwerf-E-Mail",
-      "lineClosed": "Registrierung über {method} bei geschlossenen Registrierungen · {n} Versuche"
+      "lineClosed": "Registrierung über {method} bei geschlossenen Registrierungen · {n} Versuche",
+      "lineHumanCheck": "{method}-Registrierung von der Menschenprüfung gestoppt · {n} Versuche"
     },
     "admin_step_up": {
       "title": "Admin-Bestätigung",
@@ -424,6 +425,7 @@ export const SEC_CENTER_DE = {
     }
   },
   "setting": {
+    "turnstileMode": "Menschenprüfung (Turnstile)",
     "registrationEnabled": "Registrierungen",
     "dmEnabled": "Direktnachrichten",
     "readOnlyMode": "Nur-Lesen-Modus",
@@ -503,5 +505,87 @@ export const SEC_CENTER_DE = {
     "until": "Wieder da gegen {time}.",
     "soon": "So bald wie möglich wieder da.",
     "dismiss": "Band ausblenden"
+  },
+  "human": {
+    "title": "Menschenprüfung",
+    "window": "Cloudflare Turnstile · letzte 24 Stunden",
+    "status": {
+      "enforcing": "Erzwungen",
+      "monitor": "Nur Überwachung",
+      "off": "Aus",
+      "notSetUp": "Nicht eingerichtet",
+      "tableMissing": "Tabelle fehlt",
+      "badSecret": "Schlüssel abgelehnt",
+      "unknown": "Unbekannt"
+    },
+    "kpi": {
+      "pass": "Bestanden",
+      "refused": "Gestoppt",
+      "fallback": "Ohne Prüfung zugelassen",
+      "failOpen": "Cloudflare nicht erreichbar"
+    },
+    "sub": {
+      "rate": "{rate} % bestanden",
+      "noData": "Noch keine Prüfungen",
+      "refused": "Ungültige oder fehlende Prüfung",
+      "fallback": "Widget lud nicht, Ersatzregel",
+      "failOpen": "Ausfall, niemand wurde blockiert"
+    },
+    "legend": {
+      "pass": "Bestanden",
+      "refused": "Gestoppt",
+      "let": "Ohne Prüfung zugelassen"
+    },
+    "chartAria": "Ergebnisse der Menschenprüfung pro Stunde in den letzten 24 Stunden",
+    "hourTip": "{time}: {pass} bestanden, {refused} gestoppt, {let} ohne Prüfung",
+    "actions": "Wo gefragt wird",
+    "action": {
+      "register": "Registrierung",
+      "social_signup": "Registrierung mit Google / Apple",
+      "password_reset": "Passwort-Reset",
+      "login": "Anmeldung (nach falschen Passwörtern)"
+    },
+    "col": {
+      "pass": "Bestanden",
+      "refused": "Gestoppt",
+      "let": "Ohne Prüfung"
+    },
+    "challenged": "{n}-mal gefragt",
+    "modeTitle": "Modus",
+    "mode": {
+      "enforce": "Erzwingen",
+      "monitor": "Überwachen",
+      "off": "Aus"
+    },
+    "modeHint": {
+      "enforce": "Ungültige oder fehlende Prüfungen werden abgelehnt; ein Cloudflare-Ausfall blockiert niemanden.",
+      "monitor": "Die Prüfung läuft und wird gezählt, aber niemand wird abgelehnt.",
+      "off": "Die Prüfung wird nie verlangt."
+    },
+    "monitorTitle": "Nur noch überwachen",
+    "monitorBody": "Die Prüfung läuft weiter, aber wer sie nicht besteht, kann sich trotzdem registrieren. Bots kommen wieder rein.",
+    "offTitle": "Menschenprüfung ausschalten",
+    "offBody": "Registrierung, Passwort-Reset und Anmeldung fragen nicht mehr nach der Prüfung. Nur vorübergehend nutzen, wenn etwas nicht stimmt.",
+    "modeGo": "Übernehmen",
+    "envLocked": "Die Umgebungsvariable TURNSTILE_ENFORCE auf Render legt den Modus fest.",
+    "setup": "Die Einrichtung ist automatisch: GitHub › Actions › Cloudflare Turnstile › apply. Der Schlüssel wirkt innerhalb einer Minute, ohne neues Deployment.",
+    "notes": {
+      "noteSetup": "Kein Turnstile-Schlüssel; die Prüfung wird übersprungen, die Registrierung läuft wie bisher.",
+      "noteTable": "Die Tabelle turnstile_config fehlt: Migration 20261124t_turnstile.sql anwenden.",
+      "noteBadSecret": "Cloudflare lehnt den geheimen Schlüssel ab; niemand wird blockiert. Den Workflow mit rotate ausführen.",
+      "noteUnreachable": "Cloudflare war in den letzten 24 Stunden zeitweise nicht erreichbar; diese Anfragen wurden zugelassen.",
+      "noteEnv": "Modus per Umgebungsvariable festgelegt: {mode}.",
+      "noteTestKeys": "Es werden Cloudflare-Testschlüssel verwendet; es gibt keinen echten Schutz.",
+      "noteBudgetFull": "Das Limit ohne Prüfung ist in dieser Stunde aufgebraucht ({n}); wessen Widget nicht lädt, wartet eine Stunde."
+    },
+    "meta": {
+      "sourceDb": "Quelle: GitHub-Workflow",
+      "sourceEnv": "Quelle: Umgebungsvariable",
+      "siteKey": "Websiteschlüssel {key}",
+      "hosts": "{n, plural, one {# Hostname} other {# Hostnamen}}",
+      "updated": "Aktualisiert {time}",
+      "budget": "Ohne Prüfung zugelassen in dieser Stunde: {used}/{max} · {perIp} pro IP"
+    },
+    "saved": "Modus der Menschenprüfung gespeichert"
   }
 };

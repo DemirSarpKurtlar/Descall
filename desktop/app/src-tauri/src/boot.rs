@@ -333,7 +333,9 @@ fn save_window_state<R: Runtime>(w: &WebviewWindow<R>) {
         }
     }
     v["maximized"] = json!(maximized);
-    let _ = std::fs::write(path, v.to_string());
+    // Flushed temp file + rename: a crash or power cut during the write left a truncated
+    // window-state.json and the window came back at the default size and place.
+    let _ = descall_shell::durable::replace(&path, v.to_string().as_bytes());
 }
 
 /// main.cjs saveWindowStateSoon: a drag or a resize fires Moved / Resized many times a second;

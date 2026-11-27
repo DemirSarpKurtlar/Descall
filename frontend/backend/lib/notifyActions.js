@@ -297,7 +297,7 @@ function createNotifyActions(deps = {}) {
     };
   }
 
-  async function replyDm(io, me, peerId, text, { markRead = true, media = null } = {}) {
+  async function replyDm(io, me, peerId, text, { markRead = true, media = null, silent = false } = {}) {
     const s = state();
     const { convKey, cacheDmMessages, messageSender, isAcceptedFriend } = dm();
     const myId = me.id;
@@ -397,6 +397,8 @@ function createNotifyActions(deps = {}) {
       duration: null,
       replyTo: null,
       timestamp,
+      // "Sessiz gönder" (share sheet): delivered and counted, but no push and no sound.
+      ...(silent ? { silent: true } : {}),
     };
     cacheDmMessages(convKey(myId, peerId), [{ ...messagePayload, to: { id: peerId } }]);
     require("./cluster").invalidate("dmConv", convKey(myId, peerId));
@@ -415,7 +417,7 @@ function createNotifyActions(deps = {}) {
       mentioned = true;
       emitToUser(io, peerId, "mention:received", { dmConversationId: myId, from: me.username, text });
     }
-    if (recipientActivePeer !== myId) {
+    if (recipientActivePeer !== myId && !silent) {
       try {
         const np = deps.notifyPrefs || require("./notifyPrefs");
         const notifyOk = np.allows(await np.levelFor(peerId, "dm", myId), { mention: mentioned });
@@ -450,21 +452,21 @@ function createNotifyActions(deps = {}) {
     return { messageId };
   }
 
-  async function replyGroup(io, me, groupId, text, { media = null } = {}) {
+  async function replyGroup(io, me, groupId, text, { media = null, silent = false } = {}) {
     const v = createVirtualSocket(io, me);
     registerGroup(io, v.socket);
     const tempId = `notify-${crypto.randomUUID()}`;
     const attach = media?.url ? { mediaUrl: media.url, mediaType: media.mediaType || "file" } : {};
-    const emitted = await v.call("group:message", { groupId, tempId, content: text, ...attach });
+    const emitted = await v.call("group:message", { groupId, tempId, content: text, ...attach, ...(silent ? { silent: true } : {}) });
     return readSendOutcome(emitted, { messageEvent: "group:message", errorEvent: "group:message:error", tempId });
   }
 
-  async function replyChannel(io, me, channelId, text, { media = null } = {}) {
+  async function replyChannel(io, me, channelId, text, { media = null, silent = false } = {}) {
     const v = createVirtualSocket(io, me);
     registerChannel(io, v.socket);
     const tempId = `notify-${crypto.randomUUID()}`;
     const attach = media?.url ? { mediaUrl: media.url, mediaType: media.mediaType || "file" } : {};
-    const emitted = await v.call("server:channel:message", { channelId, tempId, content: text, ...attach });
+    const emitted = await v.call("server:channel:message", { channelId, tempId, content: text, ...attach, ...(silent ? { silent: true } : {}) });
     const ack = emitted.find((e) => e.event === "server:channel:message:ack" && e.payload?.tempId === tempId);
     if (ack) return { messageId: null };
     return readSendOutcome(emitted, { messageEvent: "server:channel:message", errorEvent: "server:channel:message:error", tempId });
@@ -474,7 +476,7 @@ function createNotifyActions(deps = {}) {
    * `media` (scheduled sending, messaging phase 5): { url: stored ref, mediaType,
    * mimeType, size, originalName }; the text may then be empty (no caption).
    */
-  async function reply(io, userId, { conv, text, markRead = true, media = null } = {}) {
+  async function reply(io, userId, { conv, text, markRead = true, media = null, silent = false } = {}) {
     const c = parseConversation(conv);
     const s = state();
     const hasMedia = Boolean(media?.url);
@@ -483,7 +485,7 @@ function createNotifyActions(deps = {}) {
       : normalizeReplyText(text, Number(s.systemConfig?.maxMessageLength) || 2000);
     assertNotTimedOut(userId);
     const me = await loadActor(userId);
-    const extra = hasMedia ? { media } : {};
+    const extra = { ...(hasMedia ? { media } : {}), ...(silent ? { silent: true } : {}) };
     if (c.type === "dm") return replyDm(io, me, c.id, body, { markRead, ...extra });
     if (c.type === "group") return replyGroup(io, me, c.id, body, extra);
     return replyChannel(io, me, c.id, body, extra);

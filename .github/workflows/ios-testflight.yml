@@ -20,6 +20,20 @@
 # broadcast_extension). Until the owner registered that identifier in the Apple Developer portal
 # the appex is removed from the archive before signing, and the app hides Share Screen on iOS.
 #
+# 4.3 "Paylaş > Descall" share extension (DescallShare, com.descall.app.share; App Group
+# group.com.descall.app, shared Keychain group <team>.com.descall.shared): on by default. Its App
+# ID is registered with the API key (appstore/asc_register_bundle.py) and it is signed at export
+# like the notification extensions. If the registration or the signed export with it fails, the
+# appex is taken out and the app ships without it (TestFlight never breaks on it). Turn it off
+# with the repository variable IOS_SHARE_EXTENSION=0.
+#
+# Widgets (draft B "Yuzler", docs in frontend/ios/App/DescallWidgets): the WidgetKit extension
+# com.descall.app.widgets (home / lock screen widgets, the call's Live Activity) ships by default.
+# The workflow registers its App ID itself (appstore/asc_register_bundle.py, App Group capability)
+# and signs it at export like the notification extensions. Repository variable IOS_WIDGETS=0
+# turns it off. If the registration or the export signing fails, the extension is removed from the
+# archive and the app still ships (a widget problem never breaks TestFlight); the run says so.
+#
 # Versions: CFBundleShortVersionString = frontend/package.json version (sync-version.cjs keeps the
 # iOS MARKETING_VERSION in sync). CFBundleVersion = UTC timestamp YYYYMMDD.HHMM, so every build
 # number is higher than the previous one regardless of tag, re-run or manual dispatch.
@@ -62,6 +76,12 @@ jobs:
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       XCODE_APP: /Applications/Xcode_26.6.app
       SHIP_BROADCAST: ${{ (inputs.broadcast_extension == true || vars.IOS_BROADCAST_EXTENSION == '1') && '1' || '0' }}
+      # 4.3 share extension: on unless IOS_SHARE_EXTENSION is "0". Like SHIP_WIDGETS, SHIP_SHARE lives
+      # in GITHUB_ENV (set below) so a failed registration or export can turn it off.
+      IOS_SHARE_VAR: ${{ vars.IOS_SHARE_EXTENSION }}
+      # Widgets draft B: on unless the repository variable IOS_WIDGETS is "0". SHIP_WIDGETS itself
+      # lives in GITHUB_ENV (set below) so a failed registration or export can turn it off.
+      IOS_WIDGETS_VAR: ${{ vars.IOS_WIDGETS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +100,8 @@ jobs:
           [ "$missing" -eq 0 ]
           echo "LOG_DIR=$RUNNER_TEMP/ios-logs" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/ios-logs"
+          if [ "${IOS_WIDGETS_VAR:-}" = "0" ]; then echo "SHIP_WIDGETS=0" >> "$GITHUB_ENV"; else echo "SHIP_WIDGETS=1" >> "$GITHUB_ENV"; fi
+          if [ "${IOS_SHARE_VAR:-}" = "0" ]; then echo "SHIP_SHARE=0" >> "$GITHUB_ENV"; else echo "SHIP_SHARE=1" >> "$GITHUB_ENV"; fi
 
       - name: Register the broadcast extension App ID (only when it ships)
         if: env.SHIP_BROADCAST == '1'
@@ -99,6 +121,56 @@ jobs:
           printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
           trap 'rm -f "$ASC_KEY_PATH"' EXIT
           "$RUNNER_TEMP/ascreg/bin/python" appstore/asc_register_bundle.py
+
+      - name: Register the widget extension App ID (skipped, not failed, when Apple refuses)
+        if: env.SHIP_WIDGETS == '1'
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REG_BUNDLE_ID: com.descall.app.widgets
+          REG_NAME: Descall Widgets
+          REG_CAPABILITIES: APP_GROUPS
+        run: |
+          set -uo pipefail
+          umask 077
+          ok=1
+          python3 -m venv "$RUNNER_TEMP/ascregw" && "$RUNNER_TEMP/ascregw/bin/pip" install --quiet pyjwt cryptography requests || ok=0
+          export ASC_KEY_PATH="$RUNNER_TEMP/asc_regw_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          if [ "$ok" -eq 1 ]; then "$RUNNER_TEMP/ascregw/bin/python" appstore/asc_register_bundle.py || ok=0; fi
+          rm -f "$ASC_KEY_PATH"
+          if [ "$ok" -ne 1 ]; then
+            echo "::warning::Widget extension App ID could not be registered; this build ships without widgets (the app is unaffected)."
+            echo "SHIP_WIDGETS=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Register the share extension App ID (skipped when IOS_SHARE_EXTENSION=0)
+        id: share_reg
+        if: env.SHIP_SHARE == '1'
+        continue-on-error: true
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REG_BUNDLE_ID: com.descall.app.share
+          REG_NAME: Descall Share
+          REG_CAPABILITIES: APP_GROUPS
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 -m venv "$RUNNER_TEMP/ascshare"
+          "$RUNNER_TEMP/ascshare/bin/pip" install --quiet pyjwt cryptography requests
+          export ASC_KEY_PATH="$RUNNER_TEMP/asc_share_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          trap 'rm -f "$ASC_KEY_PATH"; rm -rf "$RUNNER_TEMP/ascshare"' EXIT
+          "$RUNNER_TEMP/ascshare/bin/python" appstore/asc_register_bundle.py
+
+      - name: Share extension decision
+        if: env.SHIP_SHARE == '1' && steps.share_reg.outcome != 'success'
+        run: |
+          echo "SHIP_SHARE=0" >> "$GITHUB_ENV"
+          echo "::warning::com.descall.app.share could not be registered; this build ships without the share extension."
 
       - name: Select Xcode (App Store uploads need Xcode 26+ / iOS 26 SDK)
         run: |
@@ -228,6 +300,49 @@ jobs:
           fi
           echo "Shipping DescallBroadcast.appex ($(du -sh "$BAPPEX" | cut -f1))"
 
+      - name: Widget extension (Live Activity, home and lock screen widgets)
+        run: |
+          set -euo pipefail
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          test -d "$WAPPEX" || { echo "::error::DescallWidgets.appex missing from the archive"; exit 1; }
+          if [ "$SHIP_WIDGETS" != "1" ]; then
+            rm -rf "$WAPPEX"
+            echo "::notice::Widget extension compiled but not shipped (IOS_WIDGETS=0 or the App ID registration failed)."
+            exit 0
+          fi
+          if [ -d "$WAPPEX/Frameworks" ]; then
+            for fw in "$WAPPEX/Frameworks"/*; do
+              [ -e "$fw" ] || continue
+              name="$(basename "$fw")"
+              if [ -e "$APP/Frameworks/$name" ]; then rm -rf "$fw"; else mkdir -p "$APP/Frameworks" && mv "$fw" "$APP/Frameworks/"; fi
+            done
+            rmdir "$WAPPEX/Frameworks"
+          fi
+          echo "Shipping DescallWidgets.appex ($(du -sh "$WAPPEX" | cut -f1))"
+
+      - name: Share extension (shipped unless IOS_SHARE_EXTENSION=0 or registration failed)
+        run: |
+          set -euo pipefail
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          test -d "$SAPPEX" || { echo "::warning::DescallShare.appex missing from the archive"; echo "SHIP_SHARE=0" >> "$GITHUB_ENV"; exit 0; }
+          if [ "$SHIP_SHARE" != "1" ]; then
+            rm -rf "$SAPPEX"
+            echo "::notice::Share extension compiled but not shipped in this build."
+            exit 0
+          fi
+          # Shared frameworks live in App.app/Frameworks; an appex with its own is rejected.
+          if [ -d "$SAPPEX/Frameworks" ]; then
+            for fw in "$SAPPEX/Frameworks"/*; do
+              [ -e "$fw" ] || continue
+              name="$(basename "$fw")"
+              if [ -e "$APP/Frameworks/$name" ]; then rm -rf "$fw"; else mkdir -p "$APP/Frameworks" && mv "$fw" "$APP/Frameworks/"; fi
+            done
+            rmdir "$SAPPEX/Frameworks"
+          fi
+          echo "Shipping DescallShare.appex ($(du -sh "$SAPPEX" | cut -f1))"
+
       - name: Embed release entitlements in the archive (ad-hoc, re-signed at export)
         run: |
           set -euo pipefail
@@ -235,7 +350,11 @@ jobs:
           # would lose Push (aps-environment) and Sign in with Apple. Ad-hoc sign the archived app
           # with App.release.entitlements; export replaces this with the Apple Distribution signature.
           APP="$ARCHIVE_PATH/Products/Applications/App.app"
-          ENT="frontend/ios/App/App/App.release.entitlements"
+          # 4.2: keychain-access-groups use $(AppIdentifierPrefix), a build setting codesign does not
+          # expand; give it the team prefix (the shared session group <team>.com.descall.shared).
+          ENT="$RUNNER_TEMP/App.release.expanded.entitlements"
+          sed 's/\$(AppIdentifierPrefix)/'"$TEAM_ID"'./g' "frontend/ios/App/App/App.release.entitlements" > "$ENT"
+          if grep -q 'AppIdentifierPrefix' "$ENT"; then echo "::error::unexpanded AppIdentifierPrefix in the entitlements"; exit 1; fi
           find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -print0 2>/dev/null |
             while IFS= read -r -d '' fw; do codesign --force --sign - --timestamp=none "$fw"; done
           # 3.0.0 (A4): notification extensions (App Group) are signed first, inside-out.
@@ -253,6 +372,23 @@ jobs:
               --entitlements "frontend/ios/App/DescallBroadcast/DescallBroadcast.entitlements" --generate-entitlement-der "$BAPPEX"
             codesign -d --entitlements - --xml "$BAPPEX" 2>/dev/null | plutil -p -
           fi
+          # 4.3 share extension: App Group + the shared Keychain group (team prefix expanded).
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          if [ -d "$SAPPEX" ]; then
+            SENT="$RUNNER_TEMP/DescallShare.expanded.entitlements"
+            sed 's/\$(AppIdentifierPrefix)/'"$TEAM_ID"'./g' "frontend/ios/App/DescallShare/DescallShare.entitlements" > "$SENT"
+            codesign --force --sign - --timestamp=none --entitlements "$SENT" --generate-entitlement-der "$SAPPEX"
+            codesign -d --entitlements - --xml "$SAPPEX" 2>/dev/null | plutil -p -
+          fi
+          # Widgets draft B: App Group + the shared Keychain session (team prefix expanded).
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          if [ -d "$WAPPEX" ]; then
+            WENT="$RUNNER_TEMP/DescallWidgets.expanded.entitlements"
+            sed 's/\$(AppIdentifierPrefix)/'"$TEAM_ID"'./g' "frontend/ios/App/DescallWidgets/DescallWidgets.entitlements" > "$WENT"
+            codesign --force --sign - --timestamp=none --entitlements "$WENT" --generate-entitlement-der "$WAPPEX"
+            codesign -d --entitlements - --xml "$WAPPEX" 2>/dev/null | plutil -p -
+          fi
+          echo "APP_ENT=$ENT" >> "$GITHUB_ENV"
           # 3.7.17: the embedded Apple Watch app (no entitlements of its own), before the outer app.
           WAPP="$APP/Watch/DescallWatch.app"
           test -d "$WAPP" || { echo "::error::DescallWatch.app missing from the archive"; exit 1; }
@@ -284,16 +420,56 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :manageAppVersionAndBuildNumber bool false" "$EXPORT_PLIST"
           plutil -p "$EXPORT_PLIST"
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$ARCHIVE_PATH" \
-            -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist "$EXPORT_PLIST" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$LOG_DIR/export.log"
+          export_ipa() {
+            rm -rf "$EXPORT_PATH"
+            xcodebuild \
+              -exportArchive \
+              -archivePath "$ARCHIVE_PATH" \
+              -exportPath "$EXPORT_PATH" \
+              -exportOptionsPlist "$EXPORT_PLIST" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              2>&1 | tee "$1"
+          }
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          export_ok() {
+            export_ipa "$1" && [ -n "$(find "$EXPORT_PATH" -maxdepth 1 -name '*.ipa' 2>/dev/null)" ]
+          }
+          # The share extension and the widgets never break TestFlight: when the signed export
+          # fails, drop the extension the log names (else the share extension first), re-sign
+          # the app, export again; then the other one if it still fails.
+          drop_ext() {
+            echo "::warning::Export with $2 failed (signing / provisioning); shipping this build without it, see $3."
+            rm -rf "$1"
+            codesign --force --sign - --timestamp=none --entitlements "$RUNNER_TEMP/App.release.expanded.entitlements" --generate-entitlement-der "$APP"
+            echo "$4=0" >> "$GITHUB_ENV"
+          }
+          LOG="$LOG_DIR/export.log"
+          if ! export_ok "$LOG"; then
+            if [ -d "$SAPPEX" ] && { grep -q 'com.descall.app.share' "$LOG" || ! grep -q 'com.descall.app.widgets' "$LOG" || [ ! -d "$WAPPEX" ]; }; then
+              drop_ext "$SAPPEX" "the share extension (com.descall.app.share)" "$LOG" SHIP_SHARE
+              LOG="$LOG_DIR/export-without-share.log"
+            elif [ -d "$WAPPEX" ]; then
+              drop_ext "$WAPPEX" "the widget extension (com.descall.app.widgets)" "$LOG" SHIP_WIDGETS
+              LOG="$LOG_DIR/export-without-widgets.log"
+            else
+              exit 1
+            fi
+            if ! export_ok "$LOG"; then
+              if [ -d "$SAPPEX" ]; then
+                drop_ext "$SAPPEX" "the share extension (com.descall.app.share)" "$LOG" SHIP_SHARE
+              elif [ -d "$WAPPEX" ]; then
+                drop_ext "$WAPPEX" "the widget extension (com.descall.app.widgets)" "$LOG" SHIP_WIDGETS
+              else
+                exit 1
+              fi
+              export_ok "$LOG_DIR/export-without-extensions.log" || exit 1
+            fi
+          fi
           IPA="$(find "$EXPORT_PATH" -maxdepth 1 -name '*.ipa' | head -n 1)"
           test -s "$IPA"
           ls -lh "$IPA"
@@ -323,6 +499,9 @@ jobs:
           # 3.0.1: universal links (https://descall.com) need Associated Domains in the signed app.
           ad="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.associated-domains:0' "$WORK/ent.plist" 2>/dev/null || true)"
           [ "$ad" = "applinks:descall.com" ] || { echo "::error::Associated Domains missing on the app ('$ad')"; ok=0; }
+          # 4.2: shared Keychain group for the session the App Intents / extensions read (DescallKit).
+          kg="$(/usr/libexec/PlistBuddy -c 'Print :keychain-access-groups' "$WORK/ent.plist" 2>/dev/null || true)"
+          echo "$kg" | grep -q "$TEAM_ID.com.descall.shared" || echo "::warning::keychain-access-groups has no $TEAM_ID.com.descall.shared; Siri and extensions fall back to app-only sessions"
           urlscheme="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist" 2>/dev/null || true)"
           [ "$urlscheme" = "descall" ] || { echo "::error::descall:// URL scheme missing from Info.plist ('$urlscheme')"; ok=0; }
           for EXT in NotificationService NotificationContent; do
@@ -362,6 +541,62 @@ jobs:
             fi
           elif [ -d "$BAPPEX" ]; then
             echo "::error::DescallBroadcast.appex shipped although IOS_BROADCAST_EXTENSION is not 1"; ok=0
+          fi
+          # 4.3 share extension: present with its id, App Group, shared Keychain group, same
+          # version, only when this build ships it (SHIP_SHARE can drop to 0 at export).
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          if [ "$SHIP_SHARE" = "1" ]; then
+            if [ -d "$SAPPEX" ]; then
+              codesign -dvv "$SAPPEX" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+              codesign -d --entitlements - --xml "$SAPPEX" > "$WORK/DescallShare.plist" 2>/dev/null || true
+              sg="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/DescallShare.plist" 2>/dev/null || true)"
+              [ "$sg" = "group.com.descall.app" ] || { echo "::error::DescallShare has no App Group ('$sg')"; ok=0; }
+              skg="$(/usr/libexec/PlistBuddy -c 'Print :keychain-access-groups' "$WORK/DescallShare.plist" 2>/dev/null || true)"
+              echo "$skg" | grep -q "$TEAM_ID.com.descall.shared" || { echo "::error::DescallShare cannot read the shared session ($TEAM_ID.com.descall.shared missing)"; ok=0; }
+              sid="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$SAPPEX/Info.plist")"
+              [ "$sid" = "com.descall.app.share" ] || { echo "::error::share extension id is $sid"; ok=0; }
+              sv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$SAPPEX/Info.plist")"
+              ss="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$SAPPEX/Info.plist")"
+              av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+              as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+              [ "$sv" = "$av" ] && [ "$ss" = "$as" ] || { echo "::error::DescallShare $ss ($sv) != app $as ($av)"; ok=0; }
+              [ ! -d "$SAPPEX/Frameworks" ] || { echo "::error::DescallShare.appex has its own Frameworks folder"; ok=0; }
+              echo "DescallShare: $ss ($sv) matches app $as ($av)"
+            else
+              echo "::error::DescallShare.appex missing from the IPA although it ships"; ok=0
+            fi
+          elif [ -d "$SAPPEX" ]; then
+            echo "::error::DescallShare.appex shipped although this build dropped it"; ok=0
+          else
+            echo "::notice::This build ships without the share extension."
+          fi
+          # Widgets draft B: present (App Group, shared Keychain group, id, same version) when shipped.
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          if [ "$SHIP_WIDGETS" = "1" ]; then
+            if [ -d "$WAPPEX" ]; then
+              codesign -dvv "$WAPPEX" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+              codesign -d --entitlements - --xml "$WAPPEX" > "$WORK/DescallWidgets.plist" 2>/dev/null || true
+              wg="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/DescallWidgets.plist" 2>/dev/null || true)"
+              [ "$wg" = "group.com.descall.app" ] || { echo "::error::DescallWidgets has no App Group ('$wg')"; ok=0; }
+              wkg="$(/usr/libexec/PlistBuddy -c 'Print :keychain-access-groups' "$WORK/DescallWidgets.plist" 2>/dev/null || true)"
+              echo "$wkg" | grep -q "$TEAM_ID.com.descall.shared" || echo "::warning::DescallWidgets has no shared Keychain group; widgets will show 'Sign in'"
+              wid="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$WAPPEX/Info.plist")"
+              [ "$wid" = "com.descall.app.widgets" ] || { echo "::error::widget extension id is $wid"; ok=0; }
+              wv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$WAPPEX/Info.plist")"
+              wsv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$WAPPEX/Info.plist")"
+              av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+              as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+              [ "$wv" = "$av" ] && [ "$wsv" = "$as" ] || { echo "::error::DescallWidgets $wsv ($wv) != app $as ($av)"; ok=0; }
+              [ ! -d "$WAPPEX/Frameworks" ] || { echo "::error::DescallWidgets.appex has its own Frameworks folder"; ok=0; }
+              la="$(/usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' "$APP/Info.plist" 2>/dev/null || true)"
+              [ "$la" = "true" ] || { echo "::error::NSSupportsLiveActivities missing from the app Info.plist"; ok=0; }
+              echo "DescallWidgets: $wsv ($wv) matches app $as ($av)"
+            else
+              echo "::error::DescallWidgets.appex missing from the IPA although it was meant to ship"; ok=0
+            fi
+          else
+            [ ! -d "$WAPPEX" ] || { echo "::error::DescallWidgets.appex shipped although widgets were turned off for this build"; ok=0; }
+            echo "::notice::This build ships without the widget extension."
           fi
           # 3.7.17: Apple Watch app signed for distribution, same version and build as the app.
           WAPP="$APP/Watch/DescallWatch.app"

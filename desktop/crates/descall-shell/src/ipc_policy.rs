@@ -374,7 +374,7 @@ mod tests {
         // Admin mode of electron-api-shim.js: every command it can still reach is allowed.
         let shim = include_str!("../../../app/shim/electron-api-shim.js");
         for cmd in invoked(shim) {
-            if !["clipboard_read_image", "updates_check", "updates_restart", "download_file", "screen_sources", "processes_scan", "overlay_show", "overlay_hide", "overlay_update", "tray_set_state", "screen_share_stop", "deep_link_take"].contains(&cmd.as_str()) {
+            if !["clipboard_read_image", "updates_check", "updates_restart", "download_file", "screen_sources", "processes_scan", "overlay_show", "overlay_hide", "overlay_update", "tray_set_state", "screen_share_stop", "deep_link_take", "passkey_available", "passkey_create", "passkey_get", "passkey_cancel"].contains(&cmd.as_str()) {
                 assert!(allowed("admin", &cmd), "admin shim calls {cmd}");
             }
         }

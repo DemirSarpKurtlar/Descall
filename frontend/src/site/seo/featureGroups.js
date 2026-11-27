@@ -58,5 +58,19 @@ export function previewSrcset(src) {
   return `${base}-720.webp 720w, ${base}-1440.webp 1440w, ${src} 2880w`;
 }
 
+/**
+ * AVIF copies of the product shots (public/brand/previews/*.avif, scripts/make-avif.mjs),
+ * 30-48% smaller. Listed first in <picture> with type="image/avif"; the WebP stays the
+ * fallback for browsers without AVIF (iOS 15 Safari, old Android WebViews).
+ */
+export function avifSrc(src) {
+  return src.replace(/\.webp$/, ".avif");
+}
+
+/** previewSrcset with the AVIF copies (same widths). */
+export function previewAvifSrcset(src) {
+  return previewSrcset(src).replace(/\.webp(?= \d+w)/g, ".avif");
+}
+
 /** Shown at most 720 px wide (the frame's max-width), full width on phones. */
 export const PREVIEW_SIZES = "(max-width: 800px) 100vw, 720px";

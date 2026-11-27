@@ -109,7 +109,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         <div className="mkt-shot-copy">
           <h2>{t("Voice next to the chat")}</h2>
           <p>
-            {t("Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.")}
+            {t("Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.")}
           </p>
           <div className="mkt-cta-row" style={{ marginTop: 24 }}>
             <button

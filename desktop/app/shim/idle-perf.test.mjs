@@ -51,6 +51,7 @@ const RUST = {
   "app/src-tauri/src/premium/features/screen_edge_actions.rs": [1, "Descall+ screen edge actions on: one GetCursorPos every 120 ms (Electron POLL_MS 120)"],
   "app/src-tauri/src/premium/features/instant_clip.rs": [1, "after a clip is saved (one-shot)"],
   "app/src-tauri/src/premium/features/multi_account.rs": [1, "removing an account: profile folder delete retries (10 x 500 ms)"],
+  "crates/descall-shell/src/durable.rs": [1, "saving the login / settings file only: rename retry while Windows holds the file (6 x 100 ms, bounded, one-shot per save)"],
   "crates/descall-capture/src/wgc.rs": [1, "screen share running: drain wait on stop (bounded 5 s)"],
   "crates/descall-capture/src/helper.rs": [2, "screen share running: helper stop wait (bounded 3 s); stats every 500 ms while the helper runs"],
 };

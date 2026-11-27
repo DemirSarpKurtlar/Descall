@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 4.2 launcher shortcuts (xml/shortcuts.xml) and App Actions synonyms. -->
+    <string name="shortcut_new_message_short">Yeni mesaj</string>
+    <string name="shortcut_new_message_long">Yeni mesaj yaz</string>
+    <string name="shortcut_dnd_short">Rahatsız etme</string>
+    <string name="shortcut_dnd_long">Rahatsız etme aç/kapat</string>
+    <string name="shortcut_friends_short">Arkadaşlar</string>
+    <string name="shortcut_friends_long">Arkadaşlarını aç</string>
+    <string name="shortcut_open_chat">Sohbeti aç</string>
+    <string-array name="shortcut_new_message_synonyms">
+        <item>yeni mesaj</item>
+        <item>mesaj</item>
+        <item>mesaj yaz</item>
+    </string-array>
+    <string-array name="shortcut_dnd_synonyms">
+        <item>rahatsız etme</item>
+        <item>rahatsız etmeyin</item>
+        <item>durum</item>
+    </string-array>
+    <string-array name="shortcut_friends_synonyms">
+        <item>arkadaşlar</item>
+        <item>arkadaş listesi</item>
+        <item>kim çevrimiçi</item>
+    </string-array>
+</resources>

@@ -19,14 +19,23 @@ import {
   BOT_TIMEOUT_MS,
   VISITOR_TIMEOUT_MS,
   bannerArgumentFor,
-  fetchInvitePreview,
+  fetchInvitePreviewResult,
+  invalidInviteHeadHtml,
   inviteHeadHtml,
+  inviteImageUrl,
   inviteTarget,
   inviteUrl,
   isPreviewBot,
   previewLang,
   rewriteShell,
 } from "./invite-preview.js";
+import {
+  PAGE_BOT_TIMEOUT_MS,
+  PAGE_VISITOR_TIMEOUT_MS,
+  fetchServerPage,
+  langForRequest,
+  renderServerPage,
+} from "./server-page.js";
 
 const SPA_PREFIXES = [
   "/direct",
@@ -47,6 +56,10 @@ const SPA_PREFIXES = [
   "/tr/register",
   "/i",
   "/s",
+  // Desktop passkey handoff page (components/passkeys/PasskeyDesktopPage.jsx).
+  "/passkey/desktop",
+  // "Ben degildim" link of passkey security e-mails (components/passkeys/PasskeyReportPage.jsx).
+  "/passkey/report",
 ];
 
 /** Permanent marketing moves (kept in sync with _redirects). */
@@ -165,18 +178,21 @@ function htmlResponse(source, status, cacheControl) {
  * invite's own title, description, Open Graph / Twitter card and Smart App Banner.
  * Other app paths lose the Smart App Banner (marketing pages only). Any failure: the plain shell.
  */
+function edgeCache() {
+  try {
+    return typeof caches !== "undefined" && caches.default ? caches.default : null;
+  } catch {
+    return null;
+  }
+}
+
 async function appShellResponse(response, request, env, ctx, path) {
   const target = inviteTarget(path);
   if (!target) return rewriteShell(response);
   const url = inviteUrl(path);
-  let cache = null;
-  try {
-    cache = typeof caches !== "undefined" && caches.default ? caches.default : null;
-  } catch {
-    cache = null;
-  }
+  const cache = edgeCache();
   const ua = request.headers.get("user-agent") || "";
-  const preview = await fetchInvitePreview(target, {
+  const { preview, missing } = await fetchInvitePreviewResult(target, {
     apiOrigin: env?.API_ORIGIN || undefined,
     cache,
     timeoutMs: isPreviewBot(ua) ? BOT_TIMEOUT_MS : VISITOR_TIMEOUT_MS,
@@ -184,10 +200,128 @@ async function appShellResponse(response, request, env, ctx, path) {
     waitUntil: ctx && typeof ctx.waitUntil === "function" ? (p) => ctx.waitUntil(p) : null,
   });
   const appArgument = bannerArgumentFor(target, url);
-  if (!preview) return rewriteShell(response, { banner: appArgument || true });
   const lang = previewLang(request.headers.get("accept-language"));
+  if (!preview) {
+    // Unknown / expired code: the neutral card, never the server's or group's name or image.
+    if (missing) {
+      response.headers.append("vary", "accept-language");
+      return rewriteShell(response, { headHtml: invalidInviteHeadHtml({ lang, url }) });
+    }
+    return rewriteShell(response, { banner: appArgument || true });
+  }
   response.headers.append("vary", "accept-language");
-  return rewriteShell(response, { headHtml: inviteHeadHtml(preview, { lang, url, appArgument }) });
+  const image = inviteImageUrl(target, preview, lang);
+  return rewriteShell(response, { headHtml: inviteHeadHtml(preview, { lang, url, appArgument, image }) });
+}
+
+/**
+ * Public server page "Vitrin" (server-page.js): /s/<slug> when the owner turned on
+ * "Google'da göster". null: the page is off (or the backend is slow), so the caller serves
+ * the invite landing exactly as before.
+ */
+async function serverPageResponse(request, env, ctx, path) {
+  const target = inviteTarget(path);
+  if (!target || target.kind !== "vanity") return null;
+  const ua = request.headers.get("user-agent") || "";
+  const page = await fetchServerPage(target.code, {
+    apiOrigin: env?.API_ORIGIN || undefined,
+    cache: edgeCache(),
+    timeoutMs: isPreviewBot(ua) ? PAGE_BOT_TIMEOUT_MS : PAGE_VISITOR_TIMEOUT_MS,
+    clientIp: request.headers.get("cf-connecting-ip") || "",
+    userAgent: ua,
+    waitUntil: ctx && typeof ctx.waitUntil === "function" ? (p) => ctx.waitUntil(p) : null,
+  });
+  if (!page) return null;
+  const { lang, vary } = langForRequest(page, request.headers.get("accept-language"));
+  const headers = new Headers();
+  headers.set("content-type", "text/html; charset=utf-8");
+  // Counts change; a minute at the edge, revalidated by browsers.
+  headers.set("cache-control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
+  if (vary) headers.set("vary", "accept-language");
+  applySecurityHeaders(headers);
+  return new Response(renderServerPage(page, { lang, apiOrigin: env?.API_ORIGIN || undefined }), { status: 200, headers });
+}
+
+const OG_PATH_RE = /^\/og\/(?:(s|invite|group)\/([A-Za-z0-9_-]{2,64})|invalid)\.png$/;
+
+/**
+ * Generated 1200x630 link preview cards: /og/s/<slug>.png, /og/invite/<code>.png,
+ * /og/group/<code>.png, /og/invalid.png (backend routes/publicPages.js). Only v and lang
+ * are passed on; versioned cards are cached at the edge as long as the backend allows.
+ */
+async function ogImageResponse(request, env, url) {
+  const m = url.pathname.match(OG_PATH_RE);
+  if (!m) return null;
+  const apiOrigin = String(env?.API_ORIGIN || "https://des-call.onrender.com").replace(/\/$/, "");
+  const q = new URLSearchParams();
+  const v = url.searchParams.get("v");
+  const lang = url.searchParams.get("lang");
+  if (v && /^[A-Za-z0-9_-]{1,24}$/.test(v)) q.set("v", v);
+  if (lang && /^(tr|en|de|es|fr|pt-BR|ru)$/.test(lang)) q.set("lang", lang);
+  const qs = q.toString();
+  const upstreamPath = m[1] ? `/api/public-pages/og/${m[1]}/${m[2]}.png` : "/api/public-pages/og/invalid.png";
+  const cache = edgeCache();
+  const key = new Request(`https://descall.com${url.pathname}${qs ? `?${qs}` : ""}`);
+  if (cache) {
+    const hit = await cache.match(key).catch(() => null);
+    if (hit) return hit;
+  }
+  let res;
+  try {
+    res = await fetch(`${apiOrigin}${upstreamPath}${qs ? `?${qs}` : ""}`, {
+      headers: { accept: "image/png", "x-forwarded-for": request.headers.get("cf-connecting-ip") || "" },
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    res = null;
+  }
+  if (!res || !res.ok || !(res.headers.get("content-type") || "").startsWith("image/png")) {
+    // Backend down: the static invite card, never an error page in a chat preview.
+    const fallback = await env.ASSETS.fetch(new Request(new URL("/og-invite.png", url).toString())).catch(() => null);
+    if (fallback && fallback.ok) {
+      const headers = new Headers(fallback.headers);
+      headers.set("cache-control", "public, max-age=60");
+      return new Response(fallback.body, { status: 200, headers });
+    }
+    return new Response(null, { status: 502, headers: { "cache-control": "no-store" } });
+  }
+  const headers = new Headers();
+  headers.set("content-type", "image/png");
+  headers.set("cache-control", res.headers.get("cache-control") || "public, max-age=3600");
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("access-control-allow-origin", "*");
+  const out = new Response(res.body, { status: 200, headers });
+  if (cache) {
+    const copy = out.clone();
+    await cache.put(key, copy).catch(() => {});
+  }
+  return out;
+}
+
+/** sitemap-servers.xml: every shown public server page (backend), cached 10 minutes. */
+async function serverSitemapResponse(env) {
+  const apiOrigin = String(env?.API_ORIGIN || "https://des-call.onrender.com").replace(/\/$/, "");
+  const cache = edgeCache();
+  const key = new Request("https://descall.com/__edge/sitemap-servers/v1");
+  if (cache) {
+    const hit = await cache.match(key).catch(() => null);
+    if (hit) return hit;
+  }
+  let body = null;
+  try {
+    const res = await fetch(`${apiOrigin}/api/public-pages/sitemap-servers.xml`, { headers: { accept: "application/xml" }, signal: AbortSignal.timeout(8000) });
+    if (res.ok) body = await res.text();
+  } catch {
+    body = null;
+  }
+  const ok = typeof body === "string" && body.includes("<urlset");
+  const headers = new Headers();
+  headers.set("content-type", "application/xml; charset=utf-8");
+  headers.set("cache-control", ok ? "public, max-age=600" : "public, max-age=60");
+  headers.set("x-content-type-options", "nosniff");
+  const out = new Response(ok ? body : '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</urlset>\n', { status: 200, headers });
+  if (cache && ok) await cache.put(key, out.clone()).catch(() => {});
+  return out;
 }
 
 export default {
@@ -244,7 +378,17 @@ export default {
       return withSecurity(Response.redirect(new URL("/", url), 301));
     }
 
+    // Generated link preview cards and the public server sitemap (backend, edge-cached).
+    if (path.startsWith("/og/")) {
+      const img = await ogImageResponse(request, env, url);
+      if (img) return img;
+    }
+    if (path === "/sitemap-servers.xml") return serverSitemapResponse(env);
+
     if (isSpaPath(path)) {
+      // Public server page (owner opt-in): indexable HTML instead of the invite landing.
+      const vitrin = await serverPageResponse(request, env, ctx, path);
+      if (vitrin) return vitrin;
       // Root document is the shared shell. /index.html itself 308s to /.
       const shell = await readAsset(env, request, "/");
       const response = htmlResponse(shell, 200, "no-cache");

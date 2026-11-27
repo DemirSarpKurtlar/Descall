@@ -92,6 +92,32 @@ jobs:
           swiftc -o "$RUNNER_TEMP/bl" App/App/DescallScreenBroadcastLogic.swift selftest/broadcast/main.swift
           "$RUNNER_TEMP/bl"
 
+      - name: DescallKit selftest (Swift, shared session / API client for intents and extensions)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/kit" App/DescallKit/*.swift selftest/kit/main.swift
+          "$RUNNER_TEMP/kit"
+      - name: Share extension logic selftest (Swift, sheet rules / send job / strings)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/share" App/DescallShare/ShareLogic.swift App/DescallShare/ShareText.swift App/DescallShare/ShareStrings.swift selftest/share/main.swift
+          "$RUNNER_TEMP/share"
+
+      - name: Widgets logic selftest (Swift, favourites / refresh / Live Activity state)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/wl" App/DescallKit/*.swift App/WidgetShared/DescallWidgetLogic.swift selftest/widgets/main.swift
+          "$RUNNER_TEMP/wl"
+      - name: Passkey logic selftest (Swift)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/pk" App/App/DescallPasskeyLogic.swift selftest/passkey/main.swift
+          "$RUNNER_TEMP/pk"
+
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
           set -euo pipefail
@@ -151,6 +177,17 @@ jobs:
             test "$ID" = "com.descall.app.$EXT"
           done
           /usr/libexec/PlistBuddy -c 'Print :NSUserActivityTypes' "$APP/Info.plist" | grep -q INSendMessageIntent
+          # 4.2: App Intents metadata (Siri / Shortcuts / Spotlight) and the phrases in every language.
+          test -d "$APP/Metadata.appintents" || { echo "::error::Metadata.appintents missing (App Intents not extracted)"; exit 1; }
+          ls "$APP/Metadata.appintents"
+          for L in en tr de es fr pt-BR ru; do
+            for T in AppShortcuts Localizable Intents; do
+              test -f "$APP/$L.lproj/$T.strings" || { echo "::error::$L.lproj/$T.strings missing"; exit 1; }
+            done
+          done
+          # Passkeys: the associated domain for webcredentials is in both entitlement files.
+          grep -q "webcredentials:descall.com" App/App.release.entitlements
+          grep -q "webcredentials:descall.com" App/App.debug.entitlements
           # iOS whole-screen sharing: ReplayKit broadcast upload extension (docs/ios-screen-share.md).
           BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
           test -d "$BAPPEX" || { echo "::error::DescallBroadcast.appex not embedded"; exit 1; }
@@ -164,6 +201,28 @@ jobs:
             ls "$BAPPEX/Frameworks"
           fi
           echo "Broadcast extension: $(du -sh "$BAPPEX" | cut -f1), app Frameworks: $(ls "$APP/Frameworks" | tr '\n' ' ')"
+          # 4.3 "Paylaş > Descall": share extension (SwiftUI sheet, Siri share suggestions).
+          SAPPEX="$APP/PlugIns/DescallShare.appex"
+          test -d "$SAPPEX" || { echo "::error::DescallShare.appex not embedded"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$SAPPEX/Info.plist")" = "com.descall.app.share"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$SAPPEX/Info.plist")" = "com.apple.share-services"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:IntentsSupported' "$SAPPEX/Info.plist" | grep -q INSendMessageIntent
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SAPPEX/Info.plist")" = "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")"
+          grep -q 'com.descall.shared' DescallShare/DescallShare.entitlements
+          grep -q 'group.com.descall.app' DescallShare/DescallShare.entitlements
+          if [ -d "$SAPPEX/Frameworks" ]; then echo "::error::DescallShare.appex carries its own Frameworks folder"; ls "$SAPPEX/Frameworks"; exit 1; fi
+          echo "Share extension: $(du -sh "$SAPPEX" | cut -f1)"
+          # Widgets draft B: WidgetKit extension (widgets + Live Activity), strings in every language.
+          WAPPEX="$APP/PlugIns/DescallWidgets.appex"
+          test -d "$WAPPEX" || { echo "::error::DescallWidgets.appex not embedded"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WAPPEX/Info.plist")" = "com.descall.app.widgets"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$WAPPEX/Info.plist")" = "com.apple.widgetkit-extension"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' "$APP/Info.plist")" = "true"
+          test -d "$WAPPEX/Metadata.appintents" || { echo "::error::widget App Intents metadata missing"; exit 1; }
+          for L in en tr de es fr pt-BR ru; do
+            test -f "$WAPPEX/$L.lproj/Localizable.strings" || { echo "::error::DescallWidgets $L.lproj/Localizable.strings missing"; exit 1; }
+          done
+          echo "Widget extension: $(du -sh "$WAPPEX" | cut -f1)"
           # 3.7.17: the Apple Watch app is embedded with its own id, the iPhone app as companion.
           WAPP="$APP/Watch/DescallWatch.app"
           test -d "$WAPP" || { echo "::error::DescallWatch.app not embedded"; exit 1; }

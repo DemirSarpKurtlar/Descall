@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material You widget theme, night (draft "Dinamik renk": #1D2E2C surface, #7FD6C7 accent
+         on a teal wallpaper; the system palette supplies the real tones). -->
+    <color name="wdyn_bg_start">@android:color/system_accent2_800</color>
+    <color name="wdyn_bg_end">@android:color/system_neutral2_900</color>
+    <color name="wdyn_glow">@android:color/transparent</color>
+    <color name="wdyn_surface">@android:color/system_accent2_800</color>
+    <color name="wdyn_text">@android:color/system_accent2_50</color>
+    <color name="wdyn_text2">@android:color/system_accent2_200</color>
+    <color name="wdyn_text3">@android:color/system_accent2_400</color>
+    <color name="wdyn_chip">#1AFFFFFF</color>
+    <color name="wdyn_accent">@android:color/system_accent1_200</color>
+    <color name="wdyn_on_accent">@android:color/system_accent1_900</color>
+    <color name="wdyn_success">#FF3DDC84</color>
+</resources>

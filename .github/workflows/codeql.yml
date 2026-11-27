@@ -1,0 +1,117 @@
+# CodeQL: GitHub's code scanner. It reads the source (it does not run the app) and looks for
+# security bugs: injection, unsafe redirects, path traversal, leaked tokens in logs, unsafe
+# workflow expressions and similar. Findings appear under Security > Code scanning and, on a
+# pull request, as annotations on the changed lines.
+#
+# It never blocks a release: no release / TestFlight / publish workflow depends on this one,
+# and a finding does not fail the job (results are uploaded, not enforced). To make it a
+# merge gate later, add "CodeQL" as a required check in the branch ruleset.
+#
+# Languages
+#  - javascript-typescript: web app, iOS/Android web layer, backend (Render), Electron,
+#    Cloudflare worker, CI scripts. build-mode none (nothing is built).
+#  - actions: the workflows in .github/workflows (script injection, over-broad tokens).
+#  - java-kotlin: the Android native plugins (frontend/android). build-mode none reads the
+#    Java sources without running Gradle (Kotlin would need a build; the app has none).
+#  - rust (weekly + main only, too slow for every PR): the Windows desktop app in desktop/.
+#  - swift is NOT scanned: CodeQL needs a full Xcode build on a macOS runner for Swift (no
+#    build-mode none), which costs 10x Linux minutes and a full unsigned build of the app
+#    and its Watch target (~12k lines of Swift); ios-build-check.yml already compiles it.
+#
+# Paths that are build output, generated or data-only are skipped (.github/codeql/codeql-config.yml).
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "appstore/**"
+      - "**/*.png"
+      - "**/*.jpg"
+      - "**/*.webp"
+      - "**/*.avif"
+      - "frontend/src/i18n/locales/**"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "appstore/**"
+  schedule:
+    # Mondays 03:17 UTC (06:17 Istanbul): before Dependabot (07:00 Istanbul).
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: actions
+            build-mode: none
+          - language: java-kotlin
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  analyze-rust:
+    name: Analyze (rust)
+    # Rust extraction resolves the whole Tauri workspace (~10 min): weekly, on main and on demand.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: rust
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:rust"

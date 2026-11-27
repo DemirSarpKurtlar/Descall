@@ -28,6 +28,7 @@ import ActiveCallBanner from "../ActiveCallBanner";
 import UserProfileModal from "../social/UserProfileModal";
 import ReportUserModal from "../social/ReportUserModal";
 import { focusComposerForReply } from "../../lib/composerFocus";
+import { useMessageListTiming } from "../../lib/perf/useRumTiming.js";
 import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
 import EmojiPickerSheet from "./EmojiPickerSheet";
@@ -368,6 +369,10 @@ function MessageList({
     || activeGroup?.id
     || dmConversationId(currentUser?.id || me?.id, activeDmUser?.id);
   const serverId = activeServer?.id || activeChannel?.serverId || null;
+
+  // Performans: "İlk mesaj listesi" (open -> first painted list) and the route of every
+  // sample taken while this conversation shows (lib/perf/useRumTiming.js).
+  useMessageListTiming(conversationId, conversationType, loading);
 
   const trimmedSearch = searchQuery.trim();
   const isSearching = trimmedSearch.length > 0;

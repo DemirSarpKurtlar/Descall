@@ -37,6 +37,8 @@ const STEP_UP_EXEMPT = [
   /^\/audit\/views(\/[^/]+)?\/?$/,
   // Apple Watch games: syncing one's own best scores changes nothing on the platform.
   /^\/watch-games\/scores\/?$/,
+  // Performans: saved views, hiding an alert banner and opening its Hata Kayıtları entry.
+  /^\/perf\/(views(\/[^/]+)?|alerts\/[^/]+\/(hide|unhide|error-log))\/?$/,
 ];
 let warned = false;
 

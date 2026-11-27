@@ -27,5 +27,5 @@ export function svhStrings(t) {
 
 export function useSvh() {
   const { t, locale } = useLocale();
-  return useMemo(() => ({ ...svhStrings(t), locale, ...caseHelpers(locale) }), [t, locale]);
+  return useMemo(() => ({ ...svhStrings(t), t, locale, ...caseHelpers(locale) }), [t, locale]);
 }
