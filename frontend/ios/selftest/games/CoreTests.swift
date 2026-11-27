@@ -88,3 +88,17 @@ func testCore() {
     eq(GameMath.clock(65), "1:05", "clock")
     eq(GameMath.clock(3725), "1:02:05", "clock hours")
 }
+
+func testAlerts() {
+    typealias R = GameAlertRule
+    eq(R.evaluate(level: "critical", errors: 0, reports: 0, hot: 0, baselineErrors: 0, baselineReports: 0, already: []), .health, "critical health")
+    check(R.evaluate(level: "critical", errors: 0, reports: 0, hot: 0, baselineErrors: 0, baselineReports: 0, already: [.health]) == nil, "never twice")
+    eq(R.evaluate(level: "high", errors: 41, reports: 0, hot: 0, baselineErrors: 12, baselineReports: 0, already: []), .errors, "error spike")
+    check(R.evaluate(level: "high", errors: 41, reports: 0, hot: 0, baselineErrors: 38, baselineReports: 0, already: []) == nil, "high but not growing")
+    check(R.evaluate(level: "ok", errors: 20, reports: 0, hot: 0, baselineErrors: 0, baselineReports: 0, already: []) == nil, "under the alarm line")
+    eq(R.evaluate(level: "watch", errors: 1, reports: 14, hot: 2, baselineErrors: 1, baselineReports: 9, already: []), .reports, "reports pile up")
+    check(R.evaluate(level: "watch", errors: 1, reports: 14, hot: 0, baselineErrors: 1, baselineReports: 9, already: []) == nil, "no hot target, no alert")
+    check(R.evaluate(level: nil, errors: nil, reports: nil, hot: 0, baselineErrors: nil, baselineReports: nil, already: []) == nil, "nothing known")
+    eq(R.section(.errors), "errors", "errors section")
+    eq(R.section(.reports), "reports", "reports section")
+}

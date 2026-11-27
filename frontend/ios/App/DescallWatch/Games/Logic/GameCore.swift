@@ -230,3 +230,37 @@ enum GameMath {
         return Array(repeating: total / Double(n), count: n)
     }
 }
+
+/// Draft A: a critical admin signal pauses the game and offers the admin section.
+enum GameAlertKind: String, Codable, Equatable {
+    /// Overview health "critical".
+    case health
+    /// Errors in the last hour reached the panel's alarm line and grew since the round began.
+    case errors
+    /// Open reports piling up (hot targets) while playing.
+    case reports
+}
+
+enum GameAlertRule {
+    /// Same line the admin home uses for the red errors row.
+    static let errorAlarm = 25
+    static let errorGrowth = 10
+    static let reportAlarm = 10
+
+    /// The alert to raise for an overview reading, or nil. `baseline*` are the readings at
+    /// the start of the round; `already` are the kinds shown this round (never twice).
+    static func evaluate(level: String?, errors: Int?, reports: Int?, hot: Int, baselineErrors: Int?, baselineReports: Int?, already: Set<GameAlertKind>) -> GameAlertKind? {
+        if level == "critical", !already.contains(.health) { return .health }
+        if let e = errors, e >= errorAlarm, e >= (baselineErrors ?? 0) + errorGrowth, !already.contains(.errors) { return .errors }
+        if let r = reports, hot > 0, r >= reportAlarm, r > (baselineReports ?? r), !already.contains(.reports) { return .reports }
+        return nil
+    }
+
+    /// Admin section the alert jumps to (nil = the admin home).
+    static func section(_ kind: GameAlertKind) -> String? {
+        switch kind {
+        case .health, .errors: return "errors"
+        case .reports: return "reports"
+        }
+    }
+}

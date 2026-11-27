@@ -4,6 +4,7 @@ import Foundation
 //   swiftc -O -o /tmp/games App/DescallWatch/Games/Logic/*.swift selftest/games/*.swift && /tmp/games
 let started = Date()
 testCore()
+testAlerts()
 testPong()
 testBricks()
 testSnake()
