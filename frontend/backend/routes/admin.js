@@ -110,6 +110,8 @@ router.use("/premium", require("./adminPremium"));
 router.use(require("./adminTokens"));
 // Sunucu Ağı (hybrid server, owner only): routes/adminNodes.js.
 router.use(require("./adminNodes"));
+// Apple Watch games (owner only, section "games"): best scores synced from the watch.
+router.use(require("./adminWatchGames"));
 
 router.get("/directory", async (req, res) => {
   try {

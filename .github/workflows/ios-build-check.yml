@@ -76,6 +76,15 @@ jobs:
           swiftc -o "$RUNNER_TEMP/wc" App/DescallWatch/WatchCore.swift selftest/watchcore/main.swift
           "$RUNNER_TEMP/wc"
 
+      - name: Watch games logic selftest (Swift, rules / AI / generators, owner-only games)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -O -o "$RUNNER_TEMP/wg" App/DescallWatch/Games/Logic/*.swift selftest/games/*.swift
+          "$RUNNER_TEMP/wg"
+          swiftc -o "$RUNNER_TEMP/gs" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchCore.swift App/DescallWatch/WatchStrings.swift App/DescallWatch/Games/GameStrings.swift App/DescallWatch/Games/Logic/*.swift selftest/gamestrings/main.swift
+          "$RUNNER_TEMP/gs"
+
       - name: Screen broadcast logic selftest (Swift)
         working-directory: frontend/ios
         run: |
@@ -388,7 +397,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/watch-shots"
-          for SCREEN in chats chat reply servers server friends status activity calls profile offline admin reports case stepup feedback maintenance; do
+          for SCREEN in chats chat reply servers server friends status activity calls profile offline admin reports case stepup feedback maintenance games game-pong game-chess game-merge game-runner game-alert; do
             xcrun simctl terminate "$UDID" com.descall.app.watchkitapp || true
             # Turkish, like the App Store listing (primary locale tr).
             xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN" -AppleLanguages "(tr)" -AppleLocale tr_TR

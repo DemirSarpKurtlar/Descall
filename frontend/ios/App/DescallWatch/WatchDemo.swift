@@ -36,6 +36,7 @@ enum WatchDemo {
         case "case": return [.reportCase(demoCase)]
         case "feedback": return [.feedback]
         case "maintenance": return [.maintenance]
+        case let s? where s == "games" || s.hasPrefix("game-"): return [.games]
         default: return []
         }
     }
@@ -54,7 +55,7 @@ enum WatchDemo {
               {"conv":"group:demo-ekip","kind":"group","title":"Ekip","initials":"E","avatarUrl":null,"presence":null,"preview":"Can: maç 21:00 de","at":"\(iso(minutesAgo: 9))"},
               {"conv":"dm:demo-mert","kind":"dm","title":"Mert Şahin","initials":"MŞ","avatarUrl":null,"presence":"idle","preview":"Tamam, yarın konuşuruz","at":"\(iso(minutesAgo: 40))"},
               {"conv":"dm:demo-sn","kind":"dm","title":"Can Arslan","initials":"CA","avatarUrl":null,"presence":"dnd","preview":"Fotoğraf","at":"\(iso(minutesAgo: 300))"}
-             ],"adminSections":["overview","reports","feedback","errors","maintenance"]}
+             ],"adminSections":["overview","reports","feedback","errors","maintenance","games"]}
             """
         }
         if path.hasPrefix("/api/watch/thread") {
@@ -134,6 +135,9 @@ enum WatchDemo {
         }
         if path.hasPrefix("/api/admin/maintenance/windows") {
             return "{\"current\":{\"id\":\"w1\",\"title\":\"Acil bakım\",\"status\":\"active\",\"startsAt\":\"\(iso(minutesAgo: 10))\",\"endsAt\":\"\(iso(minutesAgo: -20))\"},\"summary\":{\"systemStatus\":\"maintenance\"}}"
+        }
+        if path.hasPrefix("/api/admin/watch-games/scores") {
+            return "{\"scores\":[],\"days\":[],\"storage\":\"ok\"}"
         }
         if path.hasPrefix("/api/admin/step-up") {
             return "{\"ok\":true,\"token\":\"demo\",\"expiresInSec\":900}"

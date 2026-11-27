@@ -280,6 +280,9 @@ enum AdminRoute: Hashable {
     case accessBans
     case people
     case person(AdminPerson)
+    /// Owner only, watch only (WatchGamesGate): the games hub and one game's page.
+    case games
+    case game(GameId)
 }
 
 /// Sections the watch can show, in menu order (ids = backend GRANTABLE_SECTIONS).
