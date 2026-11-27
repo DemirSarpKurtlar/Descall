@@ -1,5 +1,6 @@
 import SpriteKit
 import SwiftUI
+import UIKit
 
 // SpriteKit plumbing for the action games (Raket, Prizma, Isilti): a scene that steps its
 // GameModel every frame at 60 fps, gradient textures, and a SwiftUI host with the
