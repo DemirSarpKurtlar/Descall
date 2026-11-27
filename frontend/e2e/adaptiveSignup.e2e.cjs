@@ -120,7 +120,15 @@ async function main() {
       if (!url.startsWith(base) && !foreignApi) return r.abort();
       const p = u.pathname;
       // Anything not mocked below goes to the local mock server (never the real host).
-      const passOn = async () => (foreignApi ? r.fulfill({ response: await r.fetch({ url: `${base}${u.pathname}${u.search}` }) }) : r.continue());
+      const passOn = async () => {
+        if (!foreignApi) return r.continue();
+        try {
+          return await r.fulfill({ response: await r.fetch({ url: `${base}${u.pathname}${u.search}` }) });
+        } catch {
+          // The page or context closed while a long poll (socket.io) was in flight.
+          return r.abort().catch(() => {});
+        }
+      };
       const json = (status, body) => r.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
       if (req.resourceType() === 'document') return passOn();
       if (p === '/api/public-pages/live') return json(200, liveFixture());
