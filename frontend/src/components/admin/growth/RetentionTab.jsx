@@ -4,6 +4,7 @@ import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
 import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum, fmtPct, heatColor } from "./GrowthCharts.jsx";
 import "../../../styles/admin-growth.css";
+import OnboardingCard from "./OnboardingCard.jsx";
 
 /**
  * Elde tutma (3.7.5): who comes back. GET /admin/growth/retention.
@@ -150,6 +151,7 @@ export default function RetentionTab() {
               ]}
             />
           </div>
+          <OnboardingCard days={days} />
           <p className="muted agr-foot">{t("admin.grFoot")}</p>
         </>
       ) : null}

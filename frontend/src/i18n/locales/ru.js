@@ -18,6 +18,7 @@ import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { PUBPAGE_RU } from "./pubpage.ru.js";
+import { ONB_RU } from "./onb.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
@@ -75,6 +76,7 @@ export const nested = {
   "act": ACT_RU,
   "dir": DIR_RU,
   "pubpage": PUBPAGE_RU,
+  "onb": ONB_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
   "shareSheet": SHARE_SHEET_RU,
@@ -3057,6 +3059,9 @@ export const nested = {
       "serverOwnerTitle": "Владение сервером",
       "timeoutBody": "Вы можете читать и слушать, но какое-то время не сможете писать сообщения и говорить в голосовых каналах.",
       "timeoutTitle": "Вам временно ограничили отправку сообщений"
+    },
+    "onb": {
+      "rehberWelcome": "Добро пожаловать, {user}! Поздоровайся в #{channel}: напиши, как тебя зовут и чем увлекаешься, и команда встречи ответит за пару минут."
     },
     "opt": {
       "amount": "сумма",

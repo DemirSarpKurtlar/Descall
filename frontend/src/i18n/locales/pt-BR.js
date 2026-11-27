@@ -18,6 +18,7 @@ import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
+import { ONB_PT_BR } from "./onb.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { SHARE_SHEET_PT_BR } from "./shareSheet.pt-BR.js";
@@ -75,6 +76,7 @@ export const nested = {
   "act": ACT_PT_BR,
   "dir": DIR_PT_BR,
   "pubpage": PUBPAGE_PT_BR,
+  "onb": ONB_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "shareSheet": SHARE_SHEET_PT_BR,
@@ -3057,6 +3059,9 @@ export const nested = {
       "serverOwnerTitle": "Posse do servidor",
       "timeoutBody": "Você ainda pode ler e ouvir, mas por um tempo não pode enviar mensagens nem falar em voz.",
       "timeoutTitle": "Você foi silenciado"
+    },
+    "onb": {
+      "rehberWelcome": "Boas-vindas, {user}! Diga oi em #{channel}: conte seu nome e do que você gosta, e a equipe de boas-vindas responde em poucos minutos."
     },
     "opt": {
       "amount": "valor",

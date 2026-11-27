@@ -1625,6 +1625,8 @@ function registerServerChannelHandlers(io, socket) {
         slowmode.commit();
         massSlot = { undo() {} };
         void recordFirstMessage(myId);
+        // "İlk Selam" (Başla panosu): the first real message in a server with another person.
+        void require("../lib/onboarding/firstHello").noteMessage({ io, userId: myId, kind: "server", text: trimmedContent, messageId: row.id, serverId: channel.server_id, channelId });
 
         // Anti-bot monitor (Faz 0): shadow evaluation only; earning below is unchanged.
         if (trimmedContent) void descoinAntibot.observeMessage({ userId: myId, convKey: `channel:${channelId}`, text: trimmedContent });

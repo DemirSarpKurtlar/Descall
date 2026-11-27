@@ -91,6 +91,7 @@ const RULES = [
   [/^\/access-bans(\/|$)/, "accessBans"],
   [/^\/error-groups(\/|$)/, "errors"],
   [/^\/growth\/retention$/, "retention"],
+  [/^\/growth\/onboarding(\/|$)/, "retention"],
   [/^\/growth\/economy$/, "economy"],
   [/^\/feedback(\/|$)/, "feedback"],
   [/^\/perf(\/|$)/, "perf"],
