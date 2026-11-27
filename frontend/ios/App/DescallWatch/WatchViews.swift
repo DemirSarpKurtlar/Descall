@@ -15,6 +15,7 @@ enum WatchTab: Int {
         case "calls": return .calls
         case "profile": return .you
         case "admin", "reports", "case", "stepup", "feedback", "maintenance": return .admin
+        case let s where s == "games" || s.hasPrefix("game-"): return .admin
         default: return .chats
         }
     }
@@ -98,6 +99,11 @@ struct RootView: View {
         // Back on the wrist: refresh what is stale (not on every glance).
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, store.homeState.isStale { Task { await store.loadHome() } }
+        }
+        // Games (owner only): a critical alert asks to open an admin section.
+        .onReceive(NotificationCenter.default.publisher(for: .descallGamesOpenAdmin)) { note in
+            tab = WatchTab.admin.rawValue
+            if let box = note.object as? AdminRouteBox { adminPath = [box.route] } else { adminPath = [] }
         }
         // The iPhone came back: retry right away instead of waiting for a timer.
         .onReceive(NotificationCenter.default.publisher(for: .descallWatchReachability)) { _ in
