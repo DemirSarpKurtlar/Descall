@@ -56,7 +56,10 @@
              or Safari/Chrome paint #0b0c10 under the tab bar and behind their toolbars.
              innerWidth is often 0 while the head parses on iOS, a phone UA still counts. */
           var width = w.innerWidth || 0;
-          if (!nativeApp && width < 960 && (mobileUa || (width > 0 && width <= 768))) {
+          /* Tablets (iPad / Android without "Mobile") follow the width only:
+             wider than 768 they get the desktop layout (src/lib/deviceLayout.js). */
+          var tabletUa = /ipad|tablet/i.test(ua) || (/android/i.test(ua) && !/mobile/i.test(ua));
+          if (!nativeApp && width < 960 && ((mobileUa && (!tabletUa || width === 0)) || (width > 0 && width <= 768))) {
             document.documentElement.classList.add("boot-phone-web");
           }
         } catch (e) {}

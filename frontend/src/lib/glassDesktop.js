@@ -42,6 +42,7 @@
 
 import { isPublicMarketingPath } from "../site/marketingPaths.js";
 import { isDesktopShell } from "./desktopShell.js";
+import { readDeviceLayout } from "./deviceLayout.js";
 
 export const GLASS_DESKTOP_CLASS = "glass-desktop";
 export const GLASS_DESKTOP_LITE_CLASS = "gd-lite";
@@ -156,6 +157,7 @@ export function shouldEnableGlassDesktop({
   isNativeAndroid = false,
   isNativeAndroidTablet = false,
   isElectron = false,
+  tabletPhoneLayout = false,
   viewportOk = true,
   surfaceOk = true,
   buildFlag = true,
@@ -164,8 +166,13 @@ export function shouldEnableGlassDesktop({
 } = {}) {
   // Android app: phones get html.glass-ui (glassUi.js); tablets (short side
   // >= 600 dp) get the wide Liquid Glass layout, the same rule as the iPad app.
+  // tabletPhoneLayout: the tablet window is 768 px or narrower (iPad mini
+  // portrait, Split View, Slide Over, a small Stage Manager window). That is
+  // the phone layout (html.glass-ui, glassUi.js), never this class on top of
+  // it (lib/deviceLayout.js).
   if (isNativeAndroid) {
     if (!isNativeAndroidTablet) return false;
+    if (tabletPhoneLayout) return false;
     if (override === "0" || buildFlag === false) return false;
     if (override === "1") return true;
     return remoteFlag !== false;
@@ -176,11 +183,13 @@ export function shouldEnableGlassDesktop({
   // iPad app fell through both and showed the pre-glass theme.
   if (isNativeIos) {
     if (!isNativeIosTablet) return false;
+    if (tabletPhoneLayout) return false;
     if (override === "0" || buildFlag === false) return false;
     if (override === "1") return true;
     return remoteFlag !== false;
   }
   if (!isElectron && surfaceOk === false) return false;
+  if (!isElectron && tabletPhoneLayout) return false;
   if (override === "0" || buildFlag === false) return false;
   if (!isElectron && !viewportOk) return false;
   if (override === "1") return true;
@@ -303,13 +312,17 @@ function snapshotInputs(w, remoteOverride, prev) {
   else if (cachedRemote === "1") remoteFlag = true;
   const scr = w?.screen || {};
   const screenShort = Math.min(Number(scr.width) || w?.innerWidth || 0, Number(scr.height) || w?.innerHeight || 0);
+  // Touch tablets (native or browser) follow the window width only, like useMobile.
+  const device = readDeviceLayout(w);
+  const tabletPhoneLayout = !isElectron && device.tablet && device.phoneLayout;
   return {
     isNativeIos: platform === "ios",
     isNativeIosTablet: platform === "ios" && screenShort >= NATIVE_TABLET_MIN_SHORT_SIDE,
     isNativeAndroid: platform === "android",
     isNativeAndroidTablet: platform === "android" && screenShort >= NATIVE_TABLET_MIN_SHORT_SIDE,
     isElectron,
-    viewportOk: isElectron || webGlassMode({ width, height: Number(w?.innerHeight) || 0 }) === "desktop",
+    tabletPhoneLayout,
+    viewportOk: isElectron || (device.tablet ? !device.phoneLayout : webGlassMode({ width, height: Number(w?.innerHeight) || 0 }) === "desktop"),
     surfaceOk: isGlassDesktopSurface(w?.location?.pathname),
     buildFlag: readBuildFlag(),
     remoteFlag,

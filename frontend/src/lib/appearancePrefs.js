@@ -4,6 +4,7 @@
    (descall_user_settings, the boot cache read by index.html / main.jsx) and
    synced to the account by lib/appearanceSync.js. */
 import { applyDocumentTheme, glassAccentTokens, GLASS_ACCENT_PROPS } from "./themeDocument.js";
+import { readDeviceLayout } from "./deviceLayout.js";
 
 export { glassAccentTokens, GLASS_ACCENT_PROPS };
 
@@ -181,16 +182,15 @@ export function applyAppearance(prefs, { premiumThemeKey = null, root, win } = {
   return { ...p, theme };
 }
 
-/** iPad (native or Safari) gets the tablet sizes of the 3.0 settings / admin
- *  layouts; Electron and mouse-driven browsers get the desktop ones. */
+/** Touch tablets (iPad app or Safari, Android tablet app or browser) get the
+ *  tablet sizes of the 3.0 settings / admin layouts; Electron and mouse-driven
+ *  browsers get the desktop ones. Only read where the desktop layout is shown. */
 export function isTabletLayout(win = typeof window !== "undefined" ? window : undefined) {
   if (!win) return false;
   try {
     if (win.electronAPI || /Electron\//.test(win.navigator?.userAgent || "")) return false;
     if (win.Capacitor?.getPlatform?.() === "ios") return true;
-    const ua = win.navigator?.userAgent || "";
-    if (/iPad/.test(ua)) return true;
-    return /Macintosh/.test(ua) && (win.navigator?.maxTouchPoints || 0) > 1;
+    return readDeviceLayout(win).tablet;
   } catch {
     return false;
   }
