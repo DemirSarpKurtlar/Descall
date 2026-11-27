@@ -95,7 +95,9 @@ async function providerPayload({ checkout, p, cfg, platform, buyer, ip, origin }
   }
   if (id === "paddle") {
     if (!productId) fail("product_missing", 503, { key: p.key });
-    return providers.paddle.clientCheckout({ checkout, priceId: productId, email: buyer.email });
+    const tx = await providers.paddle.createTransaction({ checkout, priceId: productId });
+    if (!tx.url) fail("provider_error", 502);
+    return { provider: "paddle", token: tx.id, paymentPageUrl: tx.url, openExternal: true };
   }
   if (id === "iyzico") {
     const callbackUrl = `${origin}/api/plus/webhooks/iyzico/callback?checkout=${checkout.id}`;
@@ -106,11 +108,12 @@ async function providerPayload({ checkout, p, cfg, platform, buyer, ip, origin }
     } else {
       res = await providers.iyzico.initPayment({ checkout, title: `Descall+ ${p.months}`, buyer, callbackUrl, ip });
     }
+    // The hosted payment page (no third-party script runs inside the app): framed in the Descall+
+    // window on the web, the system browser on desktop. The callback + webhook fulfil it.
     return {
       provider: "iyzico",
       token: res.token || null,
-      checkoutFormContent: res.checkoutFormContent || null,
-      paymentPageUrl: res.paymentPageUrl || null,
+      paymentPageUrl: res.paymentPageUrl ? `${res.paymentPageUrl}${res.paymentPageUrl.includes("?") ? "&" : "?"}iframe=true` : null,
       openExternal: platform === "desktop",
     };
   }
@@ -165,7 +168,7 @@ async function create(userId, body, { platform = "web", ip = null, origin = "", 
   if (error || !checkout) fail("server_error", 500);
   let instructions;
   try {
-    instructions = await providerPayload({ checkout, p, cfg, platform: plat, buyer: { email: user.email || null, fullName: body?.fullName || user.display_name || user.username, locale: body?.locale }, ip, origin });
+    instructions = await providerPayload({ checkout, p, cfg, platform: plat, buyer: { email: (typeof body?.email === "string" && /^[^\s@]{1,64}@[^\s@]{1,190}$/.test(body.email) ? body.email : null) || user.email || null, fullName: typeof body?.fullName === "string" ? body.fullName.slice(0, 80) : user.display_name || user.username, locale: body?.locale }, ip, origin });
   } catch (err) {
     await db().from("premium_checkouts").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", checkout.id);
     throw err;

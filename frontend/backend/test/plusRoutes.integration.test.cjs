@@ -143,6 +143,14 @@ function setConfig(cfg) {
 
     r = await call(base, "PUT", "/api/plus/prefs", { token, body: { wishlist: true, gifNoteSeen: true } });
     assert(r.body.wishlist === true && r.body.gifNoteSeen === true, "prefs saved");
+
+    r = await call(base, "GET", "/api/plus/hub", { token, platform: "web" });
+    assert(r.status === 200, `hub 200 (${r.status} ${JSON.stringify(r.body).slice(0, 300)})`);
+    assert(r.body.offer.salesOn === true && Array.isArray(r.body.servers) && r.body.servers[0]?.id === SERVER, "hub lists my servers");
+    assert(r.body.servers[0].level === 0 && r.body.servers[0].progress.next.boosts === 2, "server progress");
+    assert(r.body.boosts.slots === 0 && r.body.me.active === false, "free account has no boosts");
+    assert(r.body.friends.some((f) => f.id === FRIEND), "friends for gifting");
+    assert(r.body.tickets && r.body.gifts && Array.isArray(r.body.gifts.sent), "tickets and gifts present");
   } finally {
     server.close();
   }

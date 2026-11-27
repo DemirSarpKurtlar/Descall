@@ -129,9 +129,9 @@ async function main() {
     let r = await request(port, "/api/plus/webhooks/paddle", { body: "{}" });
     assert(r.status === 503, `unconfigured paddle -> 503 (${r.status})`);
 
-    env.PADDLE_WEBHOOK_SECRET = "whsec_test";
-    env.PADDLE_CLIENT_TOKEN = "test_client";
-    env.PADDLE_API_KEY = "test_api";
+    env.PADDLE_WEBHOOK_SECRET = "fake-paddle-webhook-secret";
+    env.PADDLE_CLIENT_TOKEN = "fake-client-token";
+    env.PADDLE_API_KEY = "fake-api-key";
     plusConfig.invalidate();
     const paddle = require("../lib/plus/payments/paddle");
     const tx = JSON.stringify({
@@ -140,11 +140,11 @@ async function main() {
     });
     r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "wrong") } });
     assert(r.status === 401, `bad paddle signature -> 401 (${r.status})`);
-    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "whsec_test", Math.floor(Date.now() / 1000) - 3600) } });
+    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "fake-paddle-webhook-secret", Math.floor(Date.now() / 1000) - 3600) } });
     assert(r.status === 401, "stale paddle signature -> 401");
     assert(applies().length === 0, "nothing applied for refused webhooks");
 
-    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "whsec_test") } });
+    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "fake-paddle-webhook-secret") } });
     assert(r.status === 200 && r.body.ok === true, `valid paddle -> 200 ok (${JSON.stringify(r.body)})`);
     assert(applies().length === 1, "one apply");
     const a = applies()[0].args;
@@ -153,7 +153,7 @@ async function main() {
     assert(/^[A-Za-z0-9:_.-]{8,100}$/.test(a.p_request_id), "request id shape");
     assert(fake._tables.payment_transactions.rows.length === 1, "transaction stored");
     assert(fake._tables.premium_checkouts.rows.find((c) => c.id === CK_SELF).status === "paid", "checkout paid");
-    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "whsec_test") } });
+    r = await request(port, "/api/plus/webhooks/paddle", { body: tx, headers: { "Paddle-Signature": paddle.sign(tx, "fake-paddle-webhook-secret") } });
     assert(r.status === 200 && r.body.duplicate === true, "replay is a duplicate");
     assert(applies().length === 1, "no second apply on replay");
 
@@ -162,7 +162,7 @@ async function main() {
       event_id: "evt_02", event_type: "transaction.completed",
       data: { id: "txn_02", origin: "web", custom_data: { checkout_id: CK_GIFT }, items: [{ price: { id: "pri_gift_3" } }], details: { totals: { total: "19999" } }, currency_code: "TRY" },
     });
-    r = await request(port, "/api/plus/webhooks/paddle", { body: gtx, headers: { "Paddle-Signature": paddle.sign(gtx, "whsec_test") } });
+    r = await request(port, "/api/plus/webhooks/paddle", { body: gtx, headers: { "Paddle-Signature": paddle.sign(gtx, "fake-paddle-webhook-secret") } });
     assert(r.status === 200 && r.body.ok === true, "gift webhook ok");
     const gift = fake._tables.premium_gifts.rows.find((g) => g.id === GIFT);
     assert(gift.status === "scheduled" && gift.paid_at, "gift paid and scheduled");
@@ -184,16 +184,16 @@ async function main() {
     assert(ren.p_user === FRIEND && ren.p_op === "renew" && ren.p_plan === "plus", "renewal renews the subscription owner's plan");
 
     // RevenueCat
-    env.REVENUECAT_WEBHOOK_AUTH = "Bearer rc_test";
+    env.REVENUECAT_WEBHOOK_AUTH = "Bearer fake-rc-auth";
     const rc = JSON.stringify({ event: { id: "rc_1", type: "INITIAL_PURCHASE", app_user_id: FRIEND, product_id: "rc_plus_m", store: "APP_STORE", price_in_purchased_currency: 74.99, currency: "TRY", transaction_id: "rc_tx_1", expiration_at_ms: Date.now() + 30 * 86400000 } });
     r = await request(port, "/api/plus/webhooks/revenuecat", { body: rc, headers: { Authorization: "Bearer nope" } });
     assert(r.status === 401, "revenuecat wrong auth -> 401");
     const before = applies().length;
-    r = await request(port, "/api/plus/webhooks/revenuecat", { body: rc, headers: { Authorization: "Bearer rc_test" } });
+    r = await request(port, "/api/plus/webhooks/revenuecat", { body: rc, headers: { Authorization: "Bearer fake-rc-auth" } });
     assert(r.status === 200 && r.body.ok === true, `revenuecat ok (${JSON.stringify(r.body)})`);
     assert(applies().length === before + 1 && applies().at(-1).args.p_origin === "store" && applies().at(-1).args.p_platform === "ios", "store purchase applied");
     const refund = JSON.stringify({ event: { id: "rc_2", type: "CANCELLATION", cancel_reason: "CUSTOMER_SUPPORT", app_user_id: FRIEND, transaction_id: "rc_tx_1", store: "APP_STORE" } });
-    r = await request(port, "/api/plus/webhooks/revenuecat", { body: refund, headers: { Authorization: "Bearer rc_test" } });
+    r = await request(port, "/api/plus/webhooks/revenuecat", { body: refund, headers: { Authorization: "Bearer fake-rc-auth" } });
     assert(r.status === 200 && applies().at(-1).args.p_op === "revoke", "refund revokes");
 
     // Apple

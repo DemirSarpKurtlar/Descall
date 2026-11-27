@@ -250,12 +250,12 @@ t("animated gate: off while selling is off, members pass, free refused", () => {
 t("paddle signature: valid, wrong, stale", () => {
   const body = JSON.stringify({ event_id: "evt_1" });
   const now = Date.now();
-  const header = paddle.sign(body, "whsec", Math.floor(now / 1000));
-  assert.equal(paddle.verify(Buffer.from(body), header, "whsec", { now }), true);
-  assert.throws(() => paddle.verify(Buffer.from(body + " "), header, "whsec", { now }), (e) => e.code === "bad_signature");
+  const header = paddle.sign(body, "fake-secret", Math.floor(now / 1000));
+  assert.equal(paddle.verify(Buffer.from(body), header, "fake-secret", { now }), true);
+  assert.throws(() => paddle.verify(Buffer.from(body + " "), header, "fake-secret", { now }), (e) => e.code === "bad_signature");
   assert.throws(() => paddle.verify(Buffer.from(body), header, "other", { now }), (e) => e.code === "bad_signature");
-  assert.throws(() => paddle.verify(Buffer.from(body), header, "whsec", { now: now + 3600 * 1000 }), (e) => e.code === "stale_signature");
-  assert.throws(() => paddle.verify(Buffer.from(body), "", "whsec", { now }), (e) => e.code === "bad_signature");
+  assert.throws(() => paddle.verify(Buffer.from(body), header, "fake-secret", { now: now + 3600 * 1000 }), (e) => e.code === "stale_signature");
+  assert.throws(() => paddle.verify(Buffer.from(body), "", "fake-secret", { now }), (e) => e.code === "bad_signature");
   assert.throws(() => paddle.verify(Buffer.from(body), header, "", { now }), (e) => e.code === "not_configured");
 });
 
@@ -286,8 +286,8 @@ t("iyzico IYZWSv2 auth header and V3 webhook signature", () => {
 });
 
 t("revenuecat auth and normalisation", () => {
-  const env = { REVENUECAT_WEBHOOK_AUTH: "Bearer rc" };
-  assert.equal(revenuecat.verify("Bearer rc", { env }), true);
+  const env = { REVENUECAT_WEBHOOK_AUTH: "Bearer fake-rc" };
+  assert.equal(revenuecat.verify("Bearer fake-rc", { env }), true);
   assert.throws(() => revenuecat.verify("Bearer no", { env }), (e) => e.code === "bad_signature");
   const cfg = config.merge({ products: { revenuecat: { gift_plus_3: "plus_gift_3m" } } });
   const ev = revenuecat.normalize({ event: { id: "r1", type: "NON_RENEWING_PURCHASE", app_user_id: "33333333-3333-4333-8333-333333333333", product_id: "plus_gift_3m", store: "APP_STORE", price_in_purchased_currency: 214.99 } }, cfg);

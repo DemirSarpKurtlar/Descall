@@ -146,7 +146,7 @@ router.get("/people/:id", handle("person", async (req) => {
   const serverIds = [...new Set((boosts || []).map((b) => b.server_id))];
   const [counts, names] = await Promise.all([
     service.boostCounts(serverIds),
-    serverIds.length ? db().from("servers").select("id, name").in("id", serverIds).then((r) => r.data || []) : [],
+    serverIds.length ? Promise.resolve(db().from("servers").select("id, name").in("id", serverIds)).then((r) => r.data || []) : [],
   ]);
   let affected = 0;
   for (const sid of serverIds) {
@@ -329,7 +329,7 @@ router.get("/log", handle("log", async (req) => {
   const [historyRows, auditOut, hooks] = await Promise.all([
     config.history(40),
     premium.listAudit({ ...(req.query || {}), q: "premium_plus" }, state.auditLog || []).catch(() => ({ entries: [] })),
-    db().from("payment_webhook_events").select("provider, event_type, status, error, received_at").order("received_at", { ascending: false }).limit(40).then((r) => r.data || []),
+    Promise.resolve(db().from("payment_webhook_events").select("provider, event_type, status, error, received_at").order("received_at", { ascending: false }).limit(40)).then((r) => r.data || []),
   ]);
   return { config: historyRows, audit: auditOut?.entries || auditOut?.items || [], webhooks: hooks };
 }));

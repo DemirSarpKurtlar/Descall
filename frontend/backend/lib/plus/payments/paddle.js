@@ -110,6 +110,20 @@ function clientCheckout({ checkout, priceId, email, env = process.env }) {
   };
 }
 
+/**
+ * Server-created transaction: Paddle answers with its hosted checkout URL (the default payment
+ * link), which the client opens in a tab / the system browser. No Paddle script runs in the app.
+ */
+async function createTransaction({ checkout, priceId, env = process.env, fetchImpl } = {}) {
+  const json = await api("/transactions", {
+    method: "POST",
+    env,
+    fetchImpl,
+    body: { items: [{ price_id: priceId, quantity: 1 }], custom_data: { checkout_id: checkout.id, user_id: checkout.user_id, platform: checkout.platform }, collection_mode: "automatic" },
+  });
+  return { id: json?.data?.id || null, url: json?.data?.checkout?.url || null };
+}
+
 async function api(path, { method = "GET", body = null, env = process.env, fetchImpl = globalThis.fetch } = {}) {
   if (!env.PADDLE_API_KEY) throw Object.assign(new Error("not_configured"), { code: "not_configured", status: 503 });
   const base = env.PADDLE_ENV === "production" ? "https://api.paddle.com" : "https://sandbox-api.paddle.com";
@@ -134,4 +148,4 @@ const cancelAtPeriodEnd = (subRef, opts) => api(`/subscriptions/${encodeURICompo
 const resume = (subRef, opts) => api(`/subscriptions/${encodeURIComponent(subRef)}`, { method: "PATCH", body: { scheduled_change: null }, ...opts });
 const refund = (transactionRef, reason, opts) => api("/adjustments", { method: "POST", body: { action: "refund", transaction_id: transactionRef, reason: String(reason || "requested_by_customer").slice(0, 200), type: "full" }, ...opts });
 
-module.exports = { status, verify, sign, normalize, clientCheckout, cancelAtPeriodEnd, resume, refund, parseHeader };
+module.exports = { status, verify, sign, normalize, clientCheckout, createTransaction, cancelAtPeriodEnd, resume, refund, parseHeader };

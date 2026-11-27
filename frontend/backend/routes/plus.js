@@ -87,7 +87,7 @@ router.post("/paywall/decide", handle("decide", async (req) => {
   const [recent, plan, created] = await Promise.all([
     paywall.recentFor(req.user.id),
     require("../lib/premium/entitlements").planFor(req.user.id),
-    require("../db/supabase").from("users").select("created_at").eq("id", req.user.id).maybeSingle().then((r) => r.data?.created_at || null),
+    Promise.resolve(require("../db/supabase").from("users").select("created_at").eq("id", req.user.id).maybeSingle()).then((r) => r.data?.created_at || null),
   ]);
   const verdict = paywall.decide({ moment, cfg, platform, userId: req.user.id, plan, accountCreatedAt: created, recent });
   if (verdict.show !== "none" && paywall.MOMENTS.find((m) => m.id === moment)?.kind !== "info") {

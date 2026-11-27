@@ -119,21 +119,32 @@ router.post("/iyzico", raw, async (req, res) => {
   return run(res, ev, cfg);
 });
 
-// The checkout form posts the token back here in the buyer's browser (urlencoded). We confirm from
-// the API, then send the browser back into the app's success screen.
+// The hosted page posts the token back here (in the Descall+ window's frame or the system browser).
+// We confirm from the API and fulfil; the app sees it through its checkout status poll. The answer
+// is a plain page (no script) telling the buyer they can go back to Descall.
+function donePage(ok) {
+  const title = ok ? "Ödeme alındı / Payment received" : "Ödeme tamamlanmadı / Payment not completed";
+  const body = ok ? "Descall'a dönebilirsin. / You can go back to Descall." : "Descall'a dönüp tekrar deneyebilirsin. / Go back to Descall and try again.";
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>`
+    + `<body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#111214;color:#f2f3f5;font:15px -apple-system,system-ui,sans-serif;text-align:center">`
+    + `<div><h1 style="font-size:19px">${title}</h1><p style="color:#b5bac1">${body}</p></div></body></html>`;
+}
+
 router.post("/iyzico/callback", express.urlencoded({ extended: false, limit: "16kb" }), async (req, res) => {
   const checkoutId = String(req.query.checkout || "");
   const token = String(req.body?.token || "");
-  const back = `${process.env.PUBLIC_APP_URL || "https://descall.com"}/app?plus=done&checkout=${encodeURIComponent(checkoutId)}`;
-  if (!providers.isConfigured("iyzico") || !/^[0-9a-f-]{36}$/i.test(checkoutId) || !token) return res.redirect(303, back);
+  res.set("Cache-Control", "no-store");
+  res.type("html");
+  if (!providers.isConfigured("iyzico") || !/^[0-9a-f-]{36}$/i.test(checkoutId) || !token) return res.status(400).send(donePage(false));
   try {
     const cfg = await config.load();
     const ev = await confirmIyzico({ token, checkoutId, cfg });
     if (ev) await fulfil(ev, { cfg });
+    return res.send(donePage(Boolean(ev && ev.type !== "payment_failed")));
   } catch (err) {
     console.warn("[plus/webhook] iyzico callback:", err?.code || "error");
+    return res.status(500).send(donePage(false));
   }
-  return res.redirect(303, back);
 });
 
 router.post("/revenuecat", raw, async (req, res) => {

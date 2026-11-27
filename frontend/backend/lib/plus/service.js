@@ -302,7 +302,7 @@ async function serverBoostPage(userId, serverId) {
   const cfg = await config.load();
   const [counts, settingsMap, membersMap, boosts, me] = await Promise.all([
     boostCounts([serverId]), serverSettings([serverId]), memberCounts([serverId]),
-    db().from("server_boosts").select("id, user_id, created_at, status, show_on_wall").eq("server_id", serverId).neq("status", "removed").order("created_at", { ascending: true }).then((r) => r.data || []),
+    Promise.resolve(db().from("server_boosts").select("id, user_id, created_at, status, show_on_wall").eq("server_id", serverId).neq("status", "removed").order("created_at", { ascending: true })).then((r) => r.data || []),
     plusMe(userId),
   ]);
   const count = counts[serverId] || 0;
@@ -449,8 +449,8 @@ function giftView(g, { viewer, people = new Map(), cfg, now = Date.now() }) {
 async function listGifts(userId) {
   const cfg = await config.load();
   const [sent, received] = await Promise.all([
-    db().from("premium_gifts").select("*").eq("sender_id", userId).neq("status", "awaiting_payment").order("created_at", { ascending: false }).limit(50).then((r) => r.data || []),
-    db().from("premium_gifts").select("*").eq("recipient_id", userId).in("status", ["delivered", "opened"]).order("created_at", { ascending: false }).limit(50).then((r) => r.data || []),
+    Promise.resolve(db().from("premium_gifts").select("*").eq("sender_id", userId).neq("status", "awaiting_payment").order("created_at", { ascending: false }).limit(50)).then((r) => r.data || []),
+    Promise.resolve(db().from("premium_gifts").select("*").eq("recipient_id", userId).in("status", ["delivered", "opened"]).order("created_at", { ascending: false }).limit(50)).then((r) => r.data || []),
   ]);
   const people = await usersById([...sent, ...received].flatMap((g) => [g.sender_id, g.recipient_id]));
   const { data: groups } = await db().from("premium_group_gifts").select("*").eq("organizer_id", userId).in("status", ["collecting", "complete"]).order("created_at", { ascending: false }).limit(10);
@@ -638,7 +638,7 @@ async function cancelImpact(userId) {
   const serverIds = [...new Set(boosts.map((b) => b.server_id))];
   const [counts, names, members] = await Promise.all([
     boostCounts(serverIds),
-    serverIds.length ? db().from("servers").select("id, name").in("id", serverIds).then((r) => r.data || []) : [],
+    serverIds.length ? Promise.resolve(db().from("servers").select("id, name").in("id", serverIds)).then((r) => r.data || []) : [],
     memberCounts(serverIds),
   ]);
   const servers = serverIds.map((id) => {
@@ -789,7 +789,11 @@ async function hub(userId, { platform = "web" } = {}) {
     return { ...publicUser(u), plan, wishlist: wish.has(String(id)), asked: asked.has(String(id)), online: isOnline(id) };
   }).filter(Boolean).sort((a, b) => Number(b.asked) - Number(a.asked) || Number(b.wishlist) - Number(a.wishlist) || Number(b.online) - Number(a.online)).slice(0, 20);
   const slots = slotsFor(cfg, me.plan);
-  const [tickets, gifts] = await Promise.all([listTickets(userId), listGifts(userId)]);
+  const [tickets, gifts, planRows] = await Promise.all([
+    listTickets(userId),
+    listGifts(userId),
+    Promise.resolve(db().from("premium_plans").select("id, monthly_descoin").in("id", ["plus", "ultra"])).then((r) => r.data || [], () => []),
+  ]);
   return {
     me: {
       plan: me.plan, active: Boolean(me.active), endsAt: me.ends_at || null, unlimited: Boolean(me.unlimited), origin: me.origin || null,
@@ -797,6 +801,7 @@ async function hub(userId, { platform = "web" } = {}) {
       trialEndsAt: me.trial_ends_at || null, trialUsed: Boolean(me.trial_used), source: me.source || null,
     },
     offer: config.publicOffer(cfg, plat, userId),
+    plans: planRows.map((p) => ({ id: p.id, monthlyDescoin: p.monthly_descoin })),
     boosts: { slots, used: boosts.length, free: Math.max(0, slots - boosts.length), list: boosts.map((b) => boostView(b, cfg)) },
     servers: cards,
     friends,
