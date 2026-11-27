@@ -46,6 +46,7 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -138,6 +139,7 @@ export const nested = {
   agentOps: AGENT_OPS_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
+  rg3: RG3.tr,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {

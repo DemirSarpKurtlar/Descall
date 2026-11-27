@@ -24,6 +24,8 @@ const copy = require("./copy");
 const P = require("../reengagePolicy");
 
 const DAY = R.DAY_MS;
+// Preview when the audience is empty: neutral sample people and the app as the server.
+const SAMPLE_VARS = Object.freeze({ arkadas_1: "Ece", arkadas_2: "Kaan", sunucu: "Descall", sayi: 9, bahsetme: 2, faces: [{ name: "Ece" }, { name: "Kaan" }, { name: "Mert" }] });
 const audienceCache = new Map(); // campaignId -> { at, value }
 const AUDIENCE_TTL = 2 * 60 * 1000;
 const cancelled = new Set(); // wave ids recalled / undone (in this process)
@@ -596,7 +598,7 @@ async function preview(id, { lang = null, userId = null, ...opts } = {}) {
     entry = aud?.reachable?.[0] || aud?.later?.[0] || null;
   }
   const l = lang && R.LANGS.includes(lang) ? lang : copy.langOf(entry?.user?.language || "tr");
-  const f = entry ? await facts(entry.id, now) : { vars: { arkadas_1: "Ece", arkadas_2: "Kaan", sunucu: "Gece Kuşları", sayi: 9, bahsetme: 2 }, faces: [{ name: "Ece" }, { name: "Kaan" }, { name: "Zeynep" }], serverId: null };
+  const f = entry ? await facts(entry.id, now) : { vars: { ...SAMPLE_VARS }, faces: SAMPLE_VARS.faces, serverId: null };
   const t = render(c, l, f);
   let bestHour = null;
   let absentDays = null;

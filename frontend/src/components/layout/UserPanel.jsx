@@ -3,7 +3,7 @@ import { isDesktopShell } from "../../lib/desktopShell.js";
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins, Flame } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
@@ -93,6 +93,9 @@ import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const WalletSettingsTab = lazy(() => import("../settings/WalletSettingsTab"));
+// Growth 3B "Önce insanlar": notification center (people + servers) and Seri ve görevler.
+const NotifyCenter = lazy(() => import("../reengage/NotifyCenter.jsx"));
+const StreaksPane = lazy(() => import("../reengage/StreaksPane.jsx"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 // Ayarlar > Descall+ (status, coupon, features, plan comparison; iOS: status only).
 const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
@@ -370,6 +373,7 @@ const NAV_GROUPS_DEF = [
       { id: "premium", labelKey: "premium.nav", icon: Sparkles, hintKey: "premium.navHint" },
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
       { id: "wallet", labelKey: "coinpop.settings.nav", icon: Coins, hintKey: "coinpop.settings.navHint" },
+      { id: "streaks", labelKey: "rg3.streaks.navTitle", icon: Flame, hintKey: "rg3.streaks.navHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
     ],
@@ -395,6 +399,7 @@ const S3_NAV_TILES = {
   premium: ["sparkle", "purple"],
   shop: ["bag", "purple"],
   wallet: ["coin", "yellow"],
+  streaks: ["flame", "orange"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
 };
@@ -431,6 +436,7 @@ const TAB_TITLE_KEYS = {
   sound: "settings.soundEffects",
   shop: "settings.shop",
   wallet: "coinpop.settings.nav",
+  streaks: "rg3.streaks.navTitle",
   badges: "badges.navTitle",
   promo: "settings.promo",
   premium: "premium.nav",
@@ -1064,9 +1070,9 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   // Re-engagement switches, stored on the account (backend routes/reengage.js).
-  const [friendVoiceNotify, setFriendVoiceNotify] = useState(true);
+  const [, setFriendVoiceNotify] = useState(true);
   const [emailNotify, setEmailNotify] = useState(true);
-  const [reengageError, setReengageError] = useState("");
+  const [, setReengageError] = useState("");
   // The two switches stay disabled until the account's real values arrive (they used to show
   // ON first and flip, or stay ON when the request failed).
   const [reengageLoad, setReengageLoad] = useState("loading");
@@ -2639,6 +2645,15 @@ const UserPanel = forwardRef(function UserPanel({
           </Suspense>
         );
 
+      case "streaks":
+        return (
+          <div className="us-tab">
+            <Suspense fallback={null}>
+              <StreaksPane me={me ? { id: me.id, name: me.display_name || me.displayName || me.username, username: me.username, avatarUrl: me.avatarUrl || me.avatar_url } : null} />
+            </Suspense>
+          </div>
+        );
+
       case "wallet":
         return (
           <div className="us-tab">
@@ -2677,8 +2692,12 @@ const UserPanel = forwardRef(function UserPanel({
       case "notifications":
         return (
           <div className="us-tab g-notif">
-            <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
+            <Suspense fallback={null}>
+              <NotifyCenter
+                deviceSection={
             <section className="us-section">
+              <h4 className="us-section-label">{t("rg3.center.deviceTitle")}</h4>
+              <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
               <div className="us-card stack">
                 <SettingRow
                   icon={Bell}
@@ -2742,18 +2761,6 @@ const UserPanel = forwardRef(function UserPanel({
                   />
                 </SettingRow>
                 <SettingRow
-                  icon={Headphones}
-                  title={t("msg5.reengage.friendVoice")}
-                  description={reengageError || t("msg5.reengage.friendVoiceDesc")}
-                >
-                  <Toggle
-                    value={friendVoiceNotify}
-                    onChange={(next) => changeReengagePref("friendVoice", next)}
-                    label={t("msg5.reengage.friendVoice")}
-                    disabled={reengageLoad !== "ready"}
-                  />
-                </SettingRow>
-                <SettingRow
                   icon={Mail}
                   title={t("msg5.reengage.email")}
                   description={t("msg5.reengage.emailDesc")}
@@ -2776,7 +2783,9 @@ const UserPanel = forwardRef(function UserPanel({
               ) : null}
               <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
-
+                }
+              />
+            </Suspense>
           </div>
         );
 

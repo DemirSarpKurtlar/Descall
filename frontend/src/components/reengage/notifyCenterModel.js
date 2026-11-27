@@ -101,8 +101,8 @@ export function applyPersonPatch(person, patch = {}, now = Date.now()) {
  * The drawer footnote: "Bugün Ece'den 1 bildirim aldın. Bir sonraki en erken 03:14'ten
  * sonra, o da sessiz saatte olduğu için yarın 09:00'dan sonra."
  */
-export function nextWindowText(next, person, t, locale, now = Date.now()) {
-  const fmt = (iso) => new Intl.DateTimeFormat(locale || "tr", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+export function nextWindowText(next, person, t, locale, now = Date.now(), timeZone = undefined) {
+  const fmt = (iso) => new Intl.DateTimeFormat(locale || "tr", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...(timeZone ? { timeZone } : {}) }).format(new Date(iso));
   const name = person?.name || "";
   const count = Number(next?.fromPeerToday) || 0;
   const first = count ? t("rg3.next.today", { name, count }) : t("rg3.next.none", { name });
@@ -110,7 +110,8 @@ export function nextWindowText(next, person, t, locale, now = Date.now()) {
   const at = Date.parse(next?.nextAt || "");
   if (!Number.isFinite(at)) return first;
   if (at <= now + 60_000) return `${first} ${t("rg3.next.now")}`;
-  const sameDay = new Date(at).toDateString() === new Date(now).toDateString();
+  const dayOf = (ms) => new Intl.DateTimeFormat("en-CA", { ...(timeZone ? { timeZone } : {}) }).format(new Date(ms));
+  const sameDay = dayOf(at) === dayOf(now);
   if (next?.nextQuiet && Number.isFinite(earliest)) {
     return `${first} ${t(sameDay ? "rg3.next.quietToday" : "rg3.next.quietTomorrow", { earliest: fmt(earliest), at: fmt(at) })}`;
   }

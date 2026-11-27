@@ -26,7 +26,7 @@ function isMissing(error) {
   return ["42P01", "PGRST205", "42703", "PGRST204"].includes(code) || /does not exist|schema cache|could not find/i.test(errText(error));
 }
 function notReady() {
-  const e = new Error("Re-engagement tables are not ready.");
+  const e = new Error("not_ready");
   e.code = "NOT_READY";
   e.status = 503;
   return e;

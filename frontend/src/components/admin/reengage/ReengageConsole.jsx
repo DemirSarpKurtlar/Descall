@@ -25,6 +25,9 @@ import FriendCallPanel from "./FriendCallPanel.jsx";
 import { LANG_ROWS, PLACEHOLDERS, campaignSub, rateLabel, openRateTone, splitTokens, excludedRows, hourBars, todayLine } from "./reengageModel.js";
 import "../../../styles/reengage.css";
 
+/** The app name as iOS prints it on a notification (same in every language). */
+const APP_LABEL = "DESCALL";
+
 const ICON = { user: User, clock: Clock, bell: Bell, moon: Moon, mail: Mail, flame: Flame };
 const FILTERS = ["all", "live", "draft", "auto"];
 const TABS = ["message", "audience", "limits", "results", "log"];
@@ -263,7 +266,7 @@ function UserPreview({ campaignId, lang, setLang, t, locale }) {
               <div className="rg-notif">
                 <div className="rg-notif-h">
                   <span className="rg-app" aria-hidden="true" />
-                  <span>DESCALL</span>
+                  <span>{APP_LABEL}</span>
                   <span className="rg-notif-time">{t("rg3.preview.now")}</span>
                 </div>
                 <div className="rg-notif-b">
@@ -287,7 +290,7 @@ function UserPreview({ campaignId, lang, setLang, t, locale }) {
               <small className="rg-mailprev-k">{t("rg3.admin.inbox")}</small>
               <b>{p.email.subject}</b>
               <div className="rg-mailprev-card">
-                <span className="eb">DESCALL</span>
+                <span className="eb">{APP_LABEL}</span>
                 <b>{t("rg3.admin.mailEyebrow")}</b>
               </div>
               <p>{p.email.body}</p>

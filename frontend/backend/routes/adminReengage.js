@@ -82,7 +82,7 @@ router.put("/growth/reengage/settings", async (req, res) => {
     const patch = {};
     const owner = await userIsSuperAdmin(req);
     if (body.modeOverride !== undefined) {
-      if (!owner) return res.status(403).json({ error: "Only the owner can change the mode.", code: "owner_only" });
+      if (!owner) return res.status(403).json({ error: "owner_only", code: "owner_only" });
       if (body.modeOverride !== null && !lib.mode().MODES.includes(body.modeOverride)) return res.status(400).json({ error: "bad_mode", code: "bad_mode" });
       if (!reason) return res.status(400).json({ error: "reason_required", code: "reason_required" });
       patch.modeOverride = body.modeOverride;
@@ -94,7 +94,7 @@ router.put("/growth/reengage/settings", async (req, res) => {
     }
     for (const [k, max] of [["callReward", 200], ["gift14Amount", 500]]) {
       if (body[k] === undefined) continue;
-      if (!owner) return res.status(403).json({ error: "Only the owner can change rewards.", code: "owner_only" });
+      if (!owner) return res.status(403).json({ error: "owner_only", code: "owner_only" });
       const n = Number(body[k]);
       if (!Number.isInteger(n) || n < 0 || n > max) return res.status(400).json({ error: `bad_${k}`, code: `bad_${k}` });
       if (!reason) return res.status(400).json({ error: "reason_required", code: "reason_required" });

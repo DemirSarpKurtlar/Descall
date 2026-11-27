@@ -39,6 +39,9 @@ import {
 } from "./notifyCenterModel.js";
 import "../../styles/reengage.css";
 
+/** The app name as iOS prints it on a notification (same in every language). */
+const APP_LABEL = "DESCALL";
+
 const TYPE_ICON = { friendVoice: Headphones, mentions: AtSign, unread: Hash, streak: Flame, digest: Mail };
 const TYPE_TILE = { friendVoice: "var(--rg-green)", mentions: "var(--rg-blue)", unread: "var(--rg-teal)", streak: "var(--rg-orange)", digest: "var(--rg-violet)" };
 
@@ -148,7 +151,7 @@ export function PushPreview({ person, primary, t, locale, compact = false }) {
         <div className="rg-notif">
           <div className="rg-notif-h">
             <span className="rg-app" aria-hidden="true" />
-            <span>DESCALL</span>
+            <span>{APP_LABEL}</span>
             <span className="rg-notif-time">{t("rg3.preview.now")}</span>
           </div>
           <div className="rg-notif-b">
@@ -179,7 +182,7 @@ export function PushPreview({ person, primary, t, locale, compact = false }) {
 
 /* ---- drawer: one person ---------------------------------------------------- */
 
-function PersonDrawer({ person, settings, onPatch, busy, error, onClose, t, locale, sheet }) {
+function PersonDrawer({ person, settings, onPatch, busy, error, onClose, t, locale, sheet, timeZone }) {
   const [next, setNext] = useState(null);
   const p = person.prefs;
   useEffect(() => {
@@ -337,7 +340,7 @@ function PersonDrawer({ person, settings, onPatch, busy, error, onClose, t, loca
             <span>{t("rg3.drawer.live")}</span>
           </div>
           <PushPreview person={person} primary={p.primaryAction} t={t} locale={locale} />
-          <p className="rg-foot">{next ? nextWindowText(next, person, t, locale) : t("rg3.drawer.nextLoading")}</p>
+          <p className="rg-foot">{next ? nextWindowText(next, person, t, locale, Date.now(), timeZone) : t("rg3.drawer.nextLoading")}</p>
         </div>
       </div>
     </section>
@@ -773,6 +776,7 @@ export default function NotifyCenter({ deviceSection = null }) {
         t={t}
         locale={locale}
         sheet={phone}
+        timeZone={state.timezone || undefined}
       />
     ) : selected && sel.kind === "server" ? (
       <ServerDrawer key={selected.id} server={selected} busy={busy === selected.id} error={error} onLevel={(lvl) => setServerLevel(selected, lvl)} onClose={phone ? () => setSel(null) : null} t={t} sheet={phone} />

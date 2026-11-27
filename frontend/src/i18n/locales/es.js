@@ -50,6 +50,7 @@ import { AGENTX_ES } from "./agentx.es.js";
 import { AGENT_OPS_ES } from "./agentOps.es.js";
 import { INVL_ES } from "./invl.es.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_ES,
@@ -109,6 +110,7 @@ export const nested = {
   "agentOps": AGENT_OPS_ES,
   "invl": INVL_ES,
   "sgx": SIGNUP_GROWTH.es.nested,
+  rg3: RG3.es,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

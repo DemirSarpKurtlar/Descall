@@ -46,6 +46,7 @@ import { AGENTX_EN } from "./agentx.en.js";
 import { AGENT_OPS_EN } from "./agentOps.en.js";
 import { INVL_EN } from "./invl.en.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -127,6 +128,7 @@ export const nested = {
   agentOps: AGENT_OPS_EN,
   invl: INVL_EN,
   sgx: SIGNUP_GROWTH.en.nested,
+  rg3: RG3.en,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {

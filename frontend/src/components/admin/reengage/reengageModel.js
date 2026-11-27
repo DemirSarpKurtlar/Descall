@@ -1,14 +1,11 @@
 /** Growth 3B console: pure helpers (reengageModel.selftest.mjs). */
 
-export const LANG_ROWS = Object.freeze([
-  { id: "tr", code: "TR", name: "Türkçe" },
-  { id: "pt-BR", code: "PT", name: "Português" },
-  { id: "en", code: "EN", name: "English" },
-  { id: "de", code: "DE", name: "Deutsch" },
-  { id: "es", code: "ES", name: "Español" },
-  { id: "fr", code: "FR", name: "Français" },
-  { id: "ru", code: "RU", name: "Русский" },
-]);
+import { getLocaleMeta } from "../../../i18n/registry.js";
+
+/** Console languages in the draft's order; native names from the locale registry. */
+export const LANG_ROWS = Object.freeze(
+  ["tr", "pt-BR", "en", "de", "es", "fr", "ru"].map((id) => ({ id, code: id.slice(0, 2).toUpperCase(), name: getLocaleMeta(id)?.name || id }))
+);
 
 export const PLACEHOLDERS = Object.freeze(["arkadas_1", "arkadas_2", "sunucu", "sayi", "bahsetme"]);
 
