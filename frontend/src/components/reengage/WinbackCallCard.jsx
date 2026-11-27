@@ -3,7 +3,7 @@ import { useT, useLocale } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import { BellRing, Check, Loader2, AlertTriangle, ChevronDown, Pencil } from "../ui/Icon.jsx";
 import { winbackApi } from "../../api/reengage";
-import { defaultCallMessage } from "./winbackModel.js";
+import { defaultCallMessage, parseSuggestion } from "./winbackModel.js";
 import "../../styles/reengage.css";
 
 /**
@@ -26,7 +26,7 @@ export default function WinbackCallCard({ compact = false }) {
     winbackApi
       .suggestion()
       .then((r) => {
-        const sug = r?.suggestion || null;
+        const sug = parseSuggestion(r?.suggestion);
         setS(sug);
         if (sug) setMessage(defaultCallMessage(sug, t, locale));
       })

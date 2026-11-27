@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { RG3 } from "../../i18n/locales/rg3.i18n.js";
 import { badgeOf, sortPeople, filterBySearch, personLine, serverLine, quietLabel, digestLabel, applyPersonPatch, nextWindowText, lastSeenText } from "./notifyCenterModel.js";
 import { taskTitle, taskSub, sharedSub, doneCount, ringPct, dat } from "./streaksModel.js";
-import { defaultCallMessage } from "./winbackModel.js";
+import { defaultCallMessage, parseSuggestion } from "./winbackModel.js";
 import { splitTokens, rateLabel, openRateTone, excludedRows, hourBars, todayLine, liveBars } from "../admin/reengage/reengageModel.js";
 
 const get = (o, p) => p.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
@@ -72,6 +72,13 @@ assert.equal(
   defaultCallMessage({ target: { name: "Demir" }, serverName: "Gece Kuşları", reward: 50 }, t),
   "Demir, Gece Kuşları sunucusunda seni bekliyoruz. Gelirsen ikimize de 50 DesCoin."
 );
+
+// the home card only shows a real suggestion; anything else hides it instead of crashing
+for (const bad of [null, undefined, [], {}, { id: "w1" }, { target: { name: "x" } }, { id: "w1", target: [] }, "x", 3]) {
+  assert.equal(parseSuggestion(bad), null, `hidden for ${JSON.stringify(bad)}`);
+}
+const okSug = { id: "w1", target: { id: "u2", name: "Demir" } };
+assert.equal(parseSuggestion(okSug), okSug);
 
 // console helpers
 assert.deepEqual(
