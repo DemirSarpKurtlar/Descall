@@ -106,9 +106,16 @@ struct SpriteHost: View {
 
     @FocusState private var focused: Bool
 
+    // The initializer watchOS has, named in full: with default arguments the compiler picks the
+    // newer shouldRender overload, which is unavailable on watchOS.
+    private static func makeView(_ scene: SKScene, _ paused: Bool) -> SpriteView {
+        let make: (SKScene, SKTransition?, Bool, Int, SpriteView.Options, SpriteView.DebugOptions) -> SpriteView =
+            SpriteView.init(scene:transition:isPaused:preferredFramesPerSecond:options:debugOptions:)
+        return make(scene, nil, paused, 60, [.ignoresSiblingOrder, .shouldCullNonVisibleNodes], [])
+    }
+
     var body: some View {
-        // debugOptions picks the initializer watchOS has (the shouldRender one is not on watchOS).
-        SpriteView(scene: scene, isPaused: paused, preferredFramesPerSecond: 60, options: [.ignoresSiblingOrder, .shouldCullNonVisibleNodes], debugOptions: [])
+        SpriteHost.makeView(scene, paused)
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { onTap() }
