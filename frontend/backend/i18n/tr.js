@@ -94,6 +94,10 @@ module.exports = {
   },
 
   push: {
+    bugHuntConfirmed: "Bildirdiğin hata gerçek bir bugmış. Ayrıntılar geri bildiriminde.",
+    bugHuntLevelUp: "Gerçek bir bug daha! Rozetin artık Bug Avcısı {level}.",
+    bugHuntAlso: "Hata bildirimin doğrulandı, +{amount} DesCoin.",
+    bugHuntFixed: "Düzeltildi: bildirdiğin hata giderildi.",
     someone: "Birisi",
     newMessage: "Yeni mesaj",
     voice: "🎤 Sesli mesaj",

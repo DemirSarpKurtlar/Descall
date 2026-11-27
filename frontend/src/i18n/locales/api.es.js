@@ -3,6 +3,18 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into es.js phrases.
  */
 export const API_ES = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Este comentario no está confirmado como bug.",
+  "The bug hunter tables are not installed yet.": "Las tablas de Cazador de bugs aún no están instaladas.",
+  "Pick a severity.": "Elige una gravedad.",
+  "Pick a confirmed bug to link to.": "Elige un bug confirmado para vincular.",
+  "The bug you linked to is not confirmed.": "El bug que vinculaste no está confirmado.",
+  "The same person reported the first bug; nothing to credit twice.": "La misma persona reportó el primer bug; no cuenta dos veces.",
+  "You can't confirm your own feedback.": "No puedes confirmar tus propios comentarios.",
+  "This feedback has no sender.": "Este comentario no tiene remitente.",
+  "This confirmation was already undone.": "Esta confirmación ya se deshizo.",
+  "Undo the linked duplicate reports first.": "Primero deshaz los reportes duplicados vinculados.",
+  "Something went wrong.": "Algo salió mal.",
   "Could not check right now.": "No se pudo comprobar ahora.",
   "Complete the security check to continue.": "Completa la verificación de seguridad para continuar.",
   "The security check could not be verified. Please try again.": "No se pudo confirmar la verificación de seguridad. Inténtalo de nuevo.",

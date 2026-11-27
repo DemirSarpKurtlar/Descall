@@ -166,6 +166,12 @@ function userThread(row) {
   const out = [];
   for (const r of Array.isArray(row?.admin_replies) ? row.admin_replies : []) {
     if (!r || typeof r !== "object" || r.internal) continue;
+    if (r.type === "bughunt") {
+      // Bug Avcısı: the celebration / "Düzeltildi" card (an undone round is hidden).
+      if (r.void) continue;
+      out.push(bugHuntForUser(r));
+      continue;
+    }
     if (r.type === "system") {
       const status = statusOfSystemEntry(r);
       if (status) out.push({ id: clip(r.id, 40), type: "status", status, created_at: r.created_at || null });
@@ -185,6 +191,29 @@ function userThread(row) {
   return out;
 }
 
+/** The sender's view of a Bug Avcısı line: no admin names, only what the card draws. */
+function bugHuntForUser(r) {
+  const i18n = r.i18n && typeof r.i18n === "object" ? r.i18n : null;
+  return {
+    id: clip(r.id, 40),
+    type: "bughunt",
+    event: ["confirmed", "also", "fixed"].includes(r.event) ? r.event : "confirmed",
+    severity: ["low", "medium", "high", "critical"].includes(r.severity) ? r.severity : null,
+    level: Math.max(0, Math.min(3, Number(r.level) || 0)),
+    badge: ["new", "up", "more", "none"].includes(r.badge) ? r.badge : "none",
+    count: Math.max(0, Number(r.count) || 0),
+    critical: Boolean(r.critical),
+    reward: Math.max(0, Number(r.reward) || 0),
+    badgeId: r.badgeId === "bughunter" || r.badgeId === "kritikbug" ? r.badgeId : null,
+    text: clip(r.text || "", 400),
+    badgeLine: r.badgeLine ? clip(r.badgeLine, 200) : null,
+    criticalLine: r.criticalLine ? clip(r.criticalLine, 200) : null,
+    rewardLine: r.rewardLine ? clip(r.rewardLine, 200) : null,
+    ...(i18n ? { i18n: Object.fromEntries(Object.entries(i18n).filter(([k]) => ["text", "badgeLine", "criticalLine", "rewardLine"].includes(k))) } : {}),
+    created_at: r.created_at || null,
+  };
+}
+
 function unreadFor(row) {
   const since = row?.user_last_read_at ? new Date(row.user_last_read_at).getTime() : 0;
   let n = 0;
@@ -192,6 +221,10 @@ function unreadFor(row) {
     if (!r || r.internal) continue;
     const at = new Date(r.created_at || 0).getTime();
     if (!(at > since)) continue;
+    if (r.type === "bughunt") {
+      if (!r.void) n += 1;
+      continue;
+    }
     if (isTeamEntry(r) || (r.type === "system" && statusOfSystemEntry(r))) n += 1;
   }
   return n;
@@ -272,6 +305,7 @@ module.exports = {
   isOwnMediaUrl,
   sanitizeSubmission,
   userThread,
+  bugHuntForUser,
   unreadFor,
   shapeForUser,
   deviceLabel,

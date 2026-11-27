@@ -2962,6 +2962,18 @@ export const nested = {
     "wearingOther": "Porté"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Le problème que tu as signalé était un vrai bug. Notre équipe le corrige.",
+      "confirmedFixed": "Le problème que tu as signalé était un vrai bug, et nous l'avons corrigé.",
+      "also": "Le problème que tu as signalé était un vrai bug. Quelqu'un l'a signalé un peu avant toi, mais ton signalement compte aussi. Merci !",
+      "fixed": "Corrigé : le bug que tu as signalé a disparu dans la dernière version. Merci !",
+      "badgeNew": "Tu as gagné le badge Chasseur de bugs.",
+      "badgeUp": "Ton badge est passé à Chasseur de bugs {level}.",
+      "badgeMore": "Un vrai bug de plus sur ton badge Chasseur de bugs : {count} au total.",
+      "badgeCritical": "Tu as aussi gagné le badge rare Chasseur de bugs critiques.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} a annulé la confirmation du bug : {reason}",
+    },
     "cmd": {
       "avatar": "Afficher un avatar en grand, le télécharger ou l'ouvrir en plein écran.",
       "ban": "Bannir un membre du serveur.",
@@ -3044,6 +3056,14 @@ export const nested = {
       "slotUsage": "**Machine à sous**\n\nUtilisation : `/slot <montant>`\nMin **{min}** · Max **{max}** · {lines} lignes de paiement"
     },
     "notify": {
+      "bugConfirmedTitle": "Tu as trouvé un vrai bug",
+      "bugNewBadgeBody": "Tu as gagné le badge Chasseur de bugs",
+      "bugLevelUpBody": "Ton badge est maintenant Chasseur de bugs {level}",
+      "bugMoreBody": "Vrais bugs trouvés : {count}",
+      "bugAlsoTitle": "Ton signalement de bug est confirmé",
+      "bugAlsoBody": "Merci pour le signalement, +{amount} DesCoin",
+      "bugFixedTitle": "Corrigé",
+      "bugFixedBody": "Le bug que tu as signalé est corrigé",
       "feedbackClosed": "Ton retour a été clôturé",
       "feedbackInProgress": "Ton retour est en cours d'examen",
       "feedbackReplyTitle": "L'équipe Descall a répondu",

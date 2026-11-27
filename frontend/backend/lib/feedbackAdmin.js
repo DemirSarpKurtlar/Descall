@@ -81,8 +81,37 @@ function systemI18n(r) {
   return null;
 }
 
+/** Bug Avcısı line (lib/bugHunter/model.js threadEntry): the structured fields the panel draws. */
+function shapeBugHunt(r) {
+  return {
+    id: clip(r.id || "", 40),
+    type: "bughunt",
+    internal: false,
+    isAdmin: true,
+    event: ["confirmed", "also", "fixed"].includes(r.event) ? r.event : "confirmed",
+    severity: PRIORITIES.includes(r.severity) ? r.severity : null,
+    level: Math.max(0, Math.min(3, Number(r.level) || 0)),
+    badge: ["new", "up", "more", "none"].includes(r.badge) ? r.badge : "none",
+    count: Math.max(0, Number(r.count) || 0),
+    critical: Boolean(r.critical),
+    reward: Math.max(0, Number(r.reward) || 0),
+    round: Math.max(1, Number(r.round) || 1),
+    badgeId: r.badgeId === "bughunter" || r.badgeId === "kritikbug" ? r.badgeId : null,
+    void: Boolean(r.void),
+    text: clip(r.text || "", 400),
+    ...(r.i18n && typeof r.i18n === "object" ? { i18n: r.i18n } : {}),
+    badgeLine: r.badgeLine ? clip(r.badgeLine, 200) : null,
+    criticalLine: r.criticalLine ? clip(r.criticalLine, 200) : null,
+    rewardLine: r.rewardLine ? clip(r.rewardLine, 200) : null,
+    adminUsername: r.adminUsername ? clip(r.adminUsername, 40) : null,
+    attachments: [],
+    created_at: r.created_at || null,
+  };
+}
+
 function shapeReply(r) {
   if (!r || typeof r !== "object") return null;
+  if (r.type === "bughunt") return shapeBugHunt(r);
   const type = r.type === "system" ? "system" : r.internal ? "note" : "reply";
   return {
     id: clip(r.id || "", 40),

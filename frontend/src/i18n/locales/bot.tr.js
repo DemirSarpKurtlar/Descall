@@ -7,6 +7,19 @@
  * (backend/i18n/backendI18n.selftest.cjs checks it).
  */
 export const BOT_TR = {
+  // Bug Avcısı (lib/bugHunter/model.js): the sender's thread card.
+  bughunt: {
+    confirmed: "Bildirdiğin hata gerçek bir bugmış, ekibimiz düzeltiyor.",
+    confirmedFixed: "Bildirdiğin hata gerçek bir bugmış, düzelttik.",
+    also: "Bildirdiğin hata gerçek bir bugmış. Senden biraz önce bildiren de olmuş ama senin bildirimin de sayıldı. Teşekkürler!",
+    fixed: "Düzeltildi: bildirdiğin hata son sürümde giderildi. Teşekkürler!",
+    badgeNew: "Bug Avcısı rozetini kazandın.",
+    badgeUp: "Rozetin Bug Avcısı {level} seviyesine yükseldi.",
+    badgeMore: "Bug Avcısı rozetine bir gerçek bug daha eklendi, toplam {count}.",
+    badgeCritical: "Nadir Kritik Bug Avcısı rozetini de kazandın.",
+    reward: "+{amount} DesCoin",
+    undone: "{who} bug doğrulamasını geri aldı: {reason}",
+  },
   game: {
     heads: "Yazı",
     tails: "Tura",
@@ -88,6 +101,14 @@ export const BOT_TR = {
     resolved: "{actor} vakayı kapattı ({resolution}).",
   },
   notify: {
+    bugConfirmedTitle: "Gerçek bir bug buldun",
+    bugNewBadgeBody: "Bug Avcısı rozetini kazandın",
+    bugLevelUpBody: "Rozetin artık Bug Avcısı {level}",
+    bugMoreBody: "Bulduğun gerçek bug sayısı: {count}",
+    bugAlsoTitle: "Hata bildirimin doğrulandı",
+    bugAlsoBody: "Bildirimin için teşekkürler, +{amount} DesCoin",
+    bugFixedTitle: "Düzeltildi",
+    bugFixedBody: "Bildirdiğin hata düzeltildi",
     friendRequestTitle: "Arkadaşlık isteği",
     friendRequestBody: "{from} sana arkadaşlık isteği gönderdi",
     friendAcceptedTitle: "Arkadaşlık isteği kabul edildi",

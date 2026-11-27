@@ -3,6 +3,18 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into ru.js phrases.
  */
 export const API_RU = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Этот отзыв не подтверждён как баг.",
+  "The bug hunter tables are not installed yet.": "Таблицы «Охотника за багами» ещё не установлены.",
+  "Pick a severity.": "Выбери серьёзность.",
+  "Pick a confirmed bug to link to.": "Выбери подтверждённый баг для связи.",
+  "The bug you linked to is not confirmed.": "Связанный баг не подтверждён.",
+  "The same person reported the first bug; nothing to credit twice.": "Первый баг сообщил тот же человек; дважды не засчитывается.",
+  "You can't confirm your own feedback.": "Нельзя подтвердить собственный отзыв.",
+  "This feedback has no sender.": "У этого отзыва нет отправителя.",
+  "This confirmation was already undone.": "Это подтверждение уже отменено.",
+  "Undo the linked duplicate reports first.": "Сначала отмени связанные дубликаты.",
+  "Something went wrong.": "Что-то пошло не так.",
   "Could not check right now.": "Сейчас проверить не удалось.",
   "Complete the security check to continue.": "Пройдите проверку безопасности, чтобы продолжить.",
   "The security check could not be verified. Please try again.": "Не удалось подтвердить проверку безопасности. Повторите попытку.",

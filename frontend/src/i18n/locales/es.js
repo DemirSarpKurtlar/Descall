@@ -2962,6 +2962,18 @@ export const nested = {
     "wearingOther": "En uso"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "El fallo que reportaste era un bug real. Nuestro equipo lo está arreglando.",
+      "confirmedFixed": "El fallo que reportaste era un bug real y ya lo arreglamos.",
+      "also": "El fallo que reportaste era un bug real. Alguien lo reportó un poco antes, pero tu reporte también cuenta. ¡Gracias!",
+      "fixed": "Arreglado: el fallo que reportaste ya no está en la última versión. ¡Gracias!",
+      "badgeNew": "Ganaste la insignia Cazador de bugs.",
+      "badgeUp": "Tu insignia subió a Cazador de bugs {level}.",
+      "badgeMore": "Un bug real más en tu insignia Cazador de bugs: {count} en total.",
+      "badgeCritical": "También ganaste la rara insignia Cazador de bugs críticos.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} deshizo la confirmación del bug: {reason}",
+    },
     "cmd": {
       "avatar": "Muestra un avatar en grande, descárgalo o ábrelo en pantalla completa.",
       "ban": "Banea a un miembro del servidor.",
@@ -3044,6 +3056,14 @@ export const nested = {
       "slotUsage": "**Tragamonedas**\n\nUso: `/slot <cantidad>`\nMín. **{min}** · Máx. **{max}** · {lines} líneas de pago"
     },
     "notify": {
+      "bugConfirmedTitle": "Encontraste un bug real",
+      "bugNewBadgeBody": "Ganaste la insignia Cazador de bugs",
+      "bugLevelUpBody": "Tu insignia ahora es Cazador de bugs {level}",
+      "bugMoreBody": "Bugs reales encontrados: {count}",
+      "bugAlsoTitle": "Tu reporte de bug se confirmó",
+      "bugAlsoBody": "Gracias por el reporte, +{amount} DesCoin",
+      "bugFixedTitle": "Arreglado",
+      "bugFixedBody": "El fallo que reportaste se arregló",
       "feedbackClosed": "Se cerraron tus comentarios",
       "feedbackInProgress": "Estamos revisando tus comentarios",
       "feedbackReplyTitle": "El equipo de Descall respondió",

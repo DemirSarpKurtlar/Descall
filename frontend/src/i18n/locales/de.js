@@ -2962,6 +2962,18 @@ export const nested = {
     "wearingOther": "Trägt"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Der Fehler, den du gemeldet hast, war ein echter Bug. Unser Team behebt ihn.",
+      "confirmedFixed": "Der Fehler, den du gemeldet hast, war ein echter Bug, und wir haben ihn behoben.",
+      "also": "Der Fehler, den du gemeldet hast, war ein echter Bug. Jemand hat ihn kurz vor dir gemeldet, aber deine Meldung zählt auch. Danke!",
+      "fixed": "Behoben: Der gemeldete Fehler ist in der neuesten Version weg. Danke!",
+      "badgeNew": "Du hast das Abzeichen Bugjäger bekommen.",
+      "badgeUp": "Dein Abzeichen ist auf Bugjäger {level} gestiegen.",
+      "badgeMore": "Ein weiterer echter Bug auf deinem Bugjäger-Abzeichen: insgesamt {count}.",
+      "badgeCritical": "Du hast außerdem das seltene Abzeichen Kritischer Bugjäger bekommen.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} hat die Bug-Bestätigung zurückgenommen: {reason}",
+    },
     "cmd": {
       "avatar": "Avatar groß anzeigen, herunterladen oder im Vollbild öffnen.",
       "ban": "Ein Mitglied vom Server bannen.",
@@ -3044,6 +3056,14 @@ export const nested = {
       "slotUsage": "**Slot**\n\nVerwendung: `/slot <betrag>`\nMin. **{min}** · Max. **{max}** · {lines} Gewinnlinien"
     },
     "notify": {
+      "bugConfirmedTitle": "Du hast einen echten Bug gefunden",
+      "bugNewBadgeBody": "Du hast das Abzeichen Bugjäger bekommen",
+      "bugLevelUpBody": "Dein Abzeichen ist jetzt Bugjäger {level}",
+      "bugMoreBody": "Gefundene echte Bugs: {count}",
+      "bugAlsoTitle": "Deine Fehlermeldung wurde bestätigt",
+      "bugAlsoBody": "Danke für die Meldung, +{amount} DesCoin",
+      "bugFixedTitle": "Behoben",
+      "bugFixedBody": "Der gemeldete Fehler wurde behoben",
       "feedbackClosed": "Dein Feedback wurde geschlossen",
       "feedbackInProgress": "Dein Feedback wird geprüft",
       "feedbackReplyTitle": "Das Descall-Team hat geantwortet",
