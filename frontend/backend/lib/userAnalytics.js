@@ -18,6 +18,11 @@ const ALLOWED_EVENTS = new Set([
   "first_session",
   "session_started",
   "session_ended",
+  // Uyarlanan kart (growth 1B, lib/adaptiveSignup.js CARD_EVENTS): the sign-up card's Ölçüm.
+  "identifier_routed",
+  "breach_warned_inline",
+  "breach_fixed",
+  "card_signup_started",
 ]);
 
 const ONCE_PER_USER = new Set([
