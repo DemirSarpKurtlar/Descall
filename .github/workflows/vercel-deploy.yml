@@ -34,10 +34,10 @@ jobs:
           fi
         working-directory: .
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.configured == 'true'
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.gate.outputs.configured == 'true'
         with:
           node-version: "24"

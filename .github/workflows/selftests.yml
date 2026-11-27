@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -55,8 +55,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -155,7 +155,7 @@ jobs:
         run: node ../desktop/app/shim/shell-pages.e2e.mjs
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-messaging-shots
           path: ${{ runner.temp }}/e2e-msg-shots
@@ -167,8 +167,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -392,8 +392,8 @@ jobs:
       run:
         working-directory: frontend/backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -433,8 +433,8 @@ jobs:
       run:
         working-directory: frontend/backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -472,8 +472,8 @@ jobs:
       run:
         working-directory: frontend/backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -504,8 +504,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -521,7 +521,7 @@ jobs:
       # Electron 45 fetches its binary on first use, not in npm ci. Keep the zip in
       # @electron/get's cache so a GitHub releases outage (504) cannot stop this job.
       - name: Cache the Electron binary
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/electron
           key: electron-${{ runner.os }}-${{ hashFiles('frontend/node_modules/electron/package.json') }}

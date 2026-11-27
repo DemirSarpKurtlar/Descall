@@ -21,8 +21,8 @@ jobs:
   web-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - name: Web build (same checks as Render)
         working-directory: frontend
@@ -41,8 +41,8 @@ jobs:
     needs: [web-gate, selftests]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - name: Build Windows setup
         working-directory: frontend
@@ -192,7 +192,7 @@ jobs:
           Invoke-Smoke (Join-Path $dest "Descall.exe")
           Get-Process Descall -ErrorAction SilentlyContinue | Stop-Process -Force
           Write-Host "windows smoke and update-from-previous ok"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-setup
           # latest.yml + the .exe.blockmap are required by electron-updater's
@@ -211,9 +211,9 @@ jobs:
       # gh release create --generate-notes shells out to git for the repo
       # context (compare link, commit range); without a checkout it fails
       # with "not a git repository".
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download Windows setup
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-setup
           path: release-assets/windows-setup
