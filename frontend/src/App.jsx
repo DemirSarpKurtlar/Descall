@@ -80,7 +80,7 @@ import {
   setServerFolder,
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
-import { applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
+import { applySignedOutAppearance, applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
 import {
   hydrateChatCache,
@@ -171,6 +171,7 @@ import { t as tRuntime } from "./i18n/runtime";
 import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
+import { OnboardingProvider } from "./components/onboarding/OnboardingContext";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
@@ -1375,6 +1376,18 @@ export default function App() {
       if (themeKey) document.documentElement.setAttribute("data-theme", themeKey);
     }
   }, [me, me?.equippedTheme?.theme_key]);
+
+  // Signed out (sign-in / sign-up, session expired, maintenance kick): Descall's own
+  // look. The effect above only runs with a user, so without this the last account's
+  // colourful theme stayed on the sign-in screen.
+  useEffect(() => {
+    if (me || !sessionChecked) return;
+    try {
+      applySignedOutAppearance();
+    } catch {
+      /* best effort */
+    }
+  }, [me, sessionChecked]);
 
   // Settings › Görünüm lives on the account: pull on sign-in and when the
   // window comes back, so a change on another device shows up here.
@@ -3417,7 +3430,10 @@ export default function App() {
     }
   };
 
-  const handleRegister = async (payload) => {
+  const handleRegister = async (rawPayload) => {
+    // Uyarlanan kart (growth 1B): beforeCommit(reg) runs once the account exists and before
+    // the app opens (the passkey of a passwordless account, saving the new password).
+    const { beforeCommit, ...payload } = rawPayload || {};
     try {
       setAuthLoading(true);
       setAuthError("");
@@ -3427,6 +3443,16 @@ export default function App() {
         ...payload,
         ...(invitedBy ? { invitedBy } : {}),
       });
+      if (typeof beforeCommit === "function" && reg?.token) {
+        setToken(reg.token);
+        setAuthLoading(false);
+        try {
+          await beforeCommit(reg);
+        } catch {
+          /* the account exists either way */
+        }
+        setAuthLoading(true);
+      }
       if (invitedBy) consumeInviteRef();
       try {
         sessionStorage.setItem("descall:justRegistered", "1");
@@ -3474,6 +3500,7 @@ export default function App() {
       } catch {
         /* analytics optional */
       }
+      if (!payload.password) throw new Error("Registration succeeded but sign-in did not. Please log in.");
       await handleLogin({ username: payload.username, password: payload.password });
     } catch (error) {
       // An access ban on the sign-up answers ACCESS_BANNED: the ban screen (with its
@@ -3521,6 +3548,13 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
+    // The sign-in page uses Descall's own look, not this account's shop theme or
+    // accent; the cache drops them too so a cold start paints the same.
+    try {
+      applySignedOutAppearance({ forget: true });
+    } catch {
+      /* best effort */
+    }
     const isElectronDesktop = isDesktopShell();
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
@@ -5900,6 +5934,31 @@ export default function App() {
         )}
 
         {/* NEW MODULAR LAYOUT SYSTEM */}
+        <OnboardingProvider
+          me={me}
+          socket={socketApi}
+          servers={myServers}
+          onServerJoined={(server) => {
+            if (!server?.id) return;
+            rememberLocalJoin(localJoinsRef.current, server.id);
+            setMyServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]));
+          }}
+          onOpenChannel={(serverId, channelId) => {
+            if (!serverId) return;
+            setActiveView("servers");
+            const nextPath = serverPath(serverId, channelId || undefined);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onLeaveServer={(serverId) => handleLeaveServer(serverId)}
+          onOpenDm={(user) => {
+            if (!user?.username) return;
+            setActiveView("chat");
+            const nextPath = directPath(user);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onJoinedFromDiscover={handleJoinServer}
+          onRefreshServers={handleRefreshServers}
+        >
         <AppLayout
           me={me}
           socket={socketApi}
@@ -6516,6 +6575,7 @@ export default function App() {
             }
           />
         </AppLayout>
+        </OnboardingProvider>
         {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
             <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />

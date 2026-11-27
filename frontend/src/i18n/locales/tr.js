@@ -15,6 +15,7 @@ import { ACT_TR } from "./act.tr.js";
 import { PLUS2_TR } from "./plus2.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { PUBPAGE_TR } from "./pubpage.tr.js";
+import { ONB_TR } from "./onb.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
 import { SHARE_SHEET_TR } from "./shareSheet.tr.js";
@@ -46,6 +47,7 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -106,6 +108,7 @@ export const nested = {
   plus2: PLUS2_TR,
   dir: DIR_TR,
   pubpage: PUBPAGE_TR,
+  onb: ONB_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
   shareSheet: SHARE_SHEET_TR,
@@ -4649,6 +4652,7 @@ export const phrases = {
   ...CONV_START_I18N.tr,
   ...SERVER_TEMPLATE_TOPICS_I18N.tr,
   ...SIGNUP_GROWTH.tr.phrases,
+  ...ADAPTIVE_SIGNUP.tr,
 };
 
 const locale = { nested, phrases };

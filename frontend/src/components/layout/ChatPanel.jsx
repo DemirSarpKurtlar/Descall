@@ -16,6 +16,8 @@ import ActiveCallBanner from "../ActiveCallBanner";
 import ActivityView from "../activity/ActivityView";
 import TypingIndicator from "../chat/TypingIndicator";
 import EmptyState from "../ui/EmptyState";
+import { useOnboarding } from "../onboarding/OnboardingContext";
+import { OnbMainSlot, OnbJoinedSlot } from "../onboarding/slots";
 import CallsView from "../calls/CallsView";
 import { getToken } from "../../lib/storage";
 import { subscribeTyping, getTypingSnapshot } from "../../lib/typingStore";
@@ -470,6 +472,8 @@ export default function ChatPanel({
   // iPad and wide phones show the list beside this pane: no "open the menu" there
   // (polish world-social-06).
   const menuHidden = isMobile && !activitySplitView;
+  const onboarding = useOnboarding();
+  const onboardingHome = Boolean(onboarding?.active) && !isMobile && (activeView === "chat" || activeView === "dms") && !activeDmUser && !activeGroup;
   const emptyCopy = (() => {
     if (activeView === "friends") {
       const hasFriends = Array.isArray(friends) && friends.length > 0;
@@ -902,6 +906,7 @@ export default function ChatPanel({
         {isValidElement(children)
           ? cloneElement(children, { searchQuery: "" })
           : children}
+        <OnbJoinedSlot channelId={activeChannel?.id} />
       </div>
       ) : activeView === "servers" ? (
         (activeChannel?.type === "voice" || activeChannel?.type === "stage") && activeServer ? (
@@ -933,6 +938,11 @@ export default function ChatPanel({
               : t("Pick a text or voice channel from the list on the left.")}
         />
         )
+      ) : onboardingHome ? (
+        /* "Başla panosu" (growth 2A): a new account's first five days, Chats home with nothing open. */
+        <div className="onb-host">
+          <OnbMainSlot isMobile={isMobile} />
+        </div>
       ) : (
       <div
         className="messages-container"

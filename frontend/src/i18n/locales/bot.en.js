@@ -262,4 +262,7 @@ export const BOT_EN = {
     count: "count",
     countDesc: "Number of messages to delete (1–100).",
   },
+  onb: {
+    rehberWelcome: "Welcome {user}! Say hi in #{channel}: tell us your name and what you are into, and the welcome team will answer in a few minutes.",
+  },
 };

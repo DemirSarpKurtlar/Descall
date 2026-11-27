@@ -3,6 +3,7 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into ru.js phrases.
  */
 export const API_RU = {
+  "Could not check right now.": "Сейчас проверить не удалось.",
   "Complete the security check to continue.": "Пройдите проверку безопасности, чтобы продолжить.",
   "The security check could not be verified. Please try again.": "Не удалось подтвердить проверку безопасности. Повторите попытку.",
   "Appeals are not available yet. Try again later.": "Апелляции пока недоступны. Попробуй позже.",
@@ -310,4 +311,15 @@ export const API_RU = {
   "Choose why you are turning the page off.": "Выберите, почему вы выключаете страницу.",
   "Write a short reason.": "Напишите короткую причину.",
   "The undo window has passed.": "Время на отмену истекло.",
+  "Account not found.": "Аккаунт не найден.",
+  "Could not load the start dashboard.": "Не удалось загрузить стартовую панель.",
+  "Not available yet.": "Пока недоступно.",
+  "Could not save interests.": "Не удалось сохранить интересы.",
+  "Bad server id.": "Неверный ID сервера.",
+  "Preview not available.": "Предпросмотр недоступен.",
+  "Could not load the preview.": "Не удалось загрузить предпросмотр.",
+  "Bad ids.": "Неверные ID.",
+  "Could not load replies.": "Не удалось загрузить ответы.",
+  "Unknown event.": "Неизвестное событие.",
+  "Onboarding settings could not be saved.": "Не удалось сохранить настройки старта.",
 };

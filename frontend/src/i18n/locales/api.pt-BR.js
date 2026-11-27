@@ -3,6 +3,7 @@
  * (2026-11-14). Keys are the exact English server texts (see api.tr.js). Spread into pt-BR.js phrases.
  */
 export const API_PT_BR = {
+  "Could not check right now.": "Não foi possível verificar agora.",
   "Complete the security check to continue.": "Conclua a verificação de segurança para continuar.",
   "The security check could not be verified. Please try again.": "Não foi possível confirmar a verificação de segurança. Tente novamente.",
   "Appeals are not available yet. Try again later.": "Os recursos ainda não estão disponíveis. Tente novamente mais tarde.",
@@ -310,4 +311,15 @@ export const API_PT_BR = {
   "Choose why you are turning the page off.": "Escolha por que você está desligando a página.",
   "Write a short reason.": "Escreva um motivo curto.",
   "The undo window has passed.": "O prazo para desfazer acabou.",
+  "Account not found.": "Conta não encontrada.",
+  "Could not load the start dashboard.": "Não foi possível carregar o painel inicial.",
+  "Not available yet.": "Ainda não disponível.",
+  "Could not save interests.": "Não foi possível salvar os interesses.",
+  "Bad server id.": "ID de servidor inválido.",
+  "Preview not available.": "Prévia indisponível.",
+  "Could not load the preview.": "Não foi possível carregar a prévia.",
+  "Bad ids.": "IDs inválidos.",
+  "Could not load replies.": "Não foi possível carregar as respostas.",
+  "Unknown event.": "Evento desconhecido.",
+  "Onboarding settings could not be saved.": "Não foi possível salvar as configurações iniciais.",
 };

@@ -3,6 +3,7 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into fr.js phrases.
  */
 export const API_FR = {
+  "Could not check right now.": "Vérification impossible pour le moment.",
   "Complete the security check to continue.": "Termine la vérification de sécurité pour continuer.",
   "The security check could not be verified. Please try again.": "La vérification de sécurité n'a pas pu être confirmée. Réessaie.",
   "Appeals are not available yet. Try again later.": "Les recours ne sont pas encore disponibles. Réessaie plus tard.",
@@ -310,4 +311,15 @@ export const API_FR = {
   "Choose why you are turning the page off.": "Choisis pourquoi tu désactives la page.",
   "Write a short reason.": "Écris une courte raison.",
   "The undo window has passed.": "Le délai pour annuler est passé.",
+  "Account not found.": "Compte introuvable.",
+  "Could not load the start dashboard.": "Impossible de charger le tableau de démarrage.",
+  "Not available yet.": "Pas encore disponible.",
+  "Could not save interests.": "Impossible d'enregistrer les centres d'intérêt.",
+  "Bad server id.": "Identifiant de serveur invalide.",
+  "Preview not available.": "Aperçu indisponible.",
+  "Could not load the preview.": "Impossible de charger l'aperçu.",
+  "Bad ids.": "Identifiants invalides.",
+  "Could not load replies.": "Impossible de charger les réponses.",
+  "Unknown event.": "Événement inconnu.",
+  "Onboarding settings could not be saved.": "Impossible d'enregistrer les réglages de démarrage.",
 };

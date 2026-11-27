@@ -566,6 +566,8 @@ app.use("/api/friends", friendsRoutes);
 app.use("/api/activity", require("./routes/activityPresenceBatch"));
 app.use("/api/activity", activityRoutes);
 app.use("/api/servers", serverRoutes);
+// "Başla panosu" (growth phase 2A): new accounts' first five days, lib/onboarding.
+app.use("/api/onboarding", require("./routes/onboarding"));
 // Public server directory (item 8): read-only cards, no auth; owner settings signed in.
 app.use("/api/directory", require("./routes/directory"));
 // Public server page "Vitrin" (descall.com/s/<slug>) + 1200x630 invite preview images.

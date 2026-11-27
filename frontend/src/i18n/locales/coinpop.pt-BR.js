@@ -118,6 +118,7 @@ export const COINPOP_PT_BR = {
       "admin_revoke": "Correção da equipe Descall",
       "referral_invite": "Recompensa de convite",
       "referral_welcome": "Recompensa de boas-vindas",
+      "onboarding_reward": "Prêmio de início",
       "promo": "Código promocional",
       "premium_gift": "Presente Descall+",
       "other": "Outros"

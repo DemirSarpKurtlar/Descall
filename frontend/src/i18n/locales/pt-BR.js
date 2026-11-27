@@ -19,6 +19,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { PLUS2_PT_BR } from "./plus2.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
+import { ONB_PT_BR } from "./onb.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { SHARE_SHEET_PT_BR } from "./shareSheet.pt-BR.js";
@@ -50,6 +51,7 @@ import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
 import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_PT_BR,
   passkey: PASSKEY_PT_BR,
@@ -77,6 +79,7 @@ export const nested = {
   "plus2": PLUS2_PT_BR,
   "dir": DIR_PT_BR,
   "pubpage": PUBPAGE_PT_BR,
+  "onb": ONB_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "shareSheet": SHARE_SHEET_PT_BR,
@@ -3060,6 +3063,9 @@ export const nested = {
       "serverOwnerTitle": "Posse do servidor",
       "timeoutBody": "Você ainda pode ler e ouvir, mas por um tempo não pode enviar mensagens nem falar em voz.",
       "timeoutTitle": "Você foi silenciado"
+    },
+    "onb": {
+      "rehberWelcome": "Boas-vindas, {user}! Diga oi em #{channel}: conte seu nome e do que você gosta, e a equipe de boas-vindas responde em poucos minutos."
     },
     "opt": {
       "amount": "valor",
@@ -11150,6 +11156,7 @@ export const phrases = {
   ...CONV_START_I18N["pt-BR"],
   ...SERVER_TEMPLATE_TOPICS_I18N["pt-BR"],
   ...SIGNUP_GROWTH["pt-BR"].phrases,
+  ...ADAPTIVE_SIGNUP["pt-BR"],
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "O Descall não tem afiliação com a Discord Inc. Discord é uma marca comercial da Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",
   "Author": "Autor",
