@@ -14,6 +14,11 @@ export const USET_TR = {
     "notificationsApp": "Bu cihazdaki uyarıları ve sesleri yönet.",
     "voiceApp": "Bu cihazda aramalar için kullanılacak cihazları seç."
   },
+  "iosOutput": {
+    "label": "Arama ses çıkışı",
+    "hint": "Aramalar ve ses kanalları bu çıkışla başlar. Görüşme sırasında da değiştirebilirsin; şu an duyduğun çıkış seçili görünür.",
+    "now": "Şu an"
+  },
   "notify": {
     "loadFailed": "Bu ayarlar yüklenemedi."
   }

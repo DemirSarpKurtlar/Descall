@@ -60,7 +60,7 @@ export function createCallSetupTimeline({
       callType: callType || "voice",
       marks: {},
       meta: { path: "js", ...pickMeta(meta) },
-      counts: { reneg: 0, reconnects: 0 },
+      counts: { reneg: 0, reconnects: 0, iceReplay: 0 },
       done: false,
       pair: null,
       last: null,
@@ -78,7 +78,7 @@ export function createCallSetupTimeline({
     Object.assign(tl.meta, pickMeta(meta));
   }
 
-  /** reneg / reconnects counters. */
+  /** reneg / reconnects / iceReplay counters. */
   function count(name) {
     if (!tl || tl.done || !(name in tl.counts)) return;
     tl.counts[name] += 1;
@@ -103,6 +103,7 @@ export function createCallSetupTimeline({
       mediaVerifiedMs: answerAt != null && m.mediaVerified != null ? Math.max(0, m.mediaVerified - answerAt) : null,
       reneg: tl.counts.reneg,
       reconnects: tl.counts.reconnects,
+      ...(tl.counts.iceReplay ? { iceReplay: tl.counts.iceReplay } : {}),
       pair: tl.pair,
       ...context(),
     };

@@ -14,6 +14,11 @@ export const USET_PT_BR = {
     "notificationsApp": "Gerencie alertas e sons neste dispositivo.",
     "voiceApp": "Escolha os dispositivos usados nas chamadas neste dispositivo."
   },
+  "iosOutput": {
+    "label": "Saída de áudio das chamadas",
+    "hint": "Chamadas e canais de voz começam nesta saída. Você também pode trocar durante a chamada; a saída que você ouve agora aparece selecionada.",
+    "now": "Agora"
+  },
   "notify": {
     "loadFailed": "Não foi possível carregar estas configurações."
   }

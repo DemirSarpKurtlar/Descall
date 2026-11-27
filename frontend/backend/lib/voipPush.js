@@ -22,7 +22,18 @@
  *   App Store builds get production tokens).
  */
 
-const { http2Transport, apnsHost } = require("./apnsClient");
+const { http2Transport, apnsHost, tokenTail } = require("./apnsClient");
+
+/** APNs `reason` ("BadDeviceToken", "TopicDisallowed", ...) as a short token, for logs. */
+function apnsReason(status, body) {
+  try {
+    const reason = JSON.parse(String(body || "{}")).reason;
+    if (typeof reason === "string" && /^[A-Za-z]{1,40}$/.test(reason)) return reason;
+  } catch {
+    /* not JSON */
+  }
+  return `http${Number(status) || 0}`;
+}
 
 const MAX_NAME = 64;
 const MAX_URL = 512;
@@ -127,13 +138,14 @@ function createVoipPusher(deps = {}) {
 
   /** Ring every iOS VoIP token of `userId`. Never throws. */
   async function sendIncomingCallVoip(userId, call = {}) {
-    const result = { sent: 0, dropped: 0, failed: 0, skipped: false };
+    const result = { sent: 0, dropped: 0, failed: 0, skipped: false, tokens: 0, reasons: [] };
     try {
       if (!userId || !call.callUuid) return { ...result, skipped: true };
       // Banned accounts get no pushes (lib/bannedRecipients.js).
       if (require("./bannedRecipients").isBannedNow(userId)) return { ...result, skipped: true };
       const cfg = fcm.apnsConfig();
       const tokens = await loadVoipTokens(userId);
+      result.tokens = tokens.length;
       if (!tokens.length) return result;
       if (!cfg) {
         log.warn("[VoIP] APNS_KEY_ID / APNS_TEAM_ID / APNS_PRIVATE_KEY not set — VoIP ring skipped");
@@ -164,10 +176,12 @@ function createVoipPusher(deps = {}) {
               return;
             }
             result.failed += 1;
-            log.warn("[VoIP] send failed:", res.status, clip(res.body, 200));
+            result.reasons.push(apnsReason(res.status, res.body));
+            log.warn("[VoIP] send failed:", res.status, clip(res.body, 200), tokenTail(token));
           } catch (err) {
             result.failed += 1;
-            log.warn("[VoIP] send error:", err?.message || err);
+            result.reasons.push("network");
+            log.warn("[VoIP] send error:", err?.message || err, tokenTail(token));
           }
         })
       );
@@ -238,6 +252,7 @@ function sendCallEndVoip(userId, end) {
 }
 
 module.exports = {
+  apnsReason,
   buildVoipPayload,
   buildVoipEndPayload,
   sendCallEndVoip,

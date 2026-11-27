@@ -79,6 +79,8 @@ import {
 } from "../lib/screenShareTracks";
 import { useToast } from "../context/ToastContext";
 import { IOS_NATIVE } from "../lib/iosCallKit";
+import { beginIosCallAudio, endIosCallAudio } from "../lib/iosAudioRoute";
+import { useIosAudioRoute } from "./useIosAudioRoute";
 import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
@@ -3238,7 +3240,23 @@ export function useServerVoice(socket) {
     };
   }, []);
 
+  // Native iOS: voice channels get the same output router as calls, so the
+  // output menu (Ahize / Hoparlör / Bluetooth) really switches (27 Nov 2026:
+  // "sesteyken ahizeye geçmiyor": the menu listed WKWebView devices, none).
+  const inVoiceForRoute = Boolean(activeChannelId);
+  useEffect(() => {
+    if (!IOS_NATIVE) return undefined;
+    if (!inVoiceForRoute) return undefined;
+    void beginIosCallAudio({ video: false, owner: "server" });
+    return () => {
+      void endIosCallAudio("server");
+    };
+  }, [inVoiceForRoute]);
+  const iosRouteHook = useIosAudioRoute(inVoiceForRoute);
+
   return {
+    iosAudioRoute: iosRouteHook.iosAudioRoute,
+    selectIosRoute: iosRouteHook.selectIosRoute,
     isInVoice: Boolean(activeChannelId),
     activeChannelId,
     activeServerId,

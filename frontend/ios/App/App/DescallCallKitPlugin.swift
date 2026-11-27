@@ -26,6 +26,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         CAPPluginMethod(name: "endCallAudio", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAudioRoute", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAudioRoute", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setCallAudioPreference", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAudioDiagnostics", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "reactivateCapture", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getNativeCall", returnType: CAPPluginReturnPromise),
@@ -256,8 +257,19 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
 
     @objc func beginCallAudio(_ call: CAPPluginCall) {
         let video = call.getBool("video") ?? false
+        let preferred = call.getString("preferred")
         DispatchQueue.main.async {
-            DescallAudioRouter.shared.begin(video: video)
+            if preferred != nil { DescallAudioRouter.setPreference(preferred) }
+            DescallAudioRouter.shared.begin(video: video, preferred: preferred)
+            call.resolve(DescallAudioRouter.shared.state())
+        }
+    }
+
+    /// Settings: default output for calls and voice channels ("receiver" | "speaker" | "").
+    @objc func setCallAudioPreference(_ call: CAPPluginCall) {
+        let route = call.getString("route") ?? ""
+        DispatchQueue.main.async {
+            DescallAudioRouter.setPreference(route.isEmpty ? nil : route)
             call.resolve(DescallAudioRouter.shared.state())
         }
     }

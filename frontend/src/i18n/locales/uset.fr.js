@@ -14,6 +14,11 @@ export const USET_FR = {
     "notificationsApp": "Gère les alertes et les sons sur cet appareil.",
     "voiceApp": "Choisis les appareils utilisés pour les appels sur cet appareil."
   },
+  "iosOutput": {
+    "label": "Sortie audio des appels",
+    "hint": "Les appels et salons vocaux démarrent sur cette sortie. Tu peux aussi changer pendant un appel ; la sortie que tu entends maintenant est sélectionnée.",
+    "now": "Maintenant"
+  },
   "notify": {
     "loadFailed": "Impossible de charger ces réglages."
   }
