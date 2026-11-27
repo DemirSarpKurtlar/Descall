@@ -107,7 +107,8 @@ struct SpriteHost: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        SpriteView(scene: scene, isPaused: paused, preferredFramesPerSecond: 60, options: [.ignoresSiblingOrder, .shouldCullNonVisibleNodes])
+        // debugOptions picks the initializer watchOS has (the shouldRender one is not on watchOS).
+        SpriteView(scene: scene, isPaused: paused, preferredFramesPerSecond: 60, options: [.ignoresSiblingOrder, .shouldCullNonVisibleNodes], debugOptions: [])
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { onTap() }
