@@ -9,7 +9,7 @@ import { useLocale } from "../../context/localeContextInstance.js";
 import { nameVars } from "../../lib/trCase.js";
 import { Avatar } from "../ui/Avatar";
 import { Coin, Ico, PAvatar } from "./ui.jsx";
-import { fmtNum } from "./format.js";
+import { fmtNum, inviteArtUrl } from "./format.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -115,8 +115,8 @@ export default function InviteLandingView({ data, preview = false, phone = false
         </div>
       ) : null}
       <div className="dvt-row">
-        <span className="dvt-ib">
-          <Ico name="shieldc" />
+        <span className="dvt-ib art">
+          {data?.gifts?.badge ? <img src={inviteArtUrl("invited")} alt="" aria-hidden="true" width={22} height={22} /> : <Ico name="shieldc" />}
         </span>
         <div className="sp">
           <b>{t("dvt.land.gift2")}</b>

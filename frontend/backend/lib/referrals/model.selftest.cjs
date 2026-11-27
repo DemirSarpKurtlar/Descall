@@ -161,3 +161,19 @@ assert.strictEqual(texts.langOf("xx"), "tr");
 assert.strictEqual(texts.reasonText("nope", "tr"), texts.reasonText("other", "tr"));
 
 console.log("referrals model selftest ok");
+
+// ---- exclusive cosmetics in the rules
+{
+  const COS = require("../../catalog/referral/cosmetics");
+  const def = rulesLib.normalizeStored(null);
+  assert.deepStrictEqual(def.milestones.map((m) => m.itemIds), [[COS.IDS.badge], [COS.IDS.frame], [COS.IDS.banner, COS.IDS.glow]]);
+  assert.deepStrictEqual(def.inviteeItemIds, [COS.IDS.invited]);
+  const legacy = rulesLib.validateRules({ milestones: [{ at: 3, amount: 100, itemId: "s2-x" }], inviteeItemId: "abc-123" });
+  assert.deepStrictEqual(legacy.milestones[0].itemIds, ["s2-x"]);
+  assert.deepStrictEqual(legacy.inviteeItemIds, ["abc-123"]);
+  const kept = rulesLib.validateRules({ milestones: [{ at: 10, amount: 900 }] });
+  assert.deepStrictEqual(kept.milestones[0].itemIds, [COS.IDS.frame], "editing an amount keeps the items");
+  assert.ok(COS.rows().every((r) => r.active === false && r.tags.includes("exclusive") && r.sku.startsWith("s2-")), "never on sale");
+  assert.ok(/ON CONFLICT \(sku\) DO NOTHING/.test(COS.sql()));
+  console.log("referrals cosmetics rules ok");
+}

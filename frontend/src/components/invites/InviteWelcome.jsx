@@ -16,7 +16,7 @@ import { draftKeyFor, writeDraft } from "../../lib/messageDrafts";
 import { directPath, serverPath } from "../../lib/appRoutes.js";
 import { nameVars } from "../../lib/trCase.js";
 import { Coin, Ico, PAvatar } from "./ui.jsx";
-import { clockTime, fmtNum } from "./format.js";
+import { clockTime, fmtNum, inviteArtUrl } from "./format.js";
 
 function stepIcon(done, active) {
   if (done) return <span className="dvt-ib ok"><Ico name="check" /></span>;
@@ -41,7 +41,11 @@ export function InviteGiftCard({ data, compact = false }) {
           {fmtNum(g.amount, locale)}
         </span>
         <span className="mu4">+</span>
-        <Ico name="shieldc" className="brt" />
+        {(g.items || []).some((it) => it.key === "invited") ? (
+          <img className="dvt-giftbadge" src={inviteArtUrl("invited")} alt="" aria-hidden="true" width={20} height={20} data-testid="dvt-gift-badge" />
+        ) : (
+          <Ico name="shieldc" className="brt" />
+        )}
       </div>
       <div className="dvt-bar">
         <i style={{ width: `${Math.round((doneCount / 3) * 100)}%` }} />

@@ -38,6 +38,8 @@ import { domainChips, withDomain, emailTypoFix, identifierKind, ideasFromEmail, 
 import { trackCardEvent } from "../../../lib/adaptiveSignup/cardEvents.js";
 import { suggestPassphrase } from "../../../lib/adaptiveSignup/passphrase.js";
 import { loadCardDraft, saveCardDraft, clearCardDraft } from "../../../lib/adaptiveSignup/cardDraft.js";
+// Davet Merkezi: the email typed on the invite page (/r/<user>) prefills the card.
+import { peekInviteEmail } from "../../../lib/inviteShare.js";
 import useBreachCheck from "./useBreachCheck.js";
 import BreachFixPanel, { Meter } from "./BreachFixPanel.jsx";
 import { fmtNumber } from "./LiveSnippets.jsx";
@@ -133,7 +135,7 @@ export default function AdaptiveAuthCard({
   const { locale } = useLocale();
   const draft = useMemo(() => loadCardDraft(), []);
   const [step, setStep] = useState("start"); // start | register | login | reset | passkey
-  const [identifier, setIdentifier] = useState(draft?.identifier || "");
+  const [identifier, setIdentifier] = useState(() => peekInviteEmail() || draft?.identifier || "");
   const [identifying, setIdentifying] = useState(false);
   const [startError, setStartError] = useState("");
   const [account, setAccount] = useState(null); // { kind: "email" | "username", value, hint, closed? }

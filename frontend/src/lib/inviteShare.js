@@ -114,7 +114,29 @@ export function peekInviteOpen(now = Date.now()) {
   return null;
 }
 
+const EMAIL_KEY = "descall:inviteEmail";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/**
+ * The email typed on the invite page (descall.com/r/<user>), for the sign-up card to prefill.
+ * Read only; cleared with the rest of the invite after sign-up (clearInviteOpen).
+ */
+export function peekInviteEmail() {
+  try {
+    if (typeof sessionStorage === "undefined") return "";
+    const v = String(sessionStorage.getItem(EMAIL_KEY) || "").trim().slice(0, 254);
+    return EMAIL_RE.test(v) ? v : "";
+  } catch {
+    return "";
+  }
+}
+
 export function clearInviteOpen() {
+  try {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(EMAIL_KEY);
+  } catch {
+    /* ignore */
+  }
   for (const s of stores()) {
     try {
       s.removeItem(OPEN_KEY);

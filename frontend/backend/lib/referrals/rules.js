@@ -10,6 +10,9 @@
  * suspicious sign-up: hold (admin reviews), warn (shown, still pays), deny (no reward).
  */
 
+// Exclusive invite cosmetics (catalog/referral/cosmetics.js): never on sale, granted only here.
+const COSMETICS = require("../../catalog/referral/cosmetics");
+
 const SIGNAL_CODES = Object.freeze([
   "same_device",
   "inviter_device",
@@ -32,11 +35,11 @@ const DEFAULT_RULES = Object.freeze({
   fastMessageSeconds: 10,
   highRiskHold: 70,
   milestones: Object.freeze([
-    Object.freeze({ at: 3, amount: 250, kind: "badge", itemId: null }),
-    Object.freeze({ at: 10, amount: 750, kind: "frame", itemId: null }),
-    Object.freeze({ at: 25, amount: 2000, kind: "banner", itemId: null }),
+    Object.freeze({ at: 3, amount: 250, kind: "badge", itemIds: Object.freeze([...COSMETICS.MILESTONE_ITEMS[3]]) }),
+    Object.freeze({ at: 10, amount: 750, kind: "frame", itemIds: Object.freeze([...COSMETICS.MILESTONE_ITEMS[10]]) }),
+    Object.freeze({ at: 25, amount: 2000, kind: "banner", itemIds: Object.freeze([...COSMETICS.MILESTONE_ITEMS[25]]) }),
   ]),
-  inviteeItemId: null,
+  inviteeItemIds: Object.freeze([...COSMETICS.INVITEE_ITEMS]),
   signals: Object.freeze({
     same_device: "hold",
     inviter_device: "hold",
@@ -90,6 +93,13 @@ function cleanItemId(v, field) {
   return s;
 }
 
+/** A list of item ids (an older single `itemId` value is read as a one-item list). */
+function cleanItemIds(list, single, field) {
+  const raw = Array.isArray(list) ? list : single != null && single !== "" ? [single] : [];
+  if (raw.length > 4) throw bad(field, `${field} lists at most 4 items.`);
+  return [...new Set(raw.map((v, i) => cleanItemId(v, `${field}.${i}`)).filter(Boolean))];
+}
+
 /**
  * Merge an admin edit onto the current rules and validate the result. Unknown keys are
  * dropped. Throws { code: "RULES_INVALID", field } on a bad value.
@@ -104,7 +114,9 @@ function validateRules(input, base = DEFAULT_RULES) {
   if (out.returnWindowHours <= out.returnAfterHours) {
     throw bad("returnWindowHours", "returnWindowHours must be longer than returnAfterHours.");
   }
-  if (src.inviteeItemId !== undefined) out.inviteeItemId = cleanItemId(src.inviteeItemId, "inviteeItemId");
+  if (src.inviteeItemIds !== undefined || src.inviteeItemId !== undefined) {
+    out.inviteeItemIds = cleanItemIds(src.inviteeItemIds, src.inviteeItemId, "inviteeItemIds");
+  }
   if (src.milestones !== undefined) {
     if (!Array.isArray(src.milestones) || src.milestones.length < 1 || src.milestones.length > 5) {
       throw bad("milestones", "milestones must list 1 to 5 steps.");
@@ -115,11 +127,12 @@ function validateRules(input, base = DEFAULT_RULES) {
       if (at <= prev) throw bad(`milestones.${i}.at`, "milestones must grow.");
       prev = at;
       const kind = MILESTONE_KINDS.includes(m?.kind) ? m.kind : MILESTONE_KINDS[Math.min(i, MILESTONE_KINDS.length - 1)];
+      const prevItems = (base.milestones || []).find((x) => x.at === at)?.itemIds || [];
       return {
         at,
         amount: intIn(m?.amount ?? 0, [0, 20000], `milestones.${i}.amount`),
         kind,
-        itemId: cleanItemId(m?.itemId, `milestones.${i}.itemId`),
+        itemIds: m?.itemIds !== undefined || m?.itemId !== undefined ? cleanItemIds(m?.itemIds, m?.itemId, `milestones.${i}.itemIds`) : [...prevItems],
       };
     });
   }

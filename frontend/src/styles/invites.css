@@ -518,3 +518,22 @@ button.dvt-tr.top:hover { background: rgba(255, 255, 255, 0.04); }
 [data-theme="light"] .dvt-chtxt.ig { color: #b3245c; }
 [data-theme="light"] .dvt-chtxt.tt { color: #0b7d86; }
 [data-theme="light"] .dvt-chtxt.qr, [data-theme="light"] .dvt-chtxt.link { color: #2f4fd0; }
+
+/* Exclusive invite cosmetics in the milestone list (badge, frame on your avatar, banner). */
+.dvt-cos { flex: none; display: inline-grid; place-items: center; position: relative; }
+.dvt-cos.is-badge { width: 28px; height: 28px; }
+.dvt-cos.is-badge img { width: 28px; height: 28px; }
+.dvt-cos.is-frame { width: 30px; height: 30px; }
+.dvt-cos.is-frame > .dvt-av { position: absolute; inset: 4px; width: 22px !important; height: 22px !important; }
+.dvt-cos.is-frame img { position: absolute; inset: -1px; width: 32px; height: 32px; }
+.dvt-cos.is-banner { width: 30px; height: 20px; border-radius: 5px; overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.3); }
+.dvt-cos.is-banner img { width: 100%; height: 100%; object-fit: cover; }
+.dvt-ib.art { background: transparent; }
+.dvt-giftbadge { flex: none; }
+
+/* Gift card inside the Başla panosu inviter corner (InviteGiftSlot). */
+.dvt-giftslot { padding: 0; font-size: var(--fs-13); }
+.dvt-giftslot .dvt-gift.compact { padding: 10px 12px; gap: 7px; border-radius: 14px; }
+.dvt-giftslot .dvt-gift.compact b { font-size: var(--fs-13); }
+.dvt-giftslot .dvt-gift.compact .dvt-step { font-size: 0.78125rem; }
+.dvt-giftslot .dvt-gift.compact .dvt-ib { width: 22px; height: 22px; font-size: var(--fs-11); }

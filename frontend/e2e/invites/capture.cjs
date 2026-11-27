@@ -38,6 +38,12 @@ const ago = (h) => new Date(now - h * H).toISOString();
 const QR = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path fill="#fff" d="M0 0h29v29H0z"/><path stroke="#0b0c12" d="M1 1.5h7m2 0h1m1 0h2m3 0h1m2 0h7M1 2.5h1m5 0h1m1 0h3m2 0h1m3 0h1m1 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m2 0h2m1 0h3m3 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m2 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h2m1 0h2m3 0h1m1 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m2 0h3m1 0h1m1 0h2m1 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M9 8.5h1m1 0h4m1 0h2M1 9.5h1m1 0h5m2 0h1m4 0h2m1 0h5m1 0h2M2 10.5h2m1 0h1m3 0h4m1 0h1m2 0h2m3 0h1m2 0h1M1 11.5h3m2 0h3m1 0h1m2 0h3m2 0h2m1 0h4M3 12.5h1m1 0h1m3 0h2m3 0h1m1 0h2m1 0h3m3 0h1M1 13.5h2m3 0h3m3 0h2m3 0h1m2 0h3m1 0h1M2 14.5h3m2 0h2m3 0h1m2 0h2m2 0h1m1 0h2m1 0h2M1 15.5h1m2 0h4m1 0h1m1 0h1m1 0h3m2 0h1m1 0h1m1 0h3M2 16.5h1m3 0h1m2 0h1m2 0h2m1 0h2m3 0h2m2 0h2M1 17.5h2m2 0h3m2 0h3m2 0h1m1 0h2m1 0h4M2 18.5h1m1 0h1m2 0h3m2 0h1m2 0h1m3 0h1m1 0h1m1 0h2M1 19.5h1m1 0h4m1 0h2m1 0h2m1 0h7m2 0h2M9 20.5h1m2 0h1m3 0h1m3 0h1m1 0h3M1 21.5h7m1 0h2m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1m1 0h2M1 22.5h1m5 0h1m2 0h1m2 0h3m2 0h1m3 0h2M1 23.5h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h6m1 0h3M1 24.5h1m1 0h3m1 0h1m2 0h2m3 0h3m1 0h2m1 0h1M1 25.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h4m1 0h1M1 26.5h1m5 0h1m1 0h1m1 0h2m2 0h1m1 0h2m2 0h2M1 27.5h7m1 0h2m2 0h3m1 0h1m2 0h1m1 0h2"/></svg>';
 
 const user = (n, username, displayName) => ({ id: U(n), username, displayName, avatarUrl: null });
+const COS = require('../../backend/catalog/referral/cosmetics.js');
+const cosItems = (ids) => COS.ITEMS.filter((it) => ids.includes(it.id)).map((it) => ({ id: it.id, key: it.key, category: it.category, effectKey: it.effect_key || null, name: it.name }));
+const leanCos = (key) => {
+  const it = COS.ITEMS.find((x) => x.key === key);
+  return { id: it.id, sku: it.sku, category: it.category, rarity: it.rarity, name: it.name.en, i18n: { name: it.name }, asset_url: `/api/shop/assets/${it.id}?v=1`, effect_key: it.effect_key || null };
+};
 const friend = (o) => ({ canNudge: false, nudgedAt: null, legacy: false, inviterSkip: null, rewardPaid: false, reward: 100, waiting: false, why: null, unlockAt: null, countdownMs: null, online: null, ...o });
 
 function dashboard() {
@@ -57,7 +63,7 @@ function dashboard() {
       },
     },
     channels: [{ channel: 'wa', signups: 7, pct: 58 }, { channel: 'ig', signups: 3, pct: 25 }, { channel: 'tt', signups: 2, pct: 17 }],
-    milestones: { count: 6, next: 10, list: [{ at: 3, amount: 250, kind: 'badge', reached: true, claimed: true, left: 0 }, { at: 10, amount: 750, kind: 'frame', reached: false, claimed: false, left: 4 }, { at: 25, amount: 2000, kind: 'banner', reached: false, claimed: false, left: 19 }] },
+    milestones: { count: 6, next: 10, list: [{ at: 3, amount: 250, kind: 'badge', reached: true, claimed: true, left: 0, items: cosItems(COS.MILESTONE_ITEMS[3]) }, { at: 10, amount: 750, kind: 'frame', reached: false, claimed: false, left: 4, items: cosItems(COS.MILESTONE_ITEMS[10]) }, { at: 25, amount: 2000, kind: 'banner', reached: false, claimed: false, left: 19, items: cosItems(COS.MILESTONE_ITEMS[25]) }] },
     friends: [
       friend({ id: U(301), user: user(11, 'kaan', 'Kaan Yılmaz'), online: 'online', channel: 'wa', signupAt: ago(18), stage: 3, waiting: true, status: 'waiting_return', why: 'next_day', countdownMs: 14 * H - 60000 }),
       friend({ id: U(302), user: user(12, 'zeynep', 'Zeynep Arslan'), online: 'online', channel: 'ig', signupAt: ago(72), stage: 4, status: 'paid', rewardPaid: true }),
@@ -88,7 +94,7 @@ function landing() {
   return {
     inviter: { username: 'ece', displayName: 'Ece', avatarUrl: null, online: 'online', activity: { kind: 'voice', count: 3, serverName: 'Gece Kuşları', people: [{ name: 'Kaan' }, { name: 'Zeynep' }, { name: 'Selin' }] } },
     paused: false,
-    gifts: { inviteeReward: 50, inviterReward: 100, badge: true, friendship: true },
+    gifts: { inviteeReward: 50, inviterReward: 100, badge: true, badgeItems: cosItems(COS.INVITEE_ITEMS), friendship: true },
     rules: { returnAfterHours: 24, requireFirstMessage: true },
   };
 }
@@ -100,6 +106,7 @@ function welcome() {
     me: { username: 'can', displayName: 'Can' },
     inviter: { ...user(10, 'ece', 'Ece'), online: 'online', inVoice: true, friend: 'friend' },
     gift: {
+      items: cosItems(COS.INVITEE_ITEMS),
       amount: 50, status: 'waiting_message', why: 'first_message', unlockAt: new Date(signup.getTime() + 24 * H).toISOString(), expiresAt: null,
       steps: [{ key: 'account', done: true, at: signup.toISOString() }, { key: 'first_message', done: false, at: null }, { key: 'return', done: false, at: new Date(signup.getTime() + 24 * H).toISOString() }],
     },
@@ -247,6 +254,24 @@ async function main() {
       const json = (body, status = 200) => r.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
       const body = () => JSON.parse(req.postData() || '{}');
       if (method === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }, body: '' });
+      if (p.startsWith('/api/invites/art/')) {
+        const svg = COS.ITEMS.find((x) => x.key === p.split('/').pop())?.svg?.();
+        return svg ? r.fulfill({ status: 200, contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: svg }) : r.fulfill({ status: 404, body: '' });
+      }
+      if (p.startsWith('/api/shop/assets/')) {
+        const id = p.split('/').pop();
+        const svg = COS.ITEMS.find((x) => x.id === id)?.svg?.();
+        return svg ? r.fulfill({ status: 200, contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: svg }) : r.fulfill({ status: 404, body: '' });
+      }
+      if (/^\/(api\/)?auth\/users\//.test(p)) {
+        const banner = COS.ITEMS.find((x) => x.key === 'banner');
+        return json({ user: {
+          id: U(10), username: 'ece', displayName: 'Ece Yıldız', display_name: 'Ece Yıldız', avatarUrl: null, bio: 'Gece Kuşları · sesli sohbet', createdAt: ago(24 * 200), status: 'online',
+          equippedAvatarFrame: leanCos('frame'), equippedBadge: leanCos('badge'),
+          equippedBanner: { id: banner.id, sku: banner.sku, category: 'banner', asset_url: COS.rows().find((r) => r.sku === banner.sku).asset_url },
+          equippedNameEffect: { id: COS.IDS.glow, sku: 's2-name_effect-ref-halka', category: 'name_effect', effect_key: 's2-ref-halka' },
+        } });
+      }
       if (p === '/api/invites/me') return json(dashboard());
       if (p === '/api/invites/landing/ece') return json(landing());
       if (p.startsWith('/api/invites/landing/')) return json({ error: 'This invite link is not valid.', code: 'INVITE_NOT_FOUND' }, 404);
@@ -422,6 +447,38 @@ async function main() {
     await page.waitForSelector('[data-testid="dvt-welcome"]');
     await shot(page, 'growth-invites-welcome-desktop-light');
     await ctx.close();
+  });
+
+  // ---------------- Exclusive invite cosmetics
+  await check('cosmetics: milestone art in Davet Merkezi', async () => {
+    const { ctx, page } = await open({});
+    await page.waitForSelector('[data-testid="dvt-cos-frame"] img');
+    await page.waitForFunction(() => [...document.querySelectorAll('.dvt-cos img')].every((i) => i.complete && i.naturalWidth > 0));
+    assert.equal(await page.locator('.dvt-cos').count(), 3);
+    await page.waitForTimeout(500);
+    await page.locator('.dvt-mid').screenshot({ path: path.join(OUT, 'growth-invites-cosmetics-milestones.jpg'), type: 'jpeg', quality: 92 });
+    await ctx.close();
+  });
+
+  for (const theme of ['dark', 'light']) {
+    await check(`cosmetics: profile card wears Köprü, Bağlantı, Halka (${theme})`, async () => {
+      const { ctx, page } = await open({ view: 'profile', theme });
+      await page.waitForSelector('.s2-badge');
+      await page.waitForSelector('.ui-avatar-frame-overlay');
+      await page.waitForSelector('.cosmetic-name-effect.effect-s2-ref-halka');
+      await page.waitForTimeout(600);
+      await shot(page, `growth-invites-cosmetics-profile-${theme}`);
+      await ctx.close();
+    });
+  }
+
+  await check('cosmetics: Davetli badge on the landing and the welcome gift', async () => {
+    const a = await open({ view: 'landing' });
+    await a.page.waitForSelector('.dvt-ib.art img');
+    await a.ctx.close();
+    const b = await open({ view: 'welcome', phone: true });
+    await b.page.waitForSelector('[data-testid="dvt-gift-badge"]');
+    await b.ctx.close();
   });
 
   // ---------------- Admin

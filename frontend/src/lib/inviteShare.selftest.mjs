@@ -66,3 +66,14 @@ clearInviteOpen();
 assert.equal(peekInviteOpen(2000), null);
 
 console.log("inviteShare selftest ok");
+
+// Invite page email -> sign-up card prefill.
+import { peekInviteEmail } from "./inviteShare.js";
+sessionStorage.setItem("descall:inviteEmail", "can@example.com");
+assert.equal(peekInviteEmail(), "can@example.com");
+sessionStorage.setItem("descall:inviteEmail", "not an email");
+assert.equal(peekInviteEmail(), "");
+sessionStorage.setItem("descall:inviteEmail", "can@example.com");
+clearInviteOpen();
+assert.equal(peekInviteEmail(), "", "cleared with the invite after sign-up");
+console.log("inviteShare email prefill ok");

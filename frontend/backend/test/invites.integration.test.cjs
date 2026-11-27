@@ -79,6 +79,7 @@ const fake = createFakeSupabase(
     referral_alerts: [],
     referral_inviter_state: [],
     referral_notices: [],
+    user_inventory: [],
   },
   { uniqueKeys: { referral_rewards: ["invitee_id"], referral_milestones: ["inviter_id", "milestone"], referral_opens: ["inviter_id", "visitor_hash", "day"], referral_rules: ["version"] } }
 );
@@ -221,6 +222,9 @@ async function run() {
     const dup = await descoin.creditIdempotent(can.id, 50, "referral_welcome", `referral:${row.id}:invitee`, {});
     assert(dup.duplicate === true && balance(can.id) === 50, "creditIdempotent refuses a used key");
     assert(emitted.some((e) => e.room === `user:${can.id}` && e.event === "descoin:balance" && e.payload.reason === "referral_welcome"), "invitee balance live");
+    const COS = require("../catalog/referral/cosmetics");
+    const owns = (uid, itemId) => T("user_inventory").some((r) => r.user_id === uid && r.item_id === itemId);
+    assert(owns(can.id, COS.IDS.invited) && userByName("can").equipped_badge_id === COS.IDS.invited, "Davetli badge granted and worn");
 
     // ---- 4. Legacy: a pending row whose invitee already got the old instant credit closes as legacy.
     await store.insertReferral({ inviter_id: ECE, invitee_id: OLD2, inviter_amount: 100, invitee_amount: 50, status: "pending", legacy: false, signup_at: new Date(Date.now() - 30 * 3600000).toISOString(), first_message_at: new Date(Date.now() - 29 * 3600000).toISOString(), returned_at: new Date().toISOString(), risk_signals: [] });
@@ -241,6 +245,13 @@ async function run() {
     assert(ledgerOf(ECE, "referral_milestone").length === 1 && ledgerOf(ECE, "referral_milestone")[0].amount === 250, "milestone paid once");
     await engine.checkMilestones(ECE, { io });
     assert(ledgerOf(ECE, "referral_milestone").length === 1, "milestone not paid twice");
+    assert(owns(ECE, COS.IDS.badge), "Bağlantı badge granted with milestone 3");
+    assert(T("user_inventory").filter((r) => r.user_id === ECE && r.item_id === COS.IDS.badge).length === 1, "granted once");
+    assert(T("users").find((u) => u.id === ECE).equipped_badge_id === COS.IDS.badge, "worn when the slot was empty");
+    assert(!owns(ECE, COS.IDS.frame), "frame waits for 10 friends");
+    r1 = await call(base, "GET", "/api/invites/art/frame");
+    assert(r1.status === 200 && r1.raw.startsWith("<svg"), "frame art served");
+    assert((await call(base, "GET", "/api/invites/art/nope")).status === 404, "unknown art");
 
     // ---- 6. A friend who has not written: Dürt once a day.
     const kaan = await register(base, "kaan", "ece");
@@ -345,6 +356,7 @@ async function run() {
     r = await call(base, "POST", `/api/admin/invites/inviter/${ECE}/revoke`, { ...admin, body: { reason: "fake_activity", ids: [refOf(can.id).id] } });
     assert(r.status === 200 && r.body.count === 1, `revoke ${r.raw}`);
     assert(r.body.amount === 100 + 250, `debit incl. milestone: ${r.body.amount}`);
+    assert(!owns(ECE, COS.IDS.badge) && !T("users").find((u) => u.id === ECE).equipped_badge_id, "exclusive badge taken back with the milestone");
     assert(balance(ECE) === balBefore - 350, "balance down");
     assert(refOf(can.id).status === "revoked" && refOf(can.id).revoked_amount === 100, "row revoked");
     const notice = T("referral_notices").find((n) => n.user_id === ECE && n.kind === "revoke");
@@ -357,6 +369,7 @@ async function run() {
     assert(balance(ECE) === balBefore && refOf(can.id).status === "paid", "everything back");
     assert(T("referral_notices").find((n) => n.id === notice.id).withdrawn_at, "notice withdrawn");
     assert(T("referral_milestones").some((m) => m.inviter_id === ECE && m.milestone === 3), "milestone restored");
+    assert(owns(ECE, COS.IDS.badge), "badge back after undo");
     r = await call(base, "POST", `/api/admin/invites/actions/${T("referral_actions").find((a) => a.action === "revoke").id}/undo`, admin);
     assert(r.status === 409 && r.body.code === "ALREADY_UNDONE", "undo once");
     const stale = T("referral_actions").find((a) => a.action === "pause");

@@ -62,6 +62,18 @@ router.get("/landing/:username", async (req, res) => {
   }
 });
 
+/** Art of the exclusive invite cosmetics (badge / invited / frame / banner), public and cacheable. */
+router.get("/art/:key", (req, res) => {
+  const key = String(req.params.key || "").replace(/\.svg$/, "");
+  if (!/^[a-z]{3,12}$/.test(key)) return res.status(404).end();
+  const svg = require("../lib/referrals/cosmetics").art(key);
+  if (!svg) return res.status(404).end();
+  res.set("Content-Type", "image/svg+xml; charset=utf-8");
+  res.set("Cache-Control", "public, max-age=86400");
+  res.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
+  return res.send(svg);
+});
+
 router.post("/open", async (req, res) => {
   const ip = ipOf(req);
   if (limited(`open:${ip}`, 20)) return res.status(429).json(apiError("Too many requests."));

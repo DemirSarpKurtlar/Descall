@@ -141,6 +141,8 @@ export default function InviteCenterHost({ socket, meId, onNavigate }) {
         if (!live || !w?.invited) return;
         // Only while the gift is still in progress (or just opened): no stale cards later.
         if (!["waiting_message", "waiting_return", "paid", "reviewing"].includes(w.gift?.status)) return;
+        // The Başla panosu shows the inviter corner with the gift card (InviteGiftSlot) instead.
+        if (w.onboardingCorner) return;
         setWelcome(w);
       } catch {
         /* not invited / offline */

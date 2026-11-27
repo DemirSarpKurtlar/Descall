@@ -126,6 +126,9 @@ async function myDashboard({ userId, now = Date.now() }) {
   const funnel = model.personalFunnel({ rows, opens }, now);
   const activeLive = rows.filter((r) => r.status === "paid" && !r.legacy).length;
   const milestones = model.milestonesView(activeLive, rules, reached);
+  // The exclusive cosmetics each milestone gives (art: GET /api/invites/art/:key).
+  const cos = require("./cosmetics");
+  milestones.list = milestones.list.map((m) => ({ ...m, items: cos.describe((rules.milestones.find((x) => x.at === m.at) || {}).itemIds) }));
   const earnedRows = rows.filter((r) => r.status === "paid" && !r.inviter_skip).reduce((s, r) => s + (r.inviter_amount || 0), 0);
   const earnedMilestones = (reached || []).filter((m) => !m.revoked_at).reduce((s, m) => s + (m.amount || 0), 0);
   const pendingRows = rows.filter((r) => (r.status === "pending" || r.status === "held") && !r.inviter_skip);
@@ -230,7 +233,8 @@ async function landing({ username }) {
     gifts: {
       inviteeReward: st.link_paused ? 0 : rules.inviteeReward,
       inviterReward: rules.inviterReward,
-      badge: true,
+      badge: (rules.inviteeItemIds || []).length > 0,
+      badgeItems: require("./cosmetics").describe(rules.inviteeItemIds),
       friendship: true,
     },
     rules: { returnAfterHours: rules.returnAfterHours, requireFirstMessage: rules.requireFirstMessage },
@@ -328,12 +332,27 @@ async function welcome({ userId, now = Date.now() }) {
       mutual.set(f.id, theirs.filter((s) => mine.has(s)).length);
     }
   }
+  // When the Başla panosu (lib/onboarding) is on screen for this account, its inviter corner
+  // already greets the inviter and shows the gift card (InviteGiftSlot): no separate popup.
+  let onboardingCorner = false;
+  try {
+    const onb = require("../onboarding/store");
+    const onbModel = require("../onboarding/model");
+    const [settings, onbRow] = await Promise.all([onb.getSettings(), onb.getRow(userId, { create: false })]);
+    onboardingCorner = Boolean(
+      settings?.enabled !== false && onbRow && !onbRow.hidden_at && onbModel.inWindow(me?.signup_at || me?.created_at, now)
+    );
+  } catch {
+    onboardingCorner = false;
+  }
   return {
     invited: true,
+    onboardingCorner,
     me: { username: me?.username || null, displayName: me?.display_name || me?.username || null },
     inviter: { ...brief(inviter), online, inVoice: Boolean(voice), friend: states.get(String(inviter.id)) || null },
     gift: {
       amount: row.invitee_amount || 0,
+      items: require("./cosmetics").describe(rules.inviteeItemIds),
       status: view.key,
       why: view.why,
       unlockAt: view.unlockAt,

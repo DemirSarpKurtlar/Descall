@@ -11,6 +11,7 @@ import InviteCenter from "../../../src/components/invites/InviteCenter.jsx";
 import FriendInviteLanding from "../../../src/components/invites/FriendInviteLanding.jsx";
 import InviteWelcome from "../../../src/components/invites/InviteWelcome.jsx";
 import AdminInvites from "../../../src/components/admin/invites/AdminInvites.jsx";
+import ProfileModalHost from "../../../src/components/social/UserProfileModal.jsx";
 import { getInviteWelcome } from "../../../src/api/invites.js";
 import { useEffect, useState } from "react";
 import "../../../src/styles/invites.css";
@@ -62,6 +63,9 @@ function App() {
     );
   }
   if (view === "welcome") return <Welcome />;
+  if (view === "profile") {
+    return <ProfileModalHost open userId="00000000-0000-4000-8000-000000000010" username="ece" displayName="Ece Yıldız" me={{ id: "00000000-0000-4000-8000-000000000001", username: "can" }} friends={[]} onlineUsers={[]} onClose={() => {}} />;
+  }
   if (view === "admin") {
     return (
       <div style={{ padding: 16 }}>

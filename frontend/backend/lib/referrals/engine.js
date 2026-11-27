@@ -478,12 +478,9 @@ async function pay(row, { io = null, now = Date.now(), rules = null } = {}) {
     }
   }
   if (skip !== (row.inviter_skip || null)) await store.updateReferral(row.id, { inviter_skip: skip }, { expect: "paid" });
-  if (r.inviteeItemId) {
-    try {
-      await require("../shop").grantItem(row.invitee_id, r.inviteeItemId, { acquiredVia: "gift", giftedBy: row.inviter_id });
-    } catch (err) {
-      console.warn("[referrals] invitee item grant failed:", err?.message || err);
-    }
+  // The "Davetli" badge (exclusive, granted once) when the invitee's own gift really paid.
+  if (results.invitee?.credited > 0 || results.invitee?.duplicate) {
+    await require("./cosmetics").grant(row.invitee_id, r.inviteeItemIds || [], { giftedBy: row.inviter_id });
   }
   if (results.invitee?.credited > 0) {
     emitTo(io, row.invitee_id, "descoin:balance", { balance: results.invitee.balance, delta: results.invitee.credited, reason: "referral_welcome" });
@@ -510,12 +507,11 @@ async function checkMilestones(inviterId, { io = null, rules = null } = {}) {
   const paid = [];
   for (const m of r.milestones) {
     if (count < m.at || have.has(m.at)) continue;
-    if (!(await store.claimMilestone(inviterId, m.at, m.amount, m.itemId))) continue;
+    if (!(await store.claimMilestone(inviterId, m.at, m.amount, (m.itemIds || []).join(",") || null))) continue;
     try {
       const out = await d().descoin.creditIdempotent(inviterId, m.amount, "referral_milestone", `referral:milestone:${inviterId}:${m.at}`, { milestone: m.at, kind: m.kind });
-      if (m.itemId) {
-        await require("../shop").grantItem(inviterId, m.itemId, { acquiredVia: "gift" }).catch((err) => console.warn("[referrals] milestone item:", err?.message || err));
-      }
+      // Exclusive cosmetics of this milestone (badge / frame / banner + name glow).
+      await require("./cosmetics").grant(inviterId, m.itemIds || []);
       if (out.credited > 0) emitTo(io, inviterId, "descoin:balance", { balance: out.balance, delta: out.credited, reason: "referral_milestone" });
       emitTo(io, inviterId, "invites:milestone", { at: m.at, amount: m.amount, kind: m.kind });
       paid.push(m.at);
@@ -732,6 +728,8 @@ async function revokeRewards({ actor, inviterId, ids = null, reasonCode, note = 
       console.warn("[referrals] milestone revoke failed:", err?.message || err);
     }
     await store.releaseMilestone(inviterId, m.milestone).catch(() => {});
+    const itemIds = String(m.item_id || "").split(",").filter(Boolean);
+    if (itemIds.length) await require("./cosmetics").remove(inviterId, itemIds);
     milestones.push({ milestone: Number(m.milestone), amount: m.amount, item_id: m.item_id || null, reached_at: m.reached_at, debited });
     amount += debited;
   }
@@ -927,6 +925,8 @@ async function undoAction({ actor, actionId, io = null, now = Date.now() }) {
     }
     for (const m of a.payload?.milestones || []) {
       await store.claimMilestone(a.inviter_id, m.milestone, m.amount, m.item_id).catch(() => false);
+      const itemIds = String(m.item_id || "").split(",").filter(Boolean);
+      if (itemIds.length) await require("./cosmetics").grant(a.inviter_id, itemIds);
       if (m.debited > 0) {
         const out = await descoin.creditIdempotent(a.inviter_id, m.debited, "referral_milestone", `referral:undo:${a.id}:m${m.milestone}`, { milestone: m.milestone, undoOf: a.id });
         refunded += out.credited || 0;

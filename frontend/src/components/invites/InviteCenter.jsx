@@ -31,6 +31,7 @@ import {
 import { BadgeArt, Brand, Dc, Ico, PAvatar, Pill, Ring, Seg, Spark, StageBar } from "./ui.jsx";
 import { channelLabel, fmtCountdown, fmtNum, pctLabel, pctText, relTime } from "./format.js";
 import InviteLandingView from "./InviteLandingView.jsx";
+import { inviteArtUrl } from "./format.js";
 
 const CACHE_KEY = "descall:inviteCenter:last";
 
@@ -608,7 +609,7 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
           </div>
           {ms.list.map((m) => (
             <div key={m.at} className="dvt-row dvt-msrow">
-              {m.kind === "badge" ? <BadgeArt size={28} /> : m.kind === "frame" ? <span className="dvt-frameart" aria-hidden="true">{(data.displayName || "?").slice(0, 1).toUpperCase()}</span> : <span className="dvt-bannerart" aria-hidden="true" />}
+              <MilestoneArt m={m} me={{ displayName: data.displayName, username: data.username, avatarUrl: data.avatarUrl || null }} />
               <div className="sp">
                 <b>
                   {m.at} · {t(`dvt.ms.${m.kind}`)}
@@ -746,6 +747,38 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
       {preview}
     </div>
   );
+}
+
+/** The exclusive cosmetics of a milestone (badge, frame around your own avatar, banner + glow). */
+function MilestoneArt({ m, me }) {
+  const items = Array.isArray(m.items) ? m.items : [];
+  const keys = items.map((it) => it.key);
+  const title = items.map((it) => it.name?.tr || "").filter(Boolean).join(" + ") || undefined;
+  if (keys.includes("frame")) {
+    return (
+      <span className="dvt-cos is-frame" title={title} data-testid="dvt-cos-frame">
+        <PAvatar user={me} size={22} />
+        <img src={inviteArtUrl("frame")} alt="" aria-hidden="true" draggable={false} />
+      </span>
+    );
+  }
+  if (keys.includes("banner")) {
+    return (
+      <span className="dvt-cos is-banner" title={title} data-testid="dvt-cos-banner">
+        <img src={inviteArtUrl("banner")} alt="" aria-hidden="true" draggable={false} />
+      </span>
+    );
+  }
+  if (keys.includes("badge")) {
+    return (
+      <span className="dvt-cos is-badge" title={title} data-testid="dvt-cos-badge">
+        <img src={inviteArtUrl("badge")} alt="" aria-hidden="true" draggable={false} />
+      </span>
+    );
+  }
+  if (m.kind === "badge") return <BadgeArt size={28} />;
+  if (m.kind === "frame") return <span className="dvt-frameart" aria-hidden="true">{(me.displayName || "?").slice(0, 1).toUpperCase()}</span>;
+  return <span className="dvt-bannerart" aria-hidden="true" />;
 }
 
 function whyKey(row) {

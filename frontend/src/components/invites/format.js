@@ -1,3 +1,10 @@
+import { apiBase } from "../../lib/nodeRouting";
+
+/** Art of the exclusive invite cosmetics (GET /api/invites/art/:key; badge, invited, frame, banner). */
+export function inviteArtUrl(key) {
+  return `${String(apiBase() || "").replace(/\/+$/, "")}/api/invites/art/${encodeURIComponent(key)}`;
+}
+
 /**
  * Davet Merkezi text helpers shared by the dashboard, the landing and the admin board.
  */
