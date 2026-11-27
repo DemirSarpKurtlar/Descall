@@ -27,11 +27,27 @@ export function newSessionId(rand = null) {
       bytes = null;
     }
   }
+  // Rejection sampling: only bytes below the largest multiple of the alphabet size are used,
+  // so every character is equally likely (a plain "% 62" favours the first 8 characters).
+  const limit = 256 - (256 % ALPHABET.length);
   let out = "";
-  for (let i = 0; i < 16; i++) {
-    const n = bytes ? bytes[i] : Math.floor((rand || Math.random)() * 256);
+  let i = 0;
+  let guard = 0;
+  while (out.length < 16 && guard < 4096) {
+    guard += 1;
+    if (bytes && i >= bytes.length) {
+      try {
+        bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+      } catch {
+        bytes = null;
+      }
+      i = 0;
+    }
+    const n = bytes ? bytes[i++] : Math.floor((rand || Math.random)() * 256);
+    if (n >= limit) continue;
     out += ALPHABET[n % ALPHABET.length];
   }
+  while (out.length < 16) out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
   return out;
 }
 

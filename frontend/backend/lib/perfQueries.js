@@ -189,7 +189,7 @@ const SEV_ORDER = { "": 0, amber: 1, red: 2 };
 
 /** "En yavaş sayfalar" (or any dimension): one row per value, sorted by the sort metric. */
 function table(rows, { group = "route", sort = "inp", keys = [], alerts = [], limit = 60 } = {}) {
-  const col = GROUPS[group] || "route";
+  const col = (typeof group === "string" && Object.hasOwn(GROUPS, group) && GROUPS[group]) || "route";
   const by = new Map();
   for (const r of rows) {
     const v = String(r[col] || "");

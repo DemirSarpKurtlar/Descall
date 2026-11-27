@@ -177,7 +177,7 @@ function alertView(a) {
 
 async function tableFor(req) {
   const query = queryOf(req);
-  const group = Q.GROUPS[req.query.group] ? req.query.group : "route";
+  const group = typeof req.query.group === "string" && Object.hasOwn(Q.GROUPS, req.query.group) ? req.query.group : "route";
   const sort = model.METRICS[req.query.sort] ? req.query.sort : "inp";
   return cached(`t|${JSON.stringify(query)}|${group}|${sort}`, async () => {
     const [rows, alerts] = await Promise.all([rowsFor(query), store.listAlerts({ status: "open", limit: 20 }).catch(() => [])]);
@@ -215,7 +215,8 @@ router.get("/perf/export", async (req, res) => {
 
 router.get("/perf/detail", async (req, res) => {
   const query = queryOf(req);
-  const dim = Q.GROUPS[req.query.dim] ? req.query.dim : "route";
+  // Own keys only: "constructor" / "__proto__" are not dimensions.
+  const dim = typeof req.query.dim === "string" && Object.hasOwn(Q.GROUPS, req.query.dim) ? req.query.dim : "route";
   const value = String(req.query.value || "").slice(0, 80);
   if (!value) return res.status(400).json(apiError("Invalid id", null, { code: "BAD_VALUE" }));
   const q2 = { ...query, [dim]: [dim === "route" ? model.normalizeRoute(value) || value : value] };
