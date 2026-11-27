@@ -38,6 +38,14 @@ const OUT = path.resolve(args.out || process.env.DESCALL_E2E_SHOTS || '/tmp/desc
 const PORT = Number(args.port || 5361);
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
+/**
+ * API hosts a build may point at (config/api.js, lib/nodeRouting.js): a dist built without
+ * VITE_API_BASE_URL calls production. Their requests are answered here by path (mocked
+ * handlers first, else the local mock server), so the harness never depends on how the
+ * build was configured and nothing reaches a real backend.
+ */
+const API_HOSTS = new Set(['des-call.onrender.com', 'api.descall.com', 'des-call-staging.onrender.com', 'api-staging.descall.com', 'descall.com', 'www.descall.com']);
+
 const BREACHED = 'galatasaray1905';
 const BREACHED_HASH = crypto.createHash('sha1').update(BREACHED).digest('hex').toUpperCase();
 const REGISTERED = 'ece.yilmaz@outlook.com';
@@ -107,11 +115,22 @@ async function main() {
       if (url.startsWith('https://accounts.google.com/gsi/client')) {
         return r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.google={accounts:{id:{initialize:function(){},renderButton:function(el){el.innerHTML="<div style=\\"height:46px;width:100%\\"></div>";},prompt:function(){},cancel:function(){}}}};' });
       }
-      if (!url.startsWith(base)) return r.abort();
       const u = new URL(url);
+      const foreignApi = !url.startsWith(base) && API_HOSTS.has(u.hostname) && req.resourceType() !== 'document';
+      if (!url.startsWith(base) && !foreignApi) return r.abort();
       const p = u.pathname;
+      // Anything not mocked below goes to the local mock server (never the real host).
+      const passOn = async () => {
+        if (!foreignApi) return r.continue();
+        try {
+          return await r.fulfill({ response: await r.fetch({ url: `${base}${u.pathname}${u.search}` }) });
+        } catch {
+          // The page or context closed while a long poll (socket.io) was in flight.
+          return r.abort().catch(() => {});
+        }
+      };
       const json = (status, body) => r.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
-      if (req.resourceType() === 'document') return r.continue();
+      if (req.resourceType() === 'document') return passOn();
       if (p === '/api/public-pages/live') return json(200, liveFixture());
       if (/\/auth\/identify$/.test(p)) {
         const body = JSON.parse(req.postData() || '{}');
@@ -148,7 +167,7 @@ async function main() {
         return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*' }, body: '' });
       }
       if (admin && /^(\/api)?\/admin\/signup-stats\/?$/.test(p)) return json(200, adminStats());
-      return r.continue();
+      return passOn();
     });
   }
 
