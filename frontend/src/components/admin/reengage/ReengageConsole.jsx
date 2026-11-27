@@ -179,12 +179,18 @@ function Editor({ campaign, lang, onSave, t }) {
       {fields.map(([k, label, max]) => (
         <label key={k} className="rg-field">
           <span>{t(label)}</span>
-          {k === "emailBody" ? (
-            <textarea ref={(el) => (refs.current[k] = el)} rows={3} maxLength={max} value={draft[k] || ""} onFocus={() => setFocus(k)} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+          {focus === k ? (
+            k === "emailBody" ? (
+              <textarea ref={(el) => (refs.current[k] = el)} rows={3} maxLength={max} value={draft[k] || ""} autoFocus onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+            ) : (
+              <input ref={(el) => (refs.current[k] = el)} maxLength={max} value={draft[k] || ""} autoFocus onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+            )
           ) : (
-            <input ref={(el) => (refs.current[k] = el)} maxLength={max} value={draft[k] || ""} onFocus={() => setFocus(k)} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+            // The draft shows the fields as text with {placeholder} chips; a tap edits it.
+            <button type="button" className="rg-tokenbox" onClick={() => setFocus(k)} aria-label={t(label)}>
+              <TokenText text={draft[k] || ""} />
+            </button>
           )}
-          <TokenText text={draft[k] || ""} />
         </label>
       ))}
       <div className="rg-tokbar">

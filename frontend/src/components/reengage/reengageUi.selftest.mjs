@@ -81,8 +81,8 @@ assert.deepEqual(
 assert.equal(rateLabel({ id: "inactive7", status: "live", returnRate: 17 }, t), "%17 döndü");
 assert.equal(rateLabel({ id: "weekly_digest", openRate: 44 }, t), "%44 açtı");
 assert.equal(rateLabel({ id: "inactive14", status: "draft" }, t), "—");
-assert.equal(openRateTone(4), "bad", "RU %4 stands out");
-assert.equal(openRateTone(41), "good");
+assert.equal(openRateTone(4), "rg-tone-bad", "RU %4 stands out");
+assert.equal(openRateTone(41), "rg-tone-good");
 assert.deepEqual(excludedRows({ noDevice: 26, weekly: 10, unsubscribed: 9, quiet: 22 }).map((r) => r.pct), [100, 38, 35, 85]);
 const bars = hourBars([0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 7, 6, 0]);
 assert.equal(bars[2].quiet, true);

@@ -95,7 +95,7 @@ export const RG3 = {
     },
     "drawer": {
       "aria": "{name} için bildirim ayarları",
-      "friendSince": "{when} beri arkadaş",
+      "friendSince": "{when} ayından beri arkadaş",
       "mutual": "{count} ortak sunucu",
       "important": "Önemli kişi",
       "sharedStreak": "Ortak seri {count} gün",

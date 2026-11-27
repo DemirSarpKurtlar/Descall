@@ -40,9 +40,9 @@ export function campaignSub(c, t) {
 
 /** Open-rate colour: low ones stand out (RU %4). */
 export function openRateTone(rate) {
-  if (rate == null) return "muted";
-  if (rate < 10) return "bad";
-  if (rate >= 35) return "good";
+  if (rate == null) return "rg-tone-muted";
+  if (rate < 10) return "rg-tone-bad";
+  if (rate >= 35) return "rg-tone-good";
   return "";
 }
 
