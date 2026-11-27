@@ -1,6 +1,7 @@
 import SpriteKit
 import SwiftUI
 import UIKit
+import WatchKit
 
 // SpriteKit plumbing for the action games (Raket, Prizma, Isilti): a scene that steps its
 // GameModel every frame at 60 fps, gradient textures, and a SwiftUI host with the
@@ -20,7 +21,7 @@ class GameScene: SKScene {
 
     required init?(coder aDecoder: NSCoder) { nil }
 
-    // watchOS has no SKView (SpriteView hosts the scene), so there is no didMove(to:):
+    // watchOS has no SKView (WKInterfaceSKScene hosts the scene), so there is no didMove(to:):
     // the nodes are built on the first frame, and again whenever the size changes.
     private var laidOut = false
 
@@ -96,7 +97,32 @@ extension SKColor {
     }
 }
 
-/// SpriteView with the Digital Crown bound to `crown` (0 ... 1) and a tap action.
+/// SpriteKit on watchOS through WatchKit's WKInterfaceSKScene (SwiftUI's SpriteView initializers
+/// and options are not all available on watchOS). The scene is presented once; pausing and the
+/// frame rate follow the SwiftUI state.
+struct WatchSKSceneView: WKInterfaceObjectRepresentable {
+    let scene: SKScene
+    var paused: Bool
+
+    final class Coordinator { weak var presented: SKScene? }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeWKInterfaceObject(context: Context) -> WKInterfaceSKScene {
+        WKInterfaceSKScene()
+    }
+
+    func updateWKInterfaceObject(_ view: WKInterfaceSKScene, context: Context) {
+        if context.coordinator.presented !== scene {
+            view.presentScene(scene)
+            context.coordinator.presented = scene
+        }
+        view.preferredFramesPerSecond = 60
+        view.isPaused = paused
+    }
+}
+
+/// SpriteKit scene host with the Digital Crown bound to `crown` (0 ... 1) and a tap action.
 struct SpriteHost: View {
     let scene: SKScene
     var paused: Bool
@@ -106,16 +132,8 @@ struct SpriteHost: View {
 
     @FocusState private var focused: Bool
 
-    // The initializer watchOS has, named in full: with default arguments the compiler picks the
-    // newer shouldRender overload, which is unavailable on watchOS.
-    private static func makeView(_ scene: SKScene, _ paused: Bool) -> SpriteView {
-        let make: (SKScene, SKTransition?, Bool, Int, SpriteView.Options, SpriteView.DebugOptions) -> SpriteView =
-            SpriteView.init(scene:transition:isPaused:preferredFramesPerSecond:options:debugOptions:)
-        return make(scene, nil, paused, 60, [.ignoresSiblingOrder, .shouldCullNonVisibleNodes], [])
-    }
-
     var body: some View {
-        SpriteHost.makeView(scene, paused)
+        WatchSKSceneView(scene: scene, paused: paused)
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { onTap() }
