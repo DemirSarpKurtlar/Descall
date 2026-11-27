@@ -117,3 +117,26 @@ export function nextWindowText(next, person, t, locale, now = Date.now(), timeZo
   }
   return `${first} ${t("rg3.next.at", { at: fmt(at) })}`;
 }
+
+const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * The /api/notify-center answer, checked before the panel uses it. Returns null for anything
+ * that is not a state (an error page, a proxy's answer, an older server), so the panel shows
+ * its "could not load" card with Retry instead of crashing the whole settings page.
+ * A "not ready" answer (tables not migrated yet) keeps the panel in its read-only state.
+ */
+export function parseCenterState(raw) {
+  if (!isObj(raw)) return null;
+  if (raw.ready === false && !isObj(raw.settings)) {
+    return { ...raw, ready: false, settings: { types: {} }, people: [], servers: [], importantCount: 0 };
+  }
+  if (!isObj(raw.settings)) return null;
+  const settings = { ...raw.settings, types: isObj(raw.settings.types) ? raw.settings.types : {} };
+  const people = (Array.isArray(raw.people) ? raw.people : [])
+    .filter((p) => isObj(p) && p.id != null)
+    .map((p) => (isObj(p.prefs) ? p : { ...p, prefs: {} }));
+  const servers = (Array.isArray(raw.servers) ? raw.servers : []).filter((s) => isObj(s) && s.id != null);
+  const importantCount = Number.isFinite(Number(raw.importantCount)) ? Number(raw.importantCount) : people.filter((p) => p.prefs.important).length;
+  return { ...raw, settings, people, servers, importantCount };
+}

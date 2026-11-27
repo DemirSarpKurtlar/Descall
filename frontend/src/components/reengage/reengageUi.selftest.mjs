@@ -4,6 +4,7 @@ import { RG3 } from "../../i18n/locales/rg3.i18n.js";
 import { badgeOf, sortPeople, filterBySearch, personLine, serverLine, quietLabel, digestLabel, applyPersonPatch, nextWindowText, lastSeenText } from "./notifyCenterModel.js";
 import { taskTitle, taskSub, sharedSub, doneCount, ringPct, dat } from "./streaksModel.js";
 import { defaultCallMessage, parseSuggestion } from "./winbackModel.js";
+import { parseCenterState } from "./notifyCenterModel.js";
 import { splitTokens, rateLabel, openRateTone, excludedRows, hourBars, todayLine, liveBars } from "../admin/reengage/reengageModel.js";
 
 const get = (o, p) => p.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
@@ -97,6 +98,23 @@ assert.equal(bars[2].top, false, "a quiet hour is never a best hour");
 assert.deepEqual(bars.filter((b) => b.top).map((b) => b.hour), [20, 21, 22]);
 assert.equal(todayLine({ campaigns: new Array(6), today: { sent: 412, returned: 61, net: 9 } }, t), "6 kampanya · bugün 412 gönderim, 61 dönüş (kontrol grubuna göre net +9 puan)");
 assert.deepEqual(liveBars({ sent: 64, delivered: 61, opened: 19, openedApp: 11, acted: 6 }).map((b) => b.value), [61, 19, 11, 6]);
+
+// Notify center: only a real state reaches the panel; anything else shows the retry card.
+for (const bad of [null, [], "x", 3, {}, { "notify-center": [], items: [] }, { settings: [] }, { settings: "x" }]) {
+  assert.equal(parseCenterState(bad), null, `center refused for ${JSON.stringify(bad)}`);
+}
+{
+  const nr = parseCenterState({ ready: false });
+  assert.equal(nr.ready, false);
+  assert.deepEqual(nr.people, []);
+  assert.deepEqual(nr.settings.types, {});
+  const st = parseCenterState({ settings: { voiceDailyMax: 2 }, people: [null, { id: "a" }, { id: "b", prefs: { important: true } }, "x"], servers: [{ id: "s" }, 4] });
+  assert.deepEqual(st.settings.types, {});
+  assert.equal(st.people.length, 2);
+  assert.deepEqual(st.people[0].prefs, {});
+  assert.equal(st.servers.length, 1);
+  assert.equal(st.importantCount, 1);
+}
 
 // every language has the same keys
 const keys = (o, p = "") => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${p}${k}`] : keys(v, `${p}${k}.`)));

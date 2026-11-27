@@ -36,6 +36,7 @@ import {
   quietLabel,
   digestLabel,
   applyPersonPatch,
+  parseCenterState,
 } from "./notifyCenterModel.js";
 import { useModalFocusRef } from "../../hooks/useModalFocus.js";
 import "../../styles/reengage.css";
@@ -582,10 +583,15 @@ export default function NotifyCenter({ deviceSection = null }) {
     setLoad((l) => (l === "ready" ? "ready" : "loading"));
     notifyCenter
       .state()
-      .then((s) => {
+      .then((raw) => {
         if (!alive) return;
+        const s = parseCenterState(raw);
+        if (!s) {
+          setLoad("failed");
+          return;
+        }
         setState(s);
-        setLoad(s?.ready === false ? "not_ready" : "ready");
+        setLoad(s.ready === false ? "not_ready" : "ready");
       })
       .catch(() => alive && setLoad("failed"));
     return () => {
