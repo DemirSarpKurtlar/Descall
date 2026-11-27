@@ -6098,3 +6098,40 @@ router.delete("/:id/invites/:code", requireAuth, async (req, res) => {
 module.exports = router;
 // 3.7.33: the Apple Watch servers page (routes/watch.js) reuses the member-filtered list.
 module.exports.buildMyServerList = buildMyServerList;
+
+/**
+ * Growth phase 2A ("Başla panosu", lib/onboarding): the official community server is joined
+ * for a new account on the server side, through the same membership rules as every other
+ * join (bans, paused joins, verification level, caps, audit, welcome message, live events).
+ * Never throws: resolves { ok } or { refused: <reason> }.
+ * @param {{ app?: object }} req  anything with .app.get("io") (the route request)
+ */
+async function joinServerForUser(req, serverId, userId, { via = "onboarding" } = {}) {
+  try {
+    const { data: server, error } = await supabase.from("servers").select("*").eq("id", serverId).maybeSingle();
+    if (error || !server) return { refused: "not_found" };
+    if (server.directory_hidden_at || !(await ownerAvailable(server.owner_id))) return { refused: "hidden" };
+    if (await isViewerBanned(serverId, userId)) return { refused: "banned" };
+    if (await getMembership(serverId, userId)) return { ok: true, alreadyMember: true };
+    if (joinsPaused(server)) return { refused: "paused" };
+    try {
+      await assertJoinVerification(server, userId);
+    } catch {
+      return { refused: "verification" };
+    }
+    const { count: existingPos } = await supabase
+      .from("server_members")
+      .select("server_id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    const joined = await insertJoinMembership(serverId, userId, { listPosition: existingPos || 0 });
+    if (joined.alreadyMember) return { ok: true, alreadyMember: true };
+    if (!joined.ok) return { refused: joined.banned ? "banned" : joined.full ? "full" : "capped" };
+    await writeAudit({ serverId, actorId: userId, action: "MEMBER_JOIN", targetType: "member", targetId: userId, changes: { via } });
+    await afterMemberJoined(req, server, userId, serverId);
+    return { ok: true, alreadyMember: false };
+  } catch (err) {
+    console.warn("[SERVERS] joinServerForUser failed:", err?.message || err);
+    return { refused: "error" };
+  }
+}
+module.exports.joinServerForUser = joinServerForUser;

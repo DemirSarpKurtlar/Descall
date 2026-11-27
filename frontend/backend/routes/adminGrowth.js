@@ -158,4 +158,161 @@ router.get("/growth/economy", async (req, res) => {
   }
 });
 
+/**
+ * "Başla panosu" (growth phase 2A): did the first five minutes work?
+ *   GET /growth/onboarding?days=7|30|90   funnel (opened > previewed > joined > first hello),
+ *                                         first message within the first day vs sign-ups,
+ *                                         which interest and which server card brought the
+ *                                         first messages, D1 of dashboard openers vs others,
+ *                                         and the settings (official community server).
+ *   PUT /growth/onboarding/config         { communityServerId, enabled, autoJoin, rehberEnabled, rewardsEnabled }
+ * Admin accounts are left out of every number, like the rest of this page.
+ */
+const onbModel = require("../lib/onboarding/model");
+const onbStore = require("../lib/onboarding/store");
+const ONB_EVENTS = ["onboarding_opened", "onboarding_previewed", "onboarding_joined", "onboarding_first_hello", "onboarding_undo", "onboarding_hidden"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Pure summary (tested in lib/onboarding/adminReport.selftest.cjs through module.exports.onboardingReport). */
+function onboardingReport({ events, users, interestsByUser, activity, sinceMs, now = Date.now() }) {
+  const admins = new Set(users.filter(isAdminRow).map((u) => String(u.id)));
+  const real = (id) => id && !admins.has(String(id));
+  const distinct = (ev) => new Set(events.filter((e) => e.event === ev && real(e.user_id)).map((e) => String(e.user_id))).size;
+  const funnel = {
+    opened: distinct("onboarding_opened"),
+    previewed: distinct("onboarding_previewed"),
+    joined: distinct("onboarding_joined"),
+    firstHello: distinct("onboarding_first_hello"),
+    undone: distinct("onboarding_undo"),
+    hidden: distinct("onboarding_hidden"),
+  };
+  const fresh = users.filter((u) => real(u.id) && Date.parse(u.signup_at || u.created_at) >= sinceMs);
+  const within = (u) => u.first_message_at && Date.parse(u.first_message_at) - Date.parse(u.signup_at || u.created_at) <= 86400000;
+  const firstDay = { signups: fresh.length, firstMessage: fresh.filter((u) => u.first_message_at).length, firstDayMessage: fresh.filter(within).length };
+  firstDay.pct = fresh.length ? Math.round((firstDay.firstDayMessage / fresh.length) * 1000) / 10 : null;
+
+  // Which interest: of the accounts that picked it, how many sent the first message.
+  const helloUsers = new Set(events.filter((e) => e.event === "onboarding_first_hello" && real(e.user_id)).map((e) => String(e.user_id)));
+  const byInterest = onbModel.INTERESTS.map((id) => {
+    const pickers = [...interestsByUser.entries()].filter(([uid, list]) => real(uid) && list.includes(id)).map(([uid]) => uid);
+    const hello = pickers.filter((uid) => helloUsers.has(String(uid))).length;
+    return { id, picked: pickers.length, firstHello: hello, pct: pickers.length ? Math.round((hello / pickers.length) * 1000) / 10 : null };
+  }).filter((r) => r.picked > 0).sort((a, b) => b.firstHello - a.firstHello || b.picked - a.picked);
+
+  // Which server card: previews, joins and first messages per server (and per slot).
+  const perServer = new Map();
+  const bump = (sid, key) => {
+    if (!sid) return;
+    if (!perServer.has(sid)) perServer.set(sid, { serverId: sid, previewed: 0, joined: 0, firstHello: 0 });
+    perServer.get(sid)[key] += 1;
+  };
+  const seen = new Set();
+  for (const e of events) {
+    if (!real(e.user_id)) continue;
+    const sid = e.props?.server;
+    if (!UUID_RE.test(String(sid || ""))) continue;
+    const key = e.event === "onboarding_previewed" ? "previewed" : e.event === "onboarding_joined" ? "joined" : e.event === "onboarding_first_hello" ? "firstHello" : null;
+    if (!key) continue;
+    const dedupe = `${key}:${e.user_id}:${sid}`;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    bump(String(sid), key);
+  }
+  const bySlot = {};
+  for (const e of events) {
+    if (e.event !== "onboarding_first_hello" || !real(e.user_id)) continue;
+    const slot = String(e.props?.slot || "other");
+    bySlot[slot] = (bySlot[slot] || 0) + 1;
+  }
+
+  // D1: openers of the dashboard vs everyone else who signed up in the range.
+  const opened = new Set(events.filter((e) => e.event === "onboarding_opened" && real(e.user_id)).map((e) => String(e.user_id)));
+  const activeDays = new Map();
+  for (const a of activity || []) {
+    const id = String(a.user_id);
+    if (!activeDays.has(id)) activeDays.set(id, new Set());
+    activeDays.get(id).add(a.day);
+  }
+  const d1 = (list) => {
+    const eligible = list.filter((u) => now - Date.parse(u.signup_at || u.created_at) >= 2 * 86400000);
+    const kept = eligible.filter((u) => {
+      const start = Date.parse(u.signup_at || u.created_at);
+      const next = new Date(start + 86400000);
+      const day = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(next);
+      return activeDays.get(String(u.id))?.has(day);
+    }).length;
+    return { eligible: eligible.length, kept, pct: eligible.length ? Math.round((kept / eligible.length) * 1000) / 10 : null };
+  };
+  const cohort = { opened: d1(fresh.filter((u) => opened.has(String(u.id)))), others: d1(fresh.filter((u) => !opened.has(String(u.id)))) };
+  return { funnel, firstDay, byInterest, byServer: [...perServer.values()].sort((a, b) => b.firstHello - a.firstHello || b.joined - a.joined || b.previewed - a.previewed).slice(0, 12), bySlot, cohort };
+}
+
+router.get("/growth/onboarding", async (req, res) => {
+  try {
+    const days = rangeOf(req);
+    const sinceMs = Date.now() - days * 86400000;
+    const sinceIso = new Date(sinceMs).toISOString();
+    const [events, users, onbRows, settings, activity] = await Promise.all([
+      selectPaged(() =>
+        supabase
+          .from("analytics_events")
+          .select("event, user_id, props", { count: "exact" })
+          .in("event", ONB_EVENTS)
+          .gte("occurred_at", sinceIso)
+          .order("id", { ascending: true })
+      ).then((r) => (r.error ? [] : r.data || [])),
+      selectPaged(() =>
+        supabase.from("users").select("id, username, is_admin, created_at, signup_at, first_message_at", { count: "exact" }).gte("created_at", new Date(sinceMs - 86400000).toISOString()).order("id", { ascending: true })
+      ).then((r) => (r.error ? [] : r.data || [])),
+      selectPaged(() => supabase.from("user_onboarding").select("user_id, interests", { count: "exact" }).gte("created_at", sinceIso).order("user_id", { ascending: true })).then((r) => (r.error ? [] : r.data || [])),
+      onbStore.getSettings({ fresh: true }),
+      rpcAll("admin_activity_days", { p_since: g.dayStr(g.dayNum(today()) - days - 3), p_tz: TZ }).catch(() => []),
+    ]);
+    const interestsByUser = new Map(onbRows.map((r) => [String(r.user_id), Array.isArray(r.interests) ? r.interests : []]));
+    const report = onboardingReport({ events, users, interestsByUser, activity, sinceMs });
+    const ids = report.byServer.map((r) => r.serverId);
+    if (settings.communityServerId) ids.push(String(settings.communityServerId));
+    const names = new Map();
+    if (ids.length) {
+      const { data } = await supabase.from("servers").select("id, name, icon_url").in("id", [...new Set(ids)]);
+      for (const s of data || []) names.set(String(s.id), { name: s.name, iconUrl: s.icon_url || null });
+    }
+    report.byServer = report.byServer.map((r) => ({ ...r, name: names.get(r.serverId)?.name || null, iconUrl: names.get(r.serverId)?.iconUrl || null }));
+    const community = settings.communityServerId ? { id: String(settings.communityServerId), ...(names.get(String(settings.communityServerId)) || { name: null, iconUrl: null }) } : null;
+    res.set("Cache-Control", "no-store");
+    res.json({ ...report, settings: { ...settings, community }, days, generatedAt: new Date().toISOString() });
+  } catch (err) {
+    unavailable(res, err);
+  }
+});
+
+router.put("/growth/onboarding/config", async (req, res) => {
+  try {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const patch = {};
+    if ("communityServerId" in body) {
+      const id = body.communityServerId ? String(body.communityServerId).trim() : null;
+      if (id && !UUID_RE.test(id)) return res.status(400).json({ error: "Bad server id." });
+      if (id) {
+        const { data } = await supabase.from("servers").select("id").eq("id", id).maybeSingle();
+        if (!data) return res.status(404).json({ error: "Server not found." });
+      }
+      patch.communityServerId = id;
+    }
+    for (const k of ["enabled", "autoJoin", "rehberEnabled", "rewardsEnabled"]) if (k in body) patch[k] = Boolean(body[k]);
+    const before = await onbStore.getSettings({ fresh: true });
+    const settings = await onbStore.saveSettings(patch, req.user?.id);
+    try {
+      require("../runtime/sharedState").appendAudit(req.user?.id, req.user?.username, "ONBOARDING_SETTINGS", "onboarding", { before, after: settings });
+    } catch {
+      /* audit is best effort */
+    }
+    res.json({ settings });
+  } catch (err) {
+    console.error("[admin-growth] onboarding config:", err?.message || err);
+    res.status(500).json({ error: "Onboarding settings could not be saved." });
+  }
+});
+
 module.exports = router;
+module.exports.onboardingReport = onboardingReport;

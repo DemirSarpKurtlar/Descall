@@ -1506,6 +1506,8 @@ function registerSocketHandlers(io) {
         }
       }
       void recordFirstMessage(myId);
+      // "İlk Selam" (Başla panosu): the first real DM to another person, after the undo window.
+      void require("../lib/onboarding/firstHello").noteMessage({ io, userId: myId, kind: "dm", text: storedText, messageId, peerId: toUserId });
 
       // DesCoin: a small, capped reward per genuine message. Fully
       // server-driven (no client heartbeat) since it fires only after the

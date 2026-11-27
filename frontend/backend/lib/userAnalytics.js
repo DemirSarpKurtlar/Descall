@@ -18,6 +18,17 @@ const ALLOWED_EVENTS = new Set([
   "first_session",
   "session_started",
   "session_ended",
+  // "Başla panosu" (growth phase 2A): dashboard funnel, lib/onboarding.
+  "onboarding_opened",
+  "onboarding_interests",
+  "onboarding_previewed",
+  "onboarding_joined",
+  "onboarding_first_hello",
+  "onboarding_undo",
+  "onboarding_hidden",
+  "onboarding_invite_shared",
+  "onboarding_greeted_inviter",
+  "onboarding_community_left",
 ]);
 
 const ONCE_PER_USER = new Set([
@@ -55,7 +66,7 @@ function sanitizeAnalyticsEvent({ event, props } = {}) {
   if (!ALLOWED_EVENTS.has(name)) return { event: null, props: {} };
   const src = props && typeof props === "object" && !Array.isArray(props) ? props : {};
   const clean = {};
-  const allow = ["path", "source", "method", "campaign"];
+  const allow = ["path", "source", "method", "campaign", "server", "slot", "interest"];
   for (const key of allow) {
     if (src[key] == null) continue;
     const val = String(src[key]).replace(/<[^>]*>/g, "").trim().slice(0, 180);

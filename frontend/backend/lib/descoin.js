@@ -27,6 +27,9 @@ const CAPS = {
   voice_activity: { perHour: 30, perDay: 180 },
   screenshare_activity: { perHour: 40, perDay: 220 },
   message_activity: { perHour: 30, perDay: 60 },
+  // "Başla panosu" checklist (lib/onboarding): 160 in total, once per account per step
+  // (onboarding_rewards primary key); still bound by the global daily cap.
+  onboarding_reward: { perHour: 160, perDay: 160 },
 };
 
 const GLOBAL_DAILY_CAP = 400;
