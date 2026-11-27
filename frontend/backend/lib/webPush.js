@@ -282,6 +282,20 @@ async function withQuietSplit(userIds, payload, send) {
   ]);
 }
 
+/**
+ * Growth 3B notification center types: "Bahsetmeler" (mentions) and "Okunmamış" (server
+ * messages) switched off drop those pushes for that account. Unknown settings keep everyone.
+ */
+async function withTypeOn(userIds, typeKey) {
+  const ids = userIds || [];
+  try {
+    const settings = await require("./reengage/store").getSettingsMany(ids);
+    return ids.filter((id) => settings.get(String(id))?.types?.[typeKey] !== false);
+  } catch {
+    return ids;
+  }
+}
+
 /** Direct message while recipient is backgrounded / offline. */
 function sendDmMessagePush(userIds, payload = {}) {
   return withPreviewSplit(userIds, payload, (ids, p) => withQuietSplit(ids, p, deliverDmMessagePush));
@@ -314,8 +328,10 @@ async function deliverDmMessagePush(userIds, payload = {}) {
 }
 
 /** @mention in a server channel or DM. */
-function sendMentionPush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, (ids, p) => withQuietSplit(ids, p, deliverMentionPush));
+async function sendMentionPush(userIds, payload = {}) {
+  const ids = await withTypeOn(userIds, "mentions");
+  if (!ids.length) return;
+  return withPreviewSplit(ids, payload, (list, p) => withQuietSplit(list, p, deliverMentionPush));
 }
 
 async function deliverMentionPush(userIds, payload = {}) {
@@ -404,8 +420,10 @@ function deliverIosGroupMentionPush(userIds, payload = {}) {
 }
 
 /** New server text channel message for members whose notification level is "all". */
-function sendServerMessagePush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, deliverServerMessagePush);
+async function sendServerMessagePush(userIds, payload = {}) {
+  const ids = await withTypeOn(userIds, "unread");
+  if (!ids.length) return;
+  return withPreviewSplit(ids, payload, (list, p) => withQuietSplit(list, p, deliverServerMessagePush));
 }
 
 function deliverServerMessagePush(userIds, payload = {}) {
@@ -420,6 +438,7 @@ function deliverServerMessagePush(userIds, payload = {}) {
     previewKind: previewKindOf(payload),
     messageId: payload.messageId,
     excludeUserId: payload.fromId,
+    ...(payload.quiet ? { quiet: true } : {}),
   });
 }
 

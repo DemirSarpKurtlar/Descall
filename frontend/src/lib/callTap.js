@@ -78,6 +78,8 @@ export function notificationTapAction({ actionId = "", data = {}, ios = false } 
   const id = str(actionId);
   if (id === "accept" || id === "answer" || id === "JOIN") return "answer";
   if (id === "decline" || id === "DECLINE") return "decline";
+  // Growth 3B people buttons (Katıl / Sessiz katıl / Yanıtla / Gel): App.jsx routes them.
+  if (/^rg_[a-z]{2,12}$/.test(id)) return id;
   if (callTapKind(data)) return CALL_TAP_ACTION;
   return ios ? "open" : str(data.action) || "open";
 }

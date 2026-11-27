@@ -19,15 +19,24 @@ function istDay(ms) {
   return require("../reengagePolicy").istDay(ms);
 }
 
-async function friendIds(me) {
+async function friendLinks(me) {
   const { data } = await store
     .db()
     .from("friendships")
-    .select("user_id, friend_id")
+    .select("user_id, friend_id, created_at")
     .eq("status", "accepted")
     .or(`user_id.eq.${me},friend_id.eq.${me}`)
     .limit(MAX_FRIENDS);
-  return [...new Set((data || []).map((r) => (String(r.user_id) === String(me) ? String(r.friend_id) : String(r.user_id))))].filter(Boolean);
+  const since = new Map();
+  for (const r of data || []) {
+    const id = String(r.user_id) === String(me) ? String(r.friend_id) : String(r.user_id);
+    if (id && id !== String(me)) since.set(id, r.created_at || null);
+  }
+  return since;
+}
+
+async function friendIds(me) {
+  return [...(await friendLinks(me)).keys()];
 }
 
 function voiceSeatOf(ids, state) {
@@ -50,12 +59,13 @@ function voiceSeatOf(ids, state) {
 /** The whole center for `me`. */
 async function stateFor(me, { now = Date.now(), state = require("../../runtime/sharedState") } = {}) {
   const db = store.db();
-  const [settings, persons, friends, me_] = await Promise.all([
+  const [settings, persons, links, me_] = await Promise.all([
     store.getSettings(me),
     store.listPersons(me),
-    friendIds(me),
+    friendLinks(me),
     db.from("users").select("id, timezone, notify_friend_voice, email_notify_opt_out_at").eq("id", me).maybeSingle(),
   ]);
+  const friends = [...links.keys()];
   const prefs = new Map((persons.rows || []).map((r) => [String(r.peer_id), R.normalizePerson(r)]));
   const ids = [...new Set([...friends, ...prefs.keys()])].slice(0, MAX_FRIENDS);
   const users = new Map();
@@ -90,6 +100,15 @@ async function stateFor(me, { now = Date.now(), state = require("../../runtime/s
     voiceStats.set(from, v);
   }
   const seats = voiceSeatOf(ids, state);
+  const { data: memberships } = await db.from("server_members").select("server_id, notification_level").eq("user_id", me).limit(200);
+  const serverIds = (memberships || []).map((m) => String(m.server_id));
+  const mutual = new Map();
+  if (serverIds.length && ids.length) {
+    for (const part of store.chunks(ids, 100)) {
+      const { data: mm } = await db.from("server_members").select("user_id, server_id").in("server_id", serverIds).in("user_id", part).limit(5000);
+      for (const m of mm || []) mutual.set(String(m.user_id), (mutual.get(String(m.user_id)) || 0) + 1);
+    }
+  }
   const presence = (id) => state.presence?.get?.(id)?.status || (state.presence?.has?.(id) ? "online" : null);
   const serverNames = new Map();
   const wantServers = [...new Set([...seats.values()].map((s) => s.serverId).filter(Boolean))];
@@ -108,7 +127,9 @@ async function stateFor(me, { now = Date.now(), state = require("../../runtime/s
         username: u.username,
         name: u.display_name || u.username,
         avatarUrl: u.avatar_url || null,
-        friend: friends.includes(id),
+        friend: links.has(id),
+        friendSince: links.get(id) || null,
+        mutualServers: mutual.get(id) || 0,
         presence: presence(id) || "offline",
         lastSeen: u.last_seen || null,
         voice: seat
@@ -130,8 +151,6 @@ async function stateFor(me, { now = Date.now(), state = require("../../runtime/s
   people.sort((a, b) => Number(b.prefs.important) - Number(a.prefs.important) || (Date.parse(a.prefs.importantAt || 0) - Date.parse(b.prefs.importantAt || 0)) || String(a.name).localeCompare(String(b.name), "tr"));
 
   // Servers: level + how many important people are members + messages this week.
-  const { data: memberships } = await db.from("server_members").select("server_id, notification_level").eq("user_id", me).limit(200);
-  const serverIds = (memberships || []).map((m) => String(m.server_id));
   const servers = [];
   if (serverIds.length) {
     const { data: srv } = await db.from("servers").select("id, name, icon_url").in("id", serverIds);

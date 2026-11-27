@@ -67,7 +67,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             categorySummaryFormat: strings.summaryFormat,
             options: []
         )
-        UNUserNotificationCenter.current().setNotificationCategories([call, message])
+        // Growth 3B people notifications: the friend's face comes from the Notification Service
+        // Extension (Communication Notification); these are the buttons under it. All open the app.
+        let join = UNNotificationAction(identifier: DescallNotify.Action.join, title: strings.text("people.join"), options: [.foreground])
+        let quietJoin = UNNotificationAction(identifier: DescallNotify.Action.quietJoin, title: strings.text("people.quietJoin"), options: [.foreground])
+        let reply = UNNotificationAction(identifier: DescallNotify.Action.reply, title: strings.text("people.reply"), options: [.foreground])
+        let come = UNNotificationAction(identifier: DescallNotify.Action.come, title: strings.text("people.come"), options: [.foreground])
+        let people = UNNotificationCategory(
+            identifier: DescallNotify.peopleCategory,
+            actions: [join, quietJoin, reply],
+            intentIdentifiers: [INSendMessageIntentIdentifier],
+            options: []
+        )
+        let peopleCall = UNNotificationCategory(
+            identifier: DescallNotify.peopleCallCategory,
+            actions: [come, reply],
+            intentIdentifiers: [INSendMessageIntentIdentifier],
+            options: []
+        )
+        let peopleNudge = UNNotificationCategory(
+            identifier: DescallNotify.peopleNudgeCategory,
+            actions: [reply],
+            intentIdentifiers: [INSendMessageIntentIdentifier],
+            options: []
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([call, message, people, peopleCall, peopleNudge])
     }
 
     /// 4.3 "Paylaş > Descall": the share extension's background transfers finished while the

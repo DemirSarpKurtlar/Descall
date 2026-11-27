@@ -11,22 +11,44 @@ self.addEventListener("push", (event) => {
     event.waitUntil(handleRingEnded(payload));
     return;
   }
+  // Growth 3B: a recalled re-engagement message. Close the card if it is still there,
+  // then satisfy "every push shows a notification" with a silent card closed at once.
+  if (type === "rg-recall") {
+    event.waitUntil(handleRecall(payload));
+    return;
+  }
   const isCall = type === "call" || type === "group-call";
+  // Growth 3B people pushes carry their own localized buttons (Katıl / Sessiz katıl / Yanıtla).
+  const ownActions = Array.isArray(payload.actions)
+    ? payload.actions
+        .filter((a) => a && typeof a.action === "string" && /^rg_[a-z]{2,12}$/.test(a.action) && typeof a.title === "string")
+        .slice(0, 2)
+        .map((a) => ({ action: a.action, title: a.title.slice(0, 40) }))
+    : [];
   const actions = isCall
     ? [
         { action: "answer", title: type === "group-call" ? "Katıl" : "Yanıtla" },
         { action: "decline", title: "Reddet" },
       ]
-    : type === "dm" || type === "mention"
-      ? [{ action: "open", title: "Aç" }]
-      : [];
+    : ownActions.length
+      ? ownActions
+      : type === "dm" || type === "mention"
+        ? [{ action: "open", title: "Aç" }]
+        : [];
+  // A face (https avatar) instead of the logo when the push is about a person.
+  const icon = typeof payload.icon === "string" && /^https:\/\//.test(payload.icon) ? payload.icon : "/favicon-192.png?v=concept2";
+  if (payload.ackUrl && typeof payload.ackUrl === "string" && /^https:\/\//.test(payload.ackUrl)) {
+    // Delivered: counted on the console's live tracking window (no personal data, signed token).
+    event.waitUntil(fetch(payload.ackUrl, { method: "POST", mode: "cors", credentials: "omit", keepalive: true }).catch(() => {}));
+  }
 
   event.waitUntil(self.registration.showNotification(payload.title || "Descall", {
     body: payload.body || "",
-    icon: "/favicon-192.png?v=concept2",
+    icon,
     badge: "/favicon-32.png?v=concept2",
     tag: payload.tag || "descall",
-    renotify: true,
+    renotify: !payload.silent,
+    silent: Boolean(payload.silent),
     requireInteraction: isCall,
     actions,
     data: {
@@ -41,9 +63,43 @@ self.addEventListener("push", (event) => {
       channelId: payload.channelId || null,
       callType: payload.callType || null,
       callUuid: payload.callUuid || null,
+      serverName: payload.serverName || null,
+      channelName: payload.channelName || null,
+      rgKind: payload.rgKind || null,
+      rgToken: payload.rgToken || null,
     },
   }));
 });
+
+/** Growth 3B recall: close the unopened card with this tag, then a silent card closed at once. */
+async function handleRecall(payload) {
+  const tag = String(payload.tag || "");
+  try {
+    const shown = await self.registration.getNotifications(tag ? { tag } : undefined);
+    for (const n of shown) {
+      try { n.close(); } catch { /* ignore */ }
+    }
+  } catch {
+    /* ignore */
+  }
+  await self.registration.showNotification(payload.title || "Descall", {
+    body: payload.body || "",
+    icon: "/favicon-192.png?v=concept2",
+    badge: "/favicon-32.png?v=concept2",
+    tag: tag || "rg-recall",
+    renotify: false,
+    silent: true,
+    data: { type: "rg-recall", deepLink: "/" },
+  });
+  try {
+    const again = await self.registration.getNotifications(tag ? { tag } : undefined);
+    for (const n of again) {
+      if ((n.data || {}).type === "rg-recall") n.close();
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Answered / declined elsewhere: the result card closes itself after this. */
 const RING_RESULT_VISIBLE_MS = 4000;
@@ -157,7 +213,11 @@ self.addEventListener("notificationclick", (event) => {
   // resolves it); only the Answer / Join buttons accept directly.
   const isCallPush = data.type === "call" || data.type === "group-call";
   const clickAction = event.action || (isCallPush ? "call-tap" : data.action || "open");
-  const deepLink = new URL(data.deepLink || "/", self.location.origin).href;
+  const deepUrl = new URL(data.deepLink || "/", self.location.origin);
+  // Growth 3B: Katıl / Sessiz katıl / Yanıtla on a closed app: the app reads ?rgAction after load.
+  if (/^rg_[a-z]{2,12}$/.test(String(event.action || ""))) deepUrl.searchParams.set("rgAction", event.action);
+  if (data.rgKind) deepUrl.searchParams.set("rgKind", String(data.rgKind).slice(0, 64));
+  const deepLink = deepUrl.href;
   const message = {
     type: "descall:notification-click",
     deepLink,
