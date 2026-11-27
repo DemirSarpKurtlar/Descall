@@ -18,6 +18,7 @@ import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { PUBPAGE_DE } from "./pubpage.de.js";
+import { ONB_DE } from "./onb.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { SHARE_SHEET_DE } from "./shareSheet.de.js";
@@ -49,6 +50,7 @@ import { AGENTX_DE } from "./agentx.de.js";
 import { AGENT_OPS_DE } from "./agentOps.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_DE,
   passkey: PASSKEY_DE,
@@ -75,6 +77,7 @@ export const nested = {
   "act": ACT_DE,
   "dir": DIR_DE,
   "pubpage": PUBPAGE_DE,
+  "onb": ONB_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
   "shareSheet": SHARE_SHEET_DE,
@@ -3057,6 +3060,9 @@ export const nested = {
       "serverOwnerTitle": "Server-Eigentümerschaft",
       "timeoutBody": "Du kannst weiter lesen und zuhören, aber eine Zeit lang keine Nachrichten senden und im Sprachkanal nicht sprechen.",
       "timeoutTitle": "Du wurdest stummgeschaltet"
+    },
+    "onb": {
+      "rehberWelcome": "Willkommen {user}! Sag hallo in #{channel}: schreib deinen Namen und wofür du dich interessierst, das Willkommensteam antwortet in wenigen Minuten."
     },
     "opt": {
       "amount": "betrag",
@@ -11147,6 +11153,7 @@ export const phrases = {
   ...CONV_START_I18N.de,
   ...SERVER_TEMPLATE_TOPICS_I18N.de,
   ...SIGNUP_GROWTH.de.phrases,
+  ...ADAPTIVE_SIGNUP.de,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall steht in keiner Verbindung zu Discord Inc. Discord ist eine Marke von Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Die API-Zeile wird bei jedem Öffnen dieser Seite live aus deinem Browser geprüft.",
   "Author": "Autor",

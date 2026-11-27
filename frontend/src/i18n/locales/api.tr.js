@@ -8,6 +8,7 @@
  * Messages that were Turkish before keep their exact old wording.
  */
 export const API_TR = {
+  "Could not check right now.": "Şu an kontrol edilemedi.",
   "Complete the security check to continue.": "Devam etmek için güvenlik doğrulamasını tamamla.",
   "The security check could not be verified. Please try again.": "Güvenlik doğrulaması onaylanamadı. Lütfen tekrar dene.",
   "{count, plural, one {# log archived} other {# logs archived}} successfully": "{count} kayıt başarıyla arşivlendi",
@@ -1040,4 +1041,15 @@ export const API_TR = {
   "Choose why you are turning the page off.": "Sayfayı neden kapattığını seç.",
   "Write a short reason.": "Kısa bir sebep yaz.",
   "The undo window has passed.": "Geri alma süresi doldu.",
+  "Account not found.": "Hesap bulunamadı.",
+  "Could not load the start dashboard.": "Başla panosu yüklenemedi.",
+  "Not available yet.": "Henüz kullanılamıyor.",
+  "Could not save interests.": "İlgi alanları kaydedilemedi.",
+  "Bad server id.": "Geçersiz sunucu kimliği.",
+  "Preview not available.": "Önizleme kullanılamıyor.",
+  "Could not load the preview.": "Önizleme yüklenemedi.",
+  "Bad ids.": "Geçersiz kimlikler.",
+  "Could not load replies.": "Yanıtlar yüklenemedi.",
+  "Unknown event.": "Bilinmeyen olay.",
+  "Onboarding settings could not be saved.": "Başla panosu ayarları kaydedilemedi.",
 };

@@ -52,4 +52,10 @@ regexes = [
   '''sb_secret_abcdefgh12345678''',
   '''sb_secret_0123456789abcdef''',
   '''^0123456789abcdef0123$''',
+  # Fake values in the adaptive sign-up card tests (frontend/e2e/adaptiveSignup.e2e.cjs and
+  # backend/test/adaptiveSignup.integration.test.cjs, commits 3c617586 and e4735972): a
+  # made-up four-word test password (and a variant with a trailing "x") and a dummy
+  # anonymous visitor key used against a mock backend.
+  '''Kayik-Bulut-Defne-28x?''',
+  '''visitor_abcdef12''',
 ]

@@ -337,6 +337,7 @@ export const MARKETING_TR = {
   "App Store": "App Store",
   "More about Descall": "Descall hakkında daha fazlası",
   "Welcome back": "Tekrar hoş geldin",
+  "Welcome to Descall": "Descall'a hoş geldin",
   "Servers with roles and channels": "Rol ve kanallı sunucular",
   "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.":
     "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Yönetici, Moderatör, Üye rolleri vardır.",

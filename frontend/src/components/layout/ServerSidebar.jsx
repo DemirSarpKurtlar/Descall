@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
+import { useOnboarding } from "../onboarding/OnboardingContext";
+import { OnbListSlot, OnbFriendsSlot } from "../onboarding/slots";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
 import { groupAvatarUrl } from "../../lib/avatarFile";
@@ -301,6 +303,10 @@ export default function ServerSidebar({
     }));
   };
 
+  // "Başla panosu" (growth 2A): the list column shows the start block for new accounts.
+  const onboarding = useOnboarding();
+  const startTitle = activeView === "chat" && Boolean(onboarding?.active) && friendsLoaded && !filteredDms.length;
+
   if (collapsed) {
     return null; // Collapsed state handled by parent
   }
@@ -319,7 +325,9 @@ export default function ServerSidebar({
                     ? t("Friends")
                     : activeView === "calls"
                       ? t("Calls")
-                      : t("Chats")
+                      : startTitle
+                        ? t("onb.title")
+                        : t("Chats")
             }
             sub={activeView === "calls" ? t("Call your friends quickly or go back to your recent calls.") : ""}
             searchCollapsible={activeView === "calls"}
@@ -354,7 +362,7 @@ export default function ServerSidebar({
         {/* Header */}
           <div className="sidebar-header">
             <h2 className="sidebar-title">
-              {activeView === "chat" && t("Chats")}
+              {activeView === "chat" && (startTitle ? t("onb.title") : t("Chats"))}
               {activeView === "dms" && t("Direct Messages")}
               {activeView === "groups" && t("Groups")}
               {activeView === "friends" && t("Friends")}
@@ -420,7 +428,8 @@ export default function ServerSidebar({
         {/* Content */}
         <div className="sidebar-content">
           <PullToRefresh enabled={isMobile} onRefresh={refreshList}>
-          {(activeView === "chat" || activeView === "dms") && (
+          {(activeView === "chat" || activeView === "dms") && <OnbListSlot isMobile={isMobile} />}
+          {(activeView === "chat" || activeView === "dms") && !(onboarding?.active && friendsLoaded && !filteredDms.length) && (
             <DMList
               dms={filteredDms}
               activeDmUser={activeDmUser}
@@ -455,6 +464,7 @@ export default function ServerSidebar({
             />
           )}
 
+          {activeView === "friends" && <OnbFriendsSlot isMobile={isMobile} />}
           {activeView === "friends" && (
             <FriendsList
               friends={friends}

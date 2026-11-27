@@ -18,6 +18,7 @@ import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
+import { ONB_FR } from "./onb.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
@@ -49,6 +50,7 @@ import { AGENTX_FR } from "./agentx.fr.js";
 import { AGENT_OPS_FR } from "./agentOps.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_FR,
   passkey: PASSKEY_FR,
@@ -75,6 +77,7 @@ export const nested = {
   "act": ACT_FR,
   "dir": DIR_FR,
   "pubpage": PUBPAGE_FR,
+  "onb": ONB_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "shareSheet": SHARE_SHEET_FR,
@@ -3057,6 +3060,9 @@ export const nested = {
       "serverOwnerTitle": "Propriété du serveur",
       "timeoutBody": "Tu peux toujours lire et écouter, mais tu ne peux plus envoyer de messages ni parler en vocal pendant un moment.",
       "timeoutTitle": "Tu as été rendu muet"
+    },
+    "onb": {
+      "rehberWelcome": "Bienvenue {user} ! Dis bonjour dans #{channel} : ton prénom et ce qui t'intéresse, l'équipe d'accueil te répond en quelques minutes."
     },
     "opt": {
       "amount": "montant",
@@ -11147,6 +11153,7 @@ export const phrases = {
   ...CONV_START_I18N.fr,
   ...SERVER_TEMPLATE_TOPICS_I18N.fr,
   ...SIGNUP_GROWTH.fr.phrases,
+  ...ADAPTIVE_SIGNUP.fr,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall n'est pas affilié à Discord Inc. Discord est une marque de Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "La ligne API est vérifiée en direct depuis ton navigateur à chaque ouverture de cette page.",
   "Author": "Auteur",

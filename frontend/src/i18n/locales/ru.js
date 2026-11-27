@@ -18,6 +18,7 @@ import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { PUBPAGE_RU } from "./pubpage.ru.js";
+import { ONB_RU } from "./onb.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
@@ -49,6 +50,7 @@ import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
   passkey: PASSKEY_RU,
@@ -75,6 +77,7 @@ export const nested = {
   "act": ACT_RU,
   "dir": DIR_RU,
   "pubpage": PUBPAGE_RU,
+  "onb": ONB_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
   "shareSheet": SHARE_SHEET_RU,
@@ -3057,6 +3060,9 @@ export const nested = {
       "serverOwnerTitle": "Владение сервером",
       "timeoutBody": "Вы можете читать и слушать, но какое-то время не сможете писать сообщения и говорить в голосовых каналах.",
       "timeoutTitle": "Вам временно ограничили отправку сообщений"
+    },
+    "onb": {
+      "rehberWelcome": "Добро пожаловать, {user}! Поздоровайся в #{channel}: напиши, как тебя зовут и чем увлекаешься, и команда встречи ответит за пару минут."
     },
     "opt": {
       "amount": "сумма",
@@ -11147,6 +11153,7 @@ export const phrases = {
   ...CONV_START_I18N.ru,
   ...SERVER_TEMPLATE_TOPICS_I18N.ru,
   ...SIGNUP_GROWTH.ru.phrases,
+  ...ADAPTIVE_SIGNUP.ru,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
   "Author": "Автор",

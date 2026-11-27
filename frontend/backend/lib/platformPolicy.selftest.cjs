@@ -64,7 +64,9 @@ assert.match(read("socket/handlers.js"), /checkMessageSend\(\{ config: systemCon
 assert.match(read("socket/groupHandlers.js"), /checkMessageSend\(\{ config: systemConfig, userId: myId, [^}]*kind: "group"/);
 assert.match(read("socket/serverChannelHandlers.js"), /checkMessageSend\(\{ config: systemConfig, userId: myId, [^}]*kind: "server"/);
 const auth = read("routes/auth.js");
-assert.equal((auth.match(/platformPolicy\.checkRegistration\(/g) || []).length, 3, "password, Google and Apple signups");
+// Password, Google and Apple sign-ups, plus the sign-up card's email lookup (/identify says
+// "new sign-ups are closed" before the person fills in the sign-up fields).
+assert.equal((auth.match(/platformPolicy\.checkRegistration\(/g) || []).length, 4, "password, Google and Apple signups + identify");
 assert.match(auth, /platformPolicy\.loginAttemptsPerMinute\(systemConfig\)/);
 assert.match(auth, /if \(minuteKey\) recordFailure\(minuteKey, perMinute\);/);
 assert.match(read("routes/groups.js"), /checkGroupCreate\(\{ config: systemConfig/);

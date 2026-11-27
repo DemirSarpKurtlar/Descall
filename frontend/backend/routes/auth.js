@@ -39,7 +39,9 @@ async function rejectIfCodeLocked(res, userId, purpose) {
   return true;
 }
 const { checkNewPassword } = require("../lib/passwordPolicy");
-const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
+const { peek, recordFailure, rejectIfLimited, isReviewDemo, recentCount } = require("../lib/rateLimit");
+// Uyarlanan kart (growth 1B): email-first card helpers (identify, breach range, ideas).
+const adaptive = require("../lib/adaptiveSignup");
 const { noteDroppedSessions } = require("../lib/sessionGuard");
 const accessBans = require("../lib/accessBans");
 // Güvenlik Merkezi live threat feed (merged + sampled in lib/securityEvents.js).
@@ -665,8 +667,14 @@ async function accessGate(req, res, { action, user = null }) {
 }
 
 router.post("/register", async (req, res) => {
+  // Uyarlanan kart: { passwordless: true } creates the account without a password (the card
+  // adds a passkey right after, Settings can add a password later, like a Google account).
+  const passwordless = req.body?.passwordless === true;
+  const card = adaptive.cardContext(req.body);
   // Kayıt İstatistikleri: completed / failed outcome, hashed key only.
-  trackSignupAttempt(req, res, { method: "email", countryFromHeaders });
+  // signup_attempts.method is CHECKed (email | google | apple | other): a passwordless
+  // sign-up stays "email" there; users.auth_method says "passkey".
+  trackSignupAttempt(req, res, { method: "email", countryFromHeaders, flow: card ? "card" : "classic" });
   try {
     {
       // Yönetici Paneli › Güvenlik: "Kayıtlara izin ver" kapalıyken yeni hesap yok (3.1.3).
@@ -712,10 +720,12 @@ router.post("/register", async (req, res) => {
       }
     }
 
-    const passwordCheck = await checkNewPassword(password);
-    if (passwordCheck.error) {
-      const detail = passwordCheck.code === "pwned" ? "password_breached" : signupRules.passwordLengthCode(password) || "password_short";
-      return rejectSignup(res, 400, detail, { error: passwordCheck.error, code: passwordCheck.code });
+    if (!passwordless) {
+      const passwordCheck = await checkNewPassword(password);
+      if (passwordCheck.error) {
+        const detail = passwordCheck.code === "pwned" ? "password_breached" : signupRules.passwordLengthCode(password) || "password_short";
+        return rejectSignup(res, 400, detail, { error: passwordCheck.error, code: passwordCheck.code });
+      }
     }
 
     // 3.7.17 (owner rule): a new password account needs an email; it gets the
@@ -761,13 +771,15 @@ router.post("/register", async (req, res) => {
       await releaseUnverifiedEmail(holders.staleIds);
     }
 
-    const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const password_hash = passwordless ? null : await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const baseRow = { username: cleanUsername, password_hash, email, terms_accepted_at: new Date().toISOString(), birth_date: birth.birthDate };
+    if (passwordless) baseRow.auth_provider = "passkey";
 
     const { data: newUser, error: insertError, attributionColumns } = await insertUserWithAttribution(
-      { username: cleanUsername, password_hash, email, terms_accepted_at: new Date().toISOString(), birth_date: birth.birthDate },
+      baseRow,
       "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
       attribution,
-      "email",
+      passwordless ? "passkey" : "email",
       { req, invitedBy, signupInvite, inviteCode: req.body?.inviteCode },
     );
 
@@ -813,10 +825,16 @@ router.post("/register", async (req, res) => {
     noteSignupInvite(newUser.id, req.body, invite);
 
     void recordSignupAnalytics(newUser, attributionColumns);
+    // Uyarlanan kart Ölçüm: a password the card flagged as breached was replaced before the
+    // submit (suggested / own / passkey). breach_warned_inline comes from the card itself.
+    if (card?.breachWarned) {
+      const via = passwordless ? "passkey" : card.fixedVia;
+      if (via) void recordAnalyticsEvent({ userId: newUser.id, event: "breach_fixed", props: { method: via, source: card.surface } });
+    }
     void flagSuspiciousSignup(newUser.id, attribution?.visitorKey);
     void notifyTeamNewSignup({
       user: { id: newUser.id, username: newUser.username, email, display_name: newUser.username },
-      method: "email_password",
+      method: passwordless ? "passkey" : "email_password",
       invitedBy: invite.inviterUsername || null,
       req,
       verified: false,
@@ -853,6 +871,7 @@ router.post("/register", async (req, res) => {
       verificationEmailSent: emailSent,
       invitedBy: invite.inviterUsername || null,
       inviteLinked: Boolean(invite.linked),
+      ...(passwordless ? { passwordless: true } : {}),
     });
   } catch (err) {
     return res.status(500).json({ error: "Internal server error." });
@@ -893,17 +912,36 @@ router.post("/login", loginBurst, async (req, res) => {
     // account name (lib/turnstile.js loginNeedsCheck); before the lookup and bcrypt.
     if (turnstile.loginNeedsCheck({ ip, accountKey }) && (await turnstile.rejectUnlessHuman(req, res, { action: "login", ip }))) return;
 
-    const { data: user, error: lookupError } = await supabase
-      .from("users")
-      .select(
-        "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at"
-      )
-      .ilike("username", escapeLike(cleanUsername))
-      .maybeSingle();
+    const loginCols =
+      "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at";
+    // Uyarlanan kart: the identifier is the username or the account's email (one row per
+    // address, users_email_uidx). Same generic answer and the same bcrypt work either way.
+    const byEmail = adaptive.looksLikeEmail(cleanUsername);
+    let user = null;
+    let lookupError = null;
+    if (byEmail) {
+      const email = adaptive.normalizeEmail(cleanUsername);
+      if (email) {
+        const r = await supabase.from("users").select(loginCols).ilike("email", escapeLike(email)).limit(1);
+        lookupError = r.error || null;
+        user = (Array.isArray(r.data) ? r.data[0] : r.data) || null;
+      }
+    } else {
+      const r = await supabase.from("users").select(loginCols).ilike("username", escapeLike(cleanUsername)).maybeSingle();
+      lookupError = r.error || null;
+      user = r.data || null;
+    }
 
     if (lookupError) {
       console.error("[AUTH] Supabase lookup error");
       return res.status(500).json({ error: "Database error." });
+    }
+    // Signing in by email shares the account's per-name limit, so the two names of one
+    // account do not double the attempts.
+    const nameKey = byEmail && user?.username && !isReviewDemo(user.username) ? `login:acct:${String(user.username).toLowerCase()}` : null;
+    if (nameKey && rejectIfLimited(res, [peek(nameKey, { max: 30 })])) {
+      securityEvents.note("account_locked", { req, reason: "window", detail: { lookup: String(user.username).slice(0, 64), window: "15m" } });
+      return;
     }
 
     const hashToCompare = user?.password_hash || DUMMY_BCRYPT_HASH;
@@ -917,6 +955,7 @@ router.post("/login", loginBurst, async (req, res) => {
     if (!user || !user.password_hash || !passwordMatch) {
       recordFailure(`login:ip:${ip}`, { max: 40 });
       if (accountKey) recordFailure(accountKey, { max: 30 });
+      if (nameKey) recordFailure(nameKey, { max: 30 });
       if (minuteKey) recordFailure(minuteKey, perMinute);
       // The account name is stored only when the account exists (a typed password never is).
       securityEvents.note("failed_login", { req, userId: user?.id || null, username: user ? user.username : null, accountKey: accountKey || null, detail: { method: "password" } });
@@ -947,7 +986,7 @@ router.post("/login", loginBurst, async (req, res) => {
 
     await touchLastSeen(user.id, { force: true });
     void recordAppOpened(user.id);
-    void recordAnalyticsEvent({ userId: user.id, event: "login", props: { method: "password" } });
+    void recordAnalyticsEvent({ userId: user.id, event: "login", props: { method: byEmail ? "password_email" : "password" } });
 
     return res.status(200).json({
       message: "Login successful.",
@@ -2101,6 +2140,110 @@ router.post("/heard-about", requireAuth, async (req, res) => {
  * GET /api/auth/username/check?username=foo → { available, error?, suggestions? }
  * Public (sign-up username step, before an account exists). Rate limited per IP.
  */
+// ─── Uyarlanan kart (growth 1B): email-first sign-in / sign-up ──────────
+
+const identifyBurst = burstLimit({ name: "identify", limit: 60 });
+// Server texts are English; the apps translate them (serverMessage + api.<locale>.js).
+const CARD_ERR = Object.freeze({
+  internal: "Internal server error.",
+  email: "Enter a valid email address.",
+  badInput: "Invalid request body.",
+  range: "Could not check right now.",
+});
+const IDENTIFY_OPTS = { windowMs: adaptive.IDENTIFY_WINDOW_MS, max: adaptive.IDENTIFY_MAX };
+
+/**
+ * POST /auth/identify { email, surface?, visitorKey? } -> { status: "new" | "registered",
+ * emailHint?, registrationClosed? }. Decides which card the email gets. Registered means the
+ * same as POST /register's email_taken (a verified holder or one still inside its first day).
+ * Rate limited per address; the human check after IDENTIFY_STEPUP lookups (like sign-in).
+ */
+router.post("/identify", identifyBurst, async (req, res) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    const ip = clientIp(req);
+    const key = `identify:ip:${ip}`;
+    if (guard(res, key, null, IDENTIFY_OPTS)) {
+      securityEvents.note("ip_blocked", { req, reason: "identify", detail: { scope: "identify" } });
+      return;
+    }
+    const email = adaptive.normalizeEmail(req.body?.email);
+    if (!email) return res.status(400).json({ error: CARD_ERR.email, code: "EMAIL_INVALID" });
+    if (recentCount(key, { windowMs: adaptive.IDENTIFY_WINDOW_MS }) >= adaptive.IDENTIFY_STEPUP) {
+      if (await turnstile.rejectUnlessHuman(req, res, { action: "register", ip })) return;
+    }
+    recordFailure(key, IDENTIFY_OPTS);
+    if (await accessGate(req, res, { action: "register" })) return;
+    const holders = await emailHolders(email, null);
+    const registered = Boolean(holders.confirmed || holders.fresh);
+    const surface = adaptive.cleanSurface(req.body?.surface);
+    if (registered) {
+      void recordAnalyticsEvent({ visitorKey: req.body?.visitorKey || "", event: "identifier_routed", props: surface ? { source: surface } : {} });
+      return res.json({ status: "registered", emailHint: adaptive.maskEmail(email) });
+    }
+    const closed = platformPolicy.checkRegistration({ config: systemConfig });
+    return res.json({ status: "new", ...(closed.ok ? {} : { registrationClosed: true }) });
+  } catch (err) {
+    console.error("[AUTH] identify error:", err?.message || err);
+    return res.status(500).json({ error: CARD_ERR.internal });
+  }
+});
+
+const breachRanges = adaptive.createRangeCache();
+const RANGE_OPTS = { windowMs: 60 * 1000, max: 90 };
+
+/**
+ * GET /auth/password/range/:prefix -> text/plain "SUFFIX:COUNT" lines. The card hashes the
+ * password on the device and sends only the first 5 hex characters of the SHA-1 (the same
+ * k-anonymity range lookup the server runs on submit). 503 when the list cannot be reached:
+ * the card then says it could not check, and the submit check fails open as before.
+ */
+router.get("/password/range/:prefix", async (req, res) => {
+  try {
+    const ip = clientIp(req);
+    if (guard(res, `pwrange:ip:${ip}`, null, RANGE_OPTS)) return;
+    recordFailure(`pwrange:ip:${ip}`, RANGE_OPTS);
+    const prefix = adaptive.cleanPrefix(req.params.prefix);
+    if (!prefix) return res.status(400).json({ error: CARD_ERR.badInput, code: "BAD_PREFIX" });
+    res.set("Cache-Control", "private, max-age=600");
+    res.type("text/plain");
+    if (String(process.env.PASSWORD_HIBP || "1") === "0") return res.send("");
+    const r = await breachRanges.get(prefix);
+    if (!r.ok) {
+      res.set("Cache-Control", "no-store");
+      return res.status(503).json({ error: CARD_ERR.range, code: "RANGE_UNAVAILABLE" });
+    }
+    return res.send(r.body);
+  } catch (err) {
+    console.error("[AUTH] password range error:", err?.message || err);
+    return res.status(500).json({ error: CARD_ERR.internal });
+  }
+});
+
+/**
+ * POST /auth/username/ideas { candidates: string[] } -> { free: string[] } (in the given
+ * order). The card builds the ideas from the email on the device; the server only says which
+ * are free and pass the username rules. Shares the live username check's limit.
+ */
+router.post("/username/ideas", async (req, res) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    const ip = clientIp(req);
+    const opts = { windowMs: 60 * 1000, max: 60 };
+    if (guard(res, `usercheck:ip:${ip}`, null, opts)) return;
+    recordFailure(`usercheck:ip:${ip}`, opts);
+    const ideas = adaptive.cleanIdeas(req.body?.candidates).filter((c) => !validateUsername(c) && !isProtectedAccountUsername(c));
+    const free = [];
+    for (const c of ideas) {
+      if (!(await usernameTaken(c))) free.push(c);
+    }
+    return res.json({ free });
+  } catch (err) {
+    console.error("[AUTH] username ideas error:", err?.message || err);
+    return res.status(500).json({ error: CARD_ERR.internal });
+  }
+});
+
 router.get("/username/check", async (req, res) => {
   try {
     const ip = clientIp(req);
