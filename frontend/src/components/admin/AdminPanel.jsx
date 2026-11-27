@@ -54,6 +54,8 @@ import AdminServerReview from "./AdminServerReview.jsx";
 import AdminGames from "./games/AdminGames.jsx";
 // İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx
 import AdminAudit from "./audit/AdminAudit.jsx";
+// Performans (owner pick Draft A "Konsol"): perf/AdminPerf.jsx
+import AdminPerf from "./perf/AdminPerf.jsx";
 // Admin Token (owner only, Draft B "Liste ve çalışma alanı"): tokens/AdminTokens.jsx
 import AdminTokens from "./tokens/AdminTokens.jsx";
 // Sunucu Ağı (owner only, Draft A "Kontrol merkezi"): hybrid server, nodes/AdminNodes.jsx
@@ -136,6 +138,8 @@ const TABS = [
   // Admin Token (owner pick Draft B "Liste ve çalışma alanı"): owner only, bot tokens + MCP.
   { id: "adminToken", label: "atok.nav", icon: KeyRound },
   { id: "errors", label: "admin.errors", icon: Bug },
+  // Performans (Draft A "Konsol"): real-user metrics, release regressions, Lighthouse CI.
+  { id: "perf", label: "perfAdmin.title", icon: Gauge, badgeTone: "red", newLabel: "perfAdmin.new" },
   { id: "audit", label: "admin.audit", icon: FileText },
   // Yöneticiler (3.3.0): owner only; grants sections to the other admins.
   { id: "staff", label: "admin.staff", icon: UserGear },
@@ -283,6 +287,26 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   
   // Duyurular: live count for the menu badge (reported by AnnouncementsPage).
   const [announcementsLive, setAnnouncementsLive] = useState(0);
+  // Performans: open release regressions (red menu badge), kept fresh by admin:update.
+  const [perfAlerts, setPerfAlerts] = useState(0);
+  const canPerf = Array.isArray(perm.sections) && perm.sections.includes("perf");
+  useEffect(() => {
+    if (!canPerf) return undefined;
+    let alive = true;
+    const load = () =>
+      adminFetch("/perf/alerts")
+        .then((d) => alive && setPerfAlerts((d?.alerts || []).filter((a) => a.status === "open").length))
+        .catch(() => {});
+    load();
+    const on = (p) => {
+      if (p?.type === "perf_alert") load();
+    };
+    socket?.on?.("admin:update", on);
+    return () => {
+      alive = false;
+      socket?.off?.("admin:update", on);
+    };
+  }, [canPerf, socket]);
 
   // Success/Error Messages
   const [successMessage, setSuccessMessage] = useState("");
@@ -694,7 +718,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     [users]
   );
 
-  const shellBadges = { reports: openReportCount, feedback: feedbackUnread, announcements: announcementsLive };
+  const shellBadges = { reports: openReportCount, feedback: feedbackUnread, announcements: announcementsLive, perf: perfAlerts };
   const banner = (
     <>
       <AnimatePresence>
@@ -994,6 +1018,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             }}
           />
         )}
+
+        {/* Performans (owner pick Draft A "Konsol"): perf/AdminPerf.jsx */}
+        {tab === "perf" && <AdminPerf socket={socket} onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")} onLiveCount={setPerfAlerts} />}
 
         {/* İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx */}
         {tab === "audit" && (

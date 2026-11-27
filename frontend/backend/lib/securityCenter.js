@@ -126,18 +126,22 @@ async function overview({ totpKnown = true, now = Date.now() } = {}) {
     /* ban list optional */
   }
   const sinceIso = new Date(now - 48 * 3600 * 1000).toISOString();
-  const [rows, adminInfo, weekAgo, auditOk] = await Promise.all([
+  const turnstile = require("./turnstile");
+  const [rows, adminInfo, weekAgo, auditOk, humanCheck] = await Promise.all([
     withTimeout(events.rowsSince(sinceIso), 6000, []),
     withTimeout(loadAdmins(), 6000, { admins: [], known: false }),
     withTimeout(events.postureWeekAgo(now), 4000, null),
     withTimeout(auditDurable(now), 5000, true),
+    withTimeout(turnstile.adminStatus({ config: state.systemConfig, now }).catch(() => null), 6000, null),
   ]);
   const settings = sec.securityView(state.systemConfig, now);
   const score = computeScore({
     config: settings,
     admins: adminInfo.admins,
     env: {
-      humanCheck: false,
+      humanCheck: turnstile.humanCheckOk(humanCheck),
+      // The one-step fix only helps when no TURNSTILE_ENFORCE env var pins the mode.
+      humanCheckConfigured: Boolean(humanCheck?.configured) && !humanCheck?.envOverride,
       totpEnforced: totpKnown,
       accessBans: accessBansReady(),
       eventLog: events.persistent(),
@@ -156,6 +160,7 @@ async function overview({ totpKnown = true, now = Date.now() } = {}) {
     alerts: buildAlerts({ stats, settings, score, now }),
     persistent: { events: events.persistent(), history: require("./settingsHistory").persistent() },
     totpEnforced: totpKnown,
+    humanCheck,
   };
 }
 

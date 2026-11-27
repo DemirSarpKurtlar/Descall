@@ -19,6 +19,7 @@ import PasswordStrength from "./auth/PasswordStrength";
 import useSignupFieldChecks from "./auth/useSignupFieldChecks";
 import SignupFieldMessage from "./auth/SignupFieldMessage";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
@@ -29,9 +30,39 @@ import { usePressFeedbackScope } from "../hooks/usePressFeedback";
 import { hapticError } from "../lib/fluid/haptics";
 import { useMaterialize } from "../hooks/useMaterialize";
 import { createValueAnimator } from "../lib/fluid/animator";
+import PasskeySignInButton, { passkeyErrorForParent } from "./passkeys/PasskeySignInButton.jsx";
+import usePasskeyAutofill, { PASSKEY_AUTOCOMPLETE } from "../hooks/usePasskeyAutofill";
+import { normalizePasskeyError, passkeyErrorKey } from "../lib/passkeys/index.js";
 import { SPRINGS } from "../lib/fluid/springs";
+import { isNativeAndroid } from "../lib/platform";
+import AdaptiveAuthShell from "./auth/adaptive/AdaptiveAuthShell.jsx";
+import AdaptiveAuthCard from "./auth/adaptive/AdaptiveAuthCard.jsx";
 
-export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error: errorProp }) {
+/** Phone layout of the sign-up card: the native apps and narrow windows. */
+function usePhoneLayout(native) {
+  const query = "(max-width: 699px)";
+  const [narrow, setNarrow] = useState(() => {
+    try {
+      return window.matchMedia(query).matches;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    let mq = null;
+    try {
+      mq = window.matchMedia(query);
+    } catch {
+      return undefined;
+    }
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  return native || narrow;
+}
+
+export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, onPasskeyLogin, onPasskeyError, loading, error: errorProp }) {
   const t = useT();
   // The parent's error stays set after "Back to login" / a tab switch; hide it there
   // until the next attempt sets a new one.
@@ -46,6 +77,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   ); // login | register | forgot
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const typingStartRef = useRef(0);
+  useEffect(() => {
+    if ((username || password) && !typingStartRef.current) typingStartRef.current = Date.now();
+    if (!username && !password) typingStartRef.current = 0;
+  }, [username, password]);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -113,12 +149,38 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [socialSigningUp, setSocialSigningUp] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Passkeys (button + web autofill): a body without user verification may still need the
+  // account's second step (same 2FA screen as the password), else App opens the session.
+  const handlePasskeyBody = async (body) => {
+    if (openTwoFa(body)) return;
+    setFormError("");
+    await onPasskeyLogin?.(body);
+  };
+  const handlePasskeyError = (err) => {
+    if (passkeyErrorForParent(err)) {
+      onPasskeyError?.(normalizePasskeyError(err).cause || err);
+      return;
+    }
+    const key = passkeyErrorKey(err);
+    if (key) setFormError(t(key));
+  };
+  // The card's first field carries the passkey autofill (Uyarlanan kart, growth 1B).
+  usePasskeyAutofill({ enabled: !twoFa && !socialSignup && mode !== "forgot" && Boolean(onPasskeyLogin), onSignedIn: handlePasskeyBody, onError: handlePasskeyError });
+  const phoneLayout = usePhoneLayout(isNativeApp);
+  const cardSurface = isElectron ? "desktop" : isNativeIOS() ? "ios" : isNativeAndroid() ? "android" : "app";
+
   useEffect(() => {
     if (mode !== "register" && !socialSignup) return;
     if (noteUnder13BirthDate(birthDate)) setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
   }, [birthDate, mode, socialSignup, t]);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  // Cloudflare Turnstile solves in the background once sign-up typing starts, so the
+  // submit does not wait for it (lib/humanCheck/turnstileClient.js).
+  const signupStarted = mode === "register" && Boolean(username || email || password);
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   // As-you-type checks with the server's rules (lib/signupRules.js), register tab only.
   const checks = useSignupFieldChecks({ username, password, email, enabled: mode === "register" && !twoFa });
   const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
@@ -136,7 +198,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     if (!username.trim() || !password) return;
     if (mode === "login") {
       try {
-        const result = await onLogin({ username: username.trim(), password });
+        // Sign-in time from the first keystroke (Settings > Passkeys compares it with passkeys).
+        const signInMs = typingStartRef.current ? Date.now() - typingStartRef.current : undefined;
+        const result = await onLogin({ username: username.trim(), password, signInMs });
         openTwoFa(result);
       } catch {
         /* the error prop shows the message (no unhandled rejection per wrong password) */
@@ -431,7 +495,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             onChange={(e) => setUsername(e.target.value)}
             onBlur={() => checks.blur("username")}
             maxLength={24}
-            autoComplete="username"
+            autoComplete={mode === "login" ? PASSKEY_AUTOCOMPLETE : "username"}
             autoCapitalize="none"
             spellCheck={false}
             required
@@ -543,11 +607,87 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             <span>{t("Create Account")}</span>
           )}
         </button>
+        {/* Draft A: the passkey way in is the second button under "Giris" (Face ID /
+            fingerprint / Windows Hello by device); the password form stays as it is. */}
+        {mode === "login" && onPasskeyLogin ? (
+          <PasskeySignInButton
+            disabled={loading}
+            onSignedIn={handlePasskeyBody}
+            onError={(err) => onPasskeyError?.(err)}
+            onUsePassword={() => document.getElementById(username.trim() ? "auth-password" : "auth-username")?.focus()}
+          />
+        ) : null}
       </form>
       </>
       )}
     </>
   );
+
+  // Uyarlanan kart (growth 1B): sign-in and sign-up are one adaptive card. The two-factor
+  // step and the Apple / Google "finish your account" step keep their own screens below.
+  if (!twoFa && !socialSignup) {
+    const startGoogle = async (credential) => {
+      const invitedBy = inviteRef || peekInviteRef();
+      try {
+        const res = await onGoogleLogin?.(credential, invitedBy ? { invitedBy } : {});
+        openTwoFa(res);
+      } catch (err) {
+        if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
+      }
+    };
+    const startApple = async (apple) => {
+      const invitedBy = inviteRef || peekInviteRef();
+      try {
+        const res = await onAppleLogin?.(apple, invitedBy ? { invitedBy } : {});
+        openTwoFa(res);
+      } catch (err) {
+        if (isSocialSignupRequired(err)) {
+          const fromName = usernameFromName([apple?.givenName, apple?.familyName].filter(Boolean).join(""));
+          setSocialSignup({ provider: "apple", credential: apple, suggestedUsername: err?.body?.suggestedUsername || fromName || "" });
+        }
+      }
+    };
+    return (
+      <>
+        <AdaptiveAuthShell
+          phone={phoneLayout}
+          desktopShell={isElectron}
+          onOpenLegal={setLegalModal}
+          renderCard={({ onStepChange, compact }) => (
+            <AdaptiveAuthCard
+              intent={mode === "register" ? "register" : "login"}
+              surface={cardSurface}
+              compact={compact}
+              onLogin={onLogin}
+              onRegister={async (payload) => {
+                const invitedBy = inviteRef || peekInviteRef();
+                await onRegister({ ...payload, ...(invitedBy ? { invitedBy } : {}) });
+              }}
+              onGoogle={onGoogleLogin ? startGoogle : null}
+              onApple={onAppleLogin ? startApple : null}
+              onPasskeyLogin={onPasskeyLogin ? (body) => handlePasskeyBody(body) : null}
+              onPasskeyError={(err) => (passkeyErrorForParent(err) ? onPasskeyError?.(normalizePasskeyError(err).cause || err) : handlePasskeyError(err))}
+              onTwoFa={openTwoFa}
+              loading={loading}
+              error={error || formError}
+              onDismissError={() => {
+                setErrorDismissed(true);
+                setFormError("");
+              }}
+              inviteRef={inviteRef}
+              onOpenLegal={setLegalModal}
+              onStepChange={onStepChange}
+              onRegisterIntent={() =>
+                Funnel.registerStart({ mode: "register", source: "native_auth", has_invite: Boolean(inviteRef) })
+              }
+            />
+          )}
+        />
+        <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
+        <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
+      </>
+    );
+  }
 
   if (glass) {
     return (

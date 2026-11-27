@@ -16,12 +16,24 @@ paths = [
   '''(?:^|/)frontend/scripts/generate-seo-files\.mjs$''',
   '''(?:^|/)frontend/scripts/request-indexing\.mjs$''',
   '''(?:^|/)frontend/scripts/indexnow-submit\.mjs$''',
+  # Public passkey provider AAGUIDs (the community passkey-aaguids list): device model
+  # identifiers that authenticators report openly, used only to show a provider name.
+  '''(?:^|/)frontend/backend/lib/passkeys/meta\.js$''',
 ]
 # Fake LiveKit secret that a test file held in commit e8467900 (replaced since);
 # allowlisted by exact value because gitleaks scans the whole branch history.
 # The web-push README example subscription (p256dh/auth, public test vector) used by
 # backend/test/webPushEndpoint.integration.test.cjs (commit b1957669).
 regexes = [
+  # Fake password used to register test users in the Turnstile client selftest
+  # (frontend/src/lib/humanCheck/turnstileClient.selftest.mjs, commit dcd6e6db).
+  '''pw-123456789''',
+  # The public IndexNow verification key: the site serves it openly as
+  # frontend/public/4f463b15fd51f502c6bb73abbeb38e3c.txt (IndexNow requires that), and
+  # scripts/indexnow-submit.mjs (allowlisted above) holds the same value. The public
+  # server pages router (backend/routes/publicPages.js, commit eb0c8842) pings IndexNow
+  # with it too. Allowlisted by exact value so the rest of that file is still scanned.
+  '''4f463b15fd51f502c6bb73abbeb38e3c''',
   '''lk-test-secret-that-is-long-enough-0123456789''',
   '''tBHItJI5svbpez7KI4CCXg''',
   # Fake session tokens in the desktop migration tests (descall-migrate fixtures, migrator
@@ -40,4 +52,10 @@ regexes = [
   '''sb_secret_abcdefgh12345678''',
   '''sb_secret_0123456789abcdef''',
   '''^0123456789abcdef0123$''',
+  # Fake values in the adaptive sign-up card tests (frontend/e2e/adaptiveSignup.e2e.cjs and
+  # backend/test/adaptiveSignup.integration.test.cjs, commits 3c617586 and e4735972): a
+  # made-up four-word test password (and a variant with a trailing "x") and a dummy
+  # anonymous visitor key used against a mock backend.
+  '''Kayik-Bulut-Defne-28x?''',
+  '''visitor_abcdef12''',
 ]

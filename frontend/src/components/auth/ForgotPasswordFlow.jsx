@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lock, Mail, ShieldCheck, ArrowLeft, KeyRound } from "../ui/Icon.jsx";
 import { requestPasswordReset, confirmPasswordReset } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
 import PasswordStrength from "./PasswordStrength";
 import { serverMessage } from "../../i18n/serverText.js";
+import { prewarmHumanCheck } from "../../lib/humanCheck/turnstileClient.js";
 
 const SUPPORT_EMAIL = "support@descall.com";
 
@@ -23,6 +24,11 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
   const [hint, setHint] = useState("");
   const [supportEmail, setSupportEmail] = useState(SUPPORT_EMAIL);
   const [info, setInfo] = useState("");
+  // The reset email needs the human check: solve it while the name is being typed.
+  const typing = step === "identify" && usernameOrEmail.trim().length > 0;
+  useEffect(() => {
+    if (typing) prewarmHumanCheck("password_reset");
+  }, [typing]);
 
   const sendCode = async (event) => {
     event?.preventDefault?.();

@@ -1,5 +1,6 @@
 /** Auto-generated + curated tr locale */
 import { AUTHX_TR } from "./authx.tr.js";
+import { PASSKEY_TR } from "./passkey.tr.js";
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
@@ -12,8 +13,12 @@ import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
+import { PUBPAGE_TR } from "./pubpage.tr.js";
+import { ONB_TR } from "./onb.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { SHARE_SHEET_TR } from "./shareSheet.tr.js";
+import { VSC_TR } from "./vsc.tr.js";
 import { LX_TR } from "./lx.tr.js";
 import { USET_TR } from "./uset.tr.js";
 import { SVOICE_TR } from "./svoice.tr.js";
@@ -28,6 +33,7 @@ import { SYSX_TR } from "./sysx.tr.js";
 import { ATOK_TR } from "./atok.tr.js";
 import { ANODES_TR } from "./anodes.tr.js";
 import { AUDIT_LOG_TR } from "./auditLog.tr.js";
+import { PERF_ADMIN_TR } from "./perfAdmin.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
 import { COINPOP_TR } from "./coinpop.tr.js";
@@ -40,6 +46,7 @@ import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -71,6 +78,7 @@ import { CONV_START_I18N } from "./convStart.i18n.js";
 import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 export const nested = {
   authx: AUTHX_TR,
+  passkey: PASSKEY_TR,
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
@@ -97,8 +105,12 @@ export const nested = {
   msg5: MSG5_TR,
   act: ACT_TR,
   dir: DIR_TR,
+  pubpage: PUBPAGE_TR,
+  onb: ONB_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
+  shareSheet: SHARE_SHEET_TR,
+  vsc: VSC_TR,
   lx: LX_TR,
   uset: USET_TR,
   svoice: SVOICE_TR,
@@ -113,6 +125,7 @@ export const nested = {
   atok: ATOK_TR,
   "anodes": ANODES_TR,
   auditLog: AUDIT_LOG_TR,
+  perfAdmin: PERF_ADMIN_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,
   coinpop: COINPOP_TR,
@@ -147,6 +160,8 @@ export const nested = {
     confirm: "Gruptan çıkar",
     eventRemoved: "{actor}, {targetAcc} gruptan çıkardı",
     eventRemovedMe: "{actor} seni gruptan çıkardı",
+    someone: "Bir üye",
+    someoneAcc: "bir üyeyi",
     eventLeft: "{actor} gruptan ayrıldı",
     bannerTitle: "Bu gruptan çıkarıldın",
     bannerBody: "{actor} seni {timeLoc} çıkardı. Eski mesajları okuyabilirsin ama yeni mesaj gönderemezsin.",
@@ -2730,6 +2745,7 @@ export const phrases = {
   "Unread": "Okunmamış",
   "Mention": "Bahsetme",
   "Here": "Burada",
+  "A member": "Bir üye",
   "Download for Windows": "Windows için indir",
   "Download Desktop App": "Masaüstü Uygulamasını İndir",
   "Get the app": "Uygulamayı indir",
@@ -3268,6 +3284,7 @@ export const phrases = {
   "How was the call?": "Görüşme nasıldı?",
   "If audio/video quality or anything else was off, tell us. 30 seconds is enough.": "Ses/görüntü kalitesi veya bir sorun olduysa bize yaz, 30 saniye yeter.",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Grup aramasında ({count} kişi) yüksek çözünürlük/FPS takılmaya yol açabilir. 720p / 20 FPS önerilir.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "Grup aramasında ({count} kişi) 1440p takılmaya yol açabilir. 1080p / 30 FPS önerilir.",
   "Incoming call...": "Gelen arama…",
   "Incoming video call": "Gelen görüntülü arama",
   "Incoming voice call": "Gelen sesli arama",
@@ -4633,6 +4650,7 @@ export const phrases = {
   ...CONV_START_I18N.tr,
   ...SERVER_TEMPLATE_TOPICS_I18N.tr,
   ...SIGNUP_GROWTH.tr.phrases,
+  ...ADAPTIVE_SIGNUP.tr,
 };
 
 const locale = { nested, phrases };

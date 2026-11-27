@@ -156,6 +156,8 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Public fingerprints the site and the backend already trust (assetlinks.json, passkeys).
+          KNOWN_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 }}
         run: |
           set -euo pipefail
           present=0
@@ -182,6 +184,21 @@ jobs:
           # Public certificate fingerprint only (for assetlinks.json / Play Console checks).
           FP="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | awk '/SHA256:/ {print $2; exit}')"
           echo "Upload key certificate SHA-256: $FP"
+          # Passkeys + App Links (frontend/scripts/write-assetlinks.mjs, backend lib/passkeys/config.js):
+          # the fingerprint is public; the repository variable ANDROID_CERT_SHA256 feeds the
+          # web build (assetlinks.json) and the same list goes to Render as
+          # PASSKEY_ANDROID_CERT_SHA256. Play installs are signed with the Play App Signing key:
+          # add that fingerprint too (Play Console > App integrity).
+          {
+            echo "### Android signing certificate (public)"
+            echo ""
+            echo "Upload key SHA-256: \`$FP\`"
+            echo ""
+            echo "Passkeys and App Links need this value (and the Play App Signing key's) in the repository variable \`ANDROID_CERT_SHA256\` and the Render env \`PASSKEY_ANDROID_CERT_SHA256\` (comma separated)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$FP" ] && ! printf '%s' "$KNOWN_CERT_SHA256" | tr 'a-f' 'A-F' | grep -qF "$FP"; then
+            echo "::warning title=Passkeys / App Links::Upload key $FP is not in vars.ANDROID_CERT_SHA256. Add it (comma separated, with the Play App Signing key) so assetlinks.json and the backend trust this APK."
+          fi
           {
             echo "storeFile=$KEYSTORE"
             echo "storePassword=$KEYSTORE_PASSWORD"
@@ -304,3 +321,41 @@ jobs:
             --track "$PLAY_TRACK" \
             --status "$PLAY_STATUS" \
             --release-name "$RELEASE_NAME"
+
+  # The signed universal APK on the GitHub release of the same tag, as Descall-APK-vX.Y.Z.apk:
+  # the site's Android download button (backend routes/appRelease.js) links the release's .apk
+  # asset, and without one it could only point at the releases page. release.yml creates the
+  # release; this job waits for it (up to 40 minutes) and then attaches or replaces the APK.
+  release-apk:
+    name: Attach the APK to the GitHub release
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.signed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: descall-android-${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.version_code }}
+          path: ${{ runner.temp }}/android-out
+
+      - name: Upload the APK to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+        run: |
+          set -euo pipefail
+          SRC="$(ls "$RUNNER_TEMP"/android-out/*-universal.apk)"
+          APK="$RUNNER_TEMP/Descall-APK-v${VERSION_NAME}.apk"
+          cp "$SRC" "$APK"
+          for i in $(seq 1 80); do
+            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
+            if [ "$i" -eq 80 ]; then echo "::error::Release $TAG was not created within 40 minutes; the APK stays in the workflow artifacts."; exit 1; fi
+            sleep 30
+          done
+          gh release upload "$TAG" "$APK" --clobber
+          echo "Attached $(basename "$APK") ($(du -h "$APK" | cut -f1)) to $TAG"

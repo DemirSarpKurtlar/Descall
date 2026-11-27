@@ -57,10 +57,14 @@ function electronClassicScriptPlugin() {
     name: "descall-electron-classic-script",
     enforce: "post",
     transformIndexHtml(html) {
-      return html.replace(
-        /<script type="module" crossorigin src="(\.\/assets\/[^"]+\.js)"><\/script>/g,
-        '<script defer src="$1"></script>'
-      );
+      return html
+        .replace(
+          /<script type="module" crossorigin src="(\.\/assets\/[^"]+\.js)"><\/script>/g,
+          '<script defer src="$1"></script>'
+        )
+        // The app stylesheet (cssCodeSplit off below): a plain same-origin request like the
+        // script, no CORS mode on the descall: / tauri.localhost schemes.
+        .replace(/<link rel="stylesheet" crossorigin href="(\.\/assets\/[^"]+\.css)">/g, '<link rel="stylesheet" href="$1">');
     },
   };
 }
@@ -86,6 +90,13 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "assets",
     sourcemap: false,
+    // Desktop (Electron / Tauri) builds are IIFE: with CSS code splitting on, Vite put the
+    // whole app stylesheet inside the JS bundle as a runtime <style> element. The desktop app
+    // then had no stylesheet of its own: whenever that injection did not apply (an inline
+    // style the page CSP refuses, the bundle start failing) the app rendered as raw HTML.
+    // One real ./assets/index-*.css <link> (style-src 'self') instead, render-blocking like
+    // the web build's.
+    cssCodeSplit: electronBase ? false : true,
     // Never inline a script asset as a data: URL. The small noise-gate AudioWorklet
     // (`noiseGateWorklet.js?url`) became data:text/javascript, which script-src 'self'
     // blocks (web and Electron), so the noise gate never loaded (2.11.11).

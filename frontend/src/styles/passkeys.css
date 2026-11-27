@@ -1,0 +1,342 @@
+/*
+ * Passkeys: the sign-in entry (PasskeySignInButton), Settings > Security list (PasskeysCard)
+ * and the desktop handoff page (PasskeyDesktopPage). Plain hooks on the design tokens so the
+ * owner's chosen draft can restyle them in one place. Dark first, light theme via tokens.
+ */
+
+/* ---- sign-in entry ---------------------------------------------------------------------- */
+.pk-signin {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 10px;
+}
+
+.pk-signin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border-3));
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 22%, transparent), color-mix(in srgb, var(--primary) 12%, transparent));
+  color: var(--text-0);
+  font-family: inherit;
+  font-size: var(--fs-15);
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  backdrop-filter: blur(var(--glass-blur, 14px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 14px)) saturate(140%);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.pk-signin-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 26%, transparent);
+}
+
+.pk-signin-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.pk-signin-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.pk-signin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pk-handoff {
+  padding: 12px 14px;
+  border: 1px solid var(--border-3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-1);
+  text-align: center;
+}
+
+.pk-handoff-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.pk-handoff-lead {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  line-height: 1.4;
+}
+
+.pk-handoff-code,
+.pk-desktop-code {
+  margin: 10px auto 6px;
+  font-size: var(--fs-28);
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  padding-left: 0.35em;
+  color: var(--text-0);
+  font-variant-numeric: tabular-nums;
+}
+
+.pk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+}
+
+.pk-row.end {
+  justify-content: flex-end;
+}
+
+.pk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--text-link);
+  font: inherit;
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.pk-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pk-error {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.pk-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  line-height: 1.45;
+}
+
+.pk-ok {
+  margin: 0;
+  color: var(--success-text);
+  font-size: var(--fs-13);
+}
+
+/* ---- Settings > Security ------------------------------------------------------------------ */
+.pk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pk-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+.pk-item.is-suspended {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border-2));
+}
+
+.pk-item-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.pk-item-main {
+  min-width: 0;
+}
+
+.pk-item-name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-0);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pk-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+
+.pk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--primary-soft);
+  color: var(--text-1);
+  font-size: var(--fs-11);
+  font-weight: 600;
+}
+
+.pk-badge.warn {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+.pk-item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pk-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.pk-icon-btn:hover:not(:disabled) {
+  border-color: var(--border-3);
+  background: var(--surface-hover);
+}
+
+.pk-icon-btn.danger:hover:not(:disabled) {
+  color: var(--danger-text);
+}
+
+.pk-icon-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.pk-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-3);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-0);
+  font: inherit;
+}
+
+.pk-input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.pk-add,
+.pk-reauth {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+}
+
+.pk-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--border-3);
+  border-radius: var(--r-md);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---- desktop handoff page (https://descall.com/passkey/desktop) ---------------------------- */
+.pk-desktop-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  background: radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--primary) 22%, transparent), transparent), var(--surface-0);
+  color: var(--text-1);
+}
+
+.pk-desktop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(440px, 100%);
+  padding: 28px 24px;
+  border: 1px solid var(--border-3);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  text-align: center;
+}
+
+.pk-desktop-card h1 {
+  margin: 0;
+  color: var(--text-0);
+  font-size: var(--fs-20);
+}
+
+.pk-desktop-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 16px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk-signin-btn {
+    transition: none;
+  }
+}

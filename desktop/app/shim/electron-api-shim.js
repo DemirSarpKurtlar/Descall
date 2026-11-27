@@ -119,10 +119,25 @@
   const TOKEN_OVERRIDE = "__descall_token_override";
   /** storage.js / secureToken.js SECURE_TOKEN_KEY: the page's own fallback copy. */
   const LOCAL_TOKEN_KEY = "descall_token";
+  // A localStorage copy exists only when the store refused the last sign-in (keepLocal below;
+  // sign-outs remove it), so it is NEWER than the boot snapshot, which then still holds the
+  // previous session or none: start with it, and move it into the store now. Before, the
+  // stale snapshot won, the server refused it and the user was signed out.
+  let localFallback = null;
+  if (LABEL === "main" && !ADMIN) {
+    try { localFallback = localStorage.getItem(LOCAL_TOKEN_KEY) || null; } catch (_) { /* storage disabled */ }
+  }
   let tokenCache = (() => {
     try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) { /* ignore */ }
-    return BOOT.token || null;
+    return localFallback || BOOT.token || null;
   })();
+  if (localFallback && tokenCache === localFallback && localFallback !== BOOT.token && localFallback.length <= 16 * 1024) {
+    invoke("token_set", { token: localFallback }).then((ok) => {
+      if (ok === true && tokenCache === localFallback) { try { localStorage.removeItem(LOCAL_TOKEN_KEY); } catch (_) { /* ignore */ } }
+    }, noop);
+  } else if (localFallback && localFallback === BOOT.token) {
+    try { localStorage.removeItem(LOCAL_TOKEN_KEY); } catch (_) { /* the store has it already */ }
+  }
   const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
   // The sign-in token and the imported settings stay in this closure: window.__DESCALL_BOOT__
   // keeps the other values only, so the token is not readable from window (for any page
@@ -350,6 +365,13 @@
     // Tray panel (draft B, src/lib/desktopTray.js); admin windows get a no-op like adminPreload.
     setTrayState: ADMIN ? noop : (state) => fire("tray_set_state", { state: state && typeof state === "object" ? state : {} }),
     onTrayAction: ADMIN ? () => noop : (cb) => on("tray:action", cb, (p) => p || {}),
+
+    // Taskbar jump list (src/lib/jumpList.js). The Rust shell has no jump list yet: setting it
+    // is a no-op and there is never a pending action, but the listener subscribes to the same
+    // channel as preload.cjs so a future shell jump list only has to emit "jumplist:action".
+    setJumpList: noop,
+    takeJumpListAction: () => Promise.resolve(null),
+    onJumpListAction: ADMIN ? () => noop : (cb) => on("jumplist:action", cb, (p) => p || {}),
   };
 
   // Shell-only extras the Electron preload did not have (the page probes them optionally).
@@ -359,6 +381,15 @@
     // link until the page takes it, and announces new ones while the page runs.
     takeDeepLink: ADMIN ? () => Promise.resolve(null) : () => invoke("deep_link_take").then((u) => (typeof u === "string" && u ? u : null), () => null),
     onDeepLink: ADMIN ? () => noop : (cb) => on("app:deep-link", cb, () => undefined),
+    // Passkeys (frontend/src/lib/passkeys, path "tauri"): webauthn.dll with rp id descall.com
+    // (src-tauri/src/commands/passkey.rs). Options and results are WebAuthn JSON strings;
+    // errors reject with a code (canceled, no_credential, already_registered, busy, ...).
+    passkeyAvailable: ADMIN
+      ? () => Promise.resolve({ available: false, reason: "admin_window" })
+      : () => invoke("passkey_available").catch(() => ({ available: false, reason: "command_missing" })),
+    passkeyCreate: ADMIN ? () => Promise.reject("unsupported") : (options) => invoke("passkey_create", { options: String(options || "") }),
+    passkeyGet: ADMIN ? () => Promise.reject("unsupported") : (options) => invoke("passkey_get", { options: String(options || "") }),
+    passkeyCancel: ADMIN ? noop : () => fire("passkey_cancel"),
   };
   for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
 
@@ -595,6 +626,36 @@
   document.addEventListener("securitypolicyviolation", (e) => {
     sendLog("warn", [`CSP ${e.effectiveDirective || e.violatedDirective} blocked ${withoutQuery(e.blockedURI)}`]);
   });
+
+  // App stylesheet watchdog: the app sometimes came up as raw HTML (serif text, default
+  // buttons, both icon weights, only the window background painted). Once the document has
+  // loaded, an app page (#root) must carry the app stylesheet's sentinel (styles.css
+  // `--descall-app-css: 1`). Without it: log it, then one clean reload (main window: HTTP
+  // cache + Service Workers + Cache Storage cleared by app_boot_retry; other windows: a plain
+  // reload). The sessionStorage flag stops a reload loop; a good load clears it again.
+  const CSS_RELOAD_KEY = "__descall_css_reload";
+  let cssChecked = false;
+  const cssApplied = () => {
+    try { return getComputedStyle(document.documentElement).getPropertyValue("--descall-app-css").trim() === "1"; } catch (_) { return true; }
+  };
+  const checkAppCss = () => {
+    if (cssChecked || !document.getElementById("root")) return;
+    cssChecked = true;
+    if (cssApplied()) {
+      try { sessionStorage.removeItem(CSS_RELOAD_KEY); } catch (_) { /* ignore */ }
+      return;
+    }
+    let tried = true;
+    try { tried = sessionStorage.getItem(CSS_RELOAD_KEY) === "1"; sessionStorage.setItem(CSS_RELOAD_KEY, "1"); } catch (_) { /* no storage: never reload */ }
+    const sheets = (() => { try { return Array.from(document.styleSheets || []).map((s) => withoutQuery(s.href || "inline")).join(", "); } catch (_) { return "?"; } })();
+    sendLog("error", [`[boot] app stylesheet not applied (${sheets || "no stylesheets"})${tried ? ", already reloaded once" : ": clean reload"}`]);
+    if (tried) return;
+    if (LABEL === "main" && !ADMIN) fire("app_boot_retry");
+    else { try { location.reload(); } catch (_) { /* ignore */ } }
+  };
+  window.addEventListener("load", () => setTimeout(checkAppCss, 0), { once: true });
+  // A load event held back by a hanging subresource: check anyway a while after the DOM is in.
+  document.addEventListener("DOMContentLoaded", () => setTimeout(checkAppCss, 15000), { once: true });
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).

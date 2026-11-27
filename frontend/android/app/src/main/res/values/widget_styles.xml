@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget settings screen (WidgetConfigActivity): follows the system light / dark mode. -->
+    <style name="WidgetConfigTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/wcfg_accent</item>
+        <item name="colorAccent">@color/wcfg_accent</item>
+        <item name="colorControlActivated">@color/wcfg_accent</item>
+        <item name="android:windowBackground">@color/wcfg_bg</item>
+        <item name="android:statusBarColor">@color/wcfg_bg</item>
+        <item name="android:navigationBarColor">@color/wcfg_bg</item>
+    </style>
+
+    <style name="WidgetConfigHeader">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="android:layout_marginBottom">7dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.03</item>
+        <item name="android:textColor">@color/wcfg_text2</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+    <style name="WidgetConfigFooter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">7dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:textColor">@color/wcfg_text2</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+    <style name="WidgetConfigRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <style name="WidgetConfigRowTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/wcfg_text</item>
+        <item name="android:textSize">15.5sp</item>
+    </style>
+
+    <style name="WidgetConfigRowSub">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:textColor">@color/wcfg_text2</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+    <style name="WidgetConfigRadio">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:textColor">@color/wcfg_text</item>
+        <item name="android:textSize">15.5sp</item>
+        <item name="buttonTint">@color/wcfg_accent</item>
+    </style>
+</resources>

@@ -1,7 +1,7 @@
 /* Route registry for the server hub: page component, nav title, iPhone medium height, iPad size. */
 import { HubSide, RootPage, SearchPage } from "./pagesHub";
 import { TextPage, PickPage } from "./hubCore";
-import { OverviewPage, CommunityPage, RulesPage, NotificationsPage, FolderPage } from "./pagesGeneral";
+import { OverviewPage, CommunityPage, RulesPage, NotificationsPage, FolderPage, PublicPageRoute } from "./pagesGeneral";
 import {
   ChannelsPage, ChannelCreatePage, CategoryCreatePage, ChannelEditPage, AccessPage, AccessSide, PermPage, AddTargetPage, findChannel,
 } from "./pagesChannels";
@@ -37,6 +37,7 @@ export const ROUTES = {
   perm: { Page: PermPage, title: (r, c) => (r.targetType === "member" ? memberTitle(r.targetId, c) : roleTitle(r.targetId, c)) },
   addTarget: { Page: AddTargetPage, title: (r, c) => c.s.addRoleOrMember },
   cm: { Page: CommunityPage, title: (r, c) => c.s.rCommunity },
+  pub: { Page: PublicPageRoute, title: (r, c) => c.t("pubpage.title"), size: () => ({ w: 1180, h: 860 }), noSide: () => true },
   ru: { Page: RulesPage, title: (r, c) => c.s.rRules },
   mb: { Page: MembersPage, title: (r, c) => (c.tablet ? memberTitle(r.sel, c) : c.s.rMembers), size: () => ({ w: 940, h: 760 }) },
   member: { Page: MemberPage, title: (r, c) => memberTitle(r.userId, c), size: () => ({ w: 940, h: 760 }) },
@@ -64,7 +65,7 @@ export const SPLIT_ROUTES = {
 
 const SECTION = {
   ov: "ov", ch: "ch", chCreate: "ch", catCreate: "ch", chEdit: "ch", access: "ch", perm: "ch", addTarget: "ch",
-  cm: "cm", ru: "ru", mb: "mb", member: "mb", memberRoles: "mb", rl: "rl", role: "rl", roleMembers: "rl",
+  cm: "cm", pub: "cm", ru: "ru", mb: "mb", member: "mb", memberRoles: "mb", rl: "rl", role: "rl", roleMembers: "rl",
   iv: "iv", inviteDetail: "iv", nt: "nt", fd: "fd", tr: "tr", trConfirm: "tr",
 };
 

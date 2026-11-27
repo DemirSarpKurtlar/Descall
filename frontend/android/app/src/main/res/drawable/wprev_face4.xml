@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sample face for the widget picker preview (draft B gradients). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:endColor="#FF1F8F86"
+        android:startColor="#FF7EE3D2" />
+    <stroke
+        android:width="2dp"
+        android:color="#FF34364A" />
+</shape>

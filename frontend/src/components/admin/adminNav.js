@@ -18,7 +18,7 @@ export const ADMIN_NAV_GROUPS = [
   ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
   // Admin Token (owner only) sits under Güvenlik, like the draft's breadcrumb.
   // Sunucu Ağı (owner only) sits right after Sistem.
-  ["system", ["system", "nodes", "security", "adminToken", "errors", "audit", "staff"]],
+  ["system", ["system", "nodes", "security", "adminToken", "errors", "perf", "audit", "staff"]],
 ];
 
 const GROUP_LABEL = {

@@ -2601,6 +2601,9 @@
           try {
             var capNative = window.Capacitor;
             nativeApp = !!(capNative && typeof capNative.isNativePlatform === "function" && capNative.isNativePlatform());
+            // Desktop shells too: the Tauri app is served at https://tauri.localhost/, so a
+            // reload on "/" sent a Turkish user to the /tr marketing page inside the app.
+            if (window.electronAPI || window.__TAURI_INTERNALS__) nativeApp = true;
           } catch (eNat) {}
           if (locale === "tr" && !isTrUrl && !nativeApp) {
             var mirrors = {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget configuration screen, dark (draft: black page, #1C1C1F groups). -->
+    <color name="wcfg_bg">#FF000000</color>
+    <color name="wcfg_group">#FF1C1C1F</color>
+    <color name="wcfg_text">#FFFFFFFF</color>
+    <color name="wcfg_text2">#FF9A9AA2</color>
+    <color name="wcfg_line">#1FFFFFFF</color>
+    <color name="wcfg_accent">#FF7E9BFF</color>
+    <color name="wcfg_preview_bg">#FF1B1F3A</color>
+</resources>

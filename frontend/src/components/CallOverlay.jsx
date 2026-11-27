@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import TransientTopHint from "./ui/TransientTopHint.jsx";
 import "../styles/call-people.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -21,6 +22,7 @@ import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
 import { resolveAvatarUrl } from "../lib/avatar";
 import { resolveDisplayName } from "../lib/userProfile";
 import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
+import { formatScreenStats } from "../lib/screenShareCodec";
 import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
 import { setPhoneLandscapeAllowed } from "../lib/glassDisplay.js";
 import IncomingCallCard from "./voice/IncomingCallCard";
@@ -549,7 +551,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               </div>
             </div>
             {isDm && mode === "active" ? (
-              <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
+              <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} screenStats={call?.screenStats} />
             ) : null}
             {!isDm && worldAvailable ? (
               <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
@@ -604,7 +606,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             )}
           </span>
           {isDm && mode === "active" && (
-            <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
+            <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} screenStats={call?.screenStats} />
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, pointerEvents: "auto" }}>
@@ -1272,7 +1274,7 @@ function glassQaNetStats(stats) {
   return stats || null;
 }
 
-function CallQualityHud({ quality = "unknown", stats = null }) {
+function CallQualityHud({ quality = "unknown", stats = null, screenStats = null }) {
   const t = useT();
   const [showDetails, setShowDetails] = useState(false);
   // calls-08: the card opens toward the side with room. On iPhone the HUD sits
@@ -1307,7 +1309,12 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
     q === "failed" || q === "poor" ? q : measuredQuality
   );
 
-  const hasNumbers = stats && (stats.rttMs != null || stats.packetLossPct != null || stats.bitrateKbps != null);
+  // Screen share stream info (codec, size, fps): what this device sends and receives.
+  const screenOut = formatScreenStats(screenStats?.out);
+  const screenIn = formatScreenStats(screenStats?.in);
+  const hasNumbers =
+    Boolean(screenOut || screenIn) ||
+    Boolean(stats && (stats.rttMs != null || stats.packetLossPct != null || stats.bitrateKbps != null));
 
   useEffect(() => {
     if (!import.meta.env.DEV || typeof window === "undefined" || !window.__DESCALL_QA_NET__ || !hasNumbers) return;
@@ -1354,18 +1361,20 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ fontWeight: 700, marginBottom: 6, color: "#fff" }}>{t("Connection quality")}</div>
-          {stats.rttMs != null && (
+          {stats?.rttMs != null && (
             <StatRow label={t("Latency")} value={`${stats.rttMs} ms`} />
           )}
-          {stats.jitterMs != null && (
+          {stats?.jitterMs != null && (
             <StatRow label={t("Jitter")} value={`${stats.jitterMs} ms`} />
           )}
-          {stats.packetLossPct != null && (
+          {stats?.packetLossPct != null && (
             <StatRow label={t("Packet loss")} value={`${stats.packetLossPct}%`} />
           )}
-          {stats.bitrateKbps != null && (
+          {stats?.bitrateKbps != null && (
             <StatRow label={t("Bitrate")} value={`${stats.bitrateKbps} kbps`} />
           )}
+          {screenOut && <StatRow label={t("Your screen")} value={screenOut} />}
+          {screenIn && <StatRow label={t("Screen share")} value={screenIn} />}
         </div>
       )}
     </div>
@@ -2158,7 +2167,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
               <span className="ss-live"><span className="ss-live-dot" aria-hidden="true" />{t("Live")}</span>
               <span className="ss-pill"><Monitor size={13} aria-hidden="true" /><span className="ss-pill-text">{sharerLabel}</span></span>
             </div>
-            <div className="ss-pill ss-expanded-hint">{t("Click anywhere to exit fullscreen")}</div>
+            <TransientTopHint className="ss-pill ss-expanded-hint">{t("Click anywhere to exit fullscreen")}</TransientTopHint>
           </div>
         )}
       </div>

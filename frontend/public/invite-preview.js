@@ -187,7 +187,7 @@ const COPY = {
  * @param {{ lang?: string, url: string, appArgument?: string|null }} opts
  *   url: the invite URL shown in the preview; appArgument: what the Smart App Banner opens
  */
-export function inviteHeadHtml(preview, { lang = "en", url, appArgument = null }) {
+export function inviteHeadHtml(preview, { lang = "en", url, appArgument = null, image: generated = null }) {
   const c = COPY[lang] || COPY.en;
   const nf = new Intl.NumberFormat(c.intl);
   const f = (n) => nf.format(n);
@@ -197,7 +197,10 @@ export function inviteHeadHtml(preview, { lang = "en", url, appArgument = null }
   if (preview.onlineCount) counts.push(c.online(preview.onlineCount, f));
   const tail = preview.kind === "group" ? c.groupTail : preview.description || c.serverTail;
   const description = cleanText([counts.join(", "), tail].filter(Boolean).join(" · "), 300);
-  const image = preview.iconUrl || `${SITE_ORIGIN}${c.defaultImage}`;
+  // UI-BRIEF item 23: a generated 1200x630 card (versioned URL, so chat apps refresh it);
+  // the icon / default card only when no generated image is given.
+  const image = generated || preview.iconUrl || `${SITE_ORIGIN}${c.defaultImage}`;
+  const fullCard = Boolean(generated) || !preview.iconUrl;
   const a = escapeHtml;
   const tags = [
     `<title>${a(title)}</title>`,
@@ -209,7 +212,7 @@ export function inviteHeadHtml(preview, { lang = "en", url, appArgument = null }
     `<meta property="og:description" content="${a(description)}" />`,
     `<meta property="og:url" content="${a(url)}" />`,
     `<meta property="og:image" content="${a(image)}" />`,
-    ...(preview.iconUrl
+    ...(!fullCard
       ? []
       : [
           `<meta property="og:image:type" content="image/png" />`,
@@ -250,6 +253,15 @@ function cacheKey(target) {
  *           clientIp?: string, waitUntil?: (p: Promise<unknown>) => void }} opts
  */
 export async function fetchInvitePreview(target, opts = {}) {
+  return (await fetchInvitePreviewResult(target, opts)).preview;
+}
+
+/**
+ * Same as fetchInvitePreview, plus whether the backend said the code is unknown or expired
+ * ({ preview: null, missing: true }): those links get the neutral "invite no longer valid"
+ * card, never the server's name or image. A timeout or a backend error is not "missing".
+ */
+export async function fetchInvitePreviewResult(target, opts = {}) {
   const {
     apiOrigin = DEFAULT_API_ORIGIN,
     fetchImpl = fetch,
@@ -264,7 +276,8 @@ export async function fetchInvitePreview(target, opts = {}) {
       const hit = await cache.match(key);
       if (hit) {
         const body = await hit.json().catch(() => null);
-        return body && !body.missing ? normalizePreview(target.kind, body) : null;
+        if (body && body.missing) return { preview: null, missing: true };
+        return { preview: body ? normalizePreview(target.kind, body) : null, missing: false };
       }
     } catch {
       /* cache unavailable: ask the backend */
@@ -284,7 +297,7 @@ export async function fetchInvitePreview(target, opts = {}) {
       redirect: "manual",
     });
   } catch {
-    return null;
+    return { preview: null, missing: false };
   } finally {
     clearTimeout(timer);
   }
@@ -304,17 +317,17 @@ export async function fetchInvitePreview(target, opts = {}) {
 
   if (res.status === 404 || res.status === 410 || res.status === 400) {
     store({ missing: true }, MISSING_TTL_SECONDS);
-    return null;
+    return { preview: null, missing: true };
   }
-  if (!res.ok) return null;
+  if (!res.ok) return { preview: null, missing: false };
   let body;
   try {
     body = await res.json();
   } catch {
-    return null;
+    return { preview: null, missing: false };
   }
   const preview = normalizePreview(target.kind, body);
-  if (!preview) return null;
+  if (!preview) return { preview: null, missing: false };
   // Store only what the preview uses, never the rest of the reply.
   store(
     target.kind === "group"
@@ -330,7 +343,7 @@ export async function fetchInvitePreview(target, opts = {}) {
         },
     PREVIEW_TTL_SECONDS
   );
-  return preview;
+  return { preview, missing: false };
 }
 
 /** Head tags the invite markup replaces (and nothing else). */
@@ -380,4 +393,66 @@ export function rewriteShell(response, { headHtml = null, banner = false } = {})
  */
 export function bannerArgumentFor(target, url) {
   return target && target.kind === "server" ? url : null;
+}
+
+/** Path segment of the generated card for an invite target (server invite, vanity, group). */
+export function ogKindFor(target) {
+  if (!target) return null;
+  if (target.kind === "server") return "invite";
+  if (target.kind === "vanity") return "s";
+  if (target.kind === "group") return "group";
+  return null;
+}
+
+/** FNV-1a (base36) of the preview fields: a new ?v= whenever the card would look different. */
+export function previewVersion(preview) {
+  const s = JSON.stringify([preview?.name, preview?.iconUrl, preview?.description, preview?.memberCount, Math.round((preview?.onlineCount || 0) / 5)]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
+/** https://descall.com/og/<kind>/<code>.png?v=...&lang=... (served by the worker from the backend). */
+export function inviteImageUrl(target, preview, lang = "en") {
+  const kind = ogKindFor(target);
+  if (!kind) return null;
+  const q = new URLSearchParams({ v: previewVersion(preview) });
+  if (lang && lang !== "en") q.set("lang", lang);
+  return `${SITE_ORIGIN}/og/${kind}/${encodeURIComponent(target.code)}.png?${q.toString()}`;
+}
+
+const INVALID_COPY = {
+  en: { title: "Invite not valid · Descall", description: "This invite link has expired or was removed. Ask the sender for a new link.", alt: "Invite no longer valid" },
+  tr: { title: "Davet geçersiz · Descall", description: "Bu davet bağlantısının süresi dolmuş ya da kaldırılmış. Gönderen kişiden yeni bir bağlantı iste.", alt: "Davet artık geçerli değil" },
+};
+
+/** Head of an unknown / expired invite: no server or group name, the neutral card, noindex. */
+export function invalidInviteHeadHtml({ lang = "en", url }) {
+  const c = INVALID_COPY[lang] || INVALID_COPY.en;
+  const image = `${SITE_ORIGIN}/og/invalid.png${lang !== "en" ? `?lang=${lang}` : ""}`;
+  const a = escapeHtml;
+  const tags = [
+    `<title>${a(c.title)}</title>`,
+    `<meta name="description" content="${a(c.description)}" />`,
+    `<meta name="robots" content="noindex, follow" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="Descall" />`,
+    `<meta property="og:title" content="${a(c.title)}" />`,
+    `<meta property="og:description" content="${a(c.description)}" />`,
+    `<meta property="og:url" content="${a(url)}" />`,
+    `<meta property="og:image" content="${a(image)}" />`,
+    `<meta property="og:image:type" content="image/png" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:alt" content="${a(c.alt)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${a(c.title)}" />`,
+    `<meta name="twitter:description" content="${a(c.description)}" />`,
+    `<meta name="twitter:image" content="${a(image)}" />`,
+    smartBannerTag(null),
+  ];
+  return `\n    ${tags.join("\n    ")}\n  `;
 }

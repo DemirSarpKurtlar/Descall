@@ -246,6 +246,10 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.use("/api/features", publicFeatureRoutes);
+// Cloudflare Turnstile: public site key + the in-app bridge page (lib/turnstile.js).
+app.use("/api/turnstile", require("./routes/turnstile"));
+// Performans: real-user samples (sendBeacon, text/plain, rate limited; routes/perfBeacon.js).
+app.use("/api/perf", require("./routes/perfBeacon"));
 app.use("/api/maintenance", require("./routes/maintenanceStatus"));
 app.use("/maintenance", require("./routes/maintenanceStatus"));
 // Hybrid server (Render + PC node): /api/node/assign, /health, /register, /drain-done.
@@ -523,6 +527,8 @@ app.get("*", (req, res, next) => {
   app.use("/mcp", mcpRoutes.parseErrorHandler);
 }
 
+// Passkeys (WebAuthn, routes/passkeys.js): before the auth router so /auth/passkeys/* lands here.
+app.use(["/api/auth/passkeys", "/auth/passkeys"], require("./routes/passkeys"));
 // Register main routes (both with and without /api prefix)
 app.use("/auth", authRoutes);
 // DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.
@@ -554,8 +560,12 @@ app.use("/api/friends", friendsRoutes);
 app.use("/api/activity", require("./routes/activityPresenceBatch"));
 app.use("/api/activity", activityRoutes);
 app.use("/api/servers", serverRoutes);
+// "Başla panosu" (growth phase 2A): new accounts' first five days, lib/onboarding.
+app.use("/api/onboarding", require("./routes/onboarding"));
 // Public server directory (item 8): read-only cards, no auth; owner settings signed in.
 app.use("/api/directory", require("./routes/directory"));
+// Public server page "Vitrin" (descall.com/s/<slug>) + 1200x630 invite preview images.
+app.use("/api/public-pages", require("./routes/publicPages"));
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
@@ -578,6 +588,11 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 // 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
 app.use("/api/watch", require("./routes/watch"));
+// 4.3: "Paylaş > Descall" share sheet (iOS extension, Android / web share target), routes/share.js.
+// Before /api/native so that router's limiter and 404 never see these paths.
+app.use("/api/native/share", require("./routes/share"));
+// 4.2: Siri / Shortcuts / widgets / Android shortcuts glance data, routes/native.js.
+app.use("/api/native", require("./routes/native"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));
@@ -764,6 +779,8 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
 // The scheduler publishes scheduled rows and ends expired ones.
 app.use(require("./routes/announcements"));
 require("./lib/announcements/service").start(io);
+// Performans: hourly / daily p75 rollups, release regression alerts, retention (leader only).
+require("./lib/perfJobs").start(io);
 
 // Admin role changes and the user list live in routes/admin.js (owner-only make/remove-admin,
 // section permissions); the old duplicates here were shadowed by that router and are gone.

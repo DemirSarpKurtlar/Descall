@@ -1,6 +1,20 @@
 # Descall robots.txt — production (static, served from descall.com)
 # Ownership facts for language models: https://descall.com/llms.txt
 
+# Link previews (invite cards); they never index
+User-agent: Twitterbot
+User-agent: facebookexternalhit
+User-agent: LinkedInBot
+User-agent: Slackbot-LinkExpanding
+User-agent: TelegramBot
+User-agent: Discordbot
+Allow: /
+Disallow: /app/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /debug/
+
 # AI assistants and AI search
 User-agent: GPTBot
 User-agent: OAI-SearchBot
@@ -68,6 +82,9 @@ Allow: /humans.txt
 Allow: /.well-known/security.txt
 Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
+Allow: /sitemap-servers.xml
+Allow: /s/
+Allow: /og/
 Allow: /sitemap-en.xml
 Allow: /sitemap-tr.xml
 Allow: /sitemap-de.xml

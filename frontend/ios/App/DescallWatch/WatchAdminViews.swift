@@ -207,6 +207,11 @@ struct AdminHomeView: View {
                 }
                 .buttonStyle(.plain)
             }
+            // Mola (owner only): the watch games, never on the iPhone / iPad or for other accounts.
+            if WatchGamesGate.isVisible(adminSections: store.home?.adminSections) {
+                SectionLabel(text: GL.t("mola"))
+                GamesEntryRow()
+            }
             if canOverview {
                 Text(L.autoRefresh).font(.system(size: 10.5)).foregroundStyle(DS.ink2).frame(maxWidth: .infinity).padding(.top, 2)
             }
@@ -1083,6 +1088,8 @@ struct AdminRouteView: View {
         case .accessBans: AdminAccessBansView()
         case .people: AdminPeopleView()
         case .person(let p): AdminPersonView(person: p)
+        case .games: GamesHubView()
+        case .game(let g): GameDetailView(game: g)
         }
     }
 }

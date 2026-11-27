@@ -84,6 +84,10 @@
 @import './styles/overlay.css';
 @import './styles/frost.css';
 
+/* App stylesheet sentinel: the desktop shell's boot check (desktop/app/shim/electron-api-shim.js
+   cssWatchdog) reads it to tell "app CSS applied" from a raw-HTML page and reloads once. */
+:root { --descall-app-css: 1; }
+
 /* Typing indicator: anchored to the composer's top edge on every platform.
    Before 2.13.6 it was a sibling in normal flow under the messages list; on
    iOS the glass composer is position: fixed, so the pill landed at the very

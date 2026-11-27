@@ -32,6 +32,26 @@ import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js
 // Logged-out web only: the native app and signed-in boots never render it, so the
 // marketing layout (JS + .mkt CSS) stays out of the App chunk's static graph.
 const MarketingApp = lazy(() => import("./site/MarketingApp"));
+// Draft A (passkeys): after a password / Google / Apple sign-in, a polite card in the corner
+// (phone: a bottom sheet) offers a passkey for this device. Loaded only when it may show.
+const PasskeySuggestCard = lazy(() => import("./components/passkeys/PasskeySuggestCard.jsx"));
+function notePasskeySuggestion(method) {
+  try {
+    import("./lib/passkeys/visual.js")
+      .then((m) => {
+        m.noteSignIn(window.localStorage, method);
+        try {
+          sessionStorage.setItem("descall.pk.lastMethod", method);
+        } catch {
+          /* ignore */
+        }
+        window.dispatchEvent(new Event("descall:passkey-suggest"));
+      })
+      .catch(() => {});
+  } catch {
+    /* storage off */
+  }
+}
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
@@ -93,6 +113,9 @@ import { attachPremiumSocket } from "./premium/usePremium.js";
 import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
+import { useNativeIntents } from "./hooks/useNativeIntents";
+import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
+import { useNativeWidgets } from "./hooks/useNativeWidgets";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -148,6 +171,7 @@ import { t as tRuntime } from "./i18n/runtime";
 import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
+import { OnboardingProvider } from "./components/onboarding/OnboardingContext";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
@@ -225,6 +249,8 @@ import { allowNotify } from "./lib/notifyPrefs";
 import { applyPeerRead } from "./lib/readReceipts";
 import { FAILED_ACTION_EVENT, dmPeerId, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
+// Performans: app start = the signed-in chat list on screen (lib/perf/rum.js).
+import { markAppStart } from "./lib/perf/rum.js";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -1169,6 +1195,12 @@ export default function App() {
       // Existing client previews win so live dm:message updates are not overwritten.
       setDmPreviews((prev) => ({ ...byPeer, ...prev }));
       setDmLastActivity((prev) => ({ ...lastByPeer, ...prev }));
+      // First chat list painted: the cold start is over (once per page load).
+      try {
+        requestAnimationFrame(() => markAppStart());
+      } catch {
+        markAppStart();
+      }
     } catch (err) {
       console.error("[DM] REST previews failed", err);
     }
@@ -2419,7 +2451,8 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith)) {
+          // "Sessiz gönder" (share sheet): unread, but no sound and no notification.
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith) && !message?.silent) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || t("Someone"),
@@ -2640,6 +2673,8 @@ export default function App() {
       if (!isFromMe && isBlockedByMe(normalized.from?.id)) return;
       if (!isFromMe && !isActiveGroup) {
         setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
+        // "Sessiz gönder" (share sheet): counted as unread, no sound, no notification.
+        if (message?.silent) return;
         if (allowNotify("group", groupId)) playUiSound("message");
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
@@ -2657,6 +2692,7 @@ export default function App() {
           pendingGroupReadRef.current = groupId;
           setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
         }
+        if (message?.silent) return;
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),
@@ -3047,6 +3083,10 @@ export default function App() {
     socket.on("shop:inventory:changed", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
     });
+    // Passkeys added / removed / suspended on another device: Settings > Security reloads its list.
+    socket.on("passkeys:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:passkeys-changed", { detail: payload })); } catch { /* ignore */ }
+    });
     // Market 2.0: daily storefront reset / refresh and received gifts reach an open shop live.
     socket.on("shop2:storefront", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop2-storefront", { detail: payload })); } catch { /* ignore */ }
@@ -3252,6 +3292,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("password");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3276,6 +3317,7 @@ export default function App() {
       setAuthError("");
       const data = await verify2faLogin(pendingToken, code);
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("2fa");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3290,6 +3332,23 @@ export default function App() {
       throw error;
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // Passkey sign-in (components/passkeys/PasskeySignInButton.jsx, web autofill): the server
+  // body is the same as POST /login; AuthView handles requires2fa itself.
+  const handlePasskeyLogin = async (data) => {
+    if (!data?.token) return;
+    setAuthError("");
+    transportFallbackStepRef.current = 0;
+    setToken(data.token);
+    commitSessionUser(data.user);
+    try {
+      const { Funnel, identifyUser } = await import("./site/analytics");
+      identifyUser(data.user);
+      Funnel.loginComplete({ method: "passkey" });
+    } catch {
+      /* analytics optional */
     }
   };
 
@@ -3316,6 +3375,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      if (!data.isNewUser) notePasskeySuggestion(method);
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3356,7 +3416,10 @@ export default function App() {
     }
   };
 
-  const handleRegister = async (payload) => {
+  const handleRegister = async (rawPayload) => {
+    // Uyarlanan kart (growth 1B): beforeCommit(reg) runs once the account exists and before
+    // the app opens (the passkey of a passwordless account, saving the new password).
+    const { beforeCommit, ...payload } = rawPayload || {};
     try {
       setAuthLoading(true);
       setAuthError("");
@@ -3366,6 +3429,16 @@ export default function App() {
         ...payload,
         ...(invitedBy ? { invitedBy } : {}),
       });
+      if (typeof beforeCommit === "function" && reg?.token) {
+        setToken(reg.token);
+        setAuthLoading(false);
+        try {
+          await beforeCommit(reg);
+        } catch {
+          /* the account exists either way */
+        }
+        setAuthLoading(true);
+      }
       if (invitedBy) consumeInviteRef();
       try {
         sessionStorage.setItem("descall:justRegistered", "1");
@@ -3413,6 +3486,7 @@ export default function App() {
       } catch {
         /* analytics optional */
       }
+      if (!payload.password) throw new Error("Registration succeeded but sign-in did not. Please log in.");
       await handleLogin({ username: payload.username, password: payload.password });
     } catch (error) {
       // An access ban on the sign-up answers ACCESS_BANNED: the ban screen (with its
@@ -4454,7 +4528,8 @@ export default function App() {
         return;
       }
 
-      if (type === "dm" || type === "missed-call" || type === "call") {
+      // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =
@@ -5237,6 +5312,50 @@ export default function App() {
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
   // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
   useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
+  // 4.2: Siri / Shortcuts / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows).
+  useNativeIntents({
+    me,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    navigate,
+    setStatus: handleStatusChange,
+    myStatus,
+    friends,
+    dmLastActivity,
+    locale,
+    pathname: location.pathname,
+    t,
+  });
+  // Android home screen widgets + the ongoing call notification (draft B "Yuzler").
+  useAndroidWidgets({
+    me,
+    socket: socketApi,
+    call,
+    groupCall,
+    serverVoice,
+    friends,
+    servers: myServers,
+    groups: myGroups,
+  });
+
+  // Widgets draft B: favourite faces, timeline reloads, the call's Live Activity, waves.
+  useNativeWidgets({
+    me,
+    friends,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    servers: myServers,
+    groups: myGroups,
+    dmUnread,
+    groupUnread,
+    toast,
+    onOpenDm: (user) => navigate(directPath(user)),
+    t,
+  });
 
   if (bootError && !me) {
     return (
@@ -5367,6 +5486,8 @@ export default function App() {
             onGoogleLogin={handleGoogleLogin}
             onAppleLogin={handleAppleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             loading={authLoading}
             error={authError}
           />
@@ -5386,6 +5507,8 @@ export default function App() {
             onRegister={handleRegister}
             onGoogleLogin={handleGoogleLogin}
             onVerify2fa={handleVerify2fa}
+            onPasskeyLogin={handlePasskeyLogin}
+            onPasskeyError={showAuthFailure}
             authLoading={authLoading}
             authError={authError}
           />
@@ -5767,6 +5890,12 @@ export default function App() {
 
         <PlatformNoticeBanner enabled={Boolean(me?.id)} />
 
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <PasskeySuggestCard me={me} onOpenSettings={() => navigate("/settings/security?passkeys=1")} />
+          </Suspense>
+        ) : null}
+
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>
             <AdminBroadcastPopup
@@ -5778,6 +5907,31 @@ export default function App() {
         )}
 
         {/* NEW MODULAR LAYOUT SYSTEM */}
+        <OnboardingProvider
+          me={me}
+          socket={socketApi}
+          servers={myServers}
+          onServerJoined={(server) => {
+            if (!server?.id) return;
+            rememberLocalJoin(localJoinsRef.current, server.id);
+            setMyServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]));
+          }}
+          onOpenChannel={(serverId, channelId) => {
+            if (!serverId) return;
+            setActiveView("servers");
+            const nextPath = serverPath(serverId, channelId || undefined);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onLeaveServer={(serverId) => handleLeaveServer(serverId)}
+          onOpenDm={(user) => {
+            if (!user?.username) return;
+            setActiveView("chat");
+            const nextPath = directPath(user);
+            if (location.pathname !== nextPath) navigate(nextPath);
+          }}
+          onJoinedFromDiscover={handleJoinServer}
+          onRefreshServers={handleRefreshServers}
+        >
         <AppLayout
           me={me}
           socket={socketApi}
@@ -6394,6 +6548,7 @@ export default function App() {
             }
           />
         </AppLayout>
+        </OnboardingProvider>
         {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
             <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />

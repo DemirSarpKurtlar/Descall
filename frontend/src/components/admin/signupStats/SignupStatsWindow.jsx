@@ -450,6 +450,52 @@ function StatsContent({ data, W, controls }) {
       />
     </Card>
   ) : null;
+  // Uyarlanan kart (growth 1B) Ölçüm: registered emails routed to sign-in instead of an
+  // "email taken" error, breached passwords flagged while typing and fixed before the submit.
+  const ac = data.adaptiveCard;
+  const cardCard = ac ? (
+    <Card title={t("Sign-up card")} extra={<span className="mut">{cap}</span>}>
+      {ac.routed || ac.warned || ac.fixed || ac.flows ? (
+        <>
+          <div className="st-sub">{t("{fixed} of {warned} breached passwords fixed in the card ({pct})", { fixed: n(ac.fixed), warned: n(ac.warned), pct: pct(ac.fixedPct, locale) })}</div>
+          <Bars
+            rows={[
+              { key: "routed", label: t("Sent to sign-in"), count: ac.routed, color: CHART[0] },
+              { key: "warned", label: t("Breach flagged"), count: ac.warned, color: STATUS.warn },
+              { key: "fixed", label: t("Fixed, account made"), count: ac.fixed, color: STATUS.ok },
+            ]}
+            total={Math.max(ac.routed, ac.warned, ac.fixed, 1)}
+          />
+          {ac.fixed ? (
+            <>
+              <div className="st-sep" />
+              <div className="st-sub">{t("How the password was fixed")}</div>
+              <Bars
+                rows={[
+                  { key: "suggested", label: t("Suggested password"), count: ac.byVia?.suggested || 0, color: CHART[0] },
+                  { key: "own", label: t("Own new password"), count: ac.byVia?.own || 0, color: CHART[1] },
+                  { key: "passkey", label: t("Passwordless (passkey)"), count: ac.byVia?.passkey || 0, color: CHART[3] || CHART[2] },
+                ]}
+                total={ac.fixed}
+              />
+            </>
+          ) : null}
+          {ac.flows ? (
+            <div className="st-chips">
+              <div className="st-chip">{t("Card: {pct} completed", { pct: pct(ac.flows.card.completedPct, locale) })}</div>
+              <div className="st-chip">{t("Older form: {pct} completed", { pct: pct(ac.flows.classic.completedPct, locale) })}</div>
+            </div>
+          ) : null}
+          <div className="st-note">
+            <I n="bolt" s={13} w={2} />
+            <span>{t("Target: email taken and conflict near zero, breached password refusals under 30. In this range: {taken} email taken, {breached} breached on submit.", { taken: n(ac.emailTaken), breached: n(ac.breached) })}</span>
+          </div>
+        </>
+      ) : (
+        <div className="st-sub">{t("No sign-up card data in this range yet.")}</div>
+      )}
+    </Card>
+  ) : null;
   const measurement = failCard || heardCard || inviteCard;
 
   return (
@@ -491,6 +537,11 @@ function StatsContent({ data, W, controls }) {
               {inviteCard}
             </div>
           ) : null}
+          {cardCard ? (
+            <div className="st-grid" style={{ gridTemplateColumns: "1fr", marginTop: 12 }}>
+              {cardCard}
+            </div>
+          ) : null}
         </>
       ) : (
         <>
@@ -503,6 +554,7 @@ function StatsContent({ data, W, controls }) {
             {failCard}
             {heardCard}
             {inviteCard}
+            {cardCard}
           </div>
         </>
       )}

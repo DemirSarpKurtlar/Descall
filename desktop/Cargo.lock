@@ -935,6 +935,7 @@ dependencies = [
  "base64 0.22.1",
  "descall-capture",
  "descall-migrate",
+ "descall-passkey",
  "descall-shell",
  "futures-util",
  "getrandom 0.3.4",
@@ -1017,10 +1018,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "descall-passkey"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "serde_json",
+ "windows",
+ "windows-core",
+]
+
+[[package]]
 name = "descall-premium-logic"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "descall-shell",
  "getrandom 0.3.4",
  "scrypt",
  "serde",

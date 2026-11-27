@@ -29,7 +29,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "Voice, video and screen share",
-        p: "Both apps offer one-on-one and group voice and video calls, server voice channels and screen share. Descall runs calls over WebRTC, adds a TURN relay for strict networks such as some school, dorm or mobile connections, and includes noise suppression. Screen share has quality presets, and group calls default to around 720p at about 20 frames per second so the stream stays smooth for everyone watching. Discord has years of tuning at very large scale and is the safer bet for big public events. For a squad call or a movie night with friends, Descall is built for exactly that size.",
+        p: "Both apps offer one-on-one and group voice and video calls, server voice channels and screen share. Descall runs calls over WebRTC, adds a TURN relay for strict networks such as some school, dorm or mobile connections, and includes noise suppression. Screen share has quality presets, and group calls default to around 1080p at about 30 frames per second so the stream stays smooth for everyone watching. Discord has years of tuning at very large scale and is the safer bet for big public events. For a squad call or a movie night with friends, Descall is built for exactly that size.",
       },
       {
         h: "Platforms and access",
@@ -95,7 +95,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "Screen share that stays smooth",
-        p: "Screen share is part of most voice nights, whether you are watching a match, reviewing a build or going through notes. Descall offers quality presets, and group calls default to around 720p at about 20 frames per second. That keeps the stream smooth for every viewer without asking too much of the sharer's connection. If your upload is weak, pick a lower preset rather than letting the whole stream stutter.",
+        p: "Screen share is part of most voice nights, whether you are watching a match, reviewing a build or going through notes. Descall offers quality presets, and group calls default to around 1080p at about 30 frames per second. That keeps the stream smooth for every viewer without asking too much of the sharer's connection. If your upload is weak, pick a lower preset rather than letting the whole stream stutter.",
       },
       {
         h: "Use the desktop app for long sessions",
@@ -181,7 +181,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "Day 3: move the voice night",
-        p: "The voice habit is what holds a group together, so move it early. Pick your usual evening, post the invite code in your Discord chat, and run the whole session on Descall: voice channel, chat next to it and screen share if you normally stream. Group screen share defaults to around 720p at about 20 frames per second, with presets if someone needs a lighter stream. One good night does more than any announcement.",
+        p: "The voice habit is what holds a group together, so move it early. Pick your usual evening, post the invite code in your Discord chat, and run the whole session on Descall: voice channel, chat next to it and screen share if you normally stream. Group screen share defaults to around 1080p at about 30 frames per second, with presets if someone needs a lighter stream. One good night does more than any announcement.",
       },
       {
         h: "What happens to your Discord history",

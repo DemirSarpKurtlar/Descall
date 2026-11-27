@@ -37,6 +37,8 @@ public class DescallKeychainPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         if KeychainStore.write(service: service, account: key, value: value) {
+            // 4.2: sign-in and every token refresh reach Siri / extensions (DescallKit).
+            if key == DescallSharedSessionSync.tokenKey { DescallSharedSessionSync.tokenChanged(value) }
             call.resolve()
         } else {
             call.reject("Keychain write failed")
@@ -50,6 +52,8 @@ public class DescallKeychainPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         if KeychainStore.delete(service: service, account: key) {
+            // 4.2: sign-out ends the shared session too (Siri, widgets, share extension).
+            if key == DescallSharedSessionSync.tokenKey { DescallSharedSessionSync.signedOut() }
             call.resolve()
         } else {
             call.reject("Keychain delete failed")

@@ -50,9 +50,9 @@ export const SEC_CENTER_EN = {
   "check": {
     "humanCheck": {
       "name": "Human check at sign-up",
-      "ok": "Human check at sign-up is on",
-      "fail": "Human check at sign-up is off",
-      "why": "Stopping bot sign-ups at the door needs a human verification service (for example Cloudflare Turnstile). It is not set up yet; until then the registration freeze and the throwaway email block protect against bot waves."
+      "ok": "Human check at sign-up is on (Cloudflare Turnstile)",
+      "fail": "Human check at sign-up is not enforced",
+      "why": "Cloudflare Turnstile checks for bots at sign-up, password reset and at sign-in after repeated wrong passwords; most people see nothing. The key is set up automatically by the \"Cloudflare Turnstile\" GitHub workflow. When it is set up but the mode is Monitor or Off, applying the recommendation makes it enforced again."
     },
     "admin2fa": {
       "name": "2FA for admins",
@@ -323,7 +323,8 @@ export const SEC_CENTER_EN = {
     "signup_denied": {
       "title": "Sign-up refused",
       "lineDisposable": "{email} · throwaway email",
-      "lineClosed": "{method} sign-up while sign-ups are closed · {n} attempts"
+      "lineClosed": "{method} sign-up while sign-ups are closed · {n} attempts",
+      "lineHumanCheck": "{method} sign-up stopped by the human check · {n} attempts"
     },
     "admin_step_up": {
       "title": "Admin step-up check",
@@ -424,6 +425,7 @@ export const SEC_CENTER_EN = {
     }
   },
   "setting": {
+    "turnstileMode": "Human check (Turnstile)",
     "registrationEnabled": "Sign-ups",
     "dmEnabled": "Direct messages",
     "readOnlyMode": "Read-only mode",
@@ -503,5 +505,87 @@ export const SEC_CENTER_EN = {
     "until": "Back around {time}.",
     "soon": "Back as soon as possible.",
     "dismiss": "Hide this band"
+  },
+  "human": {
+    "title": "Human check",
+    "window": "Cloudflare Turnstile · last 24 hours",
+    "status": {
+      "enforcing": "Enforced",
+      "monitor": "Monitor only",
+      "off": "Off",
+      "notSetUp": "Not set up",
+      "tableMissing": "Table missing",
+      "badSecret": "Key rejected",
+      "unknown": "Unknown"
+    },
+    "kpi": {
+      "pass": "Passed",
+      "refused": "Stopped",
+      "fallback": "Let in without check",
+      "failOpen": "Cloudflare down"
+    },
+    "sub": {
+      "rate": "{rate}% passed",
+      "noData": "No checks yet",
+      "refused": "Invalid or missing check",
+      "fallback": "Widget could not load, fallback rule",
+      "failOpen": "Outage, nobody was blocked"
+    },
+    "legend": {
+      "pass": "Passed",
+      "refused": "Stopped",
+      "let": "Let in without check"
+    },
+    "chartAria": "Human check results per hour over the last 24 hours",
+    "hourTip": "{time}: {pass} passed, {refused} stopped, {let} without check",
+    "actions": "Where it is asked",
+    "action": {
+      "register": "Sign-up",
+      "social_signup": "Sign-up with Google / Apple",
+      "password_reset": "Password reset",
+      "login": "Sign-in (after wrong passwords)"
+    },
+    "col": {
+      "pass": "Passed",
+      "refused": "Stopped",
+      "let": "No check"
+    },
+    "challenged": "asked {n} times",
+    "modeTitle": "Mode",
+    "mode": {
+      "enforce": "Enforce",
+      "monitor": "Monitor",
+      "off": "Off"
+    },
+    "modeHint": {
+      "enforce": "Invalid or missing checks are refused; a Cloudflare outage never blocks users.",
+      "monitor": "The check runs and is counted, but nobody is refused.",
+      "off": "The check is never asked."
+    },
+    "monitorTitle": "Switch to monitor only",
+    "monitorBody": "The check keeps running, but people who fail it can still sign up. Bots can get in again.",
+    "offTitle": "Turn the human check off",
+    "offBody": "Sign-up, password reset and sign-in stop asking for the check. Use it for a while if something is wrong.",
+    "modeGo": "Apply",
+    "envLocked": "The TURNSTILE_ENFORCE environment variable on Render pins the mode.",
+    "setup": "Setup is automatic: GitHub › Actions › Cloudflare Turnstile › apply. The key works within a minute, no redeploy needed.",
+    "notes": {
+      "noteSetup": "No Turnstile key; the check is skipped and sign-up works as before.",
+      "noteTable": "The turnstile_config table is missing: apply migration 20261124t_turnstile.sql.",
+      "noteBadSecret": "Cloudflare rejects the secret key; users are not blocked. Run the workflow with rotate.",
+      "noteUnreachable": "Cloudflare could not be reached at times in the last 24 hours; those requests were allowed.",
+      "noteEnv": "Mode pinned by an environment variable: {mode}.",
+      "noteTestKeys": "Cloudflare test keys are in use; there is no real protection.",
+      "noteBudgetFull": "The no-check limit is used up this hour ({n}); people whose widget cannot load wait an hour."
+    },
+    "meta": {
+      "sourceDb": "Source: GitHub workflow",
+      "sourceEnv": "Source: environment variable",
+      "siteKey": "Site key {key}",
+      "hosts": "{n, plural, one {# hostname} other {# hostnames}}",
+      "updated": "Updated {time}",
+      "budget": "Let in without check this hour: {used}/{max} · {perIp} per IP"
+    },
+    "saved": "Human check mode saved"
   }
 };

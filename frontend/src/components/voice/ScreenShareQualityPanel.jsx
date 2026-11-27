@@ -6,6 +6,7 @@ import {
   SCREEN_QUALITY_PRESETS,
   estimateScreenShareMbps,
 } from "../../lib/webrtcScreenShare";
+import { screenShareLimits } from "../../lib/screenShareCodec";
 import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { usePressFeedbackScope } from "../../hooks/usePressFeedback";
@@ -13,16 +14,16 @@ import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/spri
 
 export const SCREEN_RESOLUTION_PRESETS = [
   { value: "480p", label: "480p", desc: "854×480", hintKey: "Smoothest, low bandwidth" },
-  { value: "720p", label: "720p HD", desc: "1280×720", hintKey: "Recommended balance" },
-  { value: "1080p", label: "1080p FHD", desc: "1920×1080", hintKey: "Sharp text / UI" },
+  { value: "720p", label: "720p HD", desc: "1280×720", hintKey: "Balanced" },
+  { value: "1080p", label: "1080p FHD", desc: "1920×1080", hintKey: "Default" },
   { value: "1440p", label: "1440p QHD", desc: "2560×1440", hintKey: "Ultra clarity (1:1)" },
 ];
 
 export const SCREEN_FPS_PRESETS = [
   { value: 15, label: "15", hintKey: "Presentations / slides" },
-  { value: 20, label: "20", hintKey: "Default" },
+  { value: 20, label: "20", hintKey: "Balanced" },
   { value: 24, label: "24", hintKey: "Smooth motion" },
-  { value: 30, label: "30", hintKey: "1:1 calls" },
+  { value: 30, label: "30", hintKey: "Default" },
   { value: 60, label: "60", hintKey: "Game capture (1:1)" },
 ];
 
@@ -72,7 +73,7 @@ export function qualityForContent(value, quality, resolutionOptions, fpsOptions)
     return { ...quality, resolution: resOf("1080p"), fps: fpsOf(fps), contentHint: "detail" };
   }
   const fps = Math.max(30, Number(quality.fps) || 30);
-  return { ...quality, resolution: resOf(quality.resolution || "720p"), fps: fpsOf(fps), contentHint: "motion" };
+  return { ...quality, resolution: resOf(quality.resolution || "1080p"), fps: fpsOf(fps), contentHint: "motion" };
 }
 
 /** Locale decimal separator: "4,4" in Turkish, "4.4" in English. */
@@ -109,27 +110,26 @@ export default function ScreenShareQualityPanel({
   const [appliedFlash, setAppliedFlash] = useState(false);
   const quality = screenQuality || GROUP_SCREEN_DEFAULT_QUALITY;
   const narrow = useIsNarrowViewport(720);
+  // Ceiling per viewer copy: a mesh sends one per other participant, 1:1 and SFU send one.
   const mbps = useMemo(
-    () => estimateScreenShareMbps(quality, participantCount),
-    [quality, participantCount]
+    () => estimateScreenShareMbps(quality, isGroupCall ? Math.max(1, participantCount - 1) : 1),
+    [quality, isGroupCall, participantCount]
   );
 
-  const resolutionOptions = useMemo(() => {
-    if (isGroupCall && participantCount >= 3) {
-      return SCREEN_RESOLUTION_PRESETS.filter((r) => r.value !== "1440p");
-    }
-    return SCREEN_RESOLUTION_PRESETS;
-  }, [isGroupCall, participantCount]);
-
-  const fpsOptions = useMemo(() => {
-    if (isGroupCall && participantCount >= 3) {
-      return SCREEN_FPS_PRESETS.filter((f) => f.value <= 24);
-    }
-    if (isGroupCall) {
-      return SCREEN_FPS_PRESETS.filter((f) => f.value <= 30);
-    }
-    return SCREEN_FPS_PRESETS;
-  }, [isGroupCall, participantCount]);
+  // Highest quality for everyone (no plan check): every resolution in every call; 60 FPS
+  // everywhere except a mesh of 3+ people (one full encode and upload per viewer).
+  const limits = useMemo(
+    () => screenShareLimits({ mesh: Boolean(isGroupCall), participantCount }),
+    [isGroupCall, participantCount]
+  );
+  const resolutionOptions = useMemo(
+    () => SCREEN_RESOLUTION_PRESETS.filter((r) => limits.resolutions.includes(r.value)),
+    [limits]
+  );
+  const fpsOptions = useMemo(
+    () => SCREEN_FPS_PRESETS.filter((f) => limits.fps.includes(f.value)),
+    [limits]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -190,12 +190,9 @@ export default function ScreenShareQualityPanel({
     }
   };
 
-  const meshWarning =
-    isGroupCall &&
-    participantCount >= 3 &&
-    (quality.resolution === "1080p" ||
-      quality.resolution === "1440p" ||
-      (quality.fps || 20) > 24);
+  // 1080p / 30 is the default for everyone (owner: "herkes en yüksek kalite"); a 3+ person
+  // mesh is already capped at 30 fps (screenShareLimits), so only 1440p is worth a warning.
+  const meshWarning = isGroupCall && participantCount >= 3 && quality.resolution === "1440p";
 
   const fpsValue = Number(quality.fps) || 24;
   const fpsShown = fpsSegments(fpsOptions, fpsValue);
@@ -268,7 +265,7 @@ export default function ScreenShareQualityPanel({
                   <Info size={14} style={{ flexShrink: 0, marginTop: 1 }} />
                   <span>
                     {t(
-                      "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.",
+                      "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.",
                       { count: participantCount }
                     )}
                   </span>

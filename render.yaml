@@ -68,6 +68,10 @@ services:
         sync: false
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
+      # Passkeys (routes/passkeys.js): public SHA-256 fingerprints of the Android signing
+      # certificates (upload key + Play App Signing key), comma separated, same as assetlinks.json.
+      - key: PASSKEY_ANDROID_CERT_SHA256
+        sync: false
       - key: NODE_VERSION
         # Node 20 is end-of-life (2026-04-30). 24 = Active/Maintenance LTS until 2028-04-30;
         # Render picks the newest 24.x patch at build time.
@@ -148,6 +152,10 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      # Passkeys (routes/passkeys.js): public SHA-256 fingerprints of the Android signing
+      # certificates (upload key + Play App Signing key), comma separated, same as assetlinks.json.
+      - key: PASSKEY_ANDROID_CERT_SHA256
         sync: false
       - key: NODE_VERSION
         # Node 20 is end-of-life (2026-04-30). 24 = Active/Maintenance LTS until 2028-04-30;

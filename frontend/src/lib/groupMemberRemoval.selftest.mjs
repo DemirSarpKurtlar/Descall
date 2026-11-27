@@ -148,4 +148,38 @@ assert.match(frost, /\.server-member-menu/, "server-member-menu is in the heavy 
 const css = read("../components/groups/GroupMemberRemoval.css");
 assert.match(css, /\.gk-removed\{[^}]*backdrop-filter:blur\(40px\)/, "removed banner is heavy glass");
 
+/* ── screenshot 78 (Nov 2026): the real translator blanks a placeholder without a value ──
+ * makeT above keeps "{actor}" when no value is passed; the app's translate() (message.js)
+ * turns it into "", so a row read ", gruptan çıkardı". Check with the real one. */
+{
+  const i18n = await import("../i18n/index.js");
+  await i18n.ensureLocaleLoaded("tr");
+  await i18n.ensureLocaleLoaded("de");
+  const realT = (loc) => (key, vars) => i18n.translate(loc, key, vars);
+  assert.equal(realT("tr")("gk.eventRemoved").replace(/\s+/g, " "), ", gruptan çıkardı", "the formatter blanks missing vars (why rawTemplate exists)");
+  const rowText = (ev, loc) => segmentsText(memberEventSegments(ev, realT(loc)));
+  assert.equal(rowText({ type: "member_removed", actorName: "Demir", targetName: "Can" }, "tr"), "Demir, Can’ı gruptan çıkardı");
+  assert.equal(rowText({ type: "member_removed", actorName: "Demir", targetIsMe: true }, "tr"), "Demir seni gruptan çıkardı");
+  assert.equal(rowText({ type: "member_left", actorName: "Ali" }, "tr"), "Ali gruptan ayrıldı");
+  assert.equal(rowText({ type: "member_removed", actorName: "demir", targetName: "can" }, "en"), "demir removed can");
+  // Old rows / deleted accounts: no stored name, no member to look up.
+  assert.equal(rowText({ type: "member_removed", actorName: null, targetName: null }, "tr"), "Bir üye, bir üyeyi gruptan çıkardı");
+  assert.equal(rowText({ type: "member_left", actorName: "" }, "tr"), "Bir üye gruptan ayrıldı");
+  assert.equal(rowText({ type: "member_left", actorName: "?" }, "de"), "Ein Mitglied hat die Gruppe verlassen");
+  const stored = memberEventFromMessage(
+    { type: "member_removed", text: JSON.stringify({ actorId: "a", actorName: "Demir", targetId: "b", targetName: "Can" }) },
+    { meId: "z", members: [] },
+  );
+  assert.equal(rowText(stored, "tr"), "Demir, Can’ı gruptan çıkardı", "stored names, target no longer a member");
+  const noActorName = memberEventFromMessage(
+    { type: "member_left", from: { id: "a", username: "ayse" }, memberEvent: JSON.stringify({ actorId: "a" }) },
+    { meId: "z", members: [] },
+  );
+  assert.equal(rowText(noActorName, "tr"), "ayse gruptan ayrıldı", "old row: the sender's name");
+  assert.match(removedBannerBody({ actorName: null, time: "21:58" }, realT("tr")), /^Bir üye seni 21:58’de çıkardı/);
+  for (const ev of [{ type: "member_removed", actorName: "x", targetName: "y" }, { type: "member_left", actorName: "x" }]) {
+    for (const loc of ["en", "tr", "de"]) assert.ok(!rowText(ev, loc).startsWith(","), `${loc} ${ev.type} has the actor`);
+  }
+}
+
 console.log("groupMemberRemoval selftest ok");

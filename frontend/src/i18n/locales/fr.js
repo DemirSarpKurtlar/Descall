@@ -1,4 +1,5 @@
 import { AUTHX_FR } from "./authx.fr.js";
+import { PASSKEY_FR } from "./passkey.fr.js";
 import { API_FR } from "./api.fr.js";
 import { PREMIUM_STORY_FR } from "./premiumStory.fr.js";
 import { UAH_FR } from "./uah.fr.js";
@@ -16,8 +17,12 @@ import { MSG4_FR } from "./msg4.fr.js";
 import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
+import { PUBPAGE_FR } from "./pubpage.fr.js";
+import { ONB_FR } from "./onb.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
+import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
+import { VSC_FR } from "./vsc.fr.js";
 import { LX_FR } from "./lx.fr.js";
 import { USET_FR } from "./uset.fr.js";
 import { SVOICE_FR } from "./svoice.fr.js";
@@ -32,6 +37,7 @@ import { SYSX_FR } from "./sysx.fr.js";
 import { ATOK_FR } from "./atok.fr.js";
 import { ANODES_FR } from "./anodes.fr.js";
 import { AUDIT_LOG_FR } from "./auditLog.fr.js";
+import { PERF_ADMIN_FR } from "./perfAdmin.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
 import { COINPOP_FR } from "./coinpop.fr.js";
@@ -44,8 +50,10 @@ import { AGENTX_FR } from "./agentx.fr.js";
 import { AGENT_OPS_FR } from "./agentOps.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_FR,
+  passkey: PASSKEY_FR,
   "premiumStory": PREMIUM_STORY_FR,
   "amp": AMP_FR,
   "msg4": MSG4_FR,
@@ -68,8 +76,12 @@ export const nested = {
   "msg5": MSG5_FR,
   "act": ACT_FR,
   "dir": DIR_FR,
+  "pubpage": PUBPAGE_FR,
+  "onb": ONB_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
+  "shareSheet": SHARE_SHEET_FR,
+  "vsc": VSC_FR,
   "lx": LX_FR,
   "uset": USET_FR,
   "svoice": SVOICE_FR,
@@ -84,6 +96,7 @@ export const nested = {
   "atok": ATOK_FR,
   "anodes": ANODES_FR,
   "auditLog": AUDIT_LOG_FR,
+  "perfAdmin": PERF_ADMIN_FR,
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,
   "coinpop": COINPOP_FR,
@@ -3048,6 +3061,9 @@ export const nested = {
       "timeoutBody": "Tu peux toujours lire et écouter, mais tu ne peux plus envoyer de messages ni parler en vocal pendant un moment.",
       "timeoutTitle": "Tu as été rendu muet"
     },
+    "onb": {
+      "rehberWelcome": "Bienvenue {user} ! Dis bonjour dans #{channel} : ton prénom et ce qui t'intéresse, l'équipe d'accueil te répond en quelques minutes."
+    },
     "opt": {
       "amount": "montant",
       "amountDesc": "DesCoin à envoyer.",
@@ -5979,6 +5995,11 @@ export const nested = {
     "au_SERVER_CREATE": "A créé le serveur",
     "au_SERVER_RENAME": "A renommé le serveur en {name}",
     "au_SERVER_UPDATE": "A modifié les paramètres du serveur",
+    "au_PUBLIC_PAGE_ENABLE": "A activé Afficher sur Google",
+    "au_PUBLIC_PAGE_DISABLE": "A désactivé Afficher sur Google",
+    "au_PUBLIC_PAGE_UNDO": "A annulé la désactivation",
+    "au_PUBLIC_PAGE_UPDATE": "A modifié la page publique",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "La page s'est masquée d'elle-même",
     "badgeAnn": "ANN",
     "banPrompt": "Bannir {name} ? Ajoute une raison si tu veux :",
     "banned": "Tu es banni de ce serveur.",
@@ -7858,6 +7879,10 @@ export const phrases = {
   "Download Descall": "Télécharger Descall",
   "Download Desktop App": "Télécharger l'appli de bureau",
   "Download all your data including messages, friends, and settings": "Télécharge toutes tes données, y compris les messages, les amis et les paramètres",
+  "A member": "Un membre",
+  "Your download should start now.": "Ton téléchargement devrait commencer maintenant.",
+  "Not starting?": "Rien ne se passe ?",
+  "Direct link": "Lien direct",
   "Download for Windows": "Télécharger pour Windows",
   "Download for {name}": "Télécharger pour {name}",
   "Download on the App Store": "Télécharger dans l'App Store",
@@ -8496,6 +8521,7 @@ export const phrases = {
   "In Progress": "En cours",
   "In Safari tap Share": "Dans Safari, touche Partager",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Dans un appel de groupe ({count} personnes), une résolution ou des IPS élevés peuvent provoquer des ralentissements. 720p / 20 IPS est recommandé.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "Dans un appel de groupe ({count} personnes), le 1440p peut provoquer des ralentissements. 1080p / 30 IPS est recommandé.",
   "In group": "Dans le groupe",
   "In the air…": "En l'air…",
   "In this channel": "Dans ce salon",
@@ -8663,7 +8689,7 @@ export const phrases = {
   "Join Server": "Rejoindre un serveur",
   "Join Voice": "Rejoindre le vocal",
   "Join a Server": "Rejoindre un serveur",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Rejoins un salon vocal depuis la liste des serveurs. Partage ton écran en 720p. iPhone, Android, Windows et le navigateur utilisent un seul et même compte.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Rejoins un salon vocal depuis la liste des serveurs. Partage ton écran en 1080p. iPhone, Android, Windows et le navigateur utilisent un seul et même compte.",
   "Join as audience, then request to speak.": "Rejoins le public, puis demande la parole.",
   "Join lobby": "Rejoindre le lobby",
   "Join me on Descall, we both get DesCoin": "Rejoins-moi sur Descall, on gagne tous les deux des DesCoin",
@@ -11127,6 +11153,7 @@ export const phrases = {
   ...CONV_START_I18N.fr,
   ...SERVER_TEMPLATE_TOPICS_I18N.fr,
   ...SIGNUP_GROWTH.fr.phrases,
+  ...ADAPTIVE_SIGNUP.fr,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall n'est pas affilié à Discord Inc. Discord est une marque de Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "La ligne API est vérifiée en direct depuis ton navigateur à chaque ouverture de cette page.",
   "Author": "Auteur",

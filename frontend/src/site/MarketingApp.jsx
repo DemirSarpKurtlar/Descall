@@ -225,6 +225,8 @@ export default function MarketingApp(props) {
           onRegister={props.onRegister}
           onGoogleLogin={props.onGoogleLogin}
           onVerify2fa={props.onVerify2fa}
+          onPasskeyLogin={props.onPasskeyLogin}
+          onPasskeyError={props.onPasskeyError}
           loading={props.authLoading}
           error={props.authError}
         />
@@ -239,6 +241,8 @@ function MarketingAppSite({
   onRegister,
   onGoogleLogin,
   onVerify2fa,
+  onPasskeyLogin,
+  onPasskeyError,
   authLoading,
   authError,
 }) {
@@ -350,6 +354,8 @@ function MarketingAppSite({
     onRegister,
     onGoogleLogin,
     onVerify2fa,
+    onPasskeyLogin,
+    onPasskeyError,
     authLoading,
     authError,
   };

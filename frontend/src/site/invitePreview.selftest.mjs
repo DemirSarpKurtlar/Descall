@@ -190,8 +190,11 @@ const BOT = { "user-agent": "WhatsApp/2.23.20.0 A" };
   assert.ok(desc.startsWith("1,234 members, 56 online · We play late."), desc);
   assert.ok(!/<script>alert/.test(html) && desc.includes("&lt;script&gt;"), "description is escaped");
   assert.equal(meta(html, "property", "og:url"), "https://descall.com/servers/join/AbCd1234", "og:url has no tracking query");
-  assert.equal(meta(html, "property", "og:image"), "https://cdn.descall.com/icons/srv-1.png", "server icon is the image");
-  assert.equal(meta(html, "property", "og:image:width"), null, "icon size is not claimed as 1200x630");
+  // Item 23: a generated, versioned 1200x630 card (descall.com/og/..., served by the worker).
+  assert.match(meta(html, "property", "og:image"), /^https:\/\/descall\.com\/og\/invite\/AbCd1234\.png\?v=[a-z0-9]+$/, "generated card is the image");
+  assert.equal(meta(html, "property", "og:image:width"), "1200");
+  assert.equal(meta(html, "property", "og:image:height"), "630");
+  assert.equal(meta(html, "name", "twitter:image"), meta(html, "property", "og:image"));
   assert.equal(meta(html, "name", "twitter:card"), "summary_large_image");
   assert.equal(meta(html, "name", "robots"), "noindex, follow");
   assert.equal(meta(html, "property", "og:locale"), "en_US");
@@ -230,11 +233,11 @@ const BOT = { "user-agent": "WhatsApp/2.23.20.0 A" };
 // 3. No icon: the default invite card (per language), sized 1200x630.
 {
   const { html } = await get("/servers/join/NoIcon99", BOT);
-  assert.equal(meta(html, "property", "og:image"), `https://descall.com${OG_INVITE_IMAGES.en}`, "relative icon URLs are not used");
+  assert.match(meta(html, "property", "og:image"), /^https:\/\/descall\.com\/og\/invite\/NoIcon99\.png\?v=/, "relative icon URLs are not used: the generated card");
   assert.equal(meta(html, "property", "og:image:width"), "1200");
   assert.equal(meta(html, "property", "og:description"), "1 member · Voice chat, servers and screen share. Free to join.");
   const tr = await get("/servers/join/NoIcon99", { ...BOT, "accept-language": "tr" });
-  assert.equal(meta(tr.html, "property", "og:image"), `https://descall.com${OG_INVITE_IMAGES.tr}`);
+  assert.match(meta(tr.html, "property", "og:image"), /\/og\/invite\/NoIcon99\.png\?v=[a-z0-9]+&amp;lang=tr$/, "card in the visitor's language");
   for (const file of Object.values(OG_INVITE_IMAGES)) assert.ok(fs.existsSync(path.join(root, "public", file)), `${file} exists`);
 }
 
@@ -253,8 +256,13 @@ const BOT = { "user-agent": "WhatsApp/2.23.20.0 A" };
   assert.equal(meta(vanity.html, "property", "og:title"), "Join Owls on Descall");
   assert.equal(meta(vanity.html, "name", "apple-itunes-app"), "app-id=6820558264", "vanity: plain Smart App Banner");
   assert.ok(calls.some((c) => c.url === "https://des-call.onrender.com/api/servers/vanity/night-owls"));
+  assert.match(meta(html, "property", "og:image"), /\/og\/group\/grp42\.png\?v=/, "group: generated card");
+  assert.match(meta(vanity.html, "property", "og:image"), /\/og\/s\/night-owls\.png\?v=/, "vanity: generated card");
   const unknownGroup = await get("/invite/nope99", BOT);
-  assert.equal(meta(unknownGroup.html, "property", "og:title"), "Descall | Voice Chat, Servers &amp; Screen Share", "unknown group code: generic card");
+  // Item 23: an unknown / expired code shows the neutral card, never a name or image of theirs.
+  assert.equal(meta(unknownGroup.html, "property", "og:title"), "Invite not valid · Descall", "unknown group code: invalid card");
+  assert.equal(meta(unknownGroup.html, "property", "og:image"), "https://descall.com/og/invalid.png");
+  assert.equal(meta(unknownGroup.html, "name", "robots"), "noindex, follow");
   assert.equal(meta(unknownGroup.html, "name", "apple-itunes-app"), "app-id=6820558264", "unknown group code: banner kept, no argument");
 }
 
@@ -270,8 +278,14 @@ for (const [label, p, setup] of [
   backendDown = false;
   slowBackend = false;
   assert.equal(res.status, 200, `${label}: still the app shell`);
-  assert.equal(meta(html, "property", "og:title"), "Descall | Voice Chat, Servers &amp; Screen Share", `${label}: generic card`);
-  assert.equal(meta(html, "name", "apple-itunes-app"), `app-id=6820558264, app-argument=https://descall.com${p}`, `${label}: banner opens the invite`);
+  if (label === "unknown code") {
+    assert.equal(meta(html, "property", "og:title"), "Invite not valid · Descall", "unknown code: invalid card, no server name");
+    assert.equal(meta(html, "property", "og:image"), "https://descall.com/og/invalid.png");
+    assert.equal(meta(html, "name", "apple-itunes-app"), "app-id=6820558264", "unknown code: plain banner");
+  } else {
+    assert.equal(meta(html, "property", "og:title"), "Descall | Voice Chat, Servers &amp; Screen Share", `${label}: generic card`);
+    assert.equal(meta(html, "name", "apple-itunes-app"), `app-id=6820558264, app-argument=https://descall.com${p}`, `${label}: banner opens the invite`);
+  }
   assert.equal(countOf(html, /name="apple-itunes-app"/g), 1);
   if (label === "timeout") assert.ok(Date.now() - started < 2000, "a visitor waits at most the short timeout");
 }

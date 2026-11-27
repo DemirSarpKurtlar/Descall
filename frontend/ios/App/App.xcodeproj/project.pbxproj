@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C42A110000022F80000100D3 /* DescallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000012F80000100D3 /* DescallModels.swift */; };
+		C42A110000042F80000100D3 /* DescallKitLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000032F80000100D3 /* DescallKitLogic.swift */; };
+		C42A110000062F80000100D3 /* DescallSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000052F80000100D3 /* DescallSessionStore.swift */; };
+		C42A110000082F80000100D3 /* DescallAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000072F80000100D3 /* DescallAPIClient.swift */; };
+		C42A1100000A2F80000100D3 /* DescallIntentsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */; };
+		C42A1100000C2F80000100D3 /* DescallAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A1100000B2F80000100D3 /* DescallAppIntents.swift */; };
+		C42A1100000E2F80000100D3 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A1100000D2F80000100D3 /* AppShortcuts.strings */; };
+		C42A110000172F80000100D3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A110000162F80000100D3 /* Localizable.strings */; };
+		C42A110000202F80000100D3 /* Intents.strings in Resources */ = {isa = PBXBuildFile; fileRef = C42A1100001F2F80000100D3 /* Intents.strings */; };
 		17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
 		180E56F40F10884135FBA4AC /* WatchStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */; };
 		1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7994526A639F65B4026ADD5B /* WatchTheme.swift */; };
@@ -51,6 +60,8 @@
 		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
 		D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */; };
 		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
+		C9A7E1012F80000100D35C0A /* DescallPasskeyPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */; };
+		C9A7E1032F80000100D35C0A /* DescallPasskeyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */; };
 		D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */; };
 		D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
 		D8A21F0275ACCE30B3C432E1 /* WatchAdminViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */; };
@@ -73,6 +84,70 @@
 		B7A500042F70000100D35C0A /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = B7A500112F70000100D35C0A /* LiveKit */; };
 		B7A500052F70000100D35C0A /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = B7A500122F70000100D35C0A /* LiveKit */; };
 		B7A500182F70000100D35C0A /* DescallScreenBroadcastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A500192F70000100D35C0A /* DescallScreenBroadcastLogic.swift */; };
+		D1D6E7162F90000100D35C0A /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7012F90000100D35C0A /* Widgets.swift */; };
+		D1D6E7172F90000100D35C0A /* WidgetSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7022F90000100D35C0A /* WidgetSupport.swift */; };
+		D1D6E7182F90000100D35C0A /* WidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7032F90000100D35C0A /* WidgetData.swift */; };
+		D1D6E7192F90000100D35C0A /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7042F90000100D35C0A /* WidgetViews.swift */; };
+		D1D6E71A2F90000100D35C0A /* LiveCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */; };
+		D1D6E71B2F90000100D35C0A /* WaveIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7062F90000100D35C0A /* WaveIntent.swift */; };
+		D1D6E71C2F90000100D35C0A /* DescallWidgetLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */; };
+		D1D6E71D2F90000100D35C0A /* DescallWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */; };
+		D1D6E71E2F90000100D35C0A /* DescallCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */; };
+		D1D6E71F2F90000100D35C0A /* DescallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000012F80000100D3 /* DescallModels.swift */; };
+		D1D6E7202F90000100D35C0A /* DescallKitLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000032F80000100D3 /* DescallKitLogic.swift */; };
+		D1D6E7212F90000100D35C0A /* DescallSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000052F80000100D3 /* DescallSessionStore.swift */; };
+		D1D6E7222F90000100D35C0A /* DescallAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000072F80000100D3 /* DescallAPIClient.swift */; };
+		D1D6E7232F90000100D35C0A /* DescallWidgetLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */; };
+		D1D6E7242F90000100D35C0A /* DescallWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */; };
+		D1D6E7252F90000100D35C0A /* DescallCallActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */; };
+		D1D6E7262F90000100D35C0A /* DescallWidgetsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */; };
+		D1D6E7272F90000100D35C0A /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1D6E70E2F90000100D35C0A /* Localizable.strings */; };
+		D1D6E7282F90000100D35C0A /* DescallWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D5A1E00D2F90000100D35C0A /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0012F90000100D35C0A /* ShareViewController.swift */; };
+		D5A1E00E2F90000100D35C0A /* ShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0022F90000100D35C0A /* ShareViews.swift */; };
+		D5A1E00F2F90000100D35C0A /* ShareRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0032F90000100D35C0A /* ShareRunView.swift */; };
+		D5A1E0102F90000100D35C0A /* ShareSheetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0042F90000100D35C0A /* ShareSheetModel.swift */; };
+		D5A1E0112F90000100D35C0A /* ShareMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0052F90000100D35C0A /* ShareMedia.swift */; };
+		D5A1E0122F90000100D35C0A /* ShareTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0062F90000100D35C0A /* ShareTransport.swift */; };
+		D5A1E0132F90000100D35C0A /* ShareLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0072F90000100D35C0A /* ShareLogic.swift */; };
+		D5A1E0142F90000100D35C0A /* ShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0082F90000100D35C0A /* ShareText.swift */; };
+		D5A1E0152F90000100D35C0A /* ShareStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0092F90000100D35C0A /* ShareStrings.swift */; };
+		D5A1E0162F90000100D35C0A /* DescallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000012F80000100D3 /* DescallModels.swift */; };
+		D5A1E0172F90000100D35C0A /* DescallKitLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000032F80000100D3 /* DescallKitLogic.swift */; };
+		D5A1E0182F90000100D35C0A /* DescallSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000052F80000100D3 /* DescallSessionStore.swift */; };
+		D5A1E0192F90000100D35C0A /* DescallAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42A110000072F80000100D3 /* DescallAPIClient.swift */; };
+		D5A1E01A2F90000100D35C0A /* ShareLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0072F90000100D35C0A /* ShareLogic.swift */; };
+		D5A1E01B2F90000100D35C0A /* ShareTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A1E0062F90000100D35C0A /* ShareTransport.swift */; };
+		D5A1E01C2F90000100D35C0A /* DescallShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D5A1E00C2F90000100D35C0A /* DescallShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7237D46C53673E347996A1F1 /* BlocksGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE64825C240A2AF9508065B /* BlocksGame.swift */; };
+		5EC5497909FC5386172C6499 /* BricksGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8C99413B810CF47DE0C828 /* BricksGame.swift */; };
+		6DEDFA3B15333A6F7B2D525C /* CardsGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8765A67F9811D2DF5BAD05CD /* CardsGame.swift */; };
+		59F91F4E9905C08092C28F9E /* ChessGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A55B4B5CB359287CE280A /* ChessGame.swift */; };
+		3F0CB99952CCEB003901284F /* GameArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE3B201F921F07818009EEA /* GameArt.swift */; };
+		F35F115E72F0159916D16E4F /* GameServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0978A71364201BEB70F4DC /* GameServices.swift */; };
+		6C76CC7461177F5AFB68E1A7 /* GameShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92673463D78468F4B17BBD29 /* GameShell.swift */; };
+		A1E1A49DAA624979E9B47E35 /* GameSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = C982A14F267DCABE4C904C35 /* GameSprite.swift */; };
+		FB4F2A765154B4C9C85CFB0E /* GameStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 562514B0D94B8E22D94BFDF9 /* GameStrings.swift */; };
+		35A8AE4684EEFDA2423C66A3 /* GameStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E9CC3F79707BAB7C7987C4C /* GameStyle.swift */; };
+		2124B7B90732000D77A1EDCC /* GamesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A8EB74C2F303D13C347EC1 /* GamesHubView.swift */; };
+		07C2A88578F527FF50871A48 /* MergeGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9E5FE1A3A4C0205B812903 /* MergeGame.swift */; };
+		563417B6B551D0AF27CF446A /* MinesGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A928D07910A300221BF5E254 /* MinesGame.swift */; };
+		396F0CD874F62437A3549794 /* PongGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB45F7234F91A411C6F8C120 /* PongGame.swift */; };
+		67E69707F5ED34AF9CF8D8C1 /* RunnerGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489C9C8DF36472BDCD9C4EA4 /* RunnerGame.swift */; };
+		B91F6CF108C1C69A838E1C59 /* SnakeGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D05C308322FA78F87F8D97 /* SnakeGame.swift */; };
+		E021A9CD96D4FE4472CE5479 /* SudokuGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1435DB35804E28A10145B2A5 /* SudokuGame.swift */; };
+		5F1446A6DDE88546F6BF04E1 /* BlocksLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C2CC9BDD5EE8D4A645D4 /* BlocksLogic.swift */; };
+		6B0A92AF49FA72FB4996D384 /* BrickLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9825487D5E706F15CFC01E /* BrickLogic.swift */; };
+		5E52701EA557B6E01CFD0FCF /* CardsLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B101A2C7982D41478B793C9 /* CardsLogic.swift */; };
+		293FE4803AAAAE6C129E0298 /* ChallengeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5321B379FFD17ADFA2650764 /* ChallengeLogic.swift */; };
+		92349CF9F8557A34FAC55059 /* ChessLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C6BF5601613350A290A7CF0 /* ChessLogic.swift */; };
+		D5EA2166050360ACAC6AD08E /* GameCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4EE461ED5F9AAC55FD63BC /* GameCore.swift */; };
+		401CCAF942C8FA469D5DA01A /* MergeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B26BA50BD5E68ACF77810B /* MergeLogic.swift */; };
+		1257162158E13B5822FDE21F /* MinesLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E977BFB7BA6BD669CD49A55E /* MinesLogic.swift */; };
+		8ACDFC76D9C1C9B70BAD457E /* PongLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F22C1FD5CF0A5635BD165A2 /* PongLogic.swift */; };
+		0CECB7B5EAAC11A5C9AF5D8A /* RunnerLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2344686BCDD3E4BE122362A0 /* RunnerLogic.swift */; };
+		844CF8BC60676CA27BCB61F9 /* SnakeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A2CD07896208EA1D0AA73A /* SnakeLogic.swift */; };
+		FFC88783E3760F237B966FCE /* SudokuLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91AA4C5001EB5551480C26F /* SudokuLogic.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +179,20 @@
 			remoteGlobalIDString = B7A5000C2F70000100D35C0A;
 			remoteInfo = DescallBroadcast;
 		};
+		D1D6E7322F90000100D35C0A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1D6E72E2F90000100D35C0A;
+			remoteInfo = DescallWidgets;
+		};
+		D5A1E01D2F90000100D35C0A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D5A1E0202F90000100D35C0A;
+			remoteInfo = DescallShare;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -124,9 +213,11 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				D1D6E7282F90000100D35C0A /* DescallWidgets.appex in Embed Foundation Extensions */,
 				A4A0001A2F60000100D35C0A /* NotificationService.appex in Embed Foundation Extensions */,
 				A4A0001B2F60000100D35C0A /* NotificationContent.appex in Embed Foundation Extensions */,
 				B7A500032F70000100D35C0A /* DescallBroadcast.appex in Embed Foundation Extensions */,
+				D5A1E01C2F90000100D35C0A /* DescallShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -134,6 +225,33 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C42A110000012F80000100D3 /* DescallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallModels.swift; sourceTree = "<group>"; };
+		C42A110000032F80000100D3 /* DescallKitLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKitLogic.swift; sourceTree = "<group>"; };
+		C42A110000052F80000100D3 /* DescallSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallSessionStore.swift; sourceTree = "<group>"; };
+		C42A110000072F80000100D3 /* DescallAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallAPIClient.swift; sourceTree = "<group>"; };
+		C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallIntentsPlugin.swift; sourceTree = "<group>"; };
+		C42A1100000B2F80000100D3 /* DescallAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallAppIntents.swift; sourceTree = "<group>"; };
+		C42A1100000F2F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000102F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000112F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000122F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000132F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000142F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
+		C42A110000152F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		C42A110000182F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A110000192F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001A2F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001B2F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001C2F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A1100001D2F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		C42A1100001E2F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C42A110000212F80000100D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000222F80000100D3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000232F80000100D3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000242F80000100D3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000252F80000100D3 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Intents.strings; sourceTree = "<group>"; };
+		C42A110000262F80000100D3 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Intents.strings"; sourceTree = "<group>"; };
+		C42A110000272F80000100D3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Intents.strings; sourceTree = "<group>"; };
 		0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchBridge.swift; sourceTree = "<group>"; };
 		18774A888EB07821106CB30A /* ru */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		2B22216975C41339FCCC8CFC /* fr */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -192,6 +310,8 @@
 		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
 		D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarView.swift; sourceTree = "<group>"; };
 		D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKeychainPlugin.swift; sourceTree = "<group>"; };
+		C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallPasskeyPlugin.swift; sourceTree = "<group>"; };
+		C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallPasskeyLogic.swift; sourceTree = "<group>"; };
 		D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarPlugin.swift; sourceTree = "<group>"; };
 		D832932F076545664848648E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
@@ -208,6 +328,67 @@
 		B7A500092F70000100D35C0A /* DescallBroadcast.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DescallBroadcast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7A5000A2F70000100D35C0A /* DescallScreenBroadcastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallScreenBroadcastPlugin.swift; sourceTree = "<group>"; };
 		B7A500192F70000100D35C0A /* DescallScreenBroadcastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallScreenBroadcastLogic.swift; sourceTree = "<group>"; };
+		D1D6E7012F90000100D35C0A /* Widgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
+		D1D6E7022F90000100D35C0A /* WidgetSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSupport.swift; sourceTree = "<group>"; };
+		D1D6E7032F90000100D35C0A /* WidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetData.swift; sourceTree = "<group>"; };
+		D1D6E7042F90000100D35C0A /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
+		D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCallActivity.swift; sourceTree = "<group>"; };
+		D1D6E7062F90000100D35C0A /* WaveIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveIntent.swift; sourceTree = "<group>"; };
+		D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetLogic.swift; sourceTree = "<group>"; };
+		D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetStore.swift; sourceTree = "<group>"; };
+		D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallActivity.swift; sourceTree = "<group>"; };
+		D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallWidgetsPlugin.swift; sourceTree = "<group>"; };
+		D1D6E70B2F90000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D1D6E70C2F90000100D35C0A /* DescallWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DescallWidgets.entitlements; sourceTree = "<group>"; };
+		D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DescallWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1D6E70F2F90000100D35C0A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7102F90000100D35C0A /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7112F90000100D35C0A /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7122F90000100D35C0A /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7132F90000100D35C0A /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D1D6E7142F90000100D35C0A /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		D1D6E7152F90000100D35C0A /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D5A1E0012F90000100D35C0A /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		D5A1E0022F90000100D35C0A /* ShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViews.swift; sourceTree = "<group>"; };
+		D5A1E0032F90000100D35C0A /* ShareRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareRunView.swift; sourceTree = "<group>"; };
+		D5A1E0042F90000100D35C0A /* ShareSheetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetModel.swift; sourceTree = "<group>"; };
+		D5A1E0052F90000100D35C0A /* ShareMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareMedia.swift; sourceTree = "<group>"; };
+		D5A1E0062F90000100D35C0A /* ShareTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareTransport.swift; sourceTree = "<group>"; };
+		D5A1E0072F90000100D35C0A /* ShareLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareLogic.swift; sourceTree = "<group>"; };
+		D5A1E0082F90000100D35C0A /* ShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareText.swift; sourceTree = "<group>"; };
+		D5A1E0092F90000100D35C0A /* ShareStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareStrings.swift; sourceTree = "<group>"; };
+		D5A1E00A2F90000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D5A1E00B2F90000100D35C0A /* DescallShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DescallShare.entitlements; sourceTree = "<group>"; };
+		D5A1E00C2F90000100D35C0A /* DescallShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DescallShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7BE64825C240A2AF9508065B /* BlocksGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlocksGame.swift; sourceTree = "<group>"; };
+		7F8C99413B810CF47DE0C828 /* BricksGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BricksGame.swift; sourceTree = "<group>"; };
+		8765A67F9811D2DF5BAD05CD /* CardsGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardsGame.swift; sourceTree = "<group>"; };
+		7E1A55B4B5CB359287CE280A /* ChessGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChessGame.swift; sourceTree = "<group>"; };
+		1AE3B201F921F07818009EEA /* GameArt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameArt.swift; sourceTree = "<group>"; };
+		AE0978A71364201BEB70F4DC /* GameServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameServices.swift; sourceTree = "<group>"; };
+		92673463D78468F4B17BBD29 /* GameShell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameShell.swift; sourceTree = "<group>"; };
+		C982A14F267DCABE4C904C35 /* GameSprite.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameSprite.swift; sourceTree = "<group>"; };
+		562514B0D94B8E22D94BFDF9 /* GameStrings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameStrings.swift; sourceTree = "<group>"; };
+		9E9CC3F79707BAB7C7987C4C /* GameStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameStyle.swift; sourceTree = "<group>"; };
+		E2A8EB74C2F303D13C347EC1 /* GamesHubView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GamesHubView.swift; sourceTree = "<group>"; };
+		DC9E5FE1A3A4C0205B812903 /* MergeGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MergeGame.swift; sourceTree = "<group>"; };
+		A928D07910A300221BF5E254 /* MinesGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinesGame.swift; sourceTree = "<group>"; };
+		DB45F7234F91A411C6F8C120 /* PongGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PongGame.swift; sourceTree = "<group>"; };
+		489C9C8DF36472BDCD9C4EA4 /* RunnerGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RunnerGame.swift; sourceTree = "<group>"; };
+		B6D05C308322FA78F87F8D97 /* SnakeGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnakeGame.swift; sourceTree = "<group>"; };
+		1435DB35804E28A10145B2A5 /* SudokuGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SudokuGame.swift; sourceTree = "<group>"; };
+		A1F0C2CC9BDD5EE8D4A645D4 /* BlocksLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlocksLogic.swift; sourceTree = "<group>"; };
+		DB9825487D5E706F15CFC01E /* BrickLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrickLogic.swift; sourceTree = "<group>"; };
+		8B101A2C7982D41478B793C9 /* CardsLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardsLogic.swift; sourceTree = "<group>"; };
+		5321B379FFD17ADFA2650764 /* ChallengeLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChallengeLogic.swift; sourceTree = "<group>"; };
+		8C6BF5601613350A290A7CF0 /* ChessLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChessLogic.swift; sourceTree = "<group>"; };
+		6A4EE461ED5F9AAC55FD63BC /* GameCore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameCore.swift; sourceTree = "<group>"; };
+		34B26BA50BD5E68ACF77810B /* MergeLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MergeLogic.swift; sourceTree = "<group>"; };
+		E977BFB7BA6BD669CD49A55E /* MinesLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinesLogic.swift; sourceTree = "<group>"; };
+		2F22C1FD5CF0A5635BD165A2 /* PongLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PongLogic.swift; sourceTree = "<group>"; };
+		2344686BCDD3E4BE122362A0 /* RunnerLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RunnerLogic.swift; sourceTree = "<group>"; };
+		90A2CD07896208EA1D0AA73A /* SnakeLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnakeLogic.swift; sourceTree = "<group>"; };
+		E91AA4C5001EB5551480C26F /* SudokuLogic.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SudokuLogic.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,9 +432,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1D6E72C2F90000100D35C0A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D5A1E0222F90000100D35C0A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C42A110000282F80000100D3 /* DescallKit */ = {
+			isa = PBXGroup;
+			children = (
+				C42A110000012F80000100D3 /* DescallModels.swift */,
+				C42A110000032F80000100D3 /* DescallKitLogic.swift */,
+				C42A110000052F80000100D3 /* DescallSessionStore.swift */,
+				C42A110000072F80000100D3 /* DescallAPIClient.swift */,
+			);
+			path = DescallKit;
+			sourceTree = "<group>";
+		};
 		0C3862DAC280D8158D852050 /* watchOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -279,6 +485,7 @@
 				D832932F076545664848648E /* Info.plist */,
 				3155CE73B2690E6CB377DE05 /* WatchAdminModels.swift */,
 				2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */,
+				7B524DA985CC06B9192DB056 /* Games */,
 			);
 			name = DescallWatch;
 			path = DescallWatch;
@@ -287,12 +494,16 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				D1D6E72A2F90000100D35C0A /* WidgetShared */,
+				D1D6E7292F90000100D35C0A /* DescallWidgets */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				A4A0001C2F60000100D35C0A /* NotifyShared */,
+				C42A110000282F80000100D3 /* DescallKit */,
 				A4A0001D2F60000100D35C0A /* NotificationService */,
 				A4A0001E2F60000100D35C0A /* NotificationContent */,
 				B7A5000B2F70000100D35C0A /* DescallBroadcast */,
+				D5A1E01F2F90000100D35C0A /* DescallShare */,
 				504EC3051FED79650016851F /* Products */,
 				11197EEA33F596FB2A540E22 /* DescallWatch */,
 				A78DAFC3E8722662BF039DC4 /* WatchShared */,
@@ -303,11 +514,13 @@
 		504EC3051FED79650016851F /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */,
 				504EC3041FED79650016851F /* App.app */,
 				A4A0000C2F60000100D35C0A /* NotificationService.appex */,
 				A4A0000D2F60000100D35C0A /* NotificationContent.appex */,
 				51DE02139004908D4C36EB4E /* DescallWatch.app */,
 				B7A500092F70000100D35C0A /* DescallBroadcast.appex */,
+				D5A1E00C2F90000100D35C0A /* DescallShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -315,6 +528,7 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				D1D6E70A2F90000100D35C0A /* DescallWidgetsPlugin.swift */,
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */,
 				D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */,
@@ -322,6 +536,8 @@
 				D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */,
 				D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */,
 				D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */,
+				C9A7E1022F80000100D35C0A /* DescallPasskeyPlugin.swift */,
+				C9A7E1042F80000100D35C0A /* DescallPasskeyLogic.swift */,
 				E7C41A022F5B000100D35C0A /* DescallCallManager.swift */,
 				E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */,
 				E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */,
@@ -349,6 +565,11 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 				0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */,
+				C42A110000092F80000100D3 /* DescallIntentsPlugin.swift */,
+				C42A1100000B2F80000100D3 /* DescallAppIntents.swift */,
+				C42A1100000D2F80000100D3 /* AppShortcuts.strings */,
+				C42A110000162F80000100D3 /* Localizable.strings */,
+				C42A1100001F2F80000100D3 /* Intents.strings */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -410,6 +631,94 @@
 			path = WatchShared;
 			sourceTree = "<group>";
 		};
+		D1D6E7292F90000100D35C0A /* DescallWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				D1D6E7012F90000100D35C0A /* Widgets.swift */,
+				D1D6E7022F90000100D35C0A /* WidgetSupport.swift */,
+				D1D6E7032F90000100D35C0A /* WidgetData.swift */,
+				D1D6E7042F90000100D35C0A /* WidgetViews.swift */,
+				D1D6E7052F90000100D35C0A /* LiveCallActivity.swift */,
+				D1D6E7062F90000100D35C0A /* WaveIntent.swift */,
+				D1D6E70E2F90000100D35C0A /* Localizable.strings */,
+				D1D6E70B2F90000100D35C0A /* Info.plist */,
+				D1D6E70C2F90000100D35C0A /* DescallWidgets.entitlements */,
+			);
+			path = DescallWidgets;
+			sourceTree = "<group>";
+		};
+		D1D6E72A2F90000100D35C0A /* WidgetShared */ = {
+			isa = PBXGroup;
+			children = (
+				D1D6E7072F90000100D35C0A /* DescallWidgetLogic.swift */,
+				D1D6E7082F90000100D35C0A /* DescallWidgetStore.swift */,
+				D1D6E7092F90000100D35C0A /* DescallCallActivity.swift */,
+			);
+			path = WidgetShared;
+			sourceTree = "<group>";
+		};
+		D5A1E01F2F90000100D35C0A /* DescallShare */ = {
+			isa = PBXGroup;
+			children = (
+				D5A1E0012F90000100D35C0A /* ShareViewController.swift */,
+				D5A1E0022F90000100D35C0A /* ShareViews.swift */,
+				D5A1E0032F90000100D35C0A /* ShareRunView.swift */,
+				D5A1E0042F90000100D35C0A /* ShareSheetModel.swift */,
+				D5A1E0052F90000100D35C0A /* ShareMedia.swift */,
+				D5A1E0062F90000100D35C0A /* ShareTransport.swift */,
+				D5A1E0072F90000100D35C0A /* ShareLogic.swift */,
+				D5A1E0082F90000100D35C0A /* ShareText.swift */,
+				D5A1E0092F90000100D35C0A /* ShareStrings.swift */,
+				D5A1E00A2F90000100D35C0A /* Info.plist */,
+				D5A1E00B2F90000100D35C0A /* DescallShare.entitlements */,
+			);
+			path = DescallShare;
+			sourceTree = "<group>";
+		};
+		7B524DA985CC06B9192DB056 /* Games */ = {
+			isa = PBXGroup;
+			children = (
+				79EFEEB072ED47084389003E /* Logic */,
+				7BE64825C240A2AF9508065B /* BlocksGame.swift */,
+				7F8C99413B810CF47DE0C828 /* BricksGame.swift */,
+				8765A67F9811D2DF5BAD05CD /* CardsGame.swift */,
+				7E1A55B4B5CB359287CE280A /* ChessGame.swift */,
+				1AE3B201F921F07818009EEA /* GameArt.swift */,
+				AE0978A71364201BEB70F4DC /* GameServices.swift */,
+				92673463D78468F4B17BBD29 /* GameShell.swift */,
+				C982A14F267DCABE4C904C35 /* GameSprite.swift */,
+				562514B0D94B8E22D94BFDF9 /* GameStrings.swift */,
+				9E9CC3F79707BAB7C7987C4C /* GameStyle.swift */,
+				E2A8EB74C2F303D13C347EC1 /* GamesHubView.swift */,
+				DC9E5FE1A3A4C0205B812903 /* MergeGame.swift */,
+				A928D07910A300221BF5E254 /* MinesGame.swift */,
+				DB45F7234F91A411C6F8C120 /* PongGame.swift */,
+				489C9C8DF36472BDCD9C4EA4 /* RunnerGame.swift */,
+				B6D05C308322FA78F87F8D97 /* SnakeGame.swift */,
+				1435DB35804E28A10145B2A5 /* SudokuGame.swift */,
+			);
+			path = Games;
+			sourceTree = "<group>";
+		};
+		79EFEEB072ED47084389003E /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				A1F0C2CC9BDD5EE8D4A645D4 /* BlocksLogic.swift */,
+				DB9825487D5E706F15CFC01E /* BrickLogic.swift */,
+				8B101A2C7982D41478B793C9 /* CardsLogic.swift */,
+				5321B379FFD17ADFA2650764 /* ChallengeLogic.swift */,
+				8C6BF5601613350A290A7CF0 /* ChessLogic.swift */,
+				6A4EE461ED5F9AAC55FD63BC /* GameCore.swift */,
+				34B26BA50BD5E68ACF77810B /* MergeLogic.swift */,
+				E977BFB7BA6BD669CD49A55E /* MinesLogic.swift */,
+				2F22C1FD5CF0A5635BD165A2 /* PongLogic.swift */,
+				2344686BCDD3E4BE122362A0 /* RunnerLogic.swift */,
+				90A2CD07896208EA1D0AA73A /* SnakeLogic.swift */,
+				E91AA4C5001EB5551480C26F /* SudokuLogic.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -426,10 +735,12 @@
 			buildRules = (
 			);
 			dependencies = (
+				D1D6E7332F90000100D35C0A /* PBXTargetDependency */,
 				A4A0002A2F60000100D35C0A /* PBXTargetDependency */,
 				A4A0002B2F60000100D35C0A /* PBXTargetDependency */,
 				58D90E1A1F814213C4236172 /* PBXTargetDependency */,
 				B7A500142F70000100D35C0A /* PBXTargetDependency */,
+				D5A1E01E2F90000100D35C0A /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -512,6 +823,40 @@
 			productReference = B7A500092F70000100D35C0A /* DescallBroadcast.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D1D6E72E2F90000100D35C0A /* DescallWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1D6E72F2F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallWidgets" */;
+			buildPhases = (
+				D1D6E72B2F90000100D35C0A /* Sources */,
+				D1D6E72C2F90000100D35C0A /* Frameworks */,
+				D1D6E72D2F90000100D35C0A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DescallWidgets;
+			productName = DescallWidgets;
+			productReference = D1D6E70D2F90000100D35C0A /* DescallWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		D5A1E0202F90000100D35C0A /* DescallShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5A1E0262F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallShare" */;
+			buildPhases = (
+				D5A1E0212F90000100D35C0A /* Sources */,
+				D5A1E0222F90000100D35C0A /* Frameworks */,
+				D5A1E0232F90000100D35C0A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DescallShare;
+			productName = DescallShare;
+			productReference = D5A1E00C2F90000100D35C0A /* DescallShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -521,6 +866,10 @@
 				LastSwiftUpdateCheck = 0920;
 				LastUpgradeCheck = 0920;
 				TargetAttributes = {
+					D1D6E72E2F90000100D35C0A = {
+						CreatedOnToolsVersion = 26.0;
+						ProvisioningStyle = Automatic;
+					};
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
@@ -535,6 +884,10 @@
 						ProvisioningStyle = Automatic;
 					};
 					B7A5000C2F70000100D35C0A = {
+						CreatedOnToolsVersion = 26.0;
+						ProvisioningStyle = Automatic;
+					};
+					D5A1E0202F90000100D35C0A = {
 						CreatedOnToolsVersion = 26.0;
 						ProvisioningStyle = Automatic;
 					};
@@ -564,11 +917,13 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				D1D6E72E2F90000100D35C0A /* DescallWidgets */,
 				504EC3031FED79650016851F /* App */,
 				A4A0001F2F60000100D35C0A /* NotificationService */,
 				A4A000202F60000100D35C0A /* NotificationContent */,
 				AEA9A5A184ECD4D6E8B75F81 /* DescallWatch */,
 				B7A5000C2F70000100D35C0A /* DescallBroadcast */,
+				D5A1E0202F90000100D35C0A /* DescallShare */,
 			);
 		};
 /* End PBXProject section */
@@ -583,6 +938,9 @@
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				D35C0A0E2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy in Resources */,
 				F1A2B3C41FED79650016851F /* InfoPlist.strings in Resources */,
+				C42A1100000E2F80000100D3 /* AppShortcuts.strings in Resources */,
+				C42A110000172F80000100D3 /* Localizable.strings in Resources */,
+				C42A110000202F80000100D3 /* Intents.strings in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
@@ -618,6 +976,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1D6E72D2F90000100D35C0A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1D6E7272F90000100D35C0A /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D5A1E0232F90000100D35C0A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -625,6 +998,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1D6E7262F90000100D35C0A /* DescallWidgetsPlugin.swift in Sources */,
+				D1D6E7252F90000100D35C0A /* DescallCallActivity.swift in Sources */,
+				D1D6E7242F90000100D35C0A /* DescallWidgetStore.swift in Sources */,
+				D1D6E7232F90000100D35C0A /* DescallWidgetLogic.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */,
@@ -633,6 +1010,8 @@
 				D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */,
 				D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */,
 				D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */,
+				C9A7E1012F80000100D35C0A /* DescallPasskeyPlugin.swift in Sources */,
+				C9A7E1032F80000100D35C0A /* DescallPasskeyLogic.swift in Sources */,
 				E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */,
 				E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */,
 				E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */,
@@ -652,6 +1031,14 @@
 				B7A500182F70000100D35C0A /* DescallScreenBroadcastLogic.swift in Sources */,
 				F80D42F5B066C951C7D8449D /* DescallWatchBridge.swift in Sources */,
 				D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */,
+				C42A110000022F80000100D3 /* DescallModels.swift in Sources */,
+				C42A110000042F80000100D3 /* DescallKitLogic.swift in Sources */,
+				C42A110000062F80000100D3 /* DescallSessionStore.swift in Sources */,
+				C42A110000082F80000100D3 /* DescallAPIClient.swift in Sources */,
+				C42A1100000A2F80000100D3 /* DescallIntentsPlugin.swift in Sources */,
+				C42A1100000C2F80000100D3 /* DescallAppIntents.swift in Sources */,
+				D5A1E01A2F90000100D35C0A /* ShareLogic.swift in Sources */,
+				D5A1E01B2F90000100D35C0A /* ShareTransport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -672,6 +1059,35 @@
 				17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */,
 				8BBDE6E1ACB94C29A29D4143 /* WatchAdminModels.swift in Sources */,
 				D8A21F0275ACCE30B3C432E1 /* WatchAdminViews.swift in Sources */,
+				7237D46C53673E347996A1F1 /* BlocksGame.swift in Sources */,
+				5EC5497909FC5386172C6499 /* BricksGame.swift in Sources */,
+				6DEDFA3B15333A6F7B2D525C /* CardsGame.swift in Sources */,
+				59F91F4E9905C08092C28F9E /* ChessGame.swift in Sources */,
+				3F0CB99952CCEB003901284F /* GameArt.swift in Sources */,
+				F35F115E72F0159916D16E4F /* GameServices.swift in Sources */,
+				6C76CC7461177F5AFB68E1A7 /* GameShell.swift in Sources */,
+				A1E1A49DAA624979E9B47E35 /* GameSprite.swift in Sources */,
+				FB4F2A765154B4C9C85CFB0E /* GameStrings.swift in Sources */,
+				35A8AE4684EEFDA2423C66A3 /* GameStyle.swift in Sources */,
+				2124B7B90732000D77A1EDCC /* GamesHubView.swift in Sources */,
+				07C2A88578F527FF50871A48 /* MergeGame.swift in Sources */,
+				563417B6B551D0AF27CF446A /* MinesGame.swift in Sources */,
+				396F0CD874F62437A3549794 /* PongGame.swift in Sources */,
+				67E69707F5ED34AF9CF8D8C1 /* RunnerGame.swift in Sources */,
+				B91F6CF108C1C69A838E1C59 /* SnakeGame.swift in Sources */,
+				E021A9CD96D4FE4472CE5479 /* SudokuGame.swift in Sources */,
+				5F1446A6DDE88546F6BF04E1 /* BlocksLogic.swift in Sources */,
+				6B0A92AF49FA72FB4996D384 /* BrickLogic.swift in Sources */,
+				5E52701EA557B6E01CFD0FCF /* CardsLogic.swift in Sources */,
+				293FE4803AAAAE6C129E0298 /* ChallengeLogic.swift in Sources */,
+				92349CF9F8557A34FAC55059 /* ChessLogic.swift in Sources */,
+				D5EA2166050360ACAC6AD08E /* GameCore.swift in Sources */,
+				401CCAF942C8FA469D5DA01A /* MergeLogic.swift in Sources */,
+				1257162158E13B5822FDE21F /* MinesLogic.swift in Sources */,
+				8ACDFC76D9C1C9B70BAD457E /* PongLogic.swift in Sources */,
+				0CECB7B5EAAC11A5C9AF5D8A /* RunnerLogic.swift in Sources */,
+				844CF8BC60676CA27BCB61F9 /* SnakeLogic.swift in Sources */,
+				FFC88783E3760F237B966FCE /* SudokuLogic.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -704,6 +1120,46 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1D6E72B2F90000100D35C0A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1D6E7162F90000100D35C0A /* Widgets.swift in Sources */,
+				D1D6E7172F90000100D35C0A /* WidgetSupport.swift in Sources */,
+				D1D6E7182F90000100D35C0A /* WidgetData.swift in Sources */,
+				D1D6E7192F90000100D35C0A /* WidgetViews.swift in Sources */,
+				D1D6E71A2F90000100D35C0A /* LiveCallActivity.swift in Sources */,
+				D1D6E71B2F90000100D35C0A /* WaveIntent.swift in Sources */,
+				D1D6E71C2F90000100D35C0A /* DescallWidgetLogic.swift in Sources */,
+				D1D6E71D2F90000100D35C0A /* DescallWidgetStore.swift in Sources */,
+				D1D6E71E2F90000100D35C0A /* DescallCallActivity.swift in Sources */,
+				D1D6E71F2F90000100D35C0A /* DescallModels.swift in Sources */,
+				D1D6E7202F90000100D35C0A /* DescallKitLogic.swift in Sources */,
+				D1D6E7212F90000100D35C0A /* DescallSessionStore.swift in Sources */,
+				D1D6E7222F90000100D35C0A /* DescallAPIClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D5A1E0212F90000100D35C0A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5A1E00D2F90000100D35C0A /* ShareViewController.swift in Sources */,
+				D5A1E00E2F90000100D35C0A /* ShareViews.swift in Sources */,
+				D5A1E00F2F90000100D35C0A /* ShareRunView.swift in Sources */,
+				D5A1E0102F90000100D35C0A /* ShareSheetModel.swift in Sources */,
+				D5A1E0112F90000100D35C0A /* ShareMedia.swift in Sources */,
+				D5A1E0122F90000100D35C0A /* ShareTransport.swift in Sources */,
+				D5A1E0132F90000100D35C0A /* ShareLogic.swift in Sources */,
+				D5A1E0142F90000100D35C0A /* ShareText.swift in Sources */,
+				D5A1E0152F90000100D35C0A /* ShareStrings.swift in Sources */,
+				D5A1E0162F90000100D35C0A /* DescallModels.swift in Sources */,
+				D5A1E0172F90000100D35C0A /* DescallKitLogic.swift in Sources */,
+				D5A1E0182F90000100D35C0A /* DescallSessionStore.swift in Sources */,
+				D5A1E0192F90000100D35C0A /* DescallAPIClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -728,9 +1184,61 @@
 			target = B7A5000C2F70000100D35C0A /* DescallBroadcast */;
 			targetProxy = B7A500102F70000100D35C0A /* PBXContainerItemProxy */;
 		};
+		D1D6E7332F90000100D35C0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1D6E72E2F90000100D35C0A /* DescallWidgets */;
+			targetProxy = D1D6E7322F90000100D35C0A /* PBXContainerItemProxy */;
+		};
+		D5A1E01E2F90000100D35C0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D5A1E0202F90000100D35C0A /* DescallShare */;
+			targetProxy = D5A1E01D2F90000100D35C0A /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		C42A1100000D2F80000100D3 /* AppShortcuts.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A1100000F2F80000100D3 /* en */,
+				C42A110000102F80000100D3 /* tr */,
+				C42A110000112F80000100D3 /* de */,
+				C42A110000122F80000100D3 /* es */,
+				C42A110000132F80000100D3 /* fr */,
+				C42A110000142F80000100D3 /* pt-BR */,
+				C42A110000152F80000100D3 /* ru */,
+			);
+			name = AppShortcuts.strings;
+			sourceTree = "<group>";
+		};
+		C42A110000162F80000100D3 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A110000182F80000100D3 /* en */,
+				C42A110000192F80000100D3 /* tr */,
+				C42A1100001A2F80000100D3 /* de */,
+				C42A1100001B2F80000100D3 /* es */,
+				C42A1100001C2F80000100D3 /* fr */,
+				C42A1100001D2F80000100D3 /* pt-BR */,
+				C42A1100001E2F80000100D3 /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		C42A1100001F2F80000100D3 /* Intents.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C42A110000212F80000100D3 /* en */,
+				C42A110000222F80000100D3 /* tr */,
+				C42A110000232F80000100D3 /* de */,
+				C42A110000242F80000100D3 /* es */,
+				C42A110000252F80000100D3 /* fr */,
+				C42A110000262F80000100D3 /* pt-BR */,
+				C42A110000272F80000100D3 /* ru */,
+			);
+			name = Intents.strings;
+			sourceTree = "<group>";
+		};
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -759,6 +1267,20 @@
 				18774A888EB07821106CB30A /* ru */,
 			);
 			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D1D6E70E2F90000100D35C0A /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D1D6E70F2F90000100D35C0A /* en */,
+				D1D6E7102F90000100D35C0A /* tr */,
+				D1D6E7112F90000100D35C0A /* de */,
+				D1D6E7122F90000100D35C0A /* es */,
+				D1D6E7132F90000100D35C0A /* fr */,
+				D1D6E7142F90000100D35C0A /* pt-BR */,
+				D1D6E7152F90000100D35C0A /* ru */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -1122,6 +1644,108 @@
 			};
 			name = Release;
 		};
+		D1D6E7302F90000100D35C0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallWidgets/DescallWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1D6E7312F90000100D35C0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallWidgets/DescallWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D5A1E0242F90000100D35C0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallShare/DescallShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D5A1E0252F90000100D35C0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DescallShare/DescallShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4.1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1175,6 +1799,24 @@
 			buildConfigurations = (
 				B7A500152F70000100D35C0A /* Debug */,
 				B7A500162F70000100D35C0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1D6E72F2F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1D6E7302F90000100D35C0A /* Debug */,
+				D1D6E7312F90000100D35C0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D5A1E0262F90000100D35C0A /* Build configuration list for PBXNativeTarget "DescallShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5A1E0242F90000100D35C0A /* Debug */,
+				D5A1E0252F90000100D35C0A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

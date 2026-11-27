@@ -12,11 +12,13 @@ import {
   optimizeScreenShareTrack,
   resolveScreenCaptureSize,
   screenBitrateForPeerCount,
+  tuneLateScreenSender,
   ensureScreenShareAudioTrack,
   isMobileScreenCapture,
   captureScreenShareStream,
   showElectronScreenPicker,
 } from "../lib/webrtcScreenShare";
+import { screenEncoderFor } from "../lib/screenShareEncoder";
 import {
   addDedicatedSender,
   announcementFromSenders,
@@ -1387,9 +1389,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         return;
       }
 
-      const { width, height, fps: frameRate } = resolveScreenCaptureSize(effectiveQuality);
       const peerCount = Math.max(1, pcMapRef.current.size);
-      const maxBitrate = screenBitrateForPeerCount(peerCount, effectiveQuality.resolution || "720p");
+      const { width, height, fps: frameRate } = resolveScreenCaptureSize(effectiveQuality, { peerCount: peerCount + 1 });
+      const maxBitrate = screenBitrateForPeerCount(peerCount, effectiveQuality.resolution || "720p", frameRate);
       
       let stream;
 
@@ -1408,6 +1410,15 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         height,
         fps: frameRate,
         contentHint: effectiveQuality.contentHint || "motion",
+        resolution: effectiveQuality.resolution,
+        peerCount,
+        transport: "mesh",
+      });
+      // CPU fallback without per-sender codec switching: re-offer to that peer.
+      screenEncoderFor(screenTrack)?.setRenegotiator(async ({ pc }) => {
+        for (const [uid, pd] of pcMapRef.current.entries()) {
+          if (pd?.pc === pc) await renegotiateWithPeerRef.current?.(uid, pd);
+        }
       });
       if (screenTrack.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
@@ -1462,6 +1473,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await optimizeScreenShareSender(sender, {
             maxBitrate,
             maxFramerate: frameRate,
+            pc: peerData.pc,
           });
 
           await renegotiateWithPeer(userId, peerData);
@@ -1711,7 +1723,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await optimizeScreenShareSender(sender, {
             maxBitrate: screenBitrateForPeerCount(
               pcMapRef.current.size,
-              screenQualityRef.current?.resolution
+              screenQualityRef.current?.resolution,
+              quality.fps
             ),
             maxFramerate: quality.fps,
           });
@@ -1823,7 +1836,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await optimizeScreenShareSender(sender, {
             maxBitrate: screenBitrateForPeerCount(
               pcMapRef.current.size,
-              screenQualityRef.current?.resolution
+              screenQualityRef.current?.resolution,
+              q.fps
             ),
             maxFramerate: q.fps,
           });
@@ -1940,6 +1954,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
             if (screenAudioTrack) {
               newPeerData.screenAudioSender = addDedicatedSender(pc, screenAudioTrack, screenStreamRef.current);
             }
+            void tuneLateScreenSender(pc, sender, pcMapRef.current.size);
           } catch (err) {
             console.warn("[GroupCall] attach screen on new PC failed:", err);
           }
@@ -2009,6 +2024,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
                 if (screenAudioTrack && !peerData.screenAudioSender) {
                   peerData.screenAudioSender = addDedicatedSender(peerData.pc, screenAudioTrack, screenStreamRef.current);
                 }
+                void tuneLateScreenSender(peerData.pc, peerData.screenSender, pcMapRef.current.size);
               } catch {
                 /* may already exist */
               }

@@ -48,6 +48,14 @@ export function trackVisit() {
   postCollect("visit");
 }
 
+/**
+ * A product event by name (backend lib/userAnalytics.js ALLOWED_EVENTS decides what is kept;
+ * props: path, source, method, campaign). The sign-up card's Ölçüm uses it.
+ */
+export function trackProductEvent(event, props = {}) {
+  postCollect(event, { props });
+}
+
 export function trackSignupStarted() {
   try {
     if (localStorage.getItem(SIGNUP_STARTED_KEY) === "1") return;

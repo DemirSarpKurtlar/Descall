@@ -180,4 +180,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Not in the admin windows: the tray panel follows the main window only.
   setTrayState: noop,
   onTrayAction: () => noop,
+  // Nor the taskbar jump list (4.2): only the main window sets it.
+  setJumpList: noop,
+  takeJumpListAction: () => Promise.resolve(null),
+  onJumpListAction: () => noop,
 });

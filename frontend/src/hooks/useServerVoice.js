@@ -9,6 +9,7 @@ import {
   trackPendingRoom,
 } from "../lib/liveKitRoomSlot.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { rumDone } from "../lib/perf/rum.js";
 import { preloadIceServers } from "../lib/iceConfig";
 import { isNativeAndroid } from "../lib/platform";
 import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
@@ -43,7 +44,10 @@ import {
   resolveScreenCaptureSize,
   screenBitrateForPeerCount,
   isMobileScreenCapture,
+  tuneLateScreenSender,
 } from "../lib/webrtcScreenShare";
+import { localDecodeFamilies, localVideoCaps, screenEncoderFor } from "../lib/screenShareEncoder";
+import { pickSfuScreenCodec, sanitizeVideoDecode } from "../lib/screenShareCodec";
 import {
   addDedicatedSender,
   announcementFromSenders,
@@ -207,6 +211,12 @@ export function useServerVoice(socket) {
   const [screenStream, setScreenStream] = useState(null);
   const screenStreamRef = useRef(null);
   const stopScreenShareRef = useRef(null);
+  // SFU screen codec (screenShareCodec.pickSfuScreenCodec): every other member's video
+  // decode list from channel state, the live publication ({ track, codec, quality, fps })
+  // and the debounce of a codec change when the room changes.
+  const memberDecodeRef = useRef(new Map());
+  const sfuScreenRef = useRef(null);
+  const sfuCodecTimerRef = useRef(null);
   const startScreenShareRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
@@ -1087,6 +1097,7 @@ export function useServerVoice(socket) {
         if (v && peer) {
           peer.screenSender = addDedicatedSender(pc, v, ss);
           if (a) peer.screenAudioSender = addDedicatedSender(pc, a, ss);
+          void tuneLateScreenSender(pc, peer.screenSender, Math.max(1, pcMapRef.current.size));
         }
       }
       pc.ontrack = (e) => {
@@ -1452,6 +1463,7 @@ export function useServerVoice(socket) {
       if (activeChannelIdRef.current) leave();
       const epoch = ++voiceJoinEpochRef.current;
       const stillJoining = () => voiceJoinEpochRef.current === epoch;
+      const joinStartedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
 
       setConnecting(true);
       setError("");
@@ -1584,6 +1596,8 @@ export function useServerVoice(socket) {
             console.warn("[ServerVoice] SFU connect failed; falling back to mesh:", lastSfuErr);
           }
         }
+        // Performans: "Sese katılma" = join click -> seat confirmed and media connected.
+        if (stillJoining()) rumDone("voicejoin", { route: "app/ses", kind: sfuModeRef.current ? "sfu" : "mesh", fallbackStart: joinStartedAt });
       } catch (err) {
         if (!stillJoining()) return;
         telemetry?.finish(isVoiceMicError(err) ? "mic-error" : "failed");
@@ -1815,6 +1829,10 @@ export function useServerVoice(socket) {
       return;
     }
     if (!isScreenSharing && !screenStreamRef.current) return;
+    if (sfuCodecTimerRef.current) clearTimeout(sfuCodecTimerRef.current);
+    sfuCodecTimerRef.current = null;
+    const sfuScreen = sfuScreenRef.current;
+    sfuScreenRef.current = null;
     if (sfuModeRef.current && liveKitRoomRef.current && screenStreamRef.current) {
       for (const track of screenStreamRef.current.getTracks()) {
         try {
@@ -1822,6 +1840,19 @@ export function useServerVoice(socket) {
         } catch {
           /* ignore */
         }
+      }
+    }
+    // A codec switch published a clone of the capture: retire and stop it as well.
+    if (sfuScreen?.track && !screenStreamRef.current?.getTracks?.().includes(sfuScreen.track)) {
+      try {
+        liveKitRoomRef.current?.localParticipant?.unpublishTrack(sfuScreen.track, true);
+      } catch {
+        /* ignore */
+      }
+      try {
+        sfuScreen.track.stop();
+      } catch {
+        /* ignore */
       }
     }
     for (const [userId, peerData] of pcMapRef.current.entries()) {
@@ -1852,6 +1883,88 @@ export function useServerVoice(socket) {
     if (!opts?.quiet) audioManager.play("screenShareStop");
   }, [applyNativeShare, isScreenSharing, renegotiateWithPeer, socket]);
 
+  /** The codec an SFU screen publish should use now (best one every member decodes). */
+  const desiredSfuCodec = useCallback((track) => {
+    const session = track ? screenEncoderFor(track) : null;
+    return pickSfuScreenCodec({
+      encode: localVideoCaps().encode,
+      viewers: [...memberDecodeRef.current.values()],
+      blocked: session?.blocked || [],
+      av1Allowed: session ? session.av1Ok() : false,
+    });
+  }, []);
+
+  const sfuEncodingFor = useCallback((family, quality, fps) => ({
+    family,
+    contentHint: quality?.contentHint || "motion",
+    maxBitrate: screenBitrateForPeerCount(1, quality?.resolution || "1080p", fps, "sfu"),
+    fps,
+  }), []);
+
+  /**
+   * Move the SFU screen share to another codec without stopping it: publish a clone of the
+   * capture with the new codec, then retire the old publication (viewers merge the new
+   * track into the same screen stream before the old one leaves, so the stage stays up).
+   */
+  const swapSfuScreenCodec = useCallback(async (codec) => {
+    const room = liveKitRoomRef.current;
+    const cur = sfuScreenRef.current;
+    const source = screenStreamRef.current?.getVideoTracks?.()[0] || null;
+    if (!room || !cur || !source || !sfuModeRef.current || source.readyState !== "live") return false;
+    if (codec === cur.codec) return true;
+    let next = null;
+    try {
+      next = source.clone();
+      const pub = await room.localParticipant.publishTrack(
+        next,
+        liveKitScreenVideoPublishOptions(sfuEncodingFor(codec, cur.quality, cur.fps))
+      );
+      if (sfuScreenRef.current !== cur || screenStreamRef.current?.getVideoTracks?.()[0] !== source) {
+        // The share stopped or restarted while publishing: drop the clone.
+        try {
+          room.localParticipant.unpublishTrack(next, true);
+        } catch {
+          next.stop();
+        }
+        return false;
+      }
+      try {
+        await room.localParticipant.unpublishTrack(cur.track, cur.track !== source);
+      } catch {
+        /* already gone */
+      }
+      sfuScreenRef.current = { ...cur, track: next, codec };
+      const sender = pub?.track?.sender;
+      if (sender) screenEncoderFor(source)?.attach(null, sender);
+      return true;
+    } catch (err) {
+      console.warn("[ServerVoice] screen codec switch failed, keeping the current one:", err?.message || err);
+      try {
+        next?.stop();
+      } catch {
+        /* ignore */
+      }
+      return false;
+    }
+  }, [sfuEncodingFor]);
+
+  /** Re-check the SFU codec after the room changed (debounced, the backup codec covers the gap). */
+  const scheduleSfuCodecCheck = useCallback((delayMs = 4000) => {
+    if (sfuCodecTimerRef.current) clearTimeout(sfuCodecTimerRef.current);
+    sfuCodecTimerRef.current = null;
+    if (!sfuScreenRef.current) return;
+    sfuCodecTimerRef.current = setTimeout(() => {
+      sfuCodecTimerRef.current = null;
+      const source = screenStreamRef.current?.getVideoTracks?.()[0] || null;
+      if (!sfuScreenRef.current || !source) return;
+      const want = desiredSfuCodec(source);
+      if (want !== sfuScreenRef.current.codec) void swapSfuScreenCodec(want);
+    }, delayMs);
+  }, [desiredSfuCodec, swapSfuScreenCodec]);
+
+  const scheduleSfuCodecCheckRef = useRef(null);
+  scheduleSfuCodecCheckRef.current = scheduleSfuCodecCheck;
+
   const startScreenShare = useCallback(async (opts = {}) => {
     if (isScreenSharing || !activeChannelIdRef.current) return;
     if (!canPublishVideo()) {
@@ -1874,7 +1987,12 @@ export function useServerVoice(socket) {
       const { width, height, fps: frameRate } = resolveScreenCaptureSize(quality, {
         peerCount: sfuModeRef.current ? 1 : peerCount + 1,
       });
-      const maxBitrate = screenBitrateForPeerCount(sfuModeRef.current ? 1 : peerCount, quality.resolution || "720p");
+      const maxBitrate = screenBitrateForPeerCount(
+        sfuModeRef.current ? 1 : peerCount,
+        quality.resolution || "720p",
+        frameRate,
+        sfuModeRef.current ? "sfu" : "mesh"
+      );
       stream = await captureScreenShareStream({
         width,
         height,
@@ -1889,6 +2007,20 @@ export function useServerVoice(socket) {
         height,
         fps: frameRate,
         contentHint: quality.contentHint || "motion",
+        resolution: quality.resolution,
+        peerCount: sfuModeRef.current ? 1 : peerCount,
+        transport: sfuModeRef.current ? "sfu" : "mesh",
+      });
+      // CPU fallback (AV1 -> VP9 -> default): SFU republishes with the lighter codec,
+      // a mesh peer gets one more offer when the engine cannot switch a live sender.
+      screenEncoderFor(screenTrack)?.setRenegotiator(async ({ pc }) => {
+        if (sfuModeRef.current) {
+          await swapSfuScreenCodec(desiredSfuCodec(screenTrack));
+          return;
+        }
+        for (const [uid, pd] of pcMapRef.current.entries()) {
+          if (pd?.pc === pc) await renegotiateWithPeer(uid, pd);
+        }
       });
       if (screenTrack.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
@@ -1909,13 +2041,34 @@ export function useServerVoice(socket) {
       };
 
       if (sfuModeRef.current && liveKitRoomRef.current) {
-        const videoOptions = liveKitScreenVideoPublishOptions();
+        // One encode for the room: AV1 / VP9 only when every member decodes it (VP8 backup
+        // codec for anyone who joins later), L1T3, bitrate ceiling of the picked tier.
+        const codec = desiredSfuCodec(screenTrack);
+        let videoOptions = liveKitScreenVideoPublishOptions(sfuEncodingFor(codec, quality, frameRate));
         const audioOptions = liveKitScreenAudioPublishOptions();
-        await liveKitRoomRef.current.localParticipant.publishTrack(screenTrack, {
-          ...videoOptions,
-          source: videoOptions.source,
-          name: videoOptions.name,
-        });
+        let publishedCodec = codec;
+        let videoPub = null;
+        try {
+          videoPub = await liveKitRoomRef.current.localParticipant.publishTrack(screenTrack, {
+            ...videoOptions,
+            source: videoOptions.source,
+            name: videoOptions.name,
+          });
+        } catch (err) {
+          if (codec === "vp8") throw err;
+          // SFU or engine refused the modern codec: the share still goes out in VP8.
+          console.warn("[ServerVoice] screen publish with", codec, "failed, using VP8:", err?.message || err);
+          publishedCodec = "vp8";
+          videoOptions = liveKitScreenVideoPublishOptions(sfuEncodingFor("vp8", quality, frameRate));
+          videoPub = await liveKitRoomRef.current.localParticipant.publishTrack(screenTrack, {
+            ...videoOptions,
+            source: videoOptions.source,
+            name: videoOptions.name,
+          });
+        }
+        sfuScreenRef.current = { track: screenTrack, codec: publishedCodec, quality, fps: frameRate };
+        const lkSender = videoPub?.track?.sender;
+        if (lkSender) screenEncoderFor(screenTrack)?.attach(null, lkSender);
         if (screenAudioTrack) {
           await liveKitRoomRef.current.localParticipant.publishTrack(screenAudioTrack, {
             ...audioOptions,
@@ -1946,6 +2099,7 @@ export function useServerVoice(socket) {
           await optimizeScreenShareSender(peerData.screenSender, {
             maxBitrate,
             maxFramerate: frameRate,
+            pc: peerData.pc,
           });
           await renegotiateWithPeer(userId, peerData);
         } catch (err) {
@@ -1982,7 +2136,7 @@ export function useServerVoice(socket) {
       console.error("[ServerVoice] screen share failed:", err);
       toastRef.current?.(tRuntime("Could not start screen share."), "error");
     }
-  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, setScreenQuality, socket]);
+  }, [beginNativeShare, canPublishVideo, desiredSfuCodec, isScreenSharing, renegotiateWithPeer, screenQuality, setScreenQuality, sfuEncodingFor, socket, swapSfuScreenCodec]);
 
   /** Quality changed while sharing: restart the capture with the new settings. */
   const restartScreenShareWithQuality = useCallback(
@@ -2385,6 +2539,15 @@ export function useServerVoice(socket) {
       // A socket reconnect re-emits the join for the seat we already hold (onConnect).
       // Keep the roster and its media, no join sound (voice-drops-01, server-voice-05).
       const isRejoin = !initialJoin && (Boolean(rejoin) || Boolean(activeChannelIdRef.current));
+      // Tell the room which video codecs this device decodes (screen share codec choice
+      // with an SFU). Servers without the event ignore it.
+      const videoDecode = localDecodeFamilies();
+      if (videoDecode) socket.emit("server:voice:codecs", { channelId, videoDecode });
+      memberDecodeRef.current = new Map(
+        (Array.isArray(others) ? others : [])
+          .filter((u) => u?.id != null && String(u.id) !== String(myIdRef.current))
+          .map((u) => [String(u.id), sanitizeVideoDecode(u.videoDecode)])
+      );
       afkChannelRef.current = Boolean(afkChannel);
       modMutedRef.current = Boolean(forcedMute) && !afkChannel;
       if (forcedDeafen) applyRemoteDeafen(true);
@@ -2728,6 +2891,16 @@ export function useServerVoice(socket) {
       // Keep in-call roster in sync when server authoritatively drops someone
       if (channelId === activeChannelIdRef.current) {
         const ids = new Set(list.map((m) => String(m?.id)));
+        // Members' decode lists: an SFU screen share re-checks its codec when they change.
+        const decode = new Map(
+          list
+            .filter((m) => m?.id != null && String(m.id) !== String(myIdRef.current))
+            .map((m) => [String(m.id), sanitizeVideoDecode(m.videoDecode)])
+        );
+        const key = (map) => [...map].map(([id, d]) => `${id}:${(d || []).join("+")}`).sort().join(",");
+        const changed = key(decode) !== key(memberDecodeRef.current);
+        memberDecodeRef.current = decode;
+        if (changed) scheduleSfuCodecCheckRef.current?.();
         setParticipants((prev) => {
           const next = prev.filter((p) => ids.has(String(p.id)));
           return next.length === prev.length ? prev : next;

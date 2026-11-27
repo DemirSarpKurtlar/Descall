@@ -137,7 +137,7 @@ function delta(cur, prev, { percent }) {
  * attempts:     [{ created_at, status, attempt_key, reason?, reason_detail? }]
  * activeDays:   [{ user_id, day }]
  */
-function computeSignupStats({ users = [], startedDays = [], attempts = [], activeDays = [], range, now = new Date(), lang = "tr" }) {
+function computeSignupStats({ users = [], startedDays = [], attempts = [], activeDays = [], cardEvents = null, range, now = new Date(), lang = "tr" }) {
   const L = statsLang(lang);
   const sourceLabel = (k) => (SOURCE_WORDS[k] ? bt(L, SOURCE_WORDS[k]) : SOURCE_LABELS[k]);
   const { from, to, granularity, today } = range;
@@ -222,6 +222,7 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
   const failures = failureBreakdown(attempts, inRange);
   const heardAbout = heardAboutBreakdown(rangeUsers);
   const invites = inviteBreakdown(rangeUsers);
+  const adaptiveCard = cardEvents ? adaptiveCardBreakdown(cardEvents, attempts, inRange) : null;
 
   // Sources (all time).
   const src = new Map();
@@ -300,6 +301,7 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
     failures,
     heardAbout,
     invites,
+    adaptiveCard,
     sources,
     total: users.length,
     authMethods,
@@ -328,6 +330,50 @@ function failureBreakdown(attempts, inRange) {
   }
   const rows = [...by.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
   return { total, detailed, rows };
+}
+
+/**
+ * Uyarlanan kart (growth 1B) Ölçüm for the range:
+ *   routed   identifier_routed: a registered email typed on the sign-up card, sent to sign-in
+ *            (instead of an "email taken" error)
+ *   warned   breach_warned_inline: the card flagged a breached password while it was typed
+ *   fixed    breach_fixed: accounts created after such a warning, by method
+ *   flows    sign-up outcomes by form: the card vs the older forms (apps not updated yet)
+ *   avoided  email_taken + conflict failures in the range (the number the card should end)
+ */
+function adaptiveCardBreakdown(events, attempts, inRange) {
+  const out = { routed: 0, warned: 0, fixed: 0, fixedPct: 0, byVia: { suggested: 0, own: 0, passkey: 0 }, flows: null, emailTaken: 0, breached: 0 };
+  for (const e of Array.isArray(events) ? events : []) {
+    if (!inRange(istDay(e.occurred_at))) continue;
+    if (e.event === "identifier_routed") out.routed += 1;
+    else if (e.event === "breach_warned_inline") out.warned += 1;
+    else if (e.event === "breach_fixed") {
+      out.fixed += 1;
+      const via = String(e.props?.method || "");
+      if (via in out.byVia) out.byVia[via] += 1;
+    }
+  }
+  out.fixedPct = pct(out.fixed, out.warned);
+  const flows = { card: { completed: 0, failed: 0 }, classic: { completed: 0, failed: 0 } };
+  let tracked = false;
+  for (const a of Array.isArray(attempts) ? attempts : []) {
+    if (!inRange(istDay(a.created_at))) continue;
+    if (a.status === "failed") {
+      const d = String(a.reason_detail || a.reason || "");
+      if (d === "email_taken" || d === "conflict") out.emailTaken += 1;
+      if (d === "password_breached") out.breached += 1;
+    }
+    const f = a.flow === "card" || a.flow === "classic" ? a.flow : null;
+    if (!f) continue;
+    tracked = true;
+    if (a.status === "completed") flows[f].completed += 1;
+    else if (a.status === "failed") flows[f].failed += 1;
+  }
+  if (tracked) {
+    for (const f of Object.values(flows)) f.completedPct = pct(f.completed, f.completed + f.failed);
+    out.flows = flows;
+  }
+  return out;
 }
 
 const HEARD_ABOUT_KEYS = ["google", "ai_assistant", "instagram", "tiktok", "youtube", "friend", "discord", "forum", "other"];
@@ -436,8 +482,13 @@ const isMissingColumn = (e) => /column|schema cache|does not exist|42703|PGRST20
 
 async function insertAttempt(row) {
   let r = await supabase.from("signup_attempts").insert(row);
-  // reason_detail is newer than the table (20261111_signup_measurement.sql): keep the
-  // coarse row when that column is not there yet.
+  // flow (20261124x_adaptive_signup.sql) and reason_detail (20261111_signup_measurement.sql)
+  // are newer than the table: drop the newest first and keep the row when they are not there.
+  if (r?.error && "flow" in row && isMissingColumn(r.error)) {
+    const { flow: _flow, ...rest } = row;
+    row = rest;
+    r = await supabase.from("signup_attempts").insert(row);
+  }
   if (r?.error && "reason_detail" in row && isMissingColumn(r.error)) {
     const { reason_detail: _drop, ...rest } = row;
     r = await supabase.from("signup_attempts").insert(rest);
@@ -446,7 +497,9 @@ async function insertAttempt(row) {
 }
 
 /** Express helper: call at the top of POST /auth/register; records the outcome when the response ends. */
-function trackSignupAttempt(req, res, { method = "email", countryFromHeaders } = {}) {
+const FLOWS = new Set(["card", "classic"]);
+
+function trackSignupAttempt(req, res, { method = "email", countryFromHeaders, flow = null } = {}) {
   const day = istDay(new Date());
   const key = attemptKey(req.ip || "", String(req.headers?.["user-agent"] || "").slice(0, 300), day);
   let country = null;
@@ -459,6 +512,8 @@ function trackSignupAttempt(req, res, { method = "email", countryFromHeaders } =
   res.on("finish", () => {
     const ok = res.statusCode >= 200 && res.statusCode < 300;
     const row = { status: ok ? "completed" : "failed", reason: ok ? null : failureReason(res.statusCode), method, attempt_key: key, country };
+    // Uyarlanan kart vs the older forms (apps that have not updated yet).
+    if (FLOWS.has(flow)) row.flow = flow;
     const detail = res.locals?.signupFailDetail;
     if (!ok && detail && DETAIL_RE.test(detail)) row.reason_detail = detail;
     Promise.resolve(insertAttempt(row))
@@ -499,6 +554,7 @@ module.exports = {
   resolveRange,
   computeSignupStats,
   failureBreakdown,
+  adaptiveCardBreakdown,
   heardAboutBreakdown,
   inviteBreakdown,
   HEARD_ABOUT_KEYS,

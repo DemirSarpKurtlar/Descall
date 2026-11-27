@@ -1,0 +1,63 @@
+# Cloudflare Turnstile (free human check at sign-up, password reset and sign-in step-up).
+# Manual only, idempotent. Finds or creates the "Descall" widget (managed mode) for the
+# web and API hostnames, then stores its keys in public.turnstile_config, which the backend
+# reads every 60 s: no Render dashboard step and no redeploy. Script and rules:
+# frontend/scripts/turnstile-provision.mjs (selftest next to it), backend lib/turnstile.js.
+#
+# Secrets (already in the repo): CLOUDFLARE_API_TOKEN (needs Account > Turnstile > Edit;
+#          the run stops with that exact hint when it is missing), CLOUDFLARE_ACCOUNT_ID,
+#          SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (same names as the backend).
+# Needs:   supabase/migrations/20261124t_turnstile.sql applied (the run says so otherwise).
+# Nothing secret is printed: the widget secret is masked the moment it is read and is
+# only sent to Supabase. No `set -x`, no echo of any secret.
+#
+# Modes: plan (read-only) | apply (create / update + store) | rotate (new secret + store)
+#        | status (plan + is the backend serving the key)
+# Switching the check off without a deploy: Admin Panel > Security center > Human check,
+# or Render env TURNSTILE_ENFORCE=0.
+name: Cloudflare Turnstile
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan | apply | rotate | status"
+        required: true
+        default: apply
+        type: choice
+        options: [plan, apply, rotate, status]
+      extra_hostnames:
+        description: "Extra widget hostnames, comma separated (optional, max 10 in total)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-turnstile
+  cancel-in-progress: false
+
+jobs:
+  turnstile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Selftest
+        run: node scripts/turnstile-provision.selftest.mjs
+      - name: Run ${{ inputs.mode }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TURNSTILE_EXTRA_HOSTNAMES: ${{ inputs.extra_hostnames }}
+          TURNSTILE_MODE: ${{ inputs.mode }}
+        run: node scripts/turnstile-provision.mjs "$TURNSTILE_MODE"

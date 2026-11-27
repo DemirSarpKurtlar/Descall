@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home screen widgets (draft B "Yuzler"). Descall dark / light are fixed palettes set in
+         code (widget/WidgetTheme.java); these "wdyn_" colors are the Material You theme, read by
+         the launcher itself so they follow the wallpaper and day / night without a refresh.
+         Before Android 12 there is no system palette: the dynamic theme falls back to the
+         Descall dark values below (and the configuration screen says so). -->
+    <color name="wdyn_bg_start">#FF3F4256</color>
+    <color name="wdyn_bg_end">#FF2B2D3B</color>
+    <color name="wdyn_glow">#6B587AF5</color>
+    <color name="wdyn_surface">#FF34364A</color>
+    <color name="wdyn_text">#FFFFFFFF</color>
+    <color name="wdyn_text2">#FFC9CDE0</color>
+    <color name="wdyn_text3">#FF9EA3BC</color>
+    <color name="wdyn_chip">#1AFFFFFF</color>
+    <color name="wdyn_accent">#FF587AF5</color>
+    <color name="wdyn_on_accent">#FFFFFFFF</color>
+    <color name="wdyn_success">#FF3DDC84</color>
+
+    <color name="w_hand_bg_dark">#FF34364A</color>
+    <color name="w_hand_bg_light">#FFF1F3FD</color>
+    <color name="w_hand_bg_dynamic">@color/wdyn_surface</color>
+
+    <!-- Widget configuration screen (WidgetConfigActivity), light; night in values-night. -->
+    <color name="wcfg_bg">#FFF2F2F7</color>
+    <color name="wcfg_group">#FFFFFFFF</color>
+    <color name="wcfg_text">#FF111318</color>
+    <color name="wcfg_text2">#FF6B6F7B</color>
+    <color name="wcfg_line">#1F000000</color>
+    <color name="wcfg_accent">#FF587AF5</color>
+    <color name="wcfg_preview_bg">#FFDDE3F5</color>
+</resources>

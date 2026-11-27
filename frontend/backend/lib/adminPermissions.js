@@ -41,6 +41,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "system",
   "security",
   "errors",
+  // Performans: real-user metrics, release regressions, Lighthouse CI.
+  "perf",
   "audit",
   // Admin agent (phase 1): the Claude assistant. It only sees what the asking admin's
   // own sections allow (its tools call the same routes with the admin's session).
@@ -55,6 +57,10 @@ const ALWAYS = Object.freeze(["overview"]);
 const SENSITIVE_SECTIONS = Object.freeze(["dmReview", "serverReview", "premium"]);
 const LEGACY_SECTIONS = Object.freeze(GRANTABLE_SECTIONS.filter((s) => !SENSITIVE_SECTIONS.includes(s)));
 const OWNER_ONLY = Object.freeze(["staff"]);
+// Apple Watch games (owner request, Nov 2026): the owner account only, never granted. The
+// watch draws its "Mola" group only when home.adminSections carries it; the score API
+// (/watch-games) refuses everyone else.
+const OWNER_WATCH = Object.freeze(["games"]);
 
 /**
  * Path (relative to /admin or /api/admin) → section. First match wins, so
@@ -67,6 +73,8 @@ const RULES = [
   // Sunucu Ağı (hybrid server): owner only, checked by routes/adminNodes.js.
   [/^\/nodes(\/|$)/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
+  // Apple Watch games: owner only (section "games", never grantable).
+  [/^\/watch-games(\/|$)/, "games"],
   [/^\/staff(\/|$)/, "staff"],
   [/^\/agent(\/|$)/, "agent"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
@@ -83,8 +91,10 @@ const RULES = [
   [/^\/access-bans(\/|$)/, "accessBans"],
   [/^\/error-groups(\/|$)/, "errors"],
   [/^\/growth\/retention$/, "retention"],
+  [/^\/growth\/onboarding(\/|$)/, "retention"],
   [/^\/growth\/economy$/, "economy"],
   [/^\/feedback(\/|$)/, "feedback"],
+  [/^\/perf(\/|$)/, "perf"],
   [/^\/(audit)(\/|$)/, "audit"],
   [/^\/(errors|security-logs)(\/|$)/, "security"],
   [/^\/security(\/|$)/, "security"],
@@ -127,7 +137,7 @@ function normalizeSections(list) {
  * @param {{is_admin?: boolean, is_super_admin?: boolean, admin_permissions?: string[]|null}} row
  */
 function sectionsFor(user, row) {
-  if (isOwner(user, row)) return [...ALWAYS, ...GRANTABLE_SECTIONS, ...OWNER_ONLY];
+  if (isOwner(user, row)) return [...ALWAYS, ...GRANTABLE_SECTIONS, ...OWNER_ONLY, ...OWNER_WATCH];
   if (!row?.is_admin) return [];
   const granted = row.admin_permissions == null ? LEGACY_SECTIONS : normalizeSections(row.admin_permissions);
   return [...ALWAYS, ...granted];
@@ -201,6 +211,7 @@ module.exports = {
   LEGACY_SECTIONS,
   ALWAYS,
   OWNER_ONLY,
+  OWNER_WATCH,
   sectionForPath,
   sectionsFor,
   canOpen,

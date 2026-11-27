@@ -8,11 +8,13 @@
  */
 export default {
   "1. Download the installer from this page. 2. Run it; Windows SmartScreen may ask for confirmation the first time because Descall is an independent app. 3. Sign in with email or Google. 4. Allow microphone access when you join your first voice channel. The app updates itself when a new version is released.": "1. Lade den Installer von dieser Seite herunter. 2. Führe ihn aus; Windows SmartScreen fragt beim ersten Mal eventuell nach einer Bestätigung, weil Descall eine unabhängige App ist. 3. Melde dich mit E-Mail oder Google an. 4. Erlaube den Mikrofonzugriff, wenn du deinem ersten Sprachkanal beitrittst. Die App aktualisiert sich selbst, sobald eine neue Version erscheint.",
+  "All releases on GitHub": "Alle Releases auf GitHub",
   "All three use the same free account, so your servers, friends, and messages follow you.": "Alle drei nutzen dasselbe kostenlose Konto, deine Server, Freunde und Nachrichten sind also überall dabei.",
   "Android app: join voice channels, DMs, and servers from your phone. The APK is published with each release on the Descall GitHub releases page.": "Android-App: Sprachkanäle, DMs und Server direkt auf deinem Handy. Die APK wird mit jedem Release auf der GitHub-Releases-Seite von Descall veröffentlicht.",
   "Before your first call": "Vor deinem ersten Anruf",
   "Browser: nothing to install. Open descall.com, sign in, and you have the full app, handy on a school or work computer or for friends trying Descall for the first time.": "Browser: nichts zu installieren. Öffne descall.com, melde dich an, und du hast die vollständige App – praktisch am Schul- oder Arbeitsrechner oder für Freunde, die Descall zum ersten Mal ausprobieren.",
   "Checking for updates…": "Suche nach Updates…",
+  "Direct link": "Direkter Link",
   "Download APK": "APK herunterladen",
   "Download Descall for Windows, iPhone and Android": "Descall für Windows, iPhone und Android laden",
   "Get the Windows desktop app, the iPhone and iPad app, the Android app, or the full web app. Free voice, video, screen share, and servers.": "Hol dir die Windows-App, die App für iPhone und iPad, die Android-App oder die volle Web-App. Kostenlos: Sprache, Video, Bildschirm und Server.",
@@ -20,6 +22,7 @@ export default {
   "Is it free?": "Ist es kostenlos?",
   "Latest release": "Neueste Version",
   "No Nitro paywall on core chat & calls": "Keine Nitro-Bezahlschranke bei Chat & Anrufen",
+  "Not starting?": "Startet nicht?",
   "Open the web app": "Web-App öffnen",
   "Pick your microphone and output device in voice settings, and turn on noise suppression if you use a mechanical keyboard or have a loud fan. Headphones prevent echo. If your connection is weak, a wired connection or lower screen-share preset helps.": "Wähle in den Spracheinstellungen dein Mikrofon und dein Ausgabegerät und schalte die Rauschunterdrückung ein, wenn du eine mechanische Tastatur nutzt oder einen lauten Lüfter hast. Kopfhörer verhindern Echo. Bei einer schwachen Verbindung helfen eine kabelgebundene Verbindung oder eine niedrigere Vorgabe für die Bildschirmübertragung.",
   "Platform": "Plattform",
@@ -33,5 +36,6 @@ export default {
   "Windows installer and the Android APK. The browser app is the same account, with no install.": "Windows-Installer und die Android-APK. Die Browser-App nutzt dasselbe Konto, ganz ohne Installation.",
   "Works on Windows, Android, iPhone and the web.": "Läuft auf Windows, Android, iPhone und im Web.",
   "Yes. Chat, servers, voice, video, and screen share are free on every platform. Optional cosmetics can be bought with DesCoin; they never gate communication.": "Ja. Chat, Server, Sprache, Video und Bildschirmübertragung sind auf jeder Plattform kostenlos. Optionale Kosmetik kann mit DesCoin gekauft werden; sie schränkt die Kommunikation nie ein.",
+  "Your download should start now.": "Dein Download sollte jetzt starten.",
   "{label} available": "{label} verfügbar"
 };

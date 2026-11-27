@@ -50,9 +50,9 @@ export const SEC_CENTER_PT_BR = {
   "check": {
     "humanCheck": {
       "name": "Verificação humana no cadastro",
-      "ok": "A verificação humana no cadastro está ativa",
-      "fail": "A verificação humana no cadastro está desligada",
-      "why": "Para barrar cadastros de bots na entrada é preciso um serviço de verificação (por exemplo Cloudflare Turnstile). Ele ainda não está configurado; até lá, o congelamento de cadastros e o bloqueio de e-mails temporários protegem contra ondas de bots."
+      "ok": "A verificação humana no cadastro está ativa (Cloudflare Turnstile)",
+      "fail": "A verificação humana no cadastro não é obrigatória",
+      "why": "O Cloudflare Turnstile verifica se não é um robô no cadastro, na redefinição de senha e no login após senhas erradas repetidas; a maioria não vê nada. A chave é configurada automaticamente pelo fluxo do GitHub \"Cloudflare Turnstile\". Se estiver configurada mas o modo for Monitorar ou Desligado, aplicar a recomendação a torna obrigatória de novo."
     },
     "admin2fa": {
       "name": "2FA dos administradores",
@@ -323,7 +323,8 @@ export const SEC_CENTER_PT_BR = {
     "signup_denied": {
       "title": "Cadastro recusado",
       "lineDisposable": "{email} · e-mail temporário",
-      "lineClosed": "Cadastro via {method} com cadastros fechados · {n} tentativas"
+      "lineClosed": "Cadastro via {method} com cadastros fechados · {n} tentativas",
+      "lineHumanCheck": "Cadastro com {method} barrado pela verificação humana · {n} tentativas"
     },
     "admin_step_up": {
       "title": "Verificação de administrador",
@@ -424,6 +425,7 @@ export const SEC_CENTER_PT_BR = {
     }
   },
   "setting": {
+    "turnstileMode": "Verificação humana (Turnstile)",
     "registrationEnabled": "Cadastros",
     "dmEnabled": "Mensagens diretas",
     "readOnlyMode": "Modo somente leitura",
@@ -503,5 +505,87 @@ export const SEC_CENTER_PT_BR = {
     "until": "Volta por volta das {time}.",
     "soon": "Volta assim que possível.",
     "dismiss": "Ocultar a faixa"
+  },
+  "human": {
+    "title": "Verificação humana",
+    "window": "Cloudflare Turnstile · últimas 24 horas",
+    "status": {
+      "enforcing": "Obrigatória",
+      "monitor": "Só monitorando",
+      "off": "Desligada",
+      "notSetUp": "Não configurada",
+      "tableMissing": "Tabela ausente",
+      "badSecret": "Chave recusada",
+      "unknown": "Desconhecido"
+    },
+    "kpi": {
+      "pass": "Aprovadas",
+      "refused": "Barradas",
+      "fallback": "Aceitas sem verificação",
+      "failOpen": "Cloudflare fora do ar"
+    },
+    "sub": {
+      "rate": "{rate}% aprovadas",
+      "noData": "Nenhuma verificação ainda",
+      "refused": "Verificação inválida ou ausente",
+      "fallback": "O widget não carregou, regra reserva",
+      "failOpen": "Queda, ninguém foi bloqueado"
+    },
+    "legend": {
+      "pass": "Aprovadas",
+      "refused": "Barradas",
+      "let": "Aceitas sem verificação"
+    },
+    "chartAria": "Resultados da verificação humana por hora nas últimas 24 horas",
+    "hourTip": "{time}: {pass} aprovadas, {refused} barradas, {let} sem verificação",
+    "actions": "Onde é pedida",
+    "action": {
+      "register": "Cadastro",
+      "social_signup": "Cadastro com Google / Apple",
+      "password_reset": "Redefinição de senha",
+      "login": "Login (após senhas erradas)"
+    },
+    "col": {
+      "pass": "Aprovadas",
+      "refused": "Barradas",
+      "let": "Sem verificação"
+    },
+    "challenged": "pedida {n} vezes",
+    "modeTitle": "Modo",
+    "mode": {
+      "enforce": "Obrigatória",
+      "monitor": "Monitorar",
+      "off": "Desligada"
+    },
+    "modeHint": {
+      "enforce": "Verificação inválida ou ausente é recusada; uma queda do Cloudflare nunca bloqueia ninguém.",
+      "monitor": "A verificação roda e é contada, mas ninguém é recusado.",
+      "off": "A verificação nunca é pedida."
+    },
+    "monitorTitle": "Passar para só monitorar",
+    "monitorBody": "A verificação continua, mas quem falhar ainda poderá se cadastrar. Robôs podem voltar a entrar.",
+    "offTitle": "Desligar a verificação humana",
+    "offBody": "Cadastro, redefinição de senha e login deixam de pedir a verificação. Use por um tempo se algo der errado.",
+    "modeGo": "Aplicar",
+    "envLocked": "A variável de ambiente TURNSTILE_ENFORCE no Render fixa o modo.",
+    "setup": "A configuração é automática: GitHub › Actions › Cloudflare Turnstile › apply. A chave funciona em um minuto, sem novo deploy.",
+    "notes": {
+      "noteSetup": "Sem chave do Turnstile; a verificação é pulada e o cadastro funciona como antes.",
+      "noteTable": "A tabela turnstile_config não existe: aplique a migração 20261124t_turnstile.sql.",
+      "noteBadSecret": "O Cloudflare recusa a chave secreta; ninguém é bloqueado. Rode o fluxo com rotate.",
+      "noteUnreachable": "O Cloudflare ficou inacessível em alguns momentos nas últimas 24 horas; esses pedidos foram aceitos.",
+      "noteEnv": "Modo fixado por variável de ambiente: {mode}.",
+      "noteTestKeys": "Chaves de teste do Cloudflare em uso; não há proteção real.",
+      "noteBudgetFull": "O limite sem verificação acabou nesta hora ({n}); quem não conseguir carregar o widget vai esperar uma hora."
+    },
+    "meta": {
+      "sourceDb": "Origem: fluxo do GitHub",
+      "sourceEnv": "Origem: variável de ambiente",
+      "siteKey": "Chave do site {key}",
+      "hosts": "{n, plural, one {# domínio} other {# domínios}}",
+      "updated": "Atualizado {time}",
+      "budget": "Aceitas sem verificação nesta hora: {used}/{max} · {perIp} por IP"
+    },
+    "saved": "Modo da verificação humana salvo"
   }
 };

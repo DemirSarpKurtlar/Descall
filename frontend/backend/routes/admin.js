@@ -77,6 +77,8 @@ router.use(require("./adminAppeals"));
 // Moderasyon İşlem masası (section moderation): templates, escalation rules, sanctions, history, flagged queue, word filter.
 router.use(require("./adminModerationDesk"));
 router.use(require("./adminErrors"));
+// Performans (owner pick Draft A "Konsol"): real-user metrics + Lighthouse CI.
+router.use(require("./adminPerf"));
 // Sunucu inceleme (section serverReview): metadata lists, channel text only behind purpose + reason + audit.
 router.use(require("./adminServerReview"));
 // Oyunlar / Kredi (section casino): player workspace, ledger, hand history, limits, statistics.
@@ -108,6 +110,8 @@ router.use("/premium", require("./adminPremium"));
 router.use(require("./adminTokens"));
 // Sunucu Ağı (hybrid server, owner only): routes/adminNodes.js.
 router.use(require("./adminNodes"));
+// Apple Watch games (owner only, section "games"): best scores synced from the watch.
+router.use(require("./adminWatchGames"));
 
 router.get("/directory", async (req, res) => {
   try {

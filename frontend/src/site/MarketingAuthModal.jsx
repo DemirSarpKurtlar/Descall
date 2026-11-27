@@ -7,6 +7,7 @@ import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
+import { prewarmHumanCheck } from "../lib/humanCheck/turnstileClient.js";
 import { serverMessage } from "../i18n/serverText.js";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
@@ -14,6 +15,42 @@ import TwoFaResendButton from "../components/auth/TwoFaResendButton";
 import GlassCheckbox from "../components/ui/GlassCheckbox";
 import useSignupFieldChecks from "../components/auth/useSignupFieldChecks";
 import SignupFieldMessage from "../components/auth/SignupFieldMessage";
+import PasskeySignInButton, { passkeyErrorForParent } from "../components/passkeys/PasskeySignInButton.jsx";
+import usePasskeyAutofill, { PASSKEY_AUTOCOMPLETE } from "../hooks/usePasskeyAutofill";
+import { normalizePasskeyError, passkeyErrorKey } from "../lib/passkeys/index.js";
+
+import AdaptiveAuthCard from "../components/auth/adaptive/AdaptiveAuthCard.jsx";
+import useLiveSnippets from "../components/auth/adaptive/useLiveSnippets.js";
+import { HerePill } from "../components/auth/adaptive/LiveSnippets.jsx";
+import "../styles/adaptive-auth.css";
+
+/** "N people are here right now" over the card (live platform count; hidden without data). */
+function ModalHerePill() {
+  const live = useLiveSnippets();
+  return <HerePill data={live} />;
+}
+
+function useNarrowModal() {
+  const [narrow, setNarrow] = useState(() => {
+    try {
+      return window.matchMedia("(max-width: 560px)").matches;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    let mq = null;
+    try {
+      mq = window.matchMedia("(max-width: 560px)");
+    } catch {
+      return undefined;
+    }
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  return narrow;
+}
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -52,6 +89,8 @@ function AuthModal({
   onRegister,
   onGoogleLogin,
   onVerify2fa,
+  onPasskeyLogin,
+  onPasskeyError,
   authLoading,
   authError: authErrorProp,
   initialMode = "login",
@@ -59,16 +98,27 @@ function AuthModal({
   inviteRef = "",
 }) {
   const t = useT();
+  const narrowModal = useNarrowModal();
   const [isRegistering, setIsRegistering] = useState(initialMode === "register");
   const [forgotMode, setForgotMode] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const typingStartRef = useRef(0);
+  useEffect(() => {
+    if ((username || password) && !typingStartRef.current) typingStartRef.current = Date.now();
+    if (!username && !password) typingStartRef.current = 0;
+  }, [username, password]);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [birthDate, setBirthDate] = useState("");
   const [deviceBlock, setDeviceBlock] = useState("");
   const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
+  // Turnstile solves in the background once sign-up typing starts (no wait on submit).
+  const signupStarted = Boolean(open && isRegistering && !forgotMode && (username || email || password));
+  useEffect(() => {
+    if (signupStarted) prewarmHumanCheck("register");
+  }, [signupStarted]);
   const [legalModal, setLegalModal] = useState(null);
 
   // The shell's error stays set after "Back to login" / a mode switch: hide it there
@@ -96,6 +146,26 @@ function AuthModal({
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
   const [googleUnavailable, setGoogleUnavailable] = useState(false);
+  // Passkeys: button + browser autofill on the username field (login only).
+  const [pkError, setPkError] = useState("");
+  const handlePasskeyBody = async (body) => {
+    if (openTwoFa(body)) return;
+    setPkError("");
+    await onPasskeyLogin?.(body);
+  };
+  const handlePasskeyError = (err) => {
+    if (passkeyErrorForParent(err)) {
+      onPasskeyError?.(normalizePasskeyError(err).cause || err);
+      return;
+    }
+    const key = passkeyErrorKey(err);
+    if (key) setPkError(t(key));
+  };
+  usePasskeyAutofill({
+    enabled: Boolean(open && !isRegistering && !twoFa && !forgotMode && !socialSignup && onPasskeyLogin),
+    onSignedIn: handlePasskeyBody,
+    onError: handlePasskeyError,
+  });
   // As-you-type checks with the server's rules (lib/signupRules.js), register only.
   const checks = useSignupFieldChecks({ username, password, email, enabled: Boolean(open && isRegistering && !twoFa && !forgotMode) });
   const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
@@ -229,7 +299,8 @@ function AuthModal({
           })
         );
       } else {
-        const result = await onLogin?.({ username, password });
+        const signInMs = typingStartRef.current ? Date.now() - typingStartRef.current : undefined;
+        const result = await onLogin?.({ username, password, signInMs });
         openTwoFa(result);
       }
     } catch (err) {
@@ -389,190 +460,49 @@ function AuthModal({
                 </Suspense>
               </>
             ) : (
-              <>
-                <img
-                  className="mkt-auth-logo"
-                  src={`${import.meta.env.BASE_URL}brand/descall-appicon-rounded.svg`}
-                  alt="Descall"
-                  width={56}
-                  height={56}
-                />
-                <h2>{isRegistering ? t("Create Account") : t("Welcome back")}</h2>
-                <p>
-                  {isRegistering
-                    ? inviteRef
-                      ? t("Join {name} on Descall, free chat, voice, and calls.", { name: inviteRef })
-                      : t("Join Descall today")
-                    : t("Sign in to your account")}
-                </p>
-                {inviteRef && isRegistering && (
-                  <div className="mkt-invite-banner" role="status">
-                    {t("Invited by @{username}", { username: inviteRef })}
-                  </div>
-                )}
-                {(authError || deviceBlock) && (
-                  <div id="mkt-auth-error" className="auth-error" role="alert">
-                    {authError || deviceBlock}
-                  </div>
-                )}
-                {isGoogleSignInOffered() && (
-                  <>
-                <Suspense fallback={null}>
-                  <GoogleSignInButton
-                  appearance="glass"
-                  hideWhenUnavailable
-                  onUnavailable={() => setGoogleUnavailable(true)}
-                  disabled={isSubmitting || authLoading}
-                  onCredential={async (credential) => {
-                    setIsSubmitting(true);
-                    try {
-                      // Works before Terms + date of birth are filled in: a new account
-                      // then gets the Terms + date-of-birth step (SocialSignupStep).
-                      openTwoFa(await onGoogleLogin?.(credential, withInvite(isRegistering && !signupBlocked ? { termsAccepted: true, birthDate } : {})));
-                    } catch (err) {
-                      if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
-                      /* other errors: authError shows them */
-                    } finally {
-                      setIsSubmitting(false);
-                    }
+              // Uyarlanan kart (growth 1B): one adaptive card for sign-in and sign-up.
+              <div className="asu-root asu-modal">
+                <header className="asu-head">
+                  <span className="asu-head-logo">
+                    <img src={`${import.meta.env.BASE_URL}brand/descall-appicon-rounded.svg`} alt="" width={52} height={52} />
+                  </span>
+                  <h1>{t("Welcome to Descall")}</h1>
+                  <ModalHerePill />
+                </header>
+                <AdaptiveAuthCard
+                  intent={isRegistering ? "register" : "login"}
+                  surface="modal"
+                  compact={narrowModal}
+                  onLogin={(payload) => onLogin?.(payload)}
+                  onRegister={(payload) => onRegister?.(withInvite(payload))}
+                  onGoogle={
+                    onGoogleLogin
+                      ? async (credential) => {
+                          try {
+                            openTwoFa(await onGoogleLogin(credential, withInvite({})));
+                          } catch (err) {
+                            if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
+                          }
+                        }
+                      : null
+                  }
+                  onPasskeyLogin={onPasskeyLogin ? (body) => handlePasskeyBody(body) : null}
+                  onPasskeyError={(err) => (passkeyErrorForParent(err) ? onPasskeyError?.(normalizePasskeyError(err).cause || err) : handlePasskeyError(err))}
+                  onTwoFa={openTwoFa}
+                  loading={authLoading}
+                  error={authError || deviceBlock || pkError}
+                  onDismissError={() => {
+                    setErrorDismissed(true);
+                    setDeviceBlock("");
+                    setPkError("");
                   }}
+                  inviteRef={inviteRef}
+                  onOpenLegal={setLegalModal}
+                  onRegisterIntent={() =>
+                    Funnel.registerStart({ mode: "register", source: authSource, has_invite: Boolean(inviteRef), invited_by: inviteRef || undefined })
+                  }
                 />
-                </Suspense>
-                {isRegistering && !googleUnavailable && (
-                  <p className="mkt-auth-field-hint mkt-auth-google-hint">
-                    {t("Fastest path: continue with Google, then you’re in.")}
-                  </p>
-                )}
-                {!googleUnavailable && (
-                  <div className="mkt-auth-divider" aria-hidden>
-                    <span>{t("or")}</span>
-                  </div>
-                )}
-                  </>
-                )}
-                <form onSubmit={submit}>
-                  <input
-                    id="mkt-auth-username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onBlur={() => checks.blur("username")}
-                    placeholder={t("Username")}
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    maxLength={isRegistering ? 24 : undefined}
-                    required
-                    aria-invalid={authError || deviceBlock || fieldInvalid("username") ? "true" : undefined}
-                    aria-describedby={fieldInvalid("username") ? "mkt-auth-username-msg" : authError || deviceBlock ? "mkt-auth-error" : undefined}
-                  />
-                  {isRegistering ? (
-                    <SignupFieldMessage id="mkt-auth-username-msg" kind="username" className="mkt-auth-field-hint" field={checks.fields.username} onPick={setUsername} />
-                  ) : null}
-                  <div className="mkt-pass-wrap">
-                  <input
-                    id="mkt-auth-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => checks.blur("password")}
-                    placeholder={t("Password")}
-                    autoComplete={isRegistering ? "new-password" : "current-password"}
-                    maxLength={72}
-                    required
-                    aria-invalid={authError || deviceBlock || fieldInvalid("password") ? "true" : undefined}
-                    aria-describedby={fieldInvalid("password") ? "mkt-auth-password-msg" : authError || deviceBlock ? "mkt-auth-error" : undefined}
-                  />
-                  <button
-                    type="button"
-                    className="mkt-pass-toggle"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? t("Hide password") : t("Show password")}
-                    aria-pressed={showPassword}
-                    title={showPassword ? t("Hide password") : t("Show password")}
-                  >
-                    <IconEye off={showPassword} />
-                  </button>
-                  </div>
-                  {isRegistering ? (
-                    <SignupFieldMessage id="mkt-auth-password-msg" kind="password" className="mkt-auth-field-hint" field={checks.fields.password} />
-                  ) : null}
-                  {!isRegistering && (
-                    <div className="mkt-forgot-row">
-                      <button type="button" className="mkt-forgot-link" onClick={() => setForgotMode(true)}>
-                        {t("Forgot your password?")}
-                      </button>
-                    </div>
-                  )}
-                  {isRegistering && (
-                    <BirthDateInput idPrefix="mkt-birth" value={birthDate} onChange={setBirthDate} variant="marketing" />
-                  )}
-                  {isRegistering && (
-                    <input
-                      id="mkt-auth-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onBlur={() => checks.blur("email")}
-                      placeholder={t("Email")}
-                      aria-label={t("Email")}
-                      autoComplete="email"
-                      maxLength={254}
-                      required
-                      aria-invalid={fieldInvalid("email") ? "true" : undefined}
-                      aria-describedby={fieldInvalid("email") ? "mkt-auth-email-msg" : undefined}
-                    />
-                  )}
-                  {isRegistering ? (
-                    <SignupFieldMessage id="mkt-auth-email-msg" kind="email" className="mkt-auth-field-hint" field={checks.fields.email} />
-                  ) : null}
-                  {isRegistering && (
-                    <p className="mkt-auth-field-hint">
-                      {t(SIGNUP_EMAIL_HINT)}
-                    </p>
-                  )}
-                  {isRegistering && (
-                    <div className="legal-consent">
-                      <GlassCheckbox
-                        id="mkt-auth-terms-checkbox"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                      />
-                      <label htmlFor="mkt-auth-terms-checkbox">
-                        {t("I have read and agree to the")}{" "}
-                        <button type="button" className="legal-consent-link" onClick={() => setLegalModal("terms")}>
-                          {t("Terms of Service")}
-                        </button>{" "}
-                        {t("and")}{" "}
-                        <button type="button" className="legal-consent-link" onClick={() => setLegalModal("privacy")}>
-                          {t("Privacy Policy")}
-                        </button>
-                        .
-                        <span className="legal-consent-note">
-                          {t("Descall has zero tolerance for objectionable content and abusive users.")}
-                        </span>
-                      </label>
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || authLoading || signupBlocked}
-                    aria-busy={isSubmitting || authLoading}
-                  >
-                    {isSubmitting || authLoading
-                      ? t("Please wait...")
-                      : isRegistering
-                        ? t("Create Account")
-                        : t("Sign In")}
-                  </button>
-                </form>
-                <button
-                  type="button"
-                  className="auth-switch"
-                  onClick={() => { setIsRegistering((v) => !v); setErrorDismissed(true); }}
-                >
-                  {isRegistering ? t("Already have an account? Sign in") : t("Need an account? Register")}
-                </button>
-              </>
+              </div>
             )}
           </div>
           <Suspense fallback={null}>

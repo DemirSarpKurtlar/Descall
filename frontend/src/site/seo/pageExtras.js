@@ -446,7 +446,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Calls that start from the chat",
         p: [
-          "Call one friend or the whole group from the conversation. Turn the camera on when you want to, or share your screen at up to 720p to show a game, a video or homework. Optional noise suppression cuts keyboard and fan noise, and the mic test in the voice settings lets you check your sound before you join.",
+          "Call one friend or the whole group from the conversation. Turn the camera on when you want to, or share your screen at up to 1440p to show a game, a video or homework. Optional noise suppression cuts keyboard and fan noise, and the mic test in the voice settings lets you check your sound before you join.",
         ],
       },
       {

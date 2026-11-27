@@ -1,4 +1,5 @@
 import { AUTHX_RU } from "./authx.ru.js";
+import { PASSKEY_RU } from "./passkey.ru.js";
 import { API_RU } from "./api.ru.js";
 import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
@@ -16,8 +17,12 @@ import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
+import { PUBPAGE_RU } from "./pubpage.ru.js";
+import { ONB_RU } from "./onb.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
+import { SHARE_SHEET_RU } from "./shareSheet.ru.js";
+import { VSC_RU } from "./vsc.ru.js";
 import { LX_RU } from "./lx.ru.js";
 import { USET_RU } from "./uset.ru.js";
 import { SVOICE_RU } from "./svoice.ru.js";
@@ -32,6 +37,7 @@ import { SYSX_RU } from "./sysx.ru.js";
 import { ATOK_RU } from "./atok.ru.js";
 import { ANODES_RU } from "./anodes.ru.js";
 import { AUDIT_LOG_RU } from "./auditLog.ru.js";
+import { PERF_ADMIN_RU } from "./perfAdmin.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
 import { COINPOP_RU } from "./coinpop.ru.js";
@@ -44,8 +50,10 @@ import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_RU,
+  passkey: PASSKEY_RU,
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,
@@ -68,8 +76,12 @@ export const nested = {
   "msg5": MSG5_RU,
   "act": ACT_RU,
   "dir": DIR_RU,
+  "pubpage": PUBPAGE_RU,
+  "onb": ONB_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
+  "shareSheet": SHARE_SHEET_RU,
+  "vsc": VSC_RU,
   "lx": LX_RU,
   "uset": USET_RU,
   "svoice": SVOICE_RU,
@@ -84,6 +96,7 @@ export const nested = {
   "atok": ATOK_RU,
   "anodes": ANODES_RU,
   "auditLog": AUDIT_LOG_RU,
+  "perfAdmin": PERF_ADMIN_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
   "coinpop": COINPOP_RU,
@@ -3048,6 +3061,9 @@ export const nested = {
       "timeoutBody": "Вы можете читать и слушать, но какое-то время не сможете писать сообщения и говорить в голосовых каналах.",
       "timeoutTitle": "Вам временно ограничили отправку сообщений"
     },
+    "onb": {
+      "rehberWelcome": "Добро пожаловать, {user}! Поздоровайся в #{channel}: напиши, как тебя зовут и чем увлекаешься, и команда встречи ответит за пару минут."
+    },
     "opt": {
       "amount": "сумма",
       "amountDesc": "Сколько DesCoin отправить.",
@@ -5979,6 +5995,11 @@ export const nested = {
     "au_SERVER_CREATE": "Создан сервер",
     "au_SERVER_RENAME": "Сервер переименован в {name}",
     "au_SERVER_UPDATE": "Изменены настройки сервера",
+    "au_PUBLIC_PAGE_ENABLE": "Включил показ в Google",
+    "au_PUBLIC_PAGE_DISABLE": "Выключил показ в Google",
+    "au_PUBLIC_PAGE_UNDO": "Отменил выключение",
+    "au_PUBLIC_PAGE_UPDATE": "Изменил открытую страницу",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "Страница скрылась сама",
     "badgeAnn": "ОБЪЯВ",
     "banPrompt": "Забанить {name}? При желании укажите причину:",
     "banned": "Вы забанены на этом сервере.",
@@ -7858,6 +7879,10 @@ export const phrases = {
   "Download Descall": "Скачать Descall",
   "Download Desktop App": "Скачать приложение для ПК",
   "Download all your data including messages, friends, and settings": "Скачайте все свои данные, включая сообщения, друзей и настройки",
+  "A member": "Участник",
+  "Your download should start now.": "Загрузка сейчас начнётся.",
+  "Not starting?": "Не началась?",
+  "Direct link": "Прямая ссылка",
   "Download for Windows": "Скачать для Windows",
   "Download for {name}": "Скачать для {name}",
   "Download on the App Store": "Загрузите в App Store",
@@ -8496,6 +8521,7 @@ export const phrases = {
   "In Progress": "В работе",
   "In Safari tap Share": "В Safari нажмите «Поделиться»",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "В групповом звонке ({count, plural, one {# человек} few {# человека} many {# человек} other {# человека}}) высокое разрешение/FPS может вызывать лаги. Рекомендуется 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "В групповом звонке ({count, plural, one {# человек} few {# человека} many {# человек} other {# человека}}) 1440p может вызывать лаги. Рекомендуется 1080p / 30 FPS.",
   "In group": "В группе",
   "In the air…": "Монетка в воздухе…",
   "In this channel": "В этом канале",
@@ -8663,7 +8689,7 @@ export const phrases = {
   "Join Server": "Вступить на сервер",
   "Join Voice": "Войти в голосовой",
   "Join a Server": "Присоединиться к серверу",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Заходите в голосовой канал из списка серверов. Показывайте экран в 720p. На iPhone, Android, Windows и в браузере — один аккаунт.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Заходите в голосовой канал из списка серверов. Показывайте экран в 1080p. На iPhone, Android, Windows и в браузере — один аккаунт.",
   "Join as audience, then request to speak.": "Зайдите как слушатель, затем попросите слово.",
   "Join lobby": "Войти в лобби",
   "Join me on Descall, we both get DesCoin": "Присоединяйся ко мне в Descall, мы оба получим DesCoin",
@@ -11127,6 +11153,7 @@ export const phrases = {
   ...CONV_START_I18N.ru,
   ...SERVER_TEMPLATE_TOPICS_I18N.ru,
   ...SIGNUP_GROWTH.ru.phrases,
+  ...ADAPTIVE_SIGNUP.ru,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
   "Author": "Автор",

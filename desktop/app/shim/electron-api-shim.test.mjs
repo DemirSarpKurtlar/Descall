@@ -53,7 +53,7 @@ function loadShim({ boot = {}, responses = {}, fail = [], realOrder = false, con
   const winListeners = new Map();
   const listeners = new Map();
   const unlistened = [];
-  const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
+  const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), _m: m }; };
   const answer = (cmd, args) => {
     invokes.push([cmd, args]);
     if (fail.includes(cmd)) return Promise.reject(new Error(`${cmd} failed`));
@@ -153,6 +153,26 @@ assert.equal(mainShim.api.isTauri, true, "isTauri is an extra, non-enumerable fl
   assert.equal(typeof admin.api.onDeepLink(() => {}), "function");
   await tick();
   deq(admin.invokes, [], "admin windows never take links");
+}
+// Passkeys (src-tauri/src/commands/passkey.rs): non-enumerable extras, JSON strings in and out.
+{
+  const s = loadShim({ responses: { passkey_available: { available: true, apiVersion: 4 }, passkey_get: '{"id":"x"}', passkey_create: '{"id":"y"}' } });
+  assert.ok(!Object.keys(s.api).includes("passkeyGet"), "extras keep the Electron key set equal");
+  deq(await s.api.passkeyAvailable(), { available: true, apiVersion: 4 });
+  assert.equal(await s.api.passkeyGet('{"rpId":"descall.com"}'), '{"id":"x"}');
+  deq(s.invokes.at(-1), ["passkey_get", { options: '{"rpId":"descall.com"}' }]);
+  assert.equal(await s.api.passkeyCreate("{}"), '{"id":"y"}');
+  deq(s.invokes.at(-1), ["passkey_create", { options: "{}" }]);
+  s.api.passkeyCancel();
+  await tick();
+  deq(s.invokes.at(-1), ["passkey_cancel", undefined]);
+  const old = loadShim({ fail: ["passkey_available"] });
+  deq(await old.api.passkeyAvailable(), { available: false, reason: "command_missing" }, "an older shell without the command hides passkeys");
+  const admin = loadShim({ boot: { mode: "admin" } });
+  deq(await admin.api.passkeyAvailable(), { available: false, reason: "admin_window" });
+  await assert.rejects(admin.api.passkeyGet("{}"));
+  await tick();
+  deq(admin.invokes, [], "admin windows never run a passkey ceremony");
 }
 // Installer hooks: the Start Menu shortcut gets the toast activator CLSID (installer.nsh
 // Descall_SetToastClsid), the same CLSID as src/premium/toast.rs and the Electron installer.
@@ -743,6 +763,7 @@ const LISTENERS = {
   onOverlayAction: "descall:overlay:action",
   onMainError: "app:main-error",
   onTrayAction: "tray:action",
+  onJumpListAction: "jumplist:action",
 };
 // Same channel names as the Electron preload subscribes to.
 for (const [k, channel] of Object.entries(LISTENERS)) {
@@ -1537,6 +1558,67 @@ assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with 
   }
   // Every value the HUD writes into its markup is escaped or a number.
   assert.doesNotMatch(hud, /data-since="'\+(?!\(Number\()/, "data-since takes numbers only");
+}
+
+// 9. App stylesheet watchdog: an app page whose stylesheet did not apply (raw HTML: the
+// styles.css sentinel --descall-app-css is missing) is logged and reloaded clean ONCE; a good
+// load clears the flag; pages without #root (shell pages) are left alone.
+{
+  const run = async ({ label = "main", applied, root = true, session = null }) => {
+    const shim = loadShim({ label, session });
+    let reloads = 0;
+    shim.ctx.document.getElementById = (id) => (id === "root" && root ? {} : null);
+    shim.ctx.getComputedStyle = () => ({ getPropertyValue: (n) => (n === "--descall-app-css" && applied ? " 1" : "") });
+    shim.ctx.location.reload = () => { reloads += 1; };
+    shim.invokes.splice(0);
+    shim.dispatch("load", {});
+    await new Promise((r) => setTimeout(r, 5));
+    return { shim, reloads, calls: shim.invokes.map(([c]) => c), logs: shim.invokes.filter(([c]) => c === "app_log").map(([, a]) => a.message) };
+  };
+  const shared = (() => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), _m: m }; })();
+  const bad = await run({ applied: false, session: shared });
+  assert.ok(bad.calls.includes("app_boot_retry"), "main window: clean reload through the shell (HTTP cache cleared)");
+  assert.ok(bad.logs.some((m) => /app stylesheet not applied/.test(m)), "logged to main.log");
+  const again = await run({ applied: false, session: shared });
+  assert.ok(!again.calls.includes("app_boot_retry") && again.reloads === 0, "only one reload per session (no loop)");
+  assert.ok(again.logs.some((m) => /already reloaded once/.test(m)));
+  const good = await run({ applied: true, session: shared });
+  assert.ok(!good.calls.includes("app_boot_retry") && !good.logs.length, "styled page: nothing");
+  assert.equal(shared.getItem("__descall_css_reload"), null, "a good load clears the flag");
+  const popout = await run({ label: "popout-1", applied: false });
+  assert.equal(popout.reloads, 1, "other app windows reload themselves");
+  assert.ok(!popout.calls.includes("app_boot_retry"), "app_boot_retry is the main window's only");
+  const shell = await run({ applied: false, root: false });
+  assert.ok(!shell.calls.includes("app_boot_retry") && shell.reloads === 0, "no #root: not an app page");
+  // The sentinel the watchdog reads is in the app stylesheet.
+  const stylesCss = readFileSync(join(here, "..", "..", "..", "frontend", "src", "styles.css"), "utf8");
+  assert.match(stylesCss, /:root \{ --descall-app-css: 1; \}/);
+}
+
+// 10. A sign-in the store refused (keepLocal: the token stayed in localStorage) beats the stale
+// boot snapshot at the next start and is moved into the store; the old session no longer wins.
+{
+  const local = (() => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), _m: m }; })();
+  local.setItem("descall_token", "new.session.tok");
+  const shim = loadShim({ boot: { token: "old.session.tok" }, local, responses: { token_set: true } });
+  assert.equal(shim.api.secureToken.get(), "new.session.tok", "the newer local copy, not the stale snapshot");
+  deq(shim.startup.filter(([c]) => c === "token_set"), [["token_set", { token: "new.session.tok" }]], "moved into the store at start");
+  await tick(); await tick();
+  assert.equal(local.getItem("descall_token"), null, "local copy dropped once the store has it");
+  // Store still refusing: the local copy stays for the next start.
+  const local2 = (() => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), _m: m }; })();
+  local2.setItem("descall_token", "new.session.tok");
+  const refused = loadShim({ boot: { token: "old.session.tok" }, local: local2, responses: { token_set: false } });
+  await tick(); await tick();
+  assert.equal(refused.api.secureToken.get(), "new.session.tok");
+  assert.equal(local2.getItem("descall_token"), "new.session.tok", "kept while the store refuses");
+  // No local copy: the snapshot as before; admin windows never take the owner's local copy.
+  assert.equal(loadShim({ boot: { token: "snap.tok" } }).api.secureToken.get(), "snap.tok");
+  const local3 = (() => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), _m: m }; })();
+  local3.setItem("descall_token", "x.y.z");
+  const admin = loadShim({ boot: { mode: "admin", token: "snap.tok" }, local: local3 });
+  assert.equal(admin.api.secureToken.get(), "snap.tok");
+  assert.ok(!admin.startup.some(([c]) => c === "token_set"));
 }
 
 console.log("electron-api-shim.test: ok");

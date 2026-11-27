@@ -7,6 +7,8 @@
  *
  *   dmMinAccountAgeHours  new accounts may send DMs only after this many hours (0 = off)
  *   disposableEmailBlock  password sign-up refuses throwaway email providers
+ *   turnstileMode         Cloudflare Turnstile human check: enforce | monitor | off
+ *                         (lib/turnstile.js; default enforce, env TURNSTILE_ENFORCE wins)
  *   securityLocks         emergency locks: { registration | dm | readOnly: Lock }
  *     Lock = { startedAt, until (ISO or null = until lifted), minutes, reason, by, byId, banner }
  *
@@ -28,7 +30,9 @@ const REASON_MAX = 300;
 const SECURITY_DEFAULTS = Object.freeze({
   dmMinAccountAgeHours: 0,
   disposableEmailBlock: false,
+  turnstileMode: "enforce",
 });
+const TURNSTILE_MODES = Object.freeze(["enforce", "monitor", "off"]);
 
 /** Settings the Güvenlik Merkezi may change with PATCH /security/settings. */
 const SECURITY_SETTING_KEYS = Object.freeze([
@@ -40,6 +44,7 @@ const SECURITY_SETTING_KEYS = Object.freeze([
   "dmRateLimitMs",
   "dmMinAccountAgeHours",
   "disposableEmailBlock",
+  "turnstileMode",
 ]);
 
 /** History filter chips of the drawer (Kilitler / Hız limitleri / Kayıt koruması / Erişim). */
@@ -58,6 +63,7 @@ const KEY_CATEGORY = Object.freeze({
   maxMessageLength: "rateLimits",
   disposableEmailBlock: "signup",
   dmMinAccountAgeHours: "signup",
+  turnstileMode: "signup",
 });
 
 function clampInt(value, fallback, min, max) {
@@ -108,6 +114,7 @@ function pickSecurityConfig(input) {
   if (!input || typeof input !== "object") return out;
   if (input.dmMinAccountAgeHours !== undefined) out.dmMinAccountAgeHours = clampInt(input.dmMinAccountAgeHours, 0, 0, 720);
   if (input.disposableEmailBlock !== undefined) out.disposableEmailBlock = input.disposableEmailBlock === true;
+  if (input.turnstileMode !== undefined) out.turnstileMode = TURNSTILE_MODES.includes(input.turnstileMode) ? input.turnstileMode : "enforce";
   if (input.securityLocks !== undefined) out.securityLocks = pickSecurityLocks(input.securityLocks);
   return out;
 }
@@ -269,6 +276,7 @@ function securityView(config, now = Date.now()) {
     dmRateLimitMs: Number.isFinite(Number(c.dmRateLimitMs)) ? Number(c.dmRateLimitMs) : 200,
     dmMinAccountAgeHours: clampInt(c.dmMinAccountAgeHours, 0, 0, 720),
     disposableEmailBlock: c.disposableEmailBlock === true,
+    turnstileMode: TURNSTILE_MODES.includes(c.turnstileMode) ? c.turnstileMode : "enforce",
     locks: activeLocks(c, now),
   };
 }
@@ -283,6 +291,9 @@ function validateSettingsPatch(body) {
     if (["registrationEnabled", "dmEnabled", "groupCreationEnabled", "disposableEmailBlock"].includes(key)) {
       if (typeof v !== "boolean") return { error: "bad_value", key };
       patch[key] = v;
+    } else if (key === "turnstileMode") {
+      if (!TURNSTILE_MODES.includes(v)) return { error: "bad_value", key };
+      patch[key] = v;
     } else {
       const n = Number(v);
       if (!Number.isFinite(n)) return { error: "bad_value", key };
@@ -296,6 +307,7 @@ function validateSettingsPatch(body) {
 /** A patch that switches something off (or loosens a limit) needs a reason. */
 function patchNeedsReason(patch) {
   if (!patch) return false;
+  if (patch.turnstileMode === "off" || patch.turnstileMode === "monitor") return true;
   return ["registrationEnabled", "dmEnabled", "groupCreationEnabled"].some((k) => patch[k] === false);
 }
 
@@ -306,6 +318,7 @@ module.exports = {
   REASON_MAX,
   SECURITY_DEFAULTS,
   SECURITY_SETTING_KEYS,
+  TURNSTILE_MODES,
   HISTORY_CATEGORIES,
   KEY_CATEGORY,
   cleanText,

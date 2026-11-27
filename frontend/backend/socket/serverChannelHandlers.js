@@ -531,13 +531,15 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
           });
           // Role mentions read "@Rol adı" on cards and pushes, not the <@&id> token.
           if (notify.displayText != null && payload.kind !== "voice") payload.text = String(notify.displayText).slice(0, 160);
+          // Silent send: the card still bumps unread, the client plays no sound, no push.
+          if (notify.silent) payload.silent = true;
           const pinged = notify.pingedIds instanceof Set ? notify.pingedIds : null;
           for (const uid of viewerIds) {
             // `mentioned`: this member was pinged (role / @everyone / @here); the
             // mention:received card shows it, so the plain card is skipped.
             notify.io.to(`user:${uid}`).emit("server:channel:notify", pinged?.has(uid) ? { ...payload, mentioned: true } : payload);
           }
-          void pushChannelMessageToIos({ serverId, channelId, viewerIds, payload, pingedIds: pinged });
+          if (!notify.silent) void pushChannelMessageToIos({ serverId, channelId, viewerIds, payload, pingedIds: pinged });
         } catch (err) {
           console.warn("[ServerChannel] notify fan-out failed:", err?.message || err);
         }
@@ -1328,7 +1330,9 @@ function registerServerChannelHandlers(io, socket) {
 
   socket.on(
     "server:channel:message",
-    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
+    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput, silent } = {}) => {
+      // "Sessiz gönder" (share sheet): delivered and counted, but no push and no sound.
+      const silentSend = silent === true;
       // Reservations taken during the checks (slowmode, @everyone cooldown) are given
       // back when the send fails before the message is stored.
       let slowmode = { commit() {}, undo() {} };
@@ -1621,6 +1625,8 @@ function registerServerChannelHandlers(io, socket) {
         slowmode.commit();
         massSlot = { undo() {} };
         void recordFirstMessage(myId);
+        // "İlk Selam" (Başla panosu): the first real message in a server with another person.
+        void require("../lib/onboarding/firstHello").noteMessage({ io, userId: myId, kind: "server", text: trimmedContent, messageId: row.id, serverId: channel.server_id, channelId });
 
         // Anti-bot monitor (Faz 0): shadow evaluation only; earning below is unchanged.
         if (trimmedContent) void descoinAntibot.observeMessage({ userId: myId, convKey: `channel:${channelId}`, text: trimmedContent });
@@ -1670,6 +1676,7 @@ function registerServerChannelHandlers(io, socket) {
           replyTo: replyMeta,
           sender: buildSenderPayload(socket),
           ...(pollSnapshot ? { poll: pollSnapshot } : {}),
+          ...(silentSend ? { silent: true } : {}),
         };
 
         const room = `server-channel:${channelId}`;
@@ -1731,9 +1738,10 @@ function registerServerChannelHandlers(io, socket) {
           message,
           displayText: notifyText,
           pingedIds,
+          silent: silentSend,
         });
 
-        if (pingedIds.size) {
+        if (pingedIds.size && !silentSend) {
           void notifyMassPing({
             io,
             channel,
@@ -1825,7 +1833,7 @@ function registerServerChannelHandlers(io, socket) {
                     if (mutedSet.has(uid)) return false;
                     return levelByUser.get(uid) !== "muted";
                   });
-                  if (pushTargets.length > 0) {
+                  if (pushTargets.length > 0 && !silentSend) {
                     const { sendMentionPush } = require("../lib/webPush");
                     void sendMentionPush(pushTargets, {
                       i18n: { title: { key: "push.mentioned", vars: { from: fromName } } },

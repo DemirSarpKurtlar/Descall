@@ -36,6 +36,8 @@ const scheme = {
   "descall://server/42": "/servers/42",
   "descall://server/42/general": "/servers/42/general",
   "descall://servers": "/servers",
+  "descall://s/a": HOME_PATH,
+  "descall://s": HOME_PATH,
   "descall://friends": "/friends",
   "descall://calls": "/calls",
   "descall://activity": "/activity",
@@ -89,6 +91,9 @@ const landings = {
   "https://www.descall.com/s/crew42/": "/s/crew42",
   "https://descall.com/invite/s/AbCd12": "/servers/join/AbCd12",
   "https://descall.com/servers/join/AbCd12": "/servers/join/AbCd12",
+  // Public server page join button (public/server-page-client.js).
+  "descall://s/anadolucraft": "/s/anadolucraft",
+  "descall://s/AnadoluCraft": "/s/anadolucraft",
 };
 for (const [url, want] of Object.entries(landings)) assert.equal(p(url), want, url);
 for (const bad of [
