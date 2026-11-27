@@ -81,7 +81,7 @@ import {
   setServerFolder,
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
-import { applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
+import { applySignedOutAppearance, applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
 import {
   hydrateChatCache,
@@ -1375,6 +1375,18 @@ export default function App() {
       if (themeKey) document.documentElement.setAttribute("data-theme", themeKey);
     }
   }, [me, me?.equippedTheme?.theme_key]);
+
+  // Signed out (sign-in / sign-up, session expired, maintenance kick): Descall's own
+  // look. The effect above only runs with a user, so without this the last account's
+  // colourful theme stayed on the sign-in screen.
+  useEffect(() => {
+    if (me || !sessionChecked) return;
+    try {
+      applySignedOutAppearance();
+    } catch {
+      /* best effort */
+    }
+  }, [me, sessionChecked]);
 
   // Settings › Görünüm lives on the account: pull on sign-in and when the
   // window comes back, so a change on another device shows up here.
@@ -3535,6 +3547,13 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
+    // The sign-in page uses Descall's own look, not this account's shop theme or
+    // accent; the cache drops them too so a cold start paints the same.
+    try {
+      applySignedOutAppearance({ forget: true });
+    } catch {
+      /* best effort */
+    }
     const isElectronDesktop = isDesktopShell();
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
