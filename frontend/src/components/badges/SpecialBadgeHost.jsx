@@ -8,6 +8,8 @@ import { ART_BY_ID } from "./specialBadgeArt.jsx";
 import { equipMine, formatSerial, invalidateUser, loadCatalog, loadUserBadges, noteEquipped, userBadgesState } from "../../lib/specialBadges";
 import { hapticSuccess, hapticWarning } from "../../lib/fluid/haptics";
 import { translate } from "../../i18n";
+import { openFeedbackModal } from "../../lib/feedbackNudge";
+import { bugHuntToast } from "./bugHuntToast.js";
 
 export default function SpecialBadgeHost({ socket, meId }) {
   const { locale } = useLocale();
@@ -62,10 +64,28 @@ export default function SpecialBadgeHost({ socket, meId }) {
       const serial = userBadgesState(meId).data?.badges?.find((b) => b.id === id)?.serial || 0;
       noteEquipped(meId, id ? { id, serial } : null);
     };
+    // Bug Avcısı: an admin confirmed my bug (or shipped the fix). The thread card is in the
+    // feedback window; this toast carries the badge (with its level) and opens the thread.
+    const onBugHunt = (p = {}) => {
+      if (!p.feedbackId || !p.entry) return;
+      try { window.dispatchEvent(new CustomEvent("descall:feedback-live", { detail: { feedbackId: p.feedbackId, kind: "bughunt" } })); } catch { /* ignore */ }
+      if (p.badge?.id) {
+        invalidateUser(meId);
+        loadUserBadges(meId, { fresh: true }).catch(() => {});
+      }
+      hapticSuccess();
+      const toast = bugHuntToast(p, t, nameOf);
+      showBadgeToast({
+        ...toast,
+        action: { label: t("bhunt.open"), run: () => openFeedbackModal({ feedbackId: p.feedbackId, source: "bughunt" }) },
+      });
+    };
+    socket.on("feedback:bughunt", onBugHunt);
     socket.on("special-badge:granted", onGranted);
     socket.on("special-badge:revoked", onRevoked);
     socket.on("special-badge:equipped", onEquipped);
     return () => {
+      socket.off("feedback:bughunt", onBugHunt);
       socket.off("special-badge:granted", onGranted);
       socket.off("special-badge:revoked", onRevoked);
       socket.off("special-badge:equipped", onEquipped);

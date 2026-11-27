@@ -20,6 +20,7 @@ import { PLUS2_DE } from "./plus2.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { PUBPAGE_DE } from "./pubpage.de.js";
 import { ONB_DE } from "./onb.de.js";
+import { BHUNT_DE } from "./bhunt.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { SHARE_SHEET_DE } from "./shareSheet.de.js";
@@ -83,6 +84,7 @@ export const nested = {
   "dir": DIR_DE,
   "pubpage": PUBPAGE_DE,
   "onb": ONB_DE,
+  "bhunt": BHUNT_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
   "shareSheet": SHARE_SHEET_DE,
@@ -2784,6 +2786,7 @@ export const nested = {
     "countOther": "Hat {n} von {total} Abzeichen",
     "countSelf": "Du hast {n} von {total} Abzeichen",
     "desc": {
+      "ilkselam": "Leute, die ihre erste Descall-Nachricht mit einem echten Menschen geteilt haben.",
       "alfa": "Leute aus der geschlossenen Alpha.",
       "beta": "Leute aus der offenen Beta.",
       "bughunter": "Leute, deren Fehlermeldungen bestätigt wurden.",
@@ -2863,6 +2866,7 @@ export const nested = {
     "modeCountry": "Nur Länderabzeichen",
     "modeSpecial": "Land + Sonderabzeichen",
     "names": {
+      "ilkselam": "Erstes Hallo",
       "alfa": "Alpha",
       "beta": "Beta",
       "bughunter": "Bugjäger",
@@ -2971,6 +2975,18 @@ export const nested = {
     "wearingOther": "Trägt"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Der Fehler, den du gemeldet hast, war ein echter Bug. Unser Team behebt ihn.",
+      "confirmedFixed": "Der Fehler, den du gemeldet hast, war ein echter Bug, und wir haben ihn behoben.",
+      "also": "Der Fehler, den du gemeldet hast, war ein echter Bug. Jemand hat ihn kurz vor dir gemeldet, aber deine Meldung zählt auch. Danke!",
+      "fixed": "Behoben: Der gemeldete Fehler ist in der neuesten Version weg. Danke!",
+      "badgeNew": "Du hast das Abzeichen Bugjäger bekommen.",
+      "badgeUp": "Dein Abzeichen ist auf Bugjäger {level} gestiegen.",
+      "badgeMore": "Ein weiterer echter Bug auf deinem Bugjäger-Abzeichen: insgesamt {count}.",
+      "badgeGlitch": "Du hast außerdem das Abzeichen Glitch bekommen.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} hat die Bug-Bestätigung zurückgenommen: {reason}",
+    },
     "cmd": {
       "avatar": "Avatar groß anzeigen, herunterladen oder im Vollbild öffnen.",
       "ban": "Ein Mitglied vom Server bannen.",
@@ -3053,6 +3069,14 @@ export const nested = {
       "slotUsage": "**Slot**\n\nVerwendung: `/slot <betrag>`\nMin. **{min}** · Max. **{max}** · {lines} Gewinnlinien"
     },
     "notify": {
+      "bugConfirmedTitle": "Du hast einen echten Bug gefunden",
+      "bugNewBadgeBody": "Du hast das Abzeichen Bugjäger bekommen",
+      "bugLevelUpBody": "Dein Abzeichen ist jetzt Bugjäger {level}",
+      "bugMoreBody": "Gefundene echte Bugs: {count}",
+      "bugAlsoTitle": "Deine Fehlermeldung wurde bestätigt",
+      "bugAlsoBody": "Danke für die Meldung, +{amount} DesCoin",
+      "bugFixedTitle": "Behoben",
+      "bugFixedBody": "Der gemeldete Fehler wurde behoben",
       "feedbackClosed": "Dein Feedback wurde geschlossen",
       "feedbackInProgress": "Dein Feedback wird geprüft",
       "feedbackReplyTitle": "Das Descall-Team hat geantwortet",

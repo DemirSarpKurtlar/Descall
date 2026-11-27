@@ -13,6 +13,7 @@
  *   premium_grant         -> premium cancel (only while that grant is the latest event)
  *   special_badge_grant   -> special_badge_revoke
  *   server_directory_hide -> server_directory_show
+ *   feedback_bug_confirm  -> feedback_bug_undo (Bug Avcısı; DesCoin back while unspent)
  *
  * Refusals carry a code: NOT_UNDOABLE, NO_PERMISSION, ALREADY_UNDONE,
  * ALREADY_REVERSED (someone already lifted it), SUPERSEDED (a newer action of
@@ -72,7 +73,10 @@ function undoState(entry, later = [], { sections = null } = {}) {
   if (undone) return { available: false, reverse: spec.reverse, section: spec.section, code: "ALREADY_UNDONE", undoneBy: { id: undone.id, at: undone.at, actorUsername: undone.actorUsername } };
   const at = Date.parse(entry.at || "");
   const after = later.filter((e) => Date.parse(e.at || "") > at && String(e.target ?? "") === String(entry.target ?? "") && !ids.has(e.id));
-  const sameBadge = (e) => entry.action !== "special_badge_grant" || String(e.meta?.badgeId || "") === String(entry.meta?.badgeId || "");
+  const sameBadge = (e) => {
+    if (entry.action === "feedback_bug_confirm") return String(e.meta?.feedbackId || "") === String(entry.meta?.feedbackId || "");
+    return entry.action !== "special_badge_grant" || String(e.meta?.badgeId || "") === String(entry.meta?.badgeId || "");
+  };
   if (after.some((e) => e.action === spec.reverse && sameBadge(e))) return { available: false, reverse: spec.reverse, section: spec.section, code: "ALREADY_REVERSED" };
   if (after.some((e) => e.action === entry.action && sameBadge(e))) return { available: false, reverse: spec.reverse, section: spec.section, code: "SUPERSEDED" };
   if (entry.action === "premium_grant" && after.some((e) => /^premium_/.test(e.action) && e.action !== "premium_denied")) {
@@ -176,6 +180,22 @@ async function undoEntry({ entry, later = [], actor, reason, notify = false, io 
       const out = await require("./specialBadges").revoke({ userId: target, badgeId, actorId: actor.id, reason });
       meta.badgeId = badgeId;
       meta.serial = out?.serial ?? null;
+      break;
+    }
+    case "feedback_bug_confirm": {
+      const feedbackId = entry.meta?.feedbackId;
+      if (!feedbackId) throw new UndoError("TARGET_MISSING", 404);
+      const bugHunter = require("./bugHunter/service");
+      try {
+        const out = await bugHunter.undo({ feedbackId, reason, actor, io, audit: false });
+        Object.assign(meta, out.meta || {});
+        result = { reward: out.reward || null, badgeRevoked: Boolean(out.badgeRevoked) };
+      } catch (err) {
+        if (err instanceof bugHunter.BugHuntError) {
+          throw new UndoError(err.code === "ALREADY_UNDONE" ? "ALREADY_REVERSED" : err.code === "NOT_CONFIRMED" ? "TARGET_MISSING" : err.code, err.status || 409);
+        }
+        throw err;
+      }
       break;
     }
     case "server_directory_hide": {

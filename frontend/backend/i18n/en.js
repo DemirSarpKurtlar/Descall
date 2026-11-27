@@ -97,6 +97,10 @@ module.exports = {
 
   // Native iOS alert push (lib/iosAlertPush.js) and web push (lib/webPush.js).
   push: {
+    bugHuntConfirmed: "The bug you reported was real. See your feedback for details.",
+    bugHuntLevelUp: "One more real bug! Your badge is now Bug Hunter {level}.",
+    bugHuntAlso: "Your bug report was confirmed, +{amount} DesCoin.",
+    bugHuntFixed: "Fixed: the bug you reported is gone.",
     someone: "Someone",
     newMessage: "New message",
     voice: "🎤 Voice message",

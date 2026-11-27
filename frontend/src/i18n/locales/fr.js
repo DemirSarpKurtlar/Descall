@@ -20,6 +20,7 @@ import { PLUS2_FR } from "./plus2.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
 import { ONB_FR } from "./onb.fr.js";
+import { BHUNT_FR } from "./bhunt.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
@@ -83,6 +84,7 @@ export const nested = {
   "dir": DIR_FR,
   "pubpage": PUBPAGE_FR,
   "onb": ONB_FR,
+  "bhunt": BHUNT_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "shareSheet": SHARE_SHEET_FR,
@@ -2784,6 +2786,7 @@ export const nested = {
     "countOther": "{n, plural, one {Cette personne a # badge sur {total}} other {Cette personne a # badges sur {total}}}",
     "countSelf": "{n, plural, one {Tu as # badge sur {total}} other {Tu as # badges sur {total}}}",
     "desc": {
+      "ilkselam": "Celles et ceux qui ont partagé leur premier message Descall avec une vraie personne.",
       "alfa": "Membres de l'alpha fermée.",
       "beta": "Membres de la bêta ouverte.",
       "bughunter": "Personnes dont les signalements de bug ont été confirmés.",
@@ -2863,6 +2866,7 @@ export const nested = {
     "modeCountry": "Badge de pays uniquement",
     "modeSpecial": "Pays + badge spécial",
     "names": {
+      "ilkselam": "Premier salut",
       "alfa": "Alpha",
       "beta": "Bêta",
       "bughunter": "Chasseur de bugs",
@@ -2971,6 +2975,18 @@ export const nested = {
     "wearingOther": "Porté"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Le problème que tu as signalé était un vrai bug. Notre équipe le corrige.",
+      "confirmedFixed": "Le problème que tu as signalé était un vrai bug, et nous l'avons corrigé.",
+      "also": "Le problème que tu as signalé était un vrai bug. Quelqu'un l'a signalé un peu avant toi, mais ton signalement compte aussi. Merci !",
+      "fixed": "Corrigé : le bug que tu as signalé a disparu dans la dernière version. Merci !",
+      "badgeNew": "Tu as gagné le badge Chasseur de bugs.",
+      "badgeUp": "Ton badge est passé à Chasseur de bugs {level}.",
+      "badgeMore": "Un vrai bug de plus sur ton badge Chasseur de bugs : {count} au total.",
+      "badgeGlitch": "Tu as aussi gagné le badge Glitch.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} a annulé la confirmation du bug : {reason}",
+    },
     "cmd": {
       "avatar": "Afficher un avatar en grand, le télécharger ou l'ouvrir en plein écran.",
       "ban": "Bannir un membre du serveur.",
@@ -3053,6 +3069,14 @@ export const nested = {
       "slotUsage": "**Machine à sous**\n\nUtilisation : `/slot <montant>`\nMin **{min}** · Max **{max}** · {lines} lignes de paiement"
     },
     "notify": {
+      "bugConfirmedTitle": "Tu as trouvé un vrai bug",
+      "bugNewBadgeBody": "Tu as gagné le badge Chasseur de bugs",
+      "bugLevelUpBody": "Ton badge est maintenant Chasseur de bugs {level}",
+      "bugMoreBody": "Vrais bugs trouvés : {count}",
+      "bugAlsoTitle": "Ton signalement de bug est confirmé",
+      "bugAlsoBody": "Merci pour le signalement, +{amount} DesCoin",
+      "bugFixedTitle": "Corrigé",
+      "bugFixedBody": "Le bug que tu as signalé est corrigé",
       "feedbackClosed": "Ton retour a été clôturé",
       "feedbackInProgress": "Ton retour est en cours d'examen",
       "feedbackReplyTitle": "L'équipe Descall a répondu",

@@ -20,6 +20,7 @@ import { PLUS2_ES } from "./plus2.es.js";
 import { DIR_ES, DIR_API_ES } from "./dir.es.js";
 import { PUBPAGE_ES } from "./pubpage.es.js";
 import { ONB_ES } from "./onb.es.js";
+import { BHUNT_ES } from "./bhunt.es.js";
 import { BAN_ES } from "./ban.es.js";
 import { IOS_SHARE_ES } from "./iosShare.es.js";
 import { SHARE_SHEET_ES } from "./shareSheet.es.js";
@@ -83,6 +84,7 @@ export const nested = {
   "dir": DIR_ES,
   "pubpage": PUBPAGE_ES,
   "onb": ONB_ES,
+  "bhunt": BHUNT_ES,
   "ban": BAN_ES,
   "iosShare": IOS_SHARE_ES,
   "shareSheet": SHARE_SHEET_ES,
@@ -2784,6 +2786,7 @@ export const nested = {
     "countOther": "{total, plural, one {Tiene {n} de # insignia} other {Tiene {n} de # insignias}}",
     "countSelf": "{total, plural, one {Tienes {n} de # insignia} other {Tienes {n} de # insignias}}",
     "desc": {
+      "ilkselam": "Quienes compartieron su primer mensaje en Descall con una persona real.",
       "alfa": "Personas de la alfa cerrada.",
       "beta": "Personas de la beta abierta.",
       "bughunter": "Personas cuyos reportes de errores se confirmaron.",
@@ -2863,6 +2866,7 @@ export const nested = {
     "modeCountry": "Solo insignia de país",
     "modeSpecial": "País + insignia especial",
     "names": {
+      "ilkselam": "Primer saludo",
       "alfa": "Alfa",
       "beta": "Beta",
       "bughunter": "Cazador de bugs",
@@ -2971,6 +2975,18 @@ export const nested = {
     "wearingOther": "En uso"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "El fallo que reportaste era un bug real. Nuestro equipo lo está arreglando.",
+      "confirmedFixed": "El fallo que reportaste era un bug real y ya lo arreglamos.",
+      "also": "El fallo que reportaste era un bug real. Alguien lo reportó un poco antes, pero tu reporte también cuenta. ¡Gracias!",
+      "fixed": "Arreglado: el fallo que reportaste ya no está en la última versión. ¡Gracias!",
+      "badgeNew": "Ganaste la insignia Cazador de bugs.",
+      "badgeUp": "Tu insignia subió a Cazador de bugs {level}.",
+      "badgeMore": "Un bug real más en tu insignia Cazador de bugs: {count} en total.",
+      "badgeGlitch": "También ganaste la insignia Glitch.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} deshizo la confirmación del bug: {reason}",
+    },
     "cmd": {
       "avatar": "Muestra un avatar en grande, descárgalo o ábrelo en pantalla completa.",
       "ban": "Banea a un miembro del servidor.",
@@ -3053,6 +3069,14 @@ export const nested = {
       "slotUsage": "**Tragamonedas**\n\nUso: `/slot <cantidad>`\nMín. **{min}** · Máx. **{max}** · {lines} líneas de pago"
     },
     "notify": {
+      "bugConfirmedTitle": "Encontraste un bug real",
+      "bugNewBadgeBody": "Ganaste la insignia Cazador de bugs",
+      "bugLevelUpBody": "Tu insignia ahora es Cazador de bugs {level}",
+      "bugMoreBody": "Bugs reales encontrados: {count}",
+      "bugAlsoTitle": "Tu reporte de bug se confirmó",
+      "bugAlsoBody": "Gracias por el reporte, +{amount} DesCoin",
+      "bugFixedTitle": "Arreglado",
+      "bugFixedBody": "El fallo que reportaste se arregló",
       "feedbackClosed": "Se cerraron tus comentarios",
       "feedbackInProgress": "Estamos revisando tus comentarios",
       "feedbackReplyTitle": "El equipo de Descall respondió",

@@ -102,11 +102,37 @@ function publicCatalogRow(row, { admin = false } = {}) {
   return out;
 }
 
+// ---- Bug Avcısı (#11 "bughunter" levels up in place: lib/bugHunter). Tolerant, like the rest.
+const LEVELED = "bughunter";
+async function bugStats(userIds) {
+  try {
+    return await require("./bugHunter/service").levelsFor(userIds);
+  } catch {
+    return new Map();
+  }
+}
+/** { level, bugs, also, severity, since } next to a "bughunter" entry; level 1 for a promo / hand grant. */
+function withStats(entry, stats) {
+  if (!entry || entry.id !== LEVELED) return entry;
+  const st = stats || null;
+  return {
+    ...entry,
+    level: Math.max(1, Number(st?.level) || 0),
+    bugs: Number(st?.bugs) || 0,
+    also: Number(st?.also) || 0,
+    severity: st?.severity || null,
+    since: st?.since || null,
+  };
+}
+
 // ---- per person
 async function badgesForUser(userId) {
   if (!isUuid(userId)) return [];
   const rows = await softRpc("special_badge_user_badges", { p_user_id: userId }, []);
-  return Array.isArray(rows) ? rows : [];
+  const list = Array.isArray(rows) ? rows : [];
+  if (!list.some((r) => r?.id === LEVELED)) return list;
+  const stats = (await bugStats([userId])).get(userId);
+  return list.map((r) => withStats(r, stats));
 }
 
 /** Map userId -> { id, serial } for the worn badge of each user (tolerant). */
@@ -117,6 +143,11 @@ async function equippedForUsers(userIds) {
   const rows = await softRpc("special_badge_equipped_for", { p_user_ids: ids }, []);
   for (const row of Array.isArray(rows) ? rows : []) {
     if (row && row.userId && row.id) out.set(row.userId, { id: row.id, serial: row.serial });
+  }
+  const wearers = [...out.entries()].filter(([, v]) => v.id === LEVELED).map(([k]) => k);
+  if (wearers.length) {
+    const stats = await bugStats(wearers);
+    for (const id of wearers) out.set(id, withStats(out.get(id), stats.get(id)));
   }
   return out;
 }

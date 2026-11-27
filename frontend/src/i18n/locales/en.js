@@ -16,6 +16,7 @@ import { PLUS2_EN } from "./plus2.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { PUBPAGE_EN } from "./pubpage.en.js";
 import { ONB_EN } from "./onb.en.js";
+import { BHUNT_EN } from "./bhunt.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { SHARE_SHEET_EN } from "./shareSheet.en.js";
@@ -101,6 +102,7 @@ export const nested = {
   dir: DIR_EN,
   pubpage: PUBPAGE_EN,
   onb: ONB_EN,
+  bhunt: BHUNT_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
   shareSheet: SHARE_SHEET_EN,

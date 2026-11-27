@@ -11,7 +11,7 @@ let seq = 0;
 const subs = new Set();
 const emit = () => subs.forEach((f) => f());
 
-/** Show a toast. { id?, text, undo?, tone?: "err" | "ok", action?: { label, run } } */
+/** Show a toast. { id?, level?, text, undo?, tone?: "err" | "ok", action?: { label, run } } */
 export function showBadgeToast(toast) {
   seq += 1;
   current = { ...toast, key: seq };
@@ -50,7 +50,7 @@ export function BadgeToast() {
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
             transition={reduce ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
           >
-            {toast.id ? <SpecialBadgeIcon id={toast.id} size={22} /> : null}
+            {toast.id ? <SpecialBadgeIcon id={toast.id} size={22} level={toast.level || 0} /> : null}
             <span className="bp-toast-text">{toast.text}</span>
             {toast.action ? (
               <button type="button" className="bp-toast-btn is-brand" onClick={() => { dismissBadgeToast(); toast.action.run(); }}>{toast.action.label}</button>

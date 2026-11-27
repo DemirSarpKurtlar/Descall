@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { localizedField } from "../../i18n/serverText.js";
+import BugHuntCard from "./BugHuntCard.jsx";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -513,6 +514,7 @@ export default function QuickFeedbackModal({
               ) : null}
             </div>
             {(it.thread || []).map((m) => {
+              if (m.type === "bughunt") return <BugHuntCard key={m.id} m={m} t={t} time={relTime(m.created_at, t)} />;
               if (m.type === "status") {
                 return (
                   <div key={m.id} className="fbk-sys">
@@ -534,7 +536,7 @@ export default function QuickFeedbackModal({
                 </div>
               );
             })}
-            {!(it.thread || []).some((m) => m.type === "message" && m.fromTeam) ? (
+            {!(it.thread || []).some((m) => (m.type === "message" && m.fromTeam) || m.type === "bughunt") ? (
               <div className="fbk-sys"><Clock size={12} /> {t("fbk.waiting")}</div>
             ) : null}
             <span ref={threadEndRef} />

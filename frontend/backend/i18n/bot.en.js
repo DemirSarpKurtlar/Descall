@@ -5,6 +5,19 @@
  * Same text as src/i18n/locales/bot.en.js (BOT_EN), checked by backendI18n.selftest.cjs.
  */
 module.exports = {
+  // Bug Avcısı (lib/bugHunter/model.js): the sender's thread card.
+  bughunt: {
+    confirmed: "The bug you reported was real. Our team is fixing it.",
+    confirmedFixed: "The bug you reported was real, and we fixed it.",
+    also: "The bug you reported was real. Someone reported it a little earlier, but your report counts too. Thank you!",
+    fixed: "Fixed: the bug you reported is gone in the latest version. Thank you!",
+    badgeNew: "You earned the Bug Hunter badge.",
+    badgeUp: "Your badge leveled up to Bug Hunter {level}.",
+    badgeMore: "One more real bug on your Bug Hunter badge: {count} in total.",
+    badgeGlitch: "You also earned the Glitch badge.",
+    reward: "+{amount} DesCoin",
+    undone: "{who} undid the bug confirmation: {reason}",
+  },
   game: {
     heads: "Heads",
     tails: "Tails",
@@ -86,6 +99,14 @@ module.exports = {
     resolved: "{actor} closed the case ({resolution}).",
   },
   notify: {
+    bugConfirmedTitle: "You found a real bug",
+    bugNewBadgeBody: "You earned the Bug Hunter badge",
+    bugLevelUpBody: "Your badge is now Bug Hunter {level}",
+    bugMoreBody: "Real bugs found: {count}",
+    bugAlsoTitle: "Your bug report was confirmed",
+    bugAlsoBody: "Thanks for the report, +{amount} DesCoin",
+    bugFixedTitle: "Fixed",
+    bugFixedBody: "The bug you reported was fixed",
     friendRequestTitle: "Friend request",
     friendRequestBody: "{from} sent you a friend request",
     friendAcceptedTitle: "Friend request accepted",

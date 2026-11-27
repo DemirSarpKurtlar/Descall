@@ -24,6 +24,8 @@ const REASONS = new Set([
   "referral_invite",
   "referral_welcome",
   "onboarding_reward",
+  "bug_bounty",
+  "bug_bounty_revoke",
   "promo",
   "premium_gift",
 ]);
