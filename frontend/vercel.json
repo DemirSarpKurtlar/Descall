@@ -476,6 +476,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/r/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/s/:path*",
       "destination": "/index.html"
     }

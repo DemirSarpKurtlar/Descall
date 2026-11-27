@@ -50,6 +50,8 @@ import { AGENTX_DE } from "./agentx.de.js";
 import { AGENT_OPS_DE } from "./agentOps.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_DE,
@@ -109,6 +111,7 @@ export const nested = {
   "agentOps": AGENT_OPS_DE,
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
+  "dvt": INVITES_I18N.de,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

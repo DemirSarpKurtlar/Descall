@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Coins, Copy, Gift, Share2 } from "../ui/Icon.jsx";
-import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
+import { inviteShortUrl } from "../../lib/inviteShare.js";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
@@ -19,7 +19,18 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
   const glassShell = useGlassShell();
   const [copied, setCopied] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
-  const url = useMemo(() => toPublicShareUrl(buildFriendInviteUrl(username)), [username]);
+  // Davet Merkezi (growth 4A): the short personal link descall.com/r/<user> (?k= channel tags
+  // come from the dashboard's share buttons); rewards unlock when the friend is active.
+  const url = useMemo(() => inviteShortUrl(username), [username]);
+  const openCenter = () => {
+    void import("../invites/InviteCenterHost.jsx").then((m) => m.openInviteCenter()).catch(() => {});
+  };
+  const centerBtn = (cls) => (
+    <button type="button" className={cls} onClick={openCenter} data-testid="invite-card-center">
+      <Gift size={14} aria-hidden />
+      {t("dvt.entry.open")}
+    </button>
+  );
 
   if (!username) return null;
 
@@ -97,7 +108,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
           <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
           <div>
             <strong>{t("Invite friends")}</strong>
-            <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
+            <span>{t("dvt.cardReward", { a: 100, b: 50 })}</span>
           </div>
         </div>
         <div className="g-invite-link-field" title={url}>{shown}</div>
@@ -110,6 +121,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
             <Share2 size={14} aria-hidden />
             {t("Share")}
           </button>
+          {centerBtn("secondary")}
         </div>
       </div>
     );
@@ -122,7 +134,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
           <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
           <div className="g-invite-copy">
             <strong>{t("Invite friends")}</strong>
-            <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
+            <span>{t("dvt.cardReward", { a: 100, b: 50 })}</span>
           </div>
         </div>
         <div className="g-invite-actions">
@@ -134,6 +146,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
             <Share2 size={14} aria-hidden />
             {t("Share")}
           </button>
+          {centerBtn("g-invite-btn")}
         </div>
       </div>
     );
@@ -145,7 +158,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
         <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
         <div>
           <strong>{t("Invite friends")}</strong>
-          <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
+          <span>{t("dvt.cardReward", { a: 100, b: 50 })}</span>
         </div>
       </div>
       <div className="invite-card-link" title={url}>
@@ -166,11 +179,12 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
           <Share2 size={14} aria-hidden />
           {t("Share")}
         </button>
+        {centerBtn("invite-card-btn")}
       </div>
       {!compact && (
         <p className="invite-card-footnote">
           <Coins size={13} aria-hidden />
-          {t("Rewards land when they register with your link")}
+          {t("dvt.cardRule")}
         </p>
       )}
     </div>

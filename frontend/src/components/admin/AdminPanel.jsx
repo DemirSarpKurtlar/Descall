@@ -68,6 +68,7 @@ import { AdminPermsContext } from "./dossier/adminPerms.js";
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
 const AdminShop2 = lazy(() => import("./shop2/AdminShop2.jsx"));
+const AdminInvites = lazy(() => import("./invites/AdminInvites.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -101,6 +102,8 @@ const TABS = [
   { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
   { id: "retention", label: "admin.retention", icon: TrendingUp },
   { id: "economy", label: "admin.economy", icon: Wallet },
+  // Davet ödülleri (growth phase 4, owner pick 4A): invite rewards control board.
+  { id: "invites", label: "dvt.adminNav", icon: Gift, newLabel: "dvt.adminNew" },
   { id: "topUsers", label: "admin.topUsers", icon: Trophy },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
@@ -871,6 +874,17 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "errors" && <ErrorIssuesTab />}
         {tab === "retention" && <RetentionTab />}
         {tab === "economy" && <EconomyTab />}
+        {tab === "invites" && (
+          <Suspense fallback={null}>
+            <AdminInvites
+              socket={socket}
+              onOpenUser={(id) => {
+                setDossierUserId(id);
+                setTab("people");
+              }}
+            />
+          </Suspense>
+        )}
         {tab === "topUsers" && <AdminTopUsers />}
         {tab === "dmReview" && (
           <AdminDmInbox

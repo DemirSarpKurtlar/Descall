@@ -743,6 +743,8 @@ function registerSocketHandlers(io) {
 
     // Durable activity timestamp for admin "recently active" boards.
     touchLastSeen(myId).catch(() => {});
+    // Davet ödülleri: a visit the day after sign-up is the invitee's return; unread notices toast.
+    void require("../lib/referrals/engine").noteSeen({ io, userId: myId }).catch(() => {});
 
     setupAdminSocket(io, socket);
     // Sunucu Ağı live push (admin:nodes:watch, owner room only): lib/nodeKeys/monitor.js.
@@ -1508,6 +1510,8 @@ function registerSocketHandlers(io) {
       void recordFirstMessage(myId);
       // "İlk Selam" (Başla panosu): the first real DM to another person, after the undo window.
       void require("../lib/onboarding/firstHello").noteMessage({ io, userId: myId, kind: "dm", text: storedText, messageId, peerId: toUserId });
+      // Davet ödülleri: the invitee's first message (lib/referrals/engine.js; cached, cheap for everyone else).
+      void require("../lib/referrals/engine").noteFirstMessage({ io, userId: myId, peerId: toUserId });
 
       // DesCoin: a small, capped reward per genuine message. Fully
       // server-driven (no client heartbeat) since it fires only after the

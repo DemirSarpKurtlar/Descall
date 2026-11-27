@@ -13,7 +13,9 @@ const crypto = require("crypto");
 
 function matches(row, filters) {
   return filters.every(({ type, col, val }) => {
-    const rowVal = row[col];
+    // JSON path filters ("meta->>idempotencyKey") read one text key of a jsonb column.
+    const jsonPath = typeof col === "string" ? col.split("->>") : [col];
+    const rowVal = jsonPath.length === 2 ? (row[jsonPath[0]] == null ? undefined : (row[jsonPath[0]][jsonPath[1]] == null ? undefined : String(row[jsonPath[0]][jsonPath[1]]))) : row[col];
     if (type === "eq") return rowVal === val;
     if (type === "neq") return rowVal !== val;
     if (type === "ilike") {

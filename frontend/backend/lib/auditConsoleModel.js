@@ -190,6 +190,8 @@ const PREFIXES = [
   ["shop_", "economy", "low"],
   ["shop2_", "economy", "low"],
   ["descoin_", "economy", "medium"],
+  // Davet ödülleri (growth phase 4): holds, revokes, rules, undo.
+  ["invite_", "economy", "medium"],
   ["credit", "economy", "medium"],
   ["casino_", "economy", "low"],
   ["game_", "economy", "medium"],

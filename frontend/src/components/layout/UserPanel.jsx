@@ -3,7 +3,7 @@ import { isDesktopShell } from "../../lib/desktopShell.js";
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins, Gift } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
@@ -372,6 +372,8 @@ const NAV_GROUPS_DEF = [
       { id: "wallet", labelKey: "coinpop.settings.nav", icon: Coins, hintKey: "coinpop.settings.navHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
+      // Davet Merkezi (growth phase 4): opens the invite dashboard window / sheet, not a tab.
+      { id: "invites", labelKey: "dvt.entry.nav", icon: Gift, hintKey: "dvt.entry.hint", action: "invites" },
     ],
   },
 ];
@@ -397,6 +399,7 @@ const S3_NAV_TILES = {
   wallet: ["coin", "yellow"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
+  invites: ["users", "teal"],
 };
 
 /* Same tokens as .s3 .c-* in settings-v3.css (--tile-* in design-tokens.css), for lists
@@ -1716,6 +1719,10 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   const openTab = (id) => {
+    if (id === "invites") {
+      void import("../invites/InviteCenterHost.jsx").then((m) => m.openInviteCenter()).catch(() => {});
+      return;
+    }
     setActiveTab(id);
     onTabChange?.(id);
     if (isMobile) setMobileDetail(true);

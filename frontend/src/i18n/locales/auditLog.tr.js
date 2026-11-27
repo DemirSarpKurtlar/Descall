@@ -458,6 +458,7 @@ export const AUDIT_LOG_TR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Davet ödülleri",
     "adminToken": "Admin Token",
     "nodes": "Sunucu Ağı",
     "overview": "Genel bakış",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_TR = {
     "system": "Sistem işlemi"
   },
   "act": {
+    "invite_auto_hold": "Davet ödüllerini otomatik bekletti",
+    "invite_hold": "Davet ödüllerini bekletti",
+    "invite_release": "Davet bekletmesini kaldırdı",
+    "invite_revoke": "Davet ödüllerini geri aldı",
+    "invite_pause_link": "Davet bağlantısını durdurdu",
+    "invite_resume_link": "Davet bağlantısını açtı",
+    "invite_rules": "Davet kurallarını değiştirdi",
+    "invite_undo": "Davet işlemini geri aldı",
+    "invite_alert_ignore": "Davet uyarısını yoksaydı",
+    "invite_export": "Davet ödüllerini dışa aktardı",
     "ban": "Yasakladı",
     "unban": "Yasağı kaldırdı",
     "timeout": "Susturdu",

@@ -458,6 +458,7 @@ export const AUDIT_LOG_PT_BR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Recompensas de convite",
     "adminToken": "Admin Token",
     "nodes": "Rede de servidores",
     "overview": "Visão geral",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_PT_BR = {
     "system": "Ação do sistema"
   },
   "act": {
+    "invite_auto_hold": "Reteve recompensas automaticamente",
+    "invite_hold": "Reteve recompensas de convite",
+    "invite_release": "Liberou uma retenção de convite",
+    "invite_revoke": "Retirou recompensas de convite",
+    "invite_pause_link": "Pausou um link de convite",
+    "invite_resume_link": "Reabriu um link de convite",
+    "invite_rules": "Alterou as regras de convite",
+    "invite_undo": "Desfez uma ação de convite",
+    "invite_alert_ignore": "Ignorou um alerta de convite",
+    "invite_export": "Exportou recompensas de convite",
     "ban": "Baniu",
     "unban": "Removeu o banimento",
     "timeout": "Silenciou",

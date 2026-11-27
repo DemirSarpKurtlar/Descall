@@ -458,6 +458,7 @@ export const AUDIT_LOG_RU = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Награды за приглашения",
     "adminToken": "Admin Token",
     "nodes": "Сеть серверов",
     "overview": "Обзор",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_RU = {
     "system": "Системное действие"
   },
   "act": {
+    "invite_auto_hold": "Автоматически удержал награды",
+    "invite_hold": "Удержал награды за приглашения",
+    "invite_release": "Снял удержание приглашений",
+    "invite_revoke": "Списал награды за приглашения",
+    "invite_pause_link": "Приостановил ссылку-приглашение",
+    "invite_resume_link": "Открыл ссылку-приглашение",
+    "invite_rules": "Изменил правила приглашений",
+    "invite_undo": "Отменил действие с приглашениями",
+    "invite_alert_ignore": "Проигнорировал сигнал по приглашениям",
+    "invite_export": "Экспортировал награды за приглашения",
     "ban": "Забанил(а)",
     "unban": "Снял(а) бан",
     "timeout": "Заглушил(а)",

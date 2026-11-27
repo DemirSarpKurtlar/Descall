@@ -458,6 +458,7 @@ export const AUDIT_LOG_EN = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Invite rewards",
     "adminToken": "Admin Token",
     "nodes": "Server network",
     "overview": "Overview",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_EN = {
     "system": "System action"
   },
   "act": {
+    "invite_auto_hold": "Held invite rewards automatically",
+    "invite_hold": "Held invite rewards",
+    "invite_release": "Released an invite hold",
+    "invite_revoke": "Took invite rewards back",
+    "invite_pause_link": "Paused an invite link",
+    "invite_resume_link": "Reopened an invite link",
+    "invite_rules": "Changed the invite rules",
+    "invite_undo": "Undid an invite action",
+    "invite_alert_ignore": "Ignored an invite alert",
+    "invite_export": "Exported invite rewards",
     "ban": "Banned",
     "unban": "Lifted ban",
     "timeout": "Muted",

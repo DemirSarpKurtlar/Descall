@@ -39,6 +39,10 @@ const UNCAPPED_REASONS = new Set([
   "shop_purchase",
   "referral_invite",
   "referral_welcome",
+  // Davet Merkezi (lib/referrals): 3 / 10 / 25 friend milestones, and an admin taking a
+  // paid invite reward back.
+  "referral_milestone",
+  "referral_revoke",
   "daily_claim",
   "streak_bonus",
 ]);
@@ -125,7 +129,8 @@ function isAdminWalletReason(reason) {
 
 /** Refunds must land even if the wallet was frozen between debit and grant. */
 function bypassesWalletFreeze(reason) {
-  return isAdminWalletReason(reason) || reason === "shop_refund";
+  // referral_revoke is an admin taking an invite reward back: it must land on a frozen wallet too.
+  return isAdminWalletReason(reason) || reason === "shop_refund" || reason === "referral_revoke";
 }
 
 async function assertWalletWritable(userId, reason) {
@@ -152,6 +157,7 @@ const EXCLUDED_FROM_EARNING_CAP = new Set([
   "admin_grant",
   "referral_invite",
   "referral_welcome",
+  "referral_milestone",
   "daily_claim",
   "streak_bonus",
 ]);
@@ -585,6 +591,79 @@ async function claimDaily(userId) {
   });
 }
 
+/**
+ * Idempotent writes (growth phase 4, Davet Merkezi; usable by every reward): the ledger row
+ * carries meta.idempotencyKey and the database has one unique index on it
+ * (20261125b_invite_rewards.sql), so the same key can never move a balance twice, even from
+ * two backend nodes. A key already in the ledger returns { duplicate: true } without
+ * touching the balance; a race lost inside the ledger insert (23505) is rolled back by
+ * applyDeltaWithLedger and reported the same way.
+ */
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9:_.-]{6,160}$/;
+
+function isUniqueViolation(err) {
+  return String(err?.code || "") === "23505" || /duplicate key/i.test(String(err?.message || ""));
+}
+
+async function findByIdempotencyKey(userId, key) {
+  const { data, error } = await supabase
+    .from("descoin_ledger")
+    .select("id, amount, balance_after, created_at")
+    .eq("user_id", userId)
+    .eq("meta->>idempotencyKey", key)
+    .limit(1);
+  if (error) throw error;
+  return Array.isArray(data) && data.length ? data[0] : null;
+}
+
+function assertIdempotencyKey(key) {
+  if (!IDEMPOTENCY_KEY_RE.test(String(key || ""))) {
+    const err = new Error("INVALID_IDEMPOTENCY_KEY");
+    err.code = "INVALID_IDEMPOTENCY_KEY";
+    throw err;
+  }
+}
+
+/** credit() once per key. Returns { credited, balance, ledgerId, duplicate }. */
+async function creditIdempotent(userId, amount, reason, idempotencyKey, meta = {}, message = null) {
+  assertIdempotencyKey(idempotencyKey);
+  return withUserQueue(userId, async () => {
+    const prior = await findByIdempotencyKey(userId, idempotencyKey);
+    if (prior) return { credited: 0, balance: await getBalance(userId), ledgerId: prior.id, duplicate: true };
+    try {
+      const out = await credit(userId, amount, reason, { ...meta, idempotencyKey }, message);
+      return { ...out, duplicate: false };
+    } catch (err) {
+      if (isUniqueViolation(err)) return { credited: 0, balance: await getBalance(userId), ledgerId: null, duplicate: true };
+      throw err;
+    }
+  });
+}
+
+/**
+ * debit() once per key. `partial: true` takes what the wallet still holds instead of
+ * failing with INSUFFICIENT_BALANCE (an admin taking back a reward that was partly spent).
+ * Returns { debited, requested, balance, duplicate }.
+ */
+async function debitIdempotent(userId, amount, reason, idempotencyKey, meta = {}, { partial = false } = {}) {
+  assertIdempotencyKey(idempotencyKey);
+  const requested = Math.max(0, Math.floor(Number(amount) || 0));
+  return withUserQueue(userId, async () => {
+    const prior = await findByIdempotencyKey(userId, idempotencyKey);
+    if (prior) return { debited: 0, requested, balance: await getBalance(userId), duplicate: true };
+    let take = requested;
+    if (partial) take = Math.min(requested, Math.max(0, await getBalance(userId)));
+    if (take <= 0) return { debited: 0, requested, balance: await getBalance(userId), duplicate: false };
+    try {
+      const out = await debit(userId, take, reason, { ...meta, idempotencyKey, requested });
+      return { debited: out.debited, requested, balance: out.balance, duplicate: false };
+    } catch (err) {
+      if (isUniqueViolation(err)) return { debited: 0, requested, balance: await getBalance(userId), duplicate: true };
+      throw err;
+    }
+  });
+}
+
 module.exports = {
   CAPS,
   GLOBAL_DAILY_CAP,
@@ -606,4 +685,7 @@ module.exports = {
   getTodayEarnings,
   getCallStreakDays,
   claimDaily,
+  creditIdempotent,
+  debitIdempotent,
+  findByIdempotencyKey,
 };

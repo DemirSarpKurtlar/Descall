@@ -458,6 +458,7 @@ export const AUDIT_LOG_FR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Récompenses d'invitation",
     "adminToken": "Admin Token",
     "nodes": "Réseau de serveurs",
     "overview": "Vue d'ensemble",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_FR = {
     "system": "Action système"
   },
   "act": {
+    "invite_auto_hold": "A retenu des récompenses automatiquement",
+    "invite_hold": "A retenu des récompenses d'invitation",
+    "invite_release": "A levé une retenue d'invitation",
+    "invite_revoke": "A repris des récompenses d'invitation",
+    "invite_pause_link": "A mis en pause un lien d'invitation",
+    "invite_resume_link": "A rouvert un lien d'invitation",
+    "invite_rules": "A modifié les règles d'invitation",
+    "invite_undo": "A annulé une action d'invitation",
+    "invite_alert_ignore": "A ignoré une alerte d'invitation",
+    "invite_export": "A exporté les récompenses d'invitation",
     "ban": "A banni",
     "unban": "A levé le ban",
     "timeout": "A mis en sourdine",
