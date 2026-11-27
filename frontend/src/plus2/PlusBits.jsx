@@ -17,11 +17,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useT } from "../context/LocaleContext";
 import { Gift, Heart, Rocket, Target, Ticket, FileText as FileIcon, Smile, Loader2 } from "../components/ui/Icon.jsx";
 import { formatDate } from "../i18n/format.js";
-import { PAvatar, LevelBar, Switch, ErrorLine, Price } from "./ui.jsx";
+import { PAvatar, LevelBar, Switch, ErrorLine } from "./ui.jsx";
 import { usePlus, refreshHub } from "./plusStore.js";
 import { getGifts, getServerBoost, getTickets, redeemTicket, saveServerBoostSettings, sendTicket, thankBoosters, trackPaywall } from "./plusApi.js";
 import { openPlus } from "./openPlus.js";
-import { errorKey } from "./model.js";
+import { errorKey, formatPrice } from "./model.js";
 import { GiftCard } from "./GiftTracker.jsx";
 import "./plus2.css";
 
@@ -240,6 +240,7 @@ export function ProfileBoostNote({ user, serverId, serverName }) {
 
 export function StoreGiftCard() {
   const t = useT();
+  const { locale } = useLocale() || {};
   const { offer } = usePlus({ load: "offer" });
   if (!offer?.salesOn || !offer?.features?.gifts || !offer?.prices) return null;
   return (
@@ -249,7 +250,7 @@ export function StoreGiftCard() {
         <span className="p2-grow">
           <b style={{ fontSize: 14 }}>{t("plus2.store.title")}</b>
           <span className="p2-sub" style={{ display: "block" }}>
-            {t("plus2.store.one")} <Price minor={offer.prices.gift_plus_1} currency={offer.currency} /> · {t("plus2.store.three")} <Price minor={offer.prices.gift_plus_3} currency={offer.currency} />
+            {t("plus2.store.one")} {formatPrice(offer.prices.gift_plus_1, offer.currency, locale)} · {t("plus2.store.three")} {formatPrice(offer.prices.gift_plus_3, offer.currency, locale)}
           </span>
         </span>
       </button>

@@ -13,12 +13,14 @@ export const LEVELS_FALLBACK = Object.freeze([
 export function formatPrice(minor, currency = "TRY", locale = "tr") {
   const n = (Number(minor) || 0) / 100;
   const lang = String(locale || "tr");
+  // Whole amounts without decimals ("0 ₺", "2.384 ₺"), prices with them ("69,99 ₺").
+  const digits = Math.round(Number(minor) || 0) % 100 === 0 ? 0 : 2;
   if (currency === "TRY" && lang.startsWith("tr")) {
-    const s = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    const s = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: digits, maximumFractionDigits: 2 }).format(n);
     return `${s} ₺`;
   }
   try {
-    return new Intl.NumberFormat(lang === "pt-BR" ? "pt-BR" : lang, { style: "currency", currency, minimumFractionDigits: 2 }).format(n);
+    return new Intl.NumberFormat(lang === "pt-BR" ? "pt-BR" : lang, { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: 2 }).format(n);
   } catch {
     return `${n.toFixed(2)} ${currency}`;
   }

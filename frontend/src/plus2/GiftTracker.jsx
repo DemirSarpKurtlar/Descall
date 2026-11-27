@@ -17,7 +17,7 @@ import { errorKey, formatPrice, giftSteps, scheduleIso } from "./model.js";
 
 const SPARKS = [[18, 30], [62, 18], [80, 64], [40, 74], [90, 30], [12, 70]];
 
-export function GiftCardVisual({ gift, viewer = "recipient", compact = false }) {
+export function GiftCardVisual({ gift, viewer = "recipient", compact = false, action = null }) {
   const t = useT();
   const { locale } = useLocale() || {};
   const name = gift?.from?.displayName || gift?.from?.username || "";
@@ -29,6 +29,7 @@ export function GiftCardVisual({ gift, viewer = "recipient", compact = false }) 
       <h4>{viewer === "sender" ? t("plus2.gift.toTitle", { name: toName }) : t("plus2.gift.fromTitle", { name })}</h4>
       {gift?.note && !compact ? <p>"{gift.note}"</p> : null}
       {viewer === "sender" && gift?.status === "scheduled" ? <p>{t("plus2.gift.willSend", { date: formatDate(gift.deliverAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}</p> : null}
+      {action ? <div style={{ marginTop: 10 }}>{action}</div> : null}
     </div>
   );
 }
@@ -55,12 +56,13 @@ export function GiftCard({ gift, viewer = "recipient", onChanged }) {
   const statusKey = gift.status === "opened" ? "plus2.gift.lineOpened" : gift.status === "delivered" ? (gift.canRecall ? "plus2.gift.lineSentRecall" : "plus2.gift.lineSent") : gift.status === "scheduled" ? "plus2.gift.lineScheduled" : `plus2.giftStatus.${gift.status}`;
   return (
     <div className="p2" style={{ maxWidth: 340, display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ position: "relative" }}>
-        <GiftCardVisual gift={gift} viewer={viewer} />
-        {viewer === "recipient" && gift.canOpen ? (
-          <button type="button" className="p2-btn is-sm" style={{ position: "absolute", left: 16, bottom: 12, background: "#fff", color: "#3a3f9e" }} onClick={open} disabled={busy}>{busy ? <Loader2 className="p2-spin" /> : t("plus2.gift.open")}</button>
+      <GiftCardVisual
+        gift={gift}
+        viewer={viewer}
+        action={viewer === "recipient" && gift.canOpen ? (
+          <button type="button" className="p2-btn is-sm" style={{ background: "#fff", color: "#3a3f9e" }} onClick={open} disabled={busy}>{busy ? <Loader2 className="p2-spin" /> : t("plus2.gift.open")}</button>
         ) : null}
-      </div>
+      />
       {viewer === "sender" ? <div className="p2-row p2-small p2-muted"><span className="p2-gif-live" />{t(statusKey, { hours: 24 })}</div> : null}
       <ErrorLine code={err} />
     </div>

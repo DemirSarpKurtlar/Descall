@@ -137,12 +137,12 @@ export default function ServerBoostPage({ serverId, onClose, mode = "page" }) {
             </div>
             <LevelBar count={s.count} levels={levels} thin showTicks={false} />
             <ul className="p2-perks is-ok">
-              {levels.map((l, i) => levelAdds(i, levels).map((a) => (
-                <li key={`${i}-${a.key}`} style={s.level > i ? undefined : { color: "var(--p2-t3)" }}>
-                  {s.level > i ? <Check /> : <Lock />}
-                  {s.level > i ? t(`plus2.everyone.${a.key}`, { n: a.n, h: a.h, fps: a.fps, vanity: s.vanity || "slug" }) : t("plus2.srv.locked", { level: i + 1, what: t(`plus2.add.${a.key}`, { n: a.n, h: a.h, fps: a.fps, vanity: s.vanity || "slug" }) })}
-                </li>
+              {levels.slice(0, s.level).flatMap((l, i) => levelAdds(i, levels).map((a) => (
+                <li key={`${i}-${a.key}`}><Check />{t(`plus2.everyone.${a.key}`, { n: a.n, h: a.h, fps: a.fps, vanity: s.vanity || "slug" })}</li>
               )))}
+              {next ? (
+                <li style={{ color: "var(--p2-t3)" }}><Lock />{t("plus2.srv.locked", { level: next.level, what: levelAdds(next.level - 1, levels).map((a) => t(`plus2.add.${a.key}`, { n: a.n, h: a.h, fps: a.fps, vanity: s.vanity || "slug" })).join(", ") })}</li>
+              ) : null}
             </ul>
             {data.boosters.length ? (
               <div>
