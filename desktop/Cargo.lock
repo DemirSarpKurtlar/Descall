@@ -1032,6 +1032,7 @@ name = "descall-premium-logic"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "descall-shell",
  "getrandom 0.3.4",
  "scrypt",
  "serde",

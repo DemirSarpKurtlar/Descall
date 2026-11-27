@@ -78,11 +78,19 @@ eq(mins(DescallWidgetRefresh.next(kind: .friends, now: now, signedOut: true)), 3
 
 // MARK: Call state from the JS payload
 
+// Built in steps: one literal with the mapped list inside made swiftc give up on type-checking.
+var participantsPayload: [[String: Any]] = []
+for i in 0..<9 {
+    let row: [String: Any] = ["id": "p\(i)", "name": "P\(i)", "me": i == 0, "screen": i == 3]
+    participantsPayload.append(row)
+}
+let badRow: [String: Any] = ["id": "bad id;", "name": "X"]
+participantsPayload.append(badRow)
 let payload: [String: Any] = [
     "active": true, "kind": "server", "title": "Oyun Gecesi", "subtitle": "Gece Kuşu", "startedAt": 1_700_000_000_000.0,
     "muted": true, "deafened": false,
     "speaker": ["id": "k", "name": "Kaan", "initials": "K", "speaking": true],
-    "participants": (0..<9).map { ["id": "p\($0)", "name": "P\($0)", "me": $0 == 0, "screen": $0 == 3] as [String: Any] } + [["id": "bad id;", "name": "X"] as [String: Any]],
+    "participants": participantsPayload,
     "participantCount": 9,
     "link": ["serverId": "s1", "channelId": "v1"],
 ]
