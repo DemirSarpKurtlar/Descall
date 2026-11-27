@@ -129,6 +129,88 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <!-- Home screen widgets (draft B "Yuzler", com.descall.app.widget): online friends,
+             unread messages, who is in voice and the live call, each 2x2 / 4x2 / 4x4.
+             Providers are exported for the launcher (APPWIDGET_UPDATE is a protected
+             broadcast only the system sends); everything else is private. -->
+        <receiver
+            android:name=".widget.FriendsWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_friends_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_friends_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.UnreadWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_unread_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_unread_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.VoiceWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_voice_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_voice_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CallWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_call_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_call_info" />
+        </receiver>
+
+        <!-- Widget taps that do not open the app (refresh, wave, call mute / sound / leave):
+             only our own PendingIntents reach it. -->
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false" />
+
+        <!-- Invisible trampoline for widget taps that open the app (a chat, Join), like
+             DescallShortcutActivity: forwards to the running MainActivity and finishes. -->
+        <activity
+            android:name=".widget.WidgetLaunchActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Widget settings: favorite faces, switches, colour, servers. Exported so the
+             launcher can start it with APPWIDGET_CONFIGURE when a widget is placed / edited. -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/cfg_title_widget"
+            android:taskAffinity=""
+            android:theme="@style/WidgetConfigTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".CallForegroundService"
             android:exported="false"
@@ -156,6 +238,9 @@
          Android 11 and lower (install-time permission). Android 12+ needs the
          runtime BLUETOOTH_CONNECT permission, which the app does not request yet. -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <!-- Android 16 Live Updates: the ongoing call notification asks to be promoted (status bar
+         chip, top of the shade). A normal permission; ignored before Android 16. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <uses-feature
         android:name="android.hardware.camera"

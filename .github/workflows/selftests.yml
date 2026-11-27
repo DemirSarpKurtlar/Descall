@@ -93,12 +93,24 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/signup-stats
         run: node e2e/signupStatsRetry.e2e.cjs --dist=dist-e2e
+      - name: iPhone app keyboard geometry e2e (composer on the keys, list fills header..composer)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+          DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/ios-keyboard
+        run: node e2e/iosKeyboardLayout.e2e.cjs --dist=dist-e2e
       - name: Server invite links e2e (desktop + iPhone)
         env:
           PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
           CHROME_PATH: /usr/bin/google-chrome
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/server-invite
         run: node e2e/serverInvite.e2e.cjs --dist=dist-e2e
+      - name: Public server page + Google'da göster desk e2e (desktop + iPhone, dark + light)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+          DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/public-page
+        run: node e2e/publicPage/capture.cjs --dist=${{ runner.temp }}/public-page-dist
       - name: Settings profile card e2e (desktop + iPhone, dark + light)
         env:
           PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core

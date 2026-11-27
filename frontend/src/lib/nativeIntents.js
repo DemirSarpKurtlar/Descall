@@ -25,6 +25,8 @@ export const INTENT_ACTIONS = Object.freeze([
   "newMessage",
   "openFriends",
   "openPath",
+  // Widgets draft B: "Kaan'i ara" (a favourite's Siri / Spotlight shortcut) starts a DM call.
+  "callFriend",
 ]);
 export const MAX_RECENT_SHORTCUTS = 4;
 export const PLUGIN_TIMEOUT_MS = 2500;
@@ -133,6 +135,12 @@ export function parseIntentAction(raw) {
   if (type === "setStatus") {
     return INTENT_STATUSES.includes(p.status) ? { id, type, payload: { status: p.status } } : null;
   }
+  if (type === "callFriend") {
+    const userId = str(p.userId, 64);
+    const username = str(p.username, 64);
+    if (!ID_RE.test(userId) || (username && !USERNAME_RE.test(username))) return null;
+    return { id, type, payload: { userId, username, video: p.video === true } };
+  }
   if (type === "openPath") {
     const path = str(p.path, 200);
     // In-app paths only (the deep link router made them): never a URL.
@@ -185,6 +193,13 @@ export async function runIntentAction(action, ctx = {}) {
         ctx.navigate?.("/direct");
         ctx.onNewMessage?.();
         return { ok: true };
+      case "callFriend": {
+        if (!ctx.callFriend) return { ok: false, error: "not_ready" };
+        if (callStatePayload(ctx.getVoice?.() || {}).active) return { ok: false, error: "busy" };
+        const res = await ctx.callFriend(a.payload);
+        if (res && res.ok === false) return { ok: false, error: res.error || "failed" };
+        return { ok: true };
+      }
       case "openFriends":
         ctx.navigate?.("/friends");
         return { ok: true };
@@ -285,8 +300,8 @@ function withTimeout(promise, ms = PLUGIN_TIMEOUT_MS) {
 
 const PLUGIN_FOR = { ios: "DescallIntents", android: "DescallShortcuts" };
 
-async function call(method, args = {}, { platform = nativePlatform() } = {}) {
-  const name = PLUGIN_FOR[platform];
+async function call(method, args = {}, { platform = nativePlatform(), pluginName = "" } = {}) {
+  const name = pluginName || PLUGIN_FOR[platform];
   if (!name) return null;
   const { plugin } = await pluginBox(name);
   if (!plugin || typeof plugin[method] !== "function") return null;
@@ -347,9 +362,11 @@ export async function pinConversationShortcut(item, { openChat = "" } = {}) {
 /**
  * Listen for actions from the shell and run them; also takes the ones queued before the
  * page was ready (cold start from Siri / a launcher shortcut). Returns stop().
+ * pluginName: another plugin with the same action contract (Android DescallWidgets: widget
+ * and call notification buttons, lib/androidWidgets.js).
  */
-export function startNativeIntents(ctxRef, { platform = nativePlatform() } = {}) {
-  const name = PLUGIN_FOR[platform];
+export function startNativeIntents(ctxRef, { platform = nativePlatform(), pluginName = "" } = {}) {
+  const name = pluginName || PLUGIN_FOR[platform];
   if (!name) return () => {};
   let stopped = false;
   let handle = null;
@@ -373,7 +390,7 @@ export function startNativeIntents(ctxRef, { platform = nativePlatform() } = {})
   };
 
   const drain = async () => {
-    const res = await call("takePendingActions", {}, { platform });
+    const res = await call("takePendingActions", {}, { platform, pluginName: name });
     for (const a of Array.isArray(res?.actions) ? res.actions : []) {
       if (stopped) return;
       await handle1(a);

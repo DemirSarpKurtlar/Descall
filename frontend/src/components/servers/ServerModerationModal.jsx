@@ -38,6 +38,12 @@ const ACTION_LABELS = {
   INVITE_CREATE: "Invite created",
   INVITE_DELETE: "Invite revoked",
   OWNERSHIP_TRANSFER: "Ownership transferred",
+  // Public server page desk (pubpage.audit.* in every locale).
+  PUBLIC_PAGE_ENABLE: "pubpage.audit.PUBLIC_PAGE_ENABLE",
+  PUBLIC_PAGE_DISABLE: "pubpage.audit.PUBLIC_PAGE_DISABLE",
+  PUBLIC_PAGE_UNDO: "pubpage.audit.PUBLIC_PAGE_UNDO",
+  PUBLIC_PAGE_UPDATE: "pubpage.audit.PUBLIC_PAGE_UPDATE",
+  PUBLIC_PAGE_AUTO_HIDE: "pubpage.audit.PUBLIC_PAGE_AUTO_HIDE",
 };
 
 /**

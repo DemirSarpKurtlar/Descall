@@ -17,6 +17,7 @@ import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
 import { ACT_ES } from "./act.es.js";
 import { DIR_ES, DIR_API_ES } from "./dir.es.js";
+import { PUBPAGE_ES } from "./pubpage.es.js";
 import { BAN_ES } from "./ban.es.js";
 import { IOS_SHARE_ES } from "./iosShare.es.js";
 import { SHARE_SHEET_ES } from "./shareSheet.es.js";
@@ -35,6 +36,7 @@ import { SYSX_ES } from "./sysx.es.js";
 import { ATOK_ES } from "./atok.es.js";
 import { ANODES_ES } from "./anodes.es.js";
 import { AUDIT_LOG_ES } from "./auditLog.es.js";
+import { PERF_ADMIN_ES } from "./perfAdmin.es.js";
 import { LIVE_POPUP_ES } from "./livePopup.es.js";
 import { ANNC_ES } from "./annc.es.js";
 import { COINPOP_ES } from "./coinpop.es.js";
@@ -72,6 +74,7 @@ export const nested = {
   "msg5": MSG5_ES,
   "act": ACT_ES,
   "dir": DIR_ES,
+  "pubpage": PUBPAGE_ES,
   "ban": BAN_ES,
   "iosShare": IOS_SHARE_ES,
   "shareSheet": SHARE_SHEET_ES,
@@ -90,6 +93,7 @@ export const nested = {
   "atok": ATOK_ES,
   "anodes": ANODES_ES,
   "auditLog": AUDIT_LOG_ES,
+  "perfAdmin": PERF_ADMIN_ES,
   "livePopup": LIVE_POPUP_ES,
   "annc": ANNC_ES,
   "coinpop": COINPOP_ES,
@@ -5985,6 +5989,11 @@ export const nested = {
     "au_SERVER_CREATE": "Creó el servidor",
     "au_SERVER_RENAME": "Cambió el nombre del servidor a {name}",
     "au_SERVER_UPDATE": "Cambió los ajustes del servidor",
+    "au_PUBLIC_PAGE_ENABLE": "Activó Mostrar en Google",
+    "au_PUBLIC_PAGE_DISABLE": "Desactivó Mostrar en Google",
+    "au_PUBLIC_PAGE_UNDO": "Deshizo la desactivación",
+    "au_PUBLIC_PAGE_UPDATE": "Editó la página pública",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "La página se ocultó sola",
     "badgeAnn": "ANUN",
     "banPrompt": "¿Banear a {name}? Si quieres, agrega un motivo:",
     "banned": "Estás baneado de este servidor.",
@@ -7864,6 +7873,10 @@ export const phrases = {
   "Download Descall": "Descargar Descall",
   "Download Desktop App": "Descargar app de escritorio",
   "Download all your data including messages, friends, and settings": "Descarga todos tus datos, incluidos mensajes, amigos y ajustes",
+  "A member": "Un miembro",
+  "Your download should start now.": "Tu descarga debería empezar ahora.",
+  "Not starting?": "¿No empieza?",
+  "Direct link": "Enlace directo",
   "Download for Windows": "Descargar para Windows",
   "Download for {name}": "Descargar para {name}",
   "Download on the App Store": "Descargar en el App Store",
@@ -8502,6 +8515,7 @@ export const phrases = {
   "In Progress": "En curso",
   "In Safari tap Share": "En Safari, toca Compartir",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "En una llamada grupal ({count, plural, one {# persona} other {# personas}}), una resolución o FPS altos pueden causar retrasos. Se recomienda 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "En una llamada grupal ({count, plural, one {# persona} other {# personas}}), 1440p puede causar retrasos. Se recomienda 1080p / 30 FPS.",
   "In group": "En el grupo",
   "In the air…": "En el aire…",
   "In this channel": "En este canal",
@@ -8669,7 +8683,7 @@ export const phrases = {
   "Join Server": "Unirse al servidor",
   "Join Voice": "Unirse a voz",
   "Join a Server": "Unirse a un servidor",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Únete a un canal de voz desde la lista de servidores. Comparte tu pantalla en 720p. iPhone, Android, Windows y el navegador usan una sola cuenta.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Únete a un canal de voz desde la lista de servidores. Comparte tu pantalla en 1080p. iPhone, Android, Windows y el navegador usan una sola cuenta.",
   "Join as audience, then request to speak.": "Únete como oyente y luego pide la palabra.",
   "Join lobby": "Unirse a la sala",
   "Join me on Descall, we both get DesCoin": "Únete a mí en Descall, los dos recibimos DesCoin",

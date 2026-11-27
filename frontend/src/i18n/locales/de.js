@@ -17,6 +17,7 @@ import { MSG4_DE } from "./msg4.de.js";
 import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
+import { PUBPAGE_DE } from "./pubpage.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { SHARE_SHEET_DE } from "./shareSheet.de.js";
@@ -35,6 +36,7 @@ import { SYSX_DE } from "./sysx.de.js";
 import { ATOK_DE } from "./atok.de.js";
 import { ANODES_DE } from "./anodes.de.js";
 import { AUDIT_LOG_DE } from "./auditLog.de.js";
+import { PERF_ADMIN_DE } from "./perfAdmin.de.js";
 import { LIVE_POPUP_DE } from "./livePopup.de.js";
 import { ANNC_DE } from "./annc.de.js";
 import { COINPOP_DE } from "./coinpop.de.js";
@@ -72,6 +74,7 @@ export const nested = {
   "msg5": MSG5_DE,
   "act": ACT_DE,
   "dir": DIR_DE,
+  "pubpage": PUBPAGE_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
   "shareSheet": SHARE_SHEET_DE,
@@ -90,6 +93,7 @@ export const nested = {
   "atok": ATOK_DE,
   "anodes": ANODES_DE,
   "auditLog": AUDIT_LOG_DE,
+  "perfAdmin": PERF_ADMIN_DE,
   "livePopup": LIVE_POPUP_DE,
   "annc": ANNC_DE,
   "coinpop": COINPOP_DE,
@@ -5985,6 +5989,11 @@ export const nested = {
     "au_SERVER_CREATE": "Hat den Server erstellt",
     "au_SERVER_RENAME": "Hat den Server in {name} umbenannt",
     "au_SERVER_UPDATE": "Hat die Servereinstellungen geändert",
+    "au_PUBLIC_PAGE_ENABLE": "Hat Bei Google zeigen eingeschaltet",
+    "au_PUBLIC_PAGE_DISABLE": "Hat Bei Google zeigen ausgeschaltet",
+    "au_PUBLIC_PAGE_UNDO": "Hat das Ausschalten rückgängig gemacht",
+    "au_PUBLIC_PAGE_UPDATE": "Hat die öffentliche Seite bearbeitet",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "Die Seite hat sich selbst verborgen",
     "badgeAnn": "ANK",
     "banPrompt": "{name} bannen? Gib gern einen Grund an:",
     "banned": "Du bist von diesem Server gebannt.",
@@ -7864,6 +7873,10 @@ export const phrases = {
   "Download Descall": "Descall herunterladen",
   "Download Desktop App": "Desktop-App herunterladen",
   "Download all your data including messages, friends, and settings": "Lade alle deine Daten herunter, einschließlich Nachrichten, Freunden und Einstellungen",
+  "A member": "Ein Mitglied",
+  "Your download should start now.": "Dein Download sollte jetzt starten.",
+  "Not starting?": "Startet nicht?",
+  "Direct link": "Direkter Link",
   "Download for Windows": "Für Windows herunterladen",
   "Download for {name}": "Für {name} herunterladen",
   "Download on the App Store": "Im App Store laden",
@@ -8502,6 +8515,7 @@ export const phrases = {
   "In Progress": "In Bearbeitung",
   "In Safari tap Share": "Tippe in Safari auf Teilen",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "{count, plural, one {In einem Gruppenanruf (# Person) können hohe Auflösung/FPS zu Verzögerungen führen. 720p / 20 FPS wird empfohlen.} other {In einem Gruppenanruf (# Personen) können hohe Auflösung/FPS zu Verzögerungen führen. 720p / 20 FPS wird empfohlen.}}",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "{count, plural, one {In einem Gruppenanruf (# Person) kann 1440p zu Verzögerungen führen. 1080p / 30 FPS wird empfohlen.} other {In einem Gruppenanruf (# Personen) kann 1440p zu Verzögerungen führen. 1080p / 30 FPS wird empfohlen.}}",
   "In group": "In der Gruppe",
   "In the air…": "In der Luft…",
   "In this channel": "In diesem Kanal",
@@ -8669,7 +8683,7 @@ export const phrases = {
   "Join Server": "Server beitreten",
   "Join Voice": "Sprachkanal beitreten",
   "Join a Server": "Einem Server beitreten",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Tritt einem Sprachkanal direkt aus der Serverliste bei. Teile deinen Bildschirm in 720p. iPhone, Android, Windows und der Browser nutzen ein Konto.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Tritt einem Sprachkanal direkt aus der Serverliste bei. Teile deinen Bildschirm in 1080p. iPhone, Android, Windows und der Browser nutzen ein Konto.",
   "Join as audience, then request to speak.": "Tritt als Zuhörer bei und bitte dann ums Wort.",
   "Join lobby": "Lobby beitreten",
   "Join me on Descall, we both get DesCoin": "Komm zu Descall, wir bekommen beide DesCoin",

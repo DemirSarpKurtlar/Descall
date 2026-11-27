@@ -4,8 +4,9 @@ use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// secureToken.set / clear. get() is synchronous for the page: the shim answers it from the
-/// boot snapshot (window.__DESCALL_BOOT__.token) plus its own in-memory cache. Main window
-/// and the admin windows only (the same senders main.cjs trusts).
+/// boot snapshot (window.__DESCALL_BOOT__.token) plus its own in-memory cache. Accepted from
+/// every owner-session window (bridge::is_owner_session). `trusted` (main + admin windows)
+/// still gates the other system commands.
 fn trusted<R: Runtime>(w: &WebviewWindow<R>) -> bool {
     matches!(w.label(), "main" | "admin" | "signup-stats")
 }
@@ -34,7 +35,10 @@ pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token:
     if crate::premium::account_token(window.label(), Some(token.trim())) {
         return true;
     }
-    if !trusted(&window) {
+    // Every window on the owner's session, Descall+ pop-outs included (Electron trusted every
+    // app page): a username change or a sign-in in a pop-out was refused and the new token
+    // lived only in that window, so the next start came back with the old session.
+    if !descall_shell::bridge::is_owner_session(window.label()) {
         return false;
     }
     let token = token.trim();
@@ -50,7 +54,7 @@ pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> b
     if crate::premium::account_token(window.label(), None) {
         return true;
     }
-    if !trusted(&window) {
+    if !descall_shell::bridge::is_owner_session(window.label()) {
         return false;
     }
     // Signed out: the Descall+ entitlement claim goes at once (main.cjs secure-token:clear

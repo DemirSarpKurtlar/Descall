@@ -17,6 +17,13 @@ const crypto = require("crypto");
 const T_CRED = "passkey_credentials";
 const T_CHAL = "passkey_challenges";
 const T_HAND = "passkey_handoffs";
+const T_EVT = "passkey_events";
+
+/**
+ * Control-center extras (20261124q_passkey_center.sql): events and coarse places. Optional on
+ * purpose: until that migration is applied every call below is a quiet no-op (lists come back
+ * empty), so sign-in and management never fail because of the history.
+ */
 
 class StoreUnavailableError extends Error {
   constructor(message = "Passkeys are not set up yet.") {
@@ -37,6 +44,8 @@ function createSupabaseStore(dbArg) {
   const db = () => dbArg || require("../../db/supabase");
   let availability = null; // null unknown, true, false (re-checked after a minute)
   let checkedAt = 0;
+  let extras = null; // control-center tables / columns: false = not migrated yet
+  let extrasAt = 0;
 
   function fail(error) {
     if (isMissingTable(error)) {
@@ -159,11 +168,78 @@ function createSupabaseStore(dbArg) {
       const { error } = await db().from(T_HAND).update({ status: "failed" }).eq("id", id).in("status", ["pending", "completed"]);
       if (error) fail(error);
     },
+    // ---- control center (optional tables / columns) ----
+    async setPlaces(id, patch) {
+      if (extrasOff()) return false;
+      const { error } = await db().from(T_CRED).update(patch).eq("id", id);
+      if (error) return extrasError(error);
+      return true;
+    },
+    async insertEvent(row) {
+      if (extrasOff()) return null;
+      const { data, error } = await db().from(T_EVT).insert(row).select("*").single();
+      if (error) return extrasError(error);
+      return data || null;
+    },
+    async listEvents(userId, { sinceIso = null, limit = 200, kinds = null } = {}) {
+      if (extrasOff()) return [];
+      let q = db().from(T_EVT).select("*").eq("user_id", userId);
+      if (sinceIso) q = q.gte("at", sinceIso);
+      if (Array.isArray(kinds) && kinds.length) q = q.in("kind", kinds);
+      const { data, error } = await q.order("at", { ascending: false }).limit(Math.min(Math.max(1, limit), 1000));
+      if (error) {
+        extrasError(error);
+        return [];
+      }
+      return data || [];
+    },
+    async getEvent(id, userId) {
+      if (extrasOff()) return null;
+      const { data, error } = await db().from(T_EVT).select("*").eq("id", id).eq("user_id", userId).maybeSingle();
+      if (error) return extrasError(error);
+      return data || null;
+    },
+    async getEventByReportHash(hash) {
+      if (extrasOff()) return null;
+      const { data, error } = await db().from(T_EVT).select("*").eq("report_hash", hash).maybeSingle();
+      if (error) return extrasError(error);
+      return data || null;
+    },
+    /** Answer an alert once: only a row that is still open changes. */
+    async resolveEvent(id, resolution) {
+      if (extrasOff()) return null;
+      const { data, error } = await db()
+        .from(T_EVT)
+        .update({ resolved_at: new Date().toISOString(), resolution })
+        .eq("id", id)
+        .is("resolved_at", null)
+        .select("*");
+      if (error) return extrasError(error);
+      return (data && data[0]) || null;
+    },
+    async pruneEvents(beforeIso) {
+      if (extrasOff()) return;
+      await db().from(T_EVT).delete().lt("at", beforeIso).then(() => {}, () => {});
+    },
   };
+
+  function extrasOff() {
+    return extras === false && Date.now() - extrasAt < 60_000;
+  }
+  function extrasError(error) {
+    if (isMissingTable(error)) {
+      extras = false;
+      extrasAt = Date.now();
+    } else {
+      console.warn("[passkeys] history:", error?.message || error);
+    }
+    return null;
+  }
 }
 
 /** In-memory twin for selftests (same conditional semantics). */
-function createMemoryStore({ unavailable = false } = {}) {
+function createMemoryStore({ unavailable = false, noExtras = false } = {}) {
+  const events = new Map();
   const creds = new Map();
   const challenges = new Map();
   const handoffs = new Map();
@@ -176,6 +252,7 @@ function createMemoryStore({ unavailable = false } = {}) {
     _creds: creds,
     _challenges: challenges,
     _handoffs: handoffs,
+    _events: events,
     async available() {
       return !unavailable;
     },
@@ -287,6 +364,42 @@ function createMemoryStore({ unavailable = false } = {}) {
     async failHandoff(id) {
       const h = handoffs.get(id);
       if (h && (h.status === "pending" || h.status === "completed")) h.status = "failed";
+    },
+    async setPlaces(id, patch) {
+      if (noExtras) return false;
+      const r = creds.get(id);
+      if (r) Object.assign(r, JSON.parse(JSON.stringify(patch)));
+      return Boolean(r);
+    },
+    async insertEvent(row) {
+      if (noExtras) return null;
+      const full = { id: crypto.randomUUID(), at: new Date().toISOString(), detail: {}, resolved_at: null, resolution: null, ...row };
+      events.set(full.id, full);
+      return clone(full);
+    },
+    async listEvents(userId, { sinceIso = null, limit = 200, kinds = null } = {}) {
+      if (noExtras) return [];
+      return [...events.values()]
+        .filter((e) => e.user_id === userId && (!sinceIso || e.at >= sinceIso) && (!kinds || kinds.includes(e.kind)))
+        .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+        .slice(0, limit)
+        .map(clone);
+    },
+    async getEvent(id, userId) {
+      const e = events.get(id);
+      return e && e.user_id === userId ? clone(e) : null;
+    },
+    async getEventByReportHash(hash) {
+      return clone([...events.values()].find((e) => e.report_hash === hash) || null);
+    },
+    async resolveEvent(id, resolution) {
+      const e = events.get(id);
+      if (!e || e.resolved_at) return null;
+      Object.assign(e, { resolved_at: new Date().toISOString(), resolution });
+      return clone(e);
+    },
+    async pruneEvents(beforeIso) {
+      for (const [k, e] of events) if (e.at < beforeIso) events.delete(k);
     },
   };
 }

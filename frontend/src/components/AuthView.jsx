@@ -50,6 +50,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   ); // login | register | forgot
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const typingStartRef = useRef(0);
+  useEffect(() => {
+    if ((username || password) && !typingStartRef.current) typingStartRef.current = Date.now();
+    if (!username && !password) typingStartRef.current = 0;
+  }, [username, password]);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -163,7 +168,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     if (!username.trim() || !password) return;
     if (mode === "login") {
       try {
-        const result = await onLogin({ username: username.trim(), password });
+        // Sign-in time from the first keystroke (Settings > Passkeys compares it with passkeys).
+        const signInMs = typingStartRef.current ? Date.now() - typingStartRef.current : undefined;
+        const result = await onLogin({ username: username.trim(), password, signInMs });
         openTwoFa(result);
       } catch {
         /* the error prop shows the message (no unhandled rejection per wrong password) */
@@ -435,9 +442,6 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           }
         }}
       />
-      {mode === "login" && onPasskeyLogin ? (
-        <PasskeySignInButton disabled={loading} onSignedIn={handlePasskeyBody} onError={(err) => onPasskeyError?.(err)} />
-      ) : null}
       {inviteRef && mode === "register" && (
         <p className="auth-field-hint" role="status">
           {t("Invited by @{username}", { username: inviteRef })}
@@ -573,6 +577,16 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             <span>{t("Create Account")}</span>
           )}
         </button>
+        {/* Draft A: the passkey way in is the second button under "Giris" (Face ID /
+            fingerprint / Windows Hello by device); the password form stays as it is. */}
+        {mode === "login" && onPasskeyLogin ? (
+          <PasskeySignInButton
+            disabled={loading}
+            onSignedIn={handlePasskeyBody}
+            onError={(err) => onPasskeyError?.(err)}
+            onUsePassword={() => document.getElementById(username.trim() ? "auth-password" : "auth-username")?.focus()}
+          />
+        ) : null}
       </form>
       </>
       )}

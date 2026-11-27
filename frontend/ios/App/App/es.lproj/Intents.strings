@@ -16,6 +16,8 @@
 "error.message.tooLong" = "El mensaje es demasiado largo. Máximo 1000 caracteres.";
 "error.call.none" = "Ahora no estás en ninguna llamada ni canal de voz.";
 "error.call.failed" = "La llamada no respondió. Abre Descall e inténtalo de nuevo.";
+"error.call.busy" = "Ya estás en una llamada. Sal de ella primero.";
+"dialog.call.calling" = "Llamando a %@ en Descall.";
 "error.voice.failed" = "No se pudo entrar al canal de voz. Inténtalo de nuevo en Descall.";
 "error.voice.noPermission" = "No tienes permiso para entrar a ese canal de voz.";
 "error.voice.mic" = "Descall necesita acceso al micrófono. Permítelo en Ajustes.";

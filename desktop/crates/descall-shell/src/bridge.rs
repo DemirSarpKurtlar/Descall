@@ -112,5 +112,13 @@ mod tests {
         let system = include_str!("../../../app/src-tauri/src/commands/system.rs");
         assert!(system.contains("pub const TOKEN_EVENT: &str = \"secure-token:changed\";"));
         assert!(SHIMS[0].1.contains("on(\"secure-token:changed\""));
+        // token_set / token_clear accept every owner-session window (pop-outs included), the
+        // same set that hears the change; extra-account windows go to their own store first.
+        for f in ["pub fn token_set", "pub fn token_clear"] {
+            let body = &system[system.find(f).unwrap()..];
+            let body = &body[..body.find("\n}\n").unwrap()];
+            assert!(body.contains("crate::premium::account_token(") && body.contains("descall_shell::bridge::is_owner_session(window.label())"), "{f}");
+            assert!(body.find("account_token").unwrap() < body.find("is_owner_session").unwrap(), "{f}: account windows first");
+        }
     }
 }

@@ -10,6 +10,7 @@ import { detectPasskeyPath, hostMatchesRpId, serverPlatformFor } from "./platfor
 import { normalizePasskeyError, passkeyErrorKey, isSilentPasskeyError, PasskeyClientError } from "./errors.js";
 import { runHandoff, openExternal } from "./handoff.js";
 import * as pk from "./index.js";
+let fakeFresh = false;
 
 // ---- codec -------------------------------------------------------------------------------
 {
@@ -151,8 +152,10 @@ function fakeApi(log) {
       if (response.id === "ghost") throw Object.assign(new Error("unknown"), { status: 401, code: "UNKNOWN_CREDENTIAL", body: { code: "UNKNOWN_CREDENTIAL", credentialId: "ghost" } });
       return { token: "tok", method: "passkey" };
     },
-    registerOptions: async (token, platform) => {
-      log.push(["registerOptions", token, platform]);
+    registerOptions: async (token, platform, prefer) => {
+      log.push(["registerOptions", token, platform, prefer]);
+      // The server: a re-auth token, or a sign-in younger than 10 minutes ("fresh").
+      if (!token && !fakeFresh) throw Object.assign(new Error("Confirm it is you first."), { status: 428, code: "REAUTH_REQUIRED" });
       return { challenge: "AAEC", user: { id: "AQ", name: "a", displayName: "a" }, rp: { id: "descall.com", name: "Descall" }, excludeCredentials: [], timeout: 300000 };
     },
     registerVerify: async (token, response, name, platform) => {
@@ -191,6 +194,8 @@ const nativeResponse = (id) => JSON.stringify({ id, rawId: id, type: "public-key
       },
     },
   });
+  const ls = new Map();
+  win.localStorage = { getItem: (k) => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: (k) => ls.delete(k) };
   pk.__setPasskeyEnvForTests({ win: () => win, api: fakeApi(log), plugin: async () => { throw new Error("no plugin on the web"); } });
   const avail = await pk.isAvailable();
   assert.deepEqual(avail, { available: true, path: "web", conditional: true, reason: null });
@@ -200,7 +205,15 @@ const nativeResponse = (id) => JSON.stringify({ id, rawId: id, type: "public-key
   const reg = await pk.register(" Laptop ", { reauthToken: "rt" });
   assert.equal(reg.passkey.name, "Laptop");
   assert.ok(log.some((l) => l[0] === "registerVerify" && l[1] === "rt" && l[3] === "web" && l[4] === "web-new"));
-  await assert.rejects(pk.register("x", {}), (e) => e.serverCode === "REAUTH_REQUIRED", "registration needs a re-auth token");
+  await assert.rejects(pk.register("x", {}), (e) => e.serverCode === "REAUTH_REQUIRED", "registration needs a re-auth token (or a fresh sign-in)");
+  fakeFresh = true;
+  const freshReg = await pk.register("Fresh", {});
+  assert.equal(freshReg.passkey.name, "Fresh", "right after signing in no token is needed");
+  fakeFresh = false;
+  // The control center's "second passkey on another platform": the preference reaches the server.
+  await pk.register("Key", { reauthToken: "rt", prefer: "securityKey" });
+  assert.ok(log.some((l) => l[0] === "registerOptions" && l[3] === "securityKey"));
+  assert.equal(pk.hasLocalPasskey(), true, "a sign-in / passkey made here marks this device");
   // Conditional autofill: a conditional request, then the result goes to onResult.
   const got = await new Promise((resolve, reject) => {
     const stop = pk.startConditional({ onResult: (b) => { stop(); resolve(b); }, onError: reject });
@@ -283,6 +296,54 @@ for (const platform of ["ios", "android"]) {
     plugin: async () => ({ isAvailable: async () => ({ available: true }), get: async () => { throw Object.assign(new Error("none"), { code: "no_credential" }); } }),
   });
   await assert.rejects(pk.signIn(), (e) => e instanceof PasskeyClientError && e.code === "no_credential");
+}
+
+// iPhone app: the passkey suggestion above the keyboard (plugin.autofill), cancelled when a
+// modal request starts; a build without the method stops quietly (no retry loop).
+{
+  const log = [];
+  let release;
+  const plugin = {
+    isAvailable: async () => ({ available: true }),
+    autofill: ({ options }) => {
+      log.push(["plugin.autofill", JSON.parse(options).rpId]);
+      return new Promise((resolve, reject) => {
+        release = () => resolve({ response: nativeResponse("ios-kb") });
+        plugin.autofillCancel = async () => {
+          log.push(["plugin.autofillCancel"]);
+          reject(Object.assign(new Error("closed"), { code: "aborted" }));
+        };
+      });
+    },
+    get: async () => ({ response: nativeResponse("ios-modal") }),
+  };
+  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi(log), plugin: async () => plugin });
+  const got = new Promise((resolve, reject) => {
+    const stop = pk.startConditional({ onResult: (b) => { stop(); resolve(b); }, onError: reject });
+  });
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepEqual(log.find((l) => l[0] === "plugin.autofill"), ["plugin.autofill", "descall.com"]);
+  release();
+  assert.equal((await got).token, "tok");
+  assert.ok(log.some((l) => l[0] === "authVerify" && l[1] === "ios" && l[2] === "ios-kb"), "the keyboard pick signs in like the button");
+  // A modal sign-in cancels the waiting keyboard request first.
+  const stop2 = pk.startConditional({});
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal((await pk.signIn()).token, "tok");
+  assert.ok(log.some((l) => l[0] === "plugin.autofillCancel"));
+  stop2();
+  // Old app build: the method is missing natively.
+  const errors = [];
+  let calls = 0;
+  pk.__setPasskeyEnvForTests({
+    win: () => cap("ios"),
+    api: fakeApi([]),
+    plugin: async () => ({ isAvailable: async () => ({ available: true }), autofill: async () => { calls += 1; throw Object.assign(new Error("not implemented"), { code: "UNIMPLEMENTED" }); } }),
+  });
+  const stop3 = pk.startConditional({ onError: (e) => errors.push(e) });
+  await new Promise((r) => setTimeout(r, 1300));
+  stop3();
+  assert.equal(calls, 1, "no retry loop on an old build");
 }
 
 // Android without a configured app origin on the server: hidden (sign-ins would fail).

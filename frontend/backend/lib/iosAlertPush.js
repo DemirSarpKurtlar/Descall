@@ -301,6 +301,20 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "friend-request", fromId: event.fromId, from },
     };
   }
+  // Widgets draft B: a friend waved from a home / lock screen widget (lib/friendWave.js).
+  if (type === "friend-wave") {
+    return {
+      ...base,
+      threadId: "friend-wave",
+      priority: 5,
+      // A wave is a "hey, are you there": stale after an hour.
+      expiresInSec: 3600,
+      collapseId: event.fromId ? `wave-${event.fromId}`.slice(0, 64) : "",
+      title: s.t("waveTitle"),
+      body: s.t("waveBody", { from }),
+      data: { type: "friend-wave", fromId: event.fromId, from },
+    };
+  }
   // Re-engagement (lib/reengage.js): a friend joined a voice channel the recipient can join.
   if (type === "friend-voice") {
     const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");
@@ -423,6 +437,25 @@ function describeEvent(event = {}, lang = "tr") {
       title: s.t("nodesTitle"),
       body: s.t(key, { pct }),
       data: { type: "admin-nodes", kind: String(event.kind), pct },
+    };
+  }
+  // Performans: release regression to the owner (lib/webPush.js sendAdminPerfPush). Numbers only.
+  if (type === "admin-perf") {
+    const vars = {
+      version: clip(event.version, 24),
+      platform: clip(event.platform, 12),
+      metric: clip(event.metric, 8),
+      pct: Math.max(0, Math.min(10000, Math.floor(Number(event.pct) || 0))),
+      from: clip(event.from, 12),
+      to: clip(event.to, 12),
+    };
+    return {
+      ...base,
+      threadId: "admin-perf",
+      collapseId: `admin-perf-${vars.platform}-${vars.metric}`.slice(0, 64),
+      title: s.t("perfTitle"),
+      body: s.t("perfBody", vars),
+      data: { type: "admin-perf", version: vars.version, platform: vars.platform, metric: vars.metric },
     };
   }
   // Duyurular: the admin wrote the text in this person's language (lib/announcements/service.js).

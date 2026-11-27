@@ -31,6 +31,9 @@
 "Opens Descall and joins a voice channel." = "Opens Descall and joins a voice channel.";
 "Send ${message} to ${friend}" = "Send ${message} to ${friend}";
 "Set status to ${status}" = "Set status to ${status}";
+"Call a Friend" = "Call a Friend";
+"Opens Descall and starts a voice call with a friend." = "Opens Descall and starts a voice call with a friend.";
+"Call ${friend}" = "Call ${friend}";
 "Join ${room}" = "Join ${room}";
 "Send Message" = "Send Message";
 "Unread" = "Unread";

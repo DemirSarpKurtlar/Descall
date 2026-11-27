@@ -1002,6 +1002,11 @@ export const API_TR = {
   "Confirm it is you first.": "Önce kimliğini doğrula.",
   "Enter a name.": "Bir ad gir.",
   "Passkey not found.": "Passkey bulunamadı.",
+  "Alert not found.": "Uyarı bulunamadı.",
+  "Choose an answer.": "Bir yanıt seç.",
+  "This alert was already answered.": "Bu uyarı zaten yanıtlandı.",
+  "This link is not valid.": "Bu bağlantı geçerli değil.",
+  "This link expired. Sign in and check Settings > Security.": "Bu bağlantının süresi doldu. Giriş yap ve Ayarlar > Güvenlik bölümüne bak.",
   "Passkeys are not available right now.": "Passkey şu anda kullanılamıyor.",
   "Passkeys are turned off.": "Passkey kapalı.",
   "Passkeys can only be managed from a signed-in device.": "Passkey'ler yalnızca oturum açık bir cihazdan yönetilebilir.",
@@ -1028,4 +1033,11 @@ export const API_TR = {
   "Enter the code we sent you.": "Sana gönderdiğimiz kodu gir.",
   "Sign in first.": "Önce giriş yap.",
   "Unknown request.": "Bilinmeyen istek.",
+  // Public server page desk (routes/publicPages.js).
+  "Public pages are not available yet.": "Herkese açık sayfa henüz hazır değil.",
+  "Turning the page off needs a reason.": "Sayfayı kapatmak için bir sebep gerekiyor.",
+  "Choose a descall.com/s/ address first.": "Önce bir descall.com/s/ adresi seç.",
+  "Choose why you are turning the page off.": "Sayfayı neden kapattığını seç.",
+  "Write a short reason.": "Kısa bir sebep yaz.",
+  "The undo window has passed.": "Geri alma süresi doldu.",
 };

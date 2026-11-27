@@ -160,6 +160,7 @@ const AUDIT_ICON = {
   ROLE_CREATE: ["shield", "yellow"], ROLE_UPDATE: ["shield", "yellow"], ROLE_DELETE: ["shield", "red"],
   CHANNEL_CREATE: ["hash", "brand"], CHANNEL_UPDATE: ["hash", "brand"], CHANNEL_DELETE: ["hash", "red"], CHANNEL_OVERRIDE_SET: ["lock", "gray"], CHANNEL_OVERRIDE_DELETE: ["lock", "gray"], CHANNEL_OVERRIDE_CLEAR: ["lock", "gray"],
   INVITE_CREATE: ["link", "blue"], INVITE_DELETE: ["link", "gray"], OWNERSHIP_TRANSFER: ["crown", "yellow"], RULES_ACCEPT: ["book", "teal"], SERVER_CREATE: ["gear", "gray"], SERVER_UPDATE: ["gear", "gray"],
+  PUBLIC_PAGE_ENABLE: ["globe", "green"], PUBLIC_PAGE_DISABLE: ["globe", "red"], PUBLIC_PAGE_UNDO: ["globe", "blue"], PUBLIC_PAGE_UPDATE: ["globe", "blue"], PUBLIC_PAGE_AUTO_HIDE: ["globe", "gray"],
 };
 
 /**

@@ -269,6 +269,13 @@ import {
   Cloud as PCloud,
   ToggleLeft as PToggleLeft,
   ArrowRight as PArrowRight,
+  // Passkeys (control center, sign-in states).
+  Fingerprint as PFingerprint,
+  ScanSmiley as PScanSmiley,
+  Usb as PUsb,
+  QrCode as PQrCode,
+  WindowsLogo as PWindowsLogo,
+  AndroidLogo as PAndroidLogo,
 } from "@phosphor-icons/react/dist/ssr";
 
 function make(Glyph, name) {
@@ -395,6 +402,12 @@ export const Pause = make(PPause, "Pause");
 export const Paperclip = make(PPaperclip, "Paperclip");
 export const MessageSquarePlus = make(PChatCenteredDots, "MessageSquarePlus");
 export const KeyRound = make(PKey, "KeyRound");
+export const Fingerprint = make(PFingerprint, "Fingerprint");
+export const ScanFace = make(PScanSmiley, "ScanFace");
+export const Usb = make(PUsb, "Usb");
+export const QrCode = make(PQrCode, "QrCode");
+export const WindowsLogo = make(PWindowsLogo, "WindowsLogo");
+export const AndroidLogo = make(PAndroidLogo, "AndroidLogo");
 export const ImageIcon = make(PImage, "ImageIcon");
 export const Hash = make(PHash, "Hash");
 export const Grid = make(PGridFour, "Grid");
@@ -860,6 +873,12 @@ const BY_NAME = {
   Cloud,
   ToggleLeft,
   ArrowRight,
+  Fingerprint,
+  ScanFace,
+  Usb,
+  QrCode,
+  WindowsLogo,
+  AndroidLogo,
 };
 
 /** <Icon name="Mic" weight="fill" size={20} /> */

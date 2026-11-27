@@ -50,11 +50,23 @@ function clientIp(req) {
  */
 const SIGN_IN_METHODS = new Set(["password", "passkey", "google", "apple", "2fa_totp", "2fa_recovery", "2fa_email", "register"]);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Client-measured time from the sign-in screen to the request, in ms (150 ms .. 3 min). */
+function cleanSignInMs(v) {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n >= 150 && n <= 180000 ? n : null;
+}
+
 /**
  * @param {string} [opts.method] how this session signed in (shown in Settings > Sessions,
  *   e.g. "passkey"); unknown values are dropped.
+ * @param {string} [opts.passkeyId] the passkey row that opened it (Settings > Passkeys can end
+ *   the sessions of a passkey it removes).
+ * @param {number} [opts.signInMs] client-measured sign-in time (the passkey center compares
+ *   passkey and password sign-in speed).
  */
-async function createSession(userId, { userAgent, ip, deviceId, method } = {}) {
+async function createSession(userId, { userAgent, ip, deviceId, method, passkeyId, signInMs } = {}) {
   // 3.5.0: keyed hash of the app's device id, so an admin can ban this device
   // (lib/accessBans.js). Never sent back to clients (routes/auth.js strips it).
   let deviceHash = null;
@@ -70,6 +82,8 @@ async function createSession(userId, { userAgent, ip, deviceId, method } = {}) {
     ...(deviceHash ? { deviceHash } : {}),
     userAgent: String(userAgent || "").slice(0, 300),
     ...(SIGN_IN_METHODS.has(method) ? { method } : {}),
+    ...(typeof passkeyId === "string" && UUID_RE.test(passkeyId) ? { passkeyId } : {}),
+    ...(cleanSignInMs(signInMs) ? { signInMs: cleanSignInMs(signInMs) } : {}),
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
   };
@@ -152,7 +166,21 @@ async function touchSession(userId, sessionId) {
   }
 }
 
+/** Remove these sessions (ids) of the user; returns the ids that were there. */
+async function removeSessions(userId, ids) {
+  const want = new Set((ids || []).filter(Boolean));
+  if (!want.size) return [];
+  const sessions = await listSessions(userId);
+  const removed = sessions.filter((s) => want.has(s.id)).map((s) => s.id);
+  if (!removed.length) return [];
+  await supabase.from("users").update({ active_sessions: sessions.filter((s) => !want.has(s.id)) }).eq("id", userId);
+  rememberDropped(userId, removed);
+  return removed;
+}
+
 module.exports = {
+  removeSessions,
+  cleanSignInMs,
   describeDevice,
   clientIp,
   createSession,

@@ -35,6 +35,8 @@ const STEP_UP_EXEMPT = [
   /^\/agent\/plans\/[^/]+\/(selection|dry-run|edit|discard)\/?$/, /^\/agent\/prompts(\/[^/]+(\/use)?)?\/?$/,
   // İşlem kaydı: saving / deleting one's own saved view changes nothing on the platform.
   /^\/audit\/views(\/[^/]+)?\/?$/,
+  // Performans: saved views, hiding an alert banner and opening its Hata Kayıtları entry.
+  /^\/perf\/(views(\/[^/]+)?|alerts\/[^/]+\/(hide|unhide|error-log))\/?$/,
 ];
 let warned = false;
 

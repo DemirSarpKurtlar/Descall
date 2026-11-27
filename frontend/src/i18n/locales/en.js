@@ -13,6 +13,7 @@ import { A11Y_EN } from "./a11y.en.js";
 import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
+import { PUBPAGE_EN } from "./pubpage.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { SHARE_SHEET_EN } from "./shareSheet.en.js";
@@ -31,6 +32,7 @@ import { SYSX_EN } from "./sysx.en.js";
 import { ATOK_EN } from "./atok.en.js";
 import { ANODES_EN } from "./anodes.en.js";
 import { AUDIT_LOG_EN } from "./auditLog.en.js";
+import { PERF_ADMIN_EN } from "./perfAdmin.en.js";
 import { LIVE_POPUP_EN } from "./livePopup.en.js";
 import { ANNC_EN } from "./annc.en.js";
 import { COINPOP_EN } from "./coinpop.en.js";
@@ -91,6 +93,7 @@ export const nested = {
   msg5: MSG5_EN,
   act: ACT_EN,
   dir: DIR_EN,
+  pubpage: PUBPAGE_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
   shareSheet: SHARE_SHEET_EN,
@@ -109,6 +112,7 @@ export const nested = {
   atok: ATOK_EN,
   "anodes": ANODES_EN,
   auditLog: AUDIT_LOG_EN,
+  perfAdmin: PERF_ADMIN_EN,
   livePopup: LIVE_POPUP_EN,
   annc: ANNC_EN,
   coinpop: COINPOP_EN,
@@ -143,6 +147,8 @@ export const nested = {
     confirm: "Remove from group",
     eventRemoved: "{actor} removed {target}",
     eventRemovedMe: "{actor} removed you from the group",
+    someone: "A member",
+    someoneAcc: "A member",
     eventLeft: "{actor} left the group",
     bannerTitle: "You were removed from this group",
     bannerBody: "{actor} removed you at {time}. You can still read old messages but can't send new ones.",
@@ -2193,6 +2199,7 @@ export const phrases = {
   "Settings applied": "Settings applied",
   "Screen quality": "Screen quality",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.",
   "Screen share volume": "Screen share volume",
   "Waiting for others to join…": "Waiting for others to join…",
   "You left the call": "You left the call",

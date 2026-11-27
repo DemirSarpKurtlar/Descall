@@ -30,7 +30,7 @@ export const GUIDE_BODIES = {
       },
       {
         h: "Settings that work in a group call",
-        p: "In a group call, each person who watches receives the stream, so your upload has to carry more as the group grows. That is why Descall starts group shares at 720p and 20 frames per second, and shows a warning if you push resolution or frame rate higher in a busy call. Sixty frames per second is meant for one-to-one calls. If friends say the picture stutters, lower the resolution first and the frame rate second. For slides, documents or code, choose Text, code: sharp letters matter more than motion there, and 15 frames per second is plenty for a presentation.",
+        p: "In a group call, each person who watches receives the stream, so your upload has to carry more as the group grows. That is why Descall starts group shares at 1080p and 30 frames per second, and shows a warning if you push resolution or frame rate higher in a busy call. Sixty frames per second is meant for one-to-one calls. If friends say the picture stutters, lower the resolution first and the frame rate second. For slides, documents or code, choose Text, code: sharp letters matter more than motion there, and 15 frames per second is plenty for a presentation.",
       },
       {
         h: "Sharing sound along with the picture",
@@ -388,7 +388,7 @@ export const GUIDE_BODIES = {
       },
       {
         h: "Review rounds and builds together",
-        p: "Screen sharing is how a team learns. After a match, one person can share a replay or a clip in the voice room while the others point out mistakes. For fast motion, choose Games, video in the quality panel. In a group call, Descall starts shares at 720p and 20 frames per second and warns you if you push it higher in a busy call; for one-to-one coaching in a DM call, the share starts at a higher quality and 60 frames per second is meant for exactly that. In the Windows app, the game's sound goes out with the picture, so the others hear what you hear.",
+        p: "Screen sharing is how a team learns. After a match, one person can share a replay or a clip in the voice room while the others point out mistakes. For fast motion, choose Games, video in the quality panel. In a group call, Descall starts shares at 1080p and 30 frames per second and warns you if you push it higher in a busy call; for one-to-one coaching in a DM call, the share starts at a higher quality and 60 frames per second is meant for exactly that. In the Windows app, the game's sound goes out with the picture, so the others hear what you hear.",
       },
       {
         h: "Show what you are playing",

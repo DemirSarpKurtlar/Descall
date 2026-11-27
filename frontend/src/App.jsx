@@ -32,6 +32,26 @@ import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js
 // Logged-out web only: the native app and signed-in boots never render it, so the
 // marketing layout (JS + .mkt CSS) stays out of the App chunk's static graph.
 const MarketingApp = lazy(() => import("./site/MarketingApp"));
+// Draft A (passkeys): after a password / Google / Apple sign-in, a polite card in the corner
+// (phone: a bottom sheet) offers a passkey for this device. Loaded only when it may show.
+const PasskeySuggestCard = lazy(() => import("./components/passkeys/PasskeySuggestCard.jsx"));
+function notePasskeySuggestion(method) {
+  try {
+    import("./lib/passkeys/visual.js")
+      .then((m) => {
+        m.noteSignIn(window.localStorage, method);
+        try {
+          sessionStorage.setItem("descall.pk.lastMethod", method);
+        } catch {
+          /* ignore */
+        }
+        window.dispatchEvent(new Event("descall:passkey-suggest"));
+      })
+      .catch(() => {});
+  } catch {
+    /* storage off */
+  }
+}
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
@@ -94,6 +114,8 @@ import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
 import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
+import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
+import { useNativeWidgets } from "./hooks/useNativeWidgets";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -226,6 +248,8 @@ import { allowNotify } from "./lib/notifyPrefs";
 import { applyPeerRead } from "./lib/readReceipts";
 import { FAILED_ACTION_EVENT, dmPeerId, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
+// Performans: app start = the signed-in chat list on screen (lib/perf/rum.js).
+import { markAppStart } from "./lib/perf/rum.js";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -1170,6 +1194,12 @@ export default function App() {
       // Existing client previews win so live dm:message updates are not overwritten.
       setDmPreviews((prev) => ({ ...byPeer, ...prev }));
       setDmLastActivity((prev) => ({ ...lastByPeer, ...prev }));
+      // First chat list painted: the cold start is over (once per page load).
+      try {
+        requestAnimationFrame(() => markAppStart());
+      } catch {
+        markAppStart();
+      }
     } catch (err) {
       console.error("[DM] REST previews failed", err);
     }
@@ -3261,6 +3291,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("password");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3285,6 +3316,7 @@ export default function App() {
       setAuthError("");
       const data = await verify2faLogin(pendingToken, code);
       transportFallbackStepRef.current = 0;
+      notePasskeySuggestion("2fa");
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -3342,6 +3374,7 @@ export default function App() {
         return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
+      if (!data.isNewUser) notePasskeySuggestion(method);
       setToken(data.token);
       commitSessionUser(data.user);
       try {
@@ -4480,7 +4513,8 @@ export default function App() {
         return;
       }
 
-      if (type === "dm" || type === "missed-call" || type === "call") {
+      // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =
@@ -5279,6 +5313,34 @@ export default function App() {
     pathname: location.pathname,
     t,
   });
+  // Android home screen widgets + the ongoing call notification (draft B "Yuzler").
+  useAndroidWidgets({
+    me,
+    socket: socketApi,
+    call,
+    groupCall,
+    serverVoice,
+    friends,
+    servers: myServers,
+    groups: myGroups,
+  });
+
+  // Widgets draft B: favourite faces, timeline reloads, the call's Live Activity, waves.
+  useNativeWidgets({
+    me,
+    friends,
+    call,
+    groupCall,
+    serverVoice,
+    socket: socketApi,
+    servers: myServers,
+    groups: myGroups,
+    dmUnread,
+    groupUnread,
+    toast,
+    onOpenDm: (user) => navigate(directPath(user)),
+    t,
+  });
 
   if (bootError && !me) {
     return (
@@ -5812,6 +5874,12 @@ export default function App() {
         ) : null}
 
         <PlatformNoticeBanner enabled={Boolean(me?.id)} />
+
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <PasskeySuggestCard me={me} onOpenSettings={() => navigate("/settings/security?passkeys=1")} />
+          </Suspense>
+        ) : null}
 
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Call widget, 4x2 (call.m): the person talking large, the room, timer, who is there, mute, sound and leave. -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToOutline="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:id="@+id/w_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="92dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/cface"
+                android:layout_width="78dp"
+                android:layout_height="78dp"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/cname"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginTop="5dp"
+                android:maxLines="1"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/ctalking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10.5sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/cline1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/cline2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textSize="11.5sp" />
+
+                <Chronometer
+                    android:id="@+id/cchrono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:textSize="11.5sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/cstack"
+                android:layout_width="wrap_content"
+                android:layout_height="26dp"
+                android:adjustViewBounds="true"
+                android:importantForAccessibility="no"
+                android:layout_marginTop="10dp"
+                android:scaleType="fitStart" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/cmute"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/wpill_dark"
+                    android:importantForAccessibility="yes">
+
+                    <ImageView
+                        android:id="@+id/cmute_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_w_mic" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="7dp"
+                    android:layout_height="0dp" />
+
+                <FrameLayout
+                    android:id="@+id/cdeafen"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/wpill_dark"
+                    android:importantForAccessibility="yes">
+
+                    <ImageView
+                        android:id="@+id/cdeafen_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_w_headphones" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="7dp"
+                    android:layout_height="0dp" />
+
+                <FrameLayout
+                    android:id="@+id/cleave"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/wbtn_danger"
+                    android:importantForAccessibility="yes">
+
+                    <ImageView
+                        android:id="@+id/cleave_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_w_leave" />
+                </FrameLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/w_idle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/w_idle_face"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:importantForAccessibility="no" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/w_idle_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/w_idle_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
+                android:textSize="11.5sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/w_idle_join"
+                    android:layout_width="wrap_content"
+                    android:layout_height="26dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingEnd="11dp"
+                    android:paddingStart="11dp">
+
+                    <ImageView
+                        android:id="@+id/w_idle_join_icon"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_w_join" />
+
+                    <TextView
+                        android:id="@+id/w_idle_join_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:layout_marginStart="4dp"
+                        android:maxLines="1"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:layout_gravity="top|end"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/w_stale_icon"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:importantForAccessibility="no"
+            android:layout_marginEnd="3dp"
+            android:src="@drawable/ic_w_offline"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_stale"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

@@ -66,7 +66,9 @@ import { nativeShellPlatform } from "../../lib/glassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
-import PasskeysCard from "../settings/PasskeysCard.jsx";
+import PasskeyEntry from "../passkeys/center/PasskeyEntry.jsx";
+// Draft A "Güvenlik kontrol merkezi": Ayarlar > Güvenlik > Passkey'ler (wide sub-page).
+const PasskeyCenter = lazy(() => import("../passkeys/center/PasskeyCenter.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { serverMessage } from "../../i18n/serverText.js";
 import LegalContentModal from "../legal/LazyLegalContentModal";
@@ -105,6 +107,7 @@ import {
 } from "../../lib/noiseSuppression";
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 import RangeSlider from "../../premium/ui/RangeSlider.jsx";
+import { useRumView } from "../../lib/perf/useRumTiming.js";
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -469,6 +472,8 @@ const UserPanel = forwardRef(function UserPanel({
   onTabChange,
   activity = {},
 }, ref) {
+  // Performans: samples taken while Ayarlar is open belong to "app/ayarlar".
+  useRumView("app/ayarlar");
   const { isMobile: isMobileViewport } = useMobile();
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();
@@ -478,6 +483,25 @@ const UserPanel = forwardRef(function UserPanel({
   const reduceMotion = useReducedMotion();
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
+  // Ayarlar > Güvenlik > Passkey'ler: the control center replaces the security page.
+  const [pkCenter, setPkCenter] = useState(() => {
+    try {
+      return initialTab === "security" && new URLSearchParams(window.location.search).get("passkeys") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (activeTab !== "security") setPkCenter(false);
+  }, [activeTab]);
+  useEffect(() => {
+    const open = () => {
+      setActiveTab("security");
+      setPkCenter(true);
+    };
+    window.addEventListener("descall:open-passkeys", open);
+    return () => window.removeEventListener("descall:open-passkeys", open);
+  }, []);
   const [mobileDetail, setMobileDetail] = useState(false);
   const stored = loadSettings();
   // Promosyon Kodu row: badge = codes you haven't seen yet, mobile hint = codes you can use now.
@@ -2119,6 +2143,15 @@ const UserPanel = forwardRef(function UserPanel({
       }
 
       case "security":
+        if (pkCenter) {
+          return (
+            <div className="us-tab us-tab-pkc">
+              <Suspense fallback={<ConversationListSkeleton count={3} label={t("Loading…")} />}>
+                <PasskeyCenter me={me} onBack={() => setPkCenter(false)} onHidden={() => setPkCenter(false)} />
+              </Suspense>
+            </div>
+          );
+        }
         return (
           <div className="us-tab">
             <p className="us-lead">{t("Protect your account with email verification, password reset, and two-factor sign-in.")}</p>
@@ -2444,13 +2477,9 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
-            {/* Passkeys (owner item 9): an extra way in, the password stays. */}
-            <section className="us-section" id="settings-passkeys">
-              <h4 className="us-section-label">{t("passkey.settings.title")}</h4>
-              <div className="us-card stack">
-                <PasskeysCard />
-              </div>
-            </section>
+            {/* Passkeys (owner item 9): an extra way in, the password stays. The row opens
+                the control center (draft A). */}
+            <PasskeyEntry onOpen={() => setPkCenter(true)} />
 
             <section className="us-section">
               <div className="us-section-label-row">
@@ -3210,7 +3239,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}${activeTab === "security" && pkCenter ? " is-pk-center" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -3426,7 +3455,7 @@ const UserPanel = forwardRef(function UserPanel({
             >
               {/* UI audit #40 / #152: Hesabım and Görünüm get the same left-aligned
                   page title as every other desktop settings page. */}
-              {!isMobile && (
+              {!isMobile && !(activeTab === "security" && pkCenter) && (
                 <h3 className="us-page-title">{tabTitles[activeTab]}</h3>
               )}
               <ErrorBoundary scope="pane" resetKey={activeTab}>

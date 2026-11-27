@@ -79,9 +79,10 @@ dependencies {
     // Passkeys (DescallPasskeyPlugin.java).
     implementation "androidx.credentials:credentials:$androidxCredentialsVersion"
     implementation "androidx.credentials:credentials-play-services-auth:$androidxCredentialsVersion"
-    // 4.3 "Paylaş > Descall": WorkManager runs the share in the background (offline queue),
-    // ExifInterface strips GPS from originals (share/ShareMedia.java).
+    // Home screen widgets (widget/WidgetRefreshWorker.java): 30 min periodic refresh on network;
+    // 4.3 "Paylaş > Descall": the share runs in the background too (share/ShareWorker.java).
     implementation "androidx.work:work-runtime:$androidxWorkVersion"
+    // 4.3 share target: ExifInterface strips GPS from originals (share/ShareMedia.java).
     implementation "androidx.exifinterface:exifinterface:$androidxExifInterfaceVersion"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"

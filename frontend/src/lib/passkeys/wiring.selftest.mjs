@@ -130,4 +130,26 @@ const readRepo = (p) => readFileSync(join(repo, p), "utf8");
   assert.doesNotMatch(sql, /\bDROP\b|\bTRUNCATE\b/i, "additive only");
 }
 
+// ---- Control center (draft A): "Ben degildim" page, history migration, UI entry points -----------
+{
+  const vercel = JSON.parse(read("vercel.json"));
+  assert.ok(vercel.rewrites.some((r) => r.source === "/passkey/report" && r.destination === "/index.html"), "report page reaches the SPA");
+  assert.match(read("public/_worker.js"), /"\/passkey\/report"/);
+  const main = read("src/main.jsx");
+  assert.match(main, /passkey\\\/report/, "main.jsx boots the report page alone");
+  assert.match(main, /PasskeyReportPage\.jsx/);
+  const sql = readRepo("supabase/migrations/20261124q_passkey_center.sql");
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.passkey_events/);
+  assert.match(sql, /ALTER TABLE public\.passkey_events ENABLE ROW LEVEL SECURITY/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS places jsonb/);
+  assert.doesNotMatch(sql, /\bDROP\b|\bTRUNCATE\b/i, "additive only");
+  const panel = read("src/components/layout/UserPanel.jsx");
+  assert.match(panel, /PasskeyEntry/, "Settings > Security shows the passkeys row");
+  assert.match(panel, /PasskeyCenter/, "and opens the control center");
+  const app = read("src/App.jsx");
+  assert.match(app, /<PasskeySuggestCard/, "the post-sign-in suggestion is mounted");
+  const auth = read("src/components/AuthView.jsx");
+  assert.ok(auth.indexOf("<PasskeySignInButton") > auth.indexOf('className="auth-submit"'), "the passkey button sits under Giris");
+}
+
 console.log("passkeys wiring selftest OK");

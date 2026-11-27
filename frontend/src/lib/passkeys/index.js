@@ -213,9 +213,9 @@ export function signalAcceptedCredentials(userHandle, credentialIds) {
   }
 }
 
-async function verifySignIn(response, platform, signal) {
+async function verifySignIn(response, platform, signal, durationMs) {
   try {
-    return await (await api()).authVerify(response, platform, { signal });
+    return await (await api()).authVerify(response, platform, { signal, durationMs });
   } catch (err) {
     const e = normalizePasskeyError(err);
     if (e.serverCode === "UNKNOWN_CREDENTIAL") signalUnknownCredential(e.credentialId || response?.id);
@@ -225,7 +225,8 @@ async function verifySignIn(response, platform, signal) {
 
 /**
  * Sign in with a passkey (no username).
- * @param {object} [o] { signal, onHandoff({ matchCode, reopen }) for the desktop browser path }
+ * @param {object} [o] { signal, onHandoff({ matchCode, reopen }) for the desktop browser path,
+ *   hint: "hybrid" | "security-key" (web) }
  */
 /*
  * Safari only opens the passkey sheet while the click that asked for it is fresh, and a
@@ -268,9 +269,41 @@ export async function signIn(o = {}) {
     } catch (err) {
       throw normalizePasskeyError(err);
     }
+    // "Bu cihazda passkey yok" > a phone over QR or a security key: WebAuthn hints make the
+    // browser open that part of its window first (Chrome 128+; others ignore them).
+    if (path === "web" && (o.hint === "hybrid" || o.hint === "security-key")) options = { ...options, hints: [o.hint] };
+    // Measured from the click to the authenticator's answer: the control center compares it
+    // with the password sign-in time (Ortalama giris).
+    const startedAt = Date.now();
     const response = await ceremony(path, "get", options, { signal: o.signal });
-    return verifySignIn(response, platform, o.signal);
+    const body = await verifySignIn(response, platform, o.signal, Date.now() - startedAt);
+    markLocalPasskey();
+    return body;
   });
+}
+
+const LOCAL_KEY = "descall.pk.local.v1";
+/** This device signed in with or created a passkey (post-sign-in suggestion stays quiet). */
+export function markLocalPasskey() {
+  try {
+    env.win()?.localStorage?.setItem(LOCAL_KEY, String(Date.now()));
+  } catch {
+    /* private mode */
+  }
+}
+export function hasLocalPasskey() {
+  try {
+    return Boolean(env.win()?.localStorage?.getItem(LOCAL_KEY));
+  } catch {
+    return false;
+  }
+}
+export function forgetLocalPasskey() {
+  try {
+    env.win()?.localStorage?.removeItem(LOCAL_KEY);
+  } catch {
+    /* private mode */
+  }
 }
 
 /**
@@ -278,6 +311,24 @@ export async function signIn(o = {}) {
  * Keeps one conditional request open, renews it before its challenge expires, and stops when
  * a modal request starts or stop() is called.
  */
+/** iOS keyboard suggestion: resolves with the assertion JSON once the person picks it. */
+async function nativeAutofill(options, signal) {
+  const plugin = await env.plugin();
+  if (typeof plugin?.autofill !== "function") throw new PasskeyClientError("unsupported", "no keyboard passkeys in this build");
+  const onAbort = () => {
+    Promise.resolve(plugin.autofillCancel?.()).catch(() => {});
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
+  try {
+    const r = await plugin.autofill({ options: JSON.stringify(options) });
+    return parseJSON(r?.response);
+  } catch (err) {
+    throw normalizePasskeyError(err, { aborted: signal?.aborted });
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+  }
+}
+
 export function startConditional({ onResult, onError } = {}) {
   let stopped = false;
   let starting = false;
@@ -286,9 +337,16 @@ export function startConditional({ onResult, onError } = {}) {
     if (stopped || starting || inFlight || conditionalCtl) return;
     starting = true;
     let ready = false;
+    let path = null;
     try {
-      const path = await effectivePath();
-      ready = path === "web" && (await conditionalSupported(env.win())) && Boolean((await serverConfig())?.enabled);
+      path = await effectivePath();
+      if (path === "ios") {
+        // iPhone app: the suggestion above the keyboard (ASAuthorizationController
+        // performAutoFillAssistedRequests), only when the plugin of this build has it.
+        ready = Boolean((await serverConfig())?.enabled) && (await nativeStatus("ios")).available;
+      } else {
+        ready = path === "web" && (await conditionalSupported(env.win())) && Boolean((await serverConfig())?.enabled);
+      }
     } finally {
       starting = false;
     }
@@ -303,20 +361,24 @@ export function startConditional({ onResult, onError } = {}) {
       if (!stopped) run();
     }, CONDITIONAL_RESTART_MS);
     try {
-      const options = await (await api()).authOptions("web", { signal: ctl.signal });
+      const platform = path === "ios" ? "ios" : "web";
+      const options = await (await api()).authOptions(platform, { signal: ctl.signal });
       if (ctl.signal.aborted || stopped) return;
-      const response = await webGet(options, { mediation: "conditional", signal: ctl.signal });
+      const response = path === "ios" ? await nativeAutofill(options, ctl.signal) : await webGet(options, { mediation: "conditional", signal: ctl.signal });
       if (stopped) return;
       clearTimeout(timer);
-      const body = await verifySignIn(response, "web");
+      const body = await verifySignIn(response, platform);
+      markLocalPasskey();
       onResult?.(body);
     } catch (err) {
       const e = normalizePasskeyError(err, { aborted: ctl.signal.aborted });
       if (e.code === "aborted" || stopped) return;
       clearTimeout(timer);
       onError?.(e);
-      // The person dismissed or the server refused: offer autofill again.
-      if (e.code !== "unsupported" && e.code !== "security") timer = setTimeout(run, 1000);
+      // The person dismissed or the server refused: offer autofill again. An app build
+      // without the keyboard method (or any odd native answer) stops here, no retry loop.
+      const retry = path === "ios" ? e.code === "cancelled" || e.code === "server" : e.code !== "unsupported" && e.code !== "security";
+      if (retry) timer = setTimeout(run, 1000);
     } finally {
       if (conditionalCtl === ctl) conditionalCtl = null;
     }
@@ -404,11 +466,11 @@ export async function reauthWithPasskey(o = {}) {
  * { options, at } to pass to register(name, { reauthToken, prepared }), or null on the other
  * paths (they need no fresh click).
  */
-export async function prepareRegister(reauthToken) {
+export async function prepareRegister(reauthToken, { prefer } = {}) {
   const path = await effectivePath();
   if (path !== "web") return null;
   try {
-    return { options: await (await api()).registerOptions(reauthToken, "web"), at: Date.now() };
+    return { options: await (await api()).registerOptions(reauthToken, "web", prefer), at: Date.now(), prefer: prefer || null };
   } catch (err) {
     throw normalizePasskeyError(err);
   }
@@ -417,20 +479,24 @@ export async function prepareRegister(reauthToken) {
 export async function register(name, o = {}) {
   const path = await effectivePath();
   if (!path) throw new PasskeyClientError("unsupported", "passkeys are not available here");
-  if (!o.reauthToken) throw new PasskeyClientError("server", "re-auth required", { serverCode: "REAUTH_REQUIRED", status: 428 });
+  // No token: the server accepts a sign-in younger than 10 minutes as the proof (the
+  // post-sign-in suggestion), otherwise it answers 428 REAUTH_REQUIRED.
   const platform = serverPlatformFor(path, env.win());
   if (path === "handoff") return exclusive(async () => runHandoff("register", { platform, reauthToken: o.reauthToken, signal: o.signal, onStarted: o.onHandoff, api: await api(), open: (u) => openExternal(u, env.win()) }));
   return exclusive(async () => {
     const fresh = path === "web" && o.prepared?.options && Date.now() - (o.prepared.at || 0) < PREFETCH_TTL_MS;
     let options = fresh ? o.prepared.options : null;
     try {
-      if (!options) options = await (await api()).registerOptions(o.reauthToken, platform);
+      if (!options) options = await (await api()).registerOptions(o.reauthToken, platform, o.prefer);
     } catch (err) {
       throw normalizePasskeyError(err);
     }
     const response = await ceremony(path, "create", options, { signal: o.signal });
     try {
-      return await (await api()).registerVerify(o.reauthToken, response, String(name || "").trim() || undefined, platform);
+      const res = await (await api()).registerVerify(o.reauthToken, response, String(name || "").trim() || undefined, platform);
+      // A key made on another device (security key, phone over QR) is not this device's.
+      if (!o.prefer) markLocalPasskey();
+      return res;
     } catch (err) {
       throw normalizePasskeyError(err);
     }
@@ -445,9 +511,49 @@ export async function renamePasskey(id, name) {
   }
 }
 
-export async function removePasskey(id) {
+export async function removePasskey(id, opts = {}) {
   try {
-    const r = await (await api()).remove(id);
+    const r = await (await api()).remove(id, opts);
+    if (r?.credentialId) signalUnknownCredential(r.credentialId);
+    return r;
+  } catch (err) {
+    throw normalizePasskeyError(err);
+  }
+}
+
+/** Settings > Security > Passkeys: passkeys, score, sign-in mix, activity, alerts. */
+export async function loadCenter() {
+  try {
+    const res = await (await api()).center();
+    if (res?.userHandle) signalAcceptedCredentials(res.userHandle, (res.passkeys || []).map((p) => p.credentialId).filter(Boolean));
+    return res;
+  } catch (err) {
+    throw normalizePasskeyError(err);
+  }
+}
+
+/** New-place alert: "me" (it was me) or "revoke" (remove the passkey, end other sessions). */
+export async function resolvePasskeyAlert(id, action) {
+  try {
+    const r = await (await api()).resolveAlert(id, action);
+    if (r?.credentialId) signalUnknownCredential(r.credentialId);
+    return r;
+  } catch (err) {
+    throw normalizePasskeyError(err);
+  }
+}
+
+export async function reportInfo(token) {
+  try {
+    return await (await api()).reportInfo(token);
+  } catch (err) {
+    throw normalizePasskeyError(err);
+  }
+}
+
+export async function reportResolve(token, action) {
+  try {
+    const r = await (await api()).reportResolve(token, action);
     if (r?.credentialId) signalUnknownCredential(r.credentialId);
     return r;
   } catch (err) {

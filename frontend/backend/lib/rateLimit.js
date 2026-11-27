@@ -116,6 +116,7 @@ function rejectIfLimited(res, results) {
 }
 
 module.exports = {
+  TOO_MANY_TR,
   WINDOW_MS,
   recordFailure,
   peek,

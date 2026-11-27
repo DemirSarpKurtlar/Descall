@@ -148,7 +148,7 @@ function fakeDb(tables) {
     }),
   };
   const router = createNativeRouter(deps);
-  const middlewares = router.stack.filter((l) => !l.route).map((l) => l.handle).slice(1); // skip requireAuth
+  const middlewares = router.stack.filter((l) => !l.route).map((l) => l.handle).filter((h) => !h.descallBurstLimit).slice(1); // skip the burst limit and requireAuth
   const route = (method, p) => router.stack.find((l) => l.route && l.route.path === p && l.route.methods[method]).route.stack[0].handle;
   const call = (method, p, req) => new Promise((resolve) => {
     const res = {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Live preview stage behind the widget on the settings screen (a wallpaper-like tint). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:endColor="@color/wcfg_bg"
+        android:startColor="@color/wcfg_preview_bg" />
+    <corners android:radius="22dp" />
+</shape>

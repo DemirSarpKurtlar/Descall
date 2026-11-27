@@ -87,7 +87,10 @@ const isPasskeyDesktopPage = /^\/passkey\/desktop\/?$/.test(path);
 // 4.3 "Paylaş > Descall": the share sheet page (Android DescallShareActivity loads /share);
 // boots only the sheet, never the app shell or the socket.
 const isSharePage = /^\/share\/?$/.test(path);
-const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow || isPasskeyDesktopPage || isSharePage;
+// "Ben degildim" / "Bendim" from a passkey security e-mail: standalone page as well
+// (components/passkeys/PasskeyReportPage.jsx), it works without being signed in.
+const isPasskeyReportPage = /^\/passkey\/report\/?$/.test(path);
+const isAdminWindow = isSignupStatsWindow || isAdminPanelWindow || isPasskeyDesktopPage || isPasskeyReportPage || isSharePage;
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
 const isNativeAndroid = (() => {
@@ -306,6 +309,8 @@ async function bootApp() {
     ? lazy(() => import("./components/share/SharePage.jsx"))
     : isPasskeyDesktopPage
     ? lazy(() => import("./components/passkeys/PasskeyDesktopPage.jsx"))
+    : isPasskeyReportPage
+    ? lazy(() => import("./components/passkeys/PasskeyReportPage.jsx"))
     : isSignupStatsWindow
     ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
     : isAdminPanelWindow
@@ -402,6 +407,10 @@ async function boot() {
       .catch(() => {});
   }
   scheduleAnalytics({ preferMarketing: preferMarketingShell });
+  // Performans: real-user metrics (sampled, sendBeacon), after the first screen on every shell.
+  afterFirstScreen(() => {
+    import("./lib/perf/rum.js").then((m) => m.startRum()).catch(() => {});
+  });
   // Warm-ups only (noise-suppression WASM + worklets, game CSS): after the first
   // screen, not while the App chunk evaluates (cold start is CPU bound on Android).
   if (!preferMarketingShell) afterFirstScreen(preloadAppStyles);

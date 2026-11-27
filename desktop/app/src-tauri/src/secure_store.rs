@@ -30,26 +30,18 @@ pub fn set<R: Runtime>(app: &AppHandle<R>, name: &str, value: &str) -> bool {
     let Some(p) = path(app, name) else { return false };
     if value.is_empty() {
         // Nothing stored is the same as removed (token_clear after a sign-out without token
-        // answered false and never told the other windows).
-        return match std::fs::remove_file(&p) {
-            Ok(()) => true,
-            Err(e) => e.kind() == std::io::ErrorKind::NotFound,
-        };
+        // answered false and never told the other windows). A delete Windows keeps refusing
+        // (the file open in a scanner) empties the file instead: get() reads that as no token,
+        // where the signed-out token used to come back at the next start.
+        return descall_shell::durable::remove(&p);
     }
     let entropy = format!("{ENTROPY_PREFIX}{name}");
     match descall_migrate::win::dpapi::protect(value.as_bytes(), Some(entropy.as_bytes())) {
-        // Temp file + rename (MoveFileEx REPLACE_EXISTING): a crash or power loss while
-        // writing never leaves a half-written token behind (DPAPI refuses it, so the user
-        // would be signed out).
-        Ok(sealed) => {
-            let tmp = p.with_extension("bin.tmp");
-            if std::fs::write(&tmp, sealed).is_ok() && std::fs::rename(&tmp, &p).is_ok() {
-                true
-            } else {
-                let _ = std::fs::remove_file(&tmp);
-                false
-            }
-        }
+        // Flushed temp file + rename (MoveFileEx REPLACE_EXISTING), retried while the target is
+        // locked, else written in place (descall_shell::durable): a crash never leaves a
+        // half-written token, and a refused rename never leaves the PREVIOUS session in the
+        // store (the next start signed in with it, the server refused it: signed out).
+        Ok(sealed) => descall_shell::durable::replace(&p, &sealed),
         Err(_) => false,
     }
 }

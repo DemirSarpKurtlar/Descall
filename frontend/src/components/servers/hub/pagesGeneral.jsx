@@ -1,12 +1,13 @@
 /* 04 Genel bakış, 16 Topluluk ve Keşif, Kurallar, 19 Bildirimler, Klasör. */
 import ServerDirectorySettings from "../ServerDirectorySettings";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ActionSheet, Chip, Field, Foot, Group, I, Row, Sec, Sq } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import Cropper from "./Cropper";
 import { usePerms, levelLabel } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
+import { useT } from "../../../context/LocaleContext";
 import { uploadFile } from "../../../api/media";
 import { readFileAsDataUrl } from "../../../lib/cropImage";
 import { updateServer, updateServerNotificationLevel, createServerFolder } from "../../../api/servers";
@@ -168,6 +169,7 @@ export function CommunityPage({ route }) {
   const hub = useHub();
   const { s, f, server } = hub;
   const p = usePerms(server);
+  const tr = useT();
   const { toast } = useToast();
   const base = useMemo(() => ({
     communityEnabled: Boolean(server?.communityEnabled), isPublic: Boolean(server?.isPublic),
@@ -225,6 +227,12 @@ export function CommunityPage({ route }) {
       <div className="svh-group dir-hub">
         <ServerDirectorySettings server={server} />
       </div>
+      {/* Public server page "Google'da göster" (UI-BRIEF draft A): the control desk. */}
+      {(p.owner || p.admin) ? (
+        <Group>
+          <Row ico="search" c="blue" t={tr("pubpage.entry.title")} sub={tr("pubpage.entry.sub")} chev onClick={() => hub.push({ id: "pub" })} />
+        </Group>
+      ) : null}
     </PageFrame>
   );
 }
@@ -380,6 +388,19 @@ export function FolderPage({ route }) {
         })} />
       </Group>
       <Foot>{s.folderFoot}</Foot>
+    </PageFrame>
+  );
+}
+
+/* ───────────────────────── Google'da göster (public server page desk) ───────────────────────── */
+const PublicPageDesk = lazy(() => import("../publicPage/PublicPageDesk"));
+export function PublicPageRoute({ route }) {
+  const hub = useHub();
+  return (
+    <PageFrame route={route} title={hub.titleOf(route)}>
+      <Suspense fallback={null}>
+        <PublicPageDesk server={hub.server} mode="embedded" />
+      </Suspense>
     </PageFrame>
   );
 }

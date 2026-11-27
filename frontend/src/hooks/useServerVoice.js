@@ -9,6 +9,7 @@ import {
   trackPendingRoom,
 } from "../lib/liveKitRoomSlot.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { rumDone } from "../lib/perf/rum.js";
 import { preloadIceServers } from "../lib/iceConfig";
 import { isNativeAndroid } from "../lib/platform";
 import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
@@ -1462,6 +1463,7 @@ export function useServerVoice(socket) {
       if (activeChannelIdRef.current) leave();
       const epoch = ++voiceJoinEpochRef.current;
       const stillJoining = () => voiceJoinEpochRef.current === epoch;
+      const joinStartedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
 
       setConnecting(true);
       setError("");
@@ -1594,6 +1596,8 @@ export function useServerVoice(socket) {
             console.warn("[ServerVoice] SFU connect failed; falling back to mesh:", lastSfuErr);
           }
         }
+        // Performans: "Sese katılma" = join click -> seat confirmed and media connected.
+        if (stillJoining()) rumDone("voicejoin", { route: "app/ses", kind: sfuModeRef.current ? "sfu" : "mesh", fallbackStart: joinStartedAt });
       } catch (err) {
         if (!stillJoining()) return;
         telemetry?.finish(isVoiceMicError(err) ? "mic-error" : "failed");

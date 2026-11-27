@@ -24,6 +24,17 @@ import { APP_STORE_URL } from "../appStoreLink";
 const GITHUB_REPO = "DemirSarpKurtlar/Descall";
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
+const RELEASES_PAGE_URL = ANDROID_RELEASES_PAGE_URL;
+
+/**
+ * A direct file (.exe / .apk) opens in this tab: the browser keeps the page and starts the
+ * download. With target="_blank" a blank tab flashed and closed, and the click looked dead
+ * (screenshot 77, Nov 2026). A web page (the releases list) still opens in a new tab.
+ */
+export function downloadLinkProps(url) {
+  const direct = /\.(exe|apk|msi)(?:[?#]|$)/i.test(String(url || ""));
+  return direct ? { rel: "noopener" } : { target: "_blank", rel: "noopener noreferrer" };
+}
 
 function AppStoreBadge({ label }) {
   const url = import.meta.env.VITE_APP_STORE_URL;
@@ -62,6 +73,8 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   const [releaseLabel, setReleaseLabel] = useState("");
   const [windowsUrl, setWindowsUrl] = useState(FALLBACK_WINDOWS_URL);
   const [androidUrl, setAndroidUrl] = useState(null);
+  // After a click: "Your download should start now", with a direct link and the releases page.
+  const [started, setStarted] = useState(null);
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -112,6 +125,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   };
 
   const trackDownload = () => {
+    setStarted(selectedPlatform);
     Funnel.ctaClick({
       page: "/download",
       placement: "download_primary",
@@ -196,13 +210,24 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
           <a
             className={`mkt-btn mkt-btn-primary mkt-download-panel-cta${appleMobile ? " is-apple" : ""}`}
             href={downloadUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...downloadLinkProps(downloadUrl)}
             onClick={trackDownload}
           >
             <IconDownload size={18} />
             {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
           </a>
+          {started === selectedPlatform ? (
+            <p className="mkt-download-started" role="status">
+              <IconCheck size={14} aria-hidden />
+              <span>{t("Your download should start now.")}</span>
+              <span className="mkt-download-started-alt">
+                {t("Not starting?")}{" "}
+                <a href={downloadUrl} {...downloadLinkProps(downloadUrl)}>{t("Direct link")}</a>
+                {" · "}
+                <a href={RELEASES_PAGE_URL} target="_blank" rel="noopener noreferrer">{t("All releases on GitHub")}</a>
+              </span>
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -240,8 +265,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             <a
               className="mkt-btn mkt-btn-soft"
               href={downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              {...downloadLinkProps(downloadUrl)}
               onClick={trackDownload}
             >
               <IconDownload size={18} />

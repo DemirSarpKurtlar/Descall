@@ -1,4 +1,5 @@
 const express = require("express");
+const { burstLimit } = require("../lib/burstLimit");
 const bcrypt = require("bcryptjs");
 const { OAuth2Client } = require("google-auth-library");
 const supabase = require("../db/supabase");
@@ -858,7 +859,10 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+// Coarse per-IP burst cap; the per-account and per-IP failure limits inside stay as they are.
+const loginBurst = burstLimit({ name: "login", limit: 120 });
+
+router.post("/login", loginBurst, async (req, res) => {
   try {
     const { username, password } = req.body ?? {};
 
@@ -937,6 +941,7 @@ router.post("/login", async (req, res) => {
       ip: clientIp(req),
       deviceId: req.get("x-descall-device"),
       method: "password",
+      signInMs: req.body?.signInMs,
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
 
@@ -2739,7 +2744,16 @@ router.use(require("./authBan"));
 
 module.exports = router;
 // Passkey sign-in (routes/passkeys.js) runs the same gates as /login and /2fa/verify-login.
+/** Passkey center: end these sessions now (revocation list + live sockets). */
+function revokeSessionIds(req, userId, ids) {
+  for (const sid of ids || []) {
+    revokedSessionIds.add(sid);
+    disconnectSocketsForSession(req, userId, sid);
+  }
+}
+
 module.exports.passkeyKit = {
+  revokeSessionIds,
   rejectIfBanned,
   rejectIfChildAccount,
   accessGate,

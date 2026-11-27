@@ -125,10 +125,17 @@ struct FriendQuery: EntityStringQuery {
         }
     }
 
+    /// Favourite faces first (widgets draft B): "Message Ece on Descall" works for each of
+    /// them without setup once DescallFavoriteShortcuts refreshed the parameters.
     func suggestedEntities() async throws -> [FriendEntity] {
         await DescallIntentSupport.quietly {
             let all = try await DescallIntentSupport.client().friends()
-            return all.prefix(40).map(FriendEntity.init)
+            let favorites = DescallWidgetStore.favorites().ids
+            let rank = Dictionary(favorites.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+            let ordered = all.enumerated().sorted { a, b in
+                (rank[a.element.id] ?? Int.max, a.offset) < (rank[b.element.id] ?? Int.max, b.offset)
+            }.map(\.element)
+            return ordered.prefix(40).map(FriendEntity.init)
         }
     }
 }
@@ -464,6 +471,41 @@ struct DescallOpenPlaceIntent: OpenIntent {
     func perform() async throws -> some IntentResult {
         DescallIntentBridge.open(target.link ?? DescallDeepLink.home)
         return .result()
+    }
+}
+
+/// Widgets draft B: "Kaan'ı ara". A voice call needs the microphone and the call screen, so
+/// it runs in the app (cold start too: the bridge queues it until the page is ready). Donated
+/// for every favourite face (DescallFavoriteShortcuts), so Siri suggests it and the
+/// Shortcuts app lists one per favourite.
+@available(iOS 17.0, *)
+struct DescallCallFriendIntent: AppIntent {
+    static let title: LocalizedStringResource = "Call a Friend"
+    static let description = IntentDescription("Opens Descall and starts a voice call with a friend.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Friend")
+    var friend: FriendEntity
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Call \(\.$friend)")
+    }
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let outcome = await DescallIntentBridge.shared.run("callFriend", payload: [
+            "userId": friend.id,
+            "username": friend.username ?? "",
+        ], timeout: 15, queueIfNotReady: true)
+        if outcome.ok || outcome.error == "timeout" || outcome.error == "not_running" {
+            return .result(dialog: DescallIntentText.dialog("dialog.call.calling", [friend.name]))
+        }
+        switch outcome.error {
+        case "busy": throw DescallIntentFailure(key: "error.call.busy")
+        case "not_friend": throw DescallIntentFailure(key: "error.forbidden")
+        case "mic_denied": throw DescallIntentFailure(key: "error.voice.mic")
+        case "signed_out": throw DescallIntentFailure(key: "error.signedOut")
+        default: throw DescallIntentFailure(key: "error.call.failed")
+        }
     }
 }
 

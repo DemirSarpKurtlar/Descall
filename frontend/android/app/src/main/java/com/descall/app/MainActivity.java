@@ -14,6 +14,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.SystemBarStyle;
 import androidx.core.splashscreen.SplashScreen;
+import com.descall.app.widget.DescallWidgetsPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -56,6 +57,8 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(DescallHapticsPlugin.class);
     registerPlugin(DescallShortcutsPlugin.class);
     registerPlugin(DescallPasskeyPlugin.class);
+    // Home screen widgets + the ongoing call notification (draft B, widget/ package).
+    registerPlugin(DescallWidgetsPlugin.class);
     super.onCreate(savedInstanceState);
 
     // Edge to edge on every Android version, the layout Android 15+ already

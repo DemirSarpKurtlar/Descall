@@ -63,6 +63,8 @@ export function useNativeIntents({
   voiceRef.current = { call, groupCall, serverVoice };
   const liveRef = useRef({ me, socket, navigate, setStatus, myStatus });
   liveRef.current = { me, socket, navigate, setStatus, myStatus };
+  const friendsRef = useRef(friends);
+  friendsRef.current = friends;
 
   // ---- session (sign-in, profile change, sign-out) --------------------------------------
   const lastSessionRef = useRef(null);
@@ -117,6 +119,22 @@ export function useNativeIntents({
       }
       return false;
     },
+    // Widgets draft B: a favourite's "call" shortcut (DescallCallFriendIntent, cold start too).
+    callFriend: async ({ userId, username, video }) => {
+      const until = Date.now() + READY_WAIT_MS;
+      while (Date.now() < until && !(liveRef.current.me?.id && liveRef.current.socket?.connected)) {
+        await sleep(READY_POLL_MS);
+      }
+      if (!liveRef.current.me?.id) return { ok: false, error: "signed_out" };
+      const friend = (friendsRef.current || []).find((f) => String(f?.id) === String(userId))
+        || (username ? (friendsRef.current || []).find((f) => f?.username === username) : null);
+      if (!friend) return { ok: false, error: "not_friend" };
+      const c = voiceRef.current.call;
+      if (typeof c?.startCall !== "function") return { ok: false, error: "not_ready" };
+      liveRef.current.navigate?.(`/direct/${encodeURIComponent(friend.username || "")}`);
+      await c.startCall(friend, video ? "video" : "voice");
+      return { ok: true };
+    },
     joinVoice: async ({ serverId, channelId, channelName, type }) => {
       liveRef.current.navigate?.(`/servers/${encodeURIComponent(serverId)}/${encodeURIComponent(channelId)}`);
       // Cold start from Siri: wait for the session and the socket.
@@ -145,7 +163,11 @@ export function useNativeIntents({
 
   useEffect(() => {
     if (!platform) return undefined;
-    return startNativeIntents(ctxRef, { platform });
+    const stops = [startNativeIntents(ctxRef, { platform })];
+    // Android home screen widgets and the call notification (lib/androidWidgets.js): mute,
+    // sound, leave, open a chat, join a room. Same actions, same handlers.
+    if (platform === "android") stops.push(startNativeIntents(ctxRef, { platform, pluginName: "DescallWidgets" }));
+    return () => stops.forEach((stop) => stop());
   }, [platform]);
 
   // Windows jump list tasks (electron/jumpList.cjs parseJumpTask): a running app gets them as

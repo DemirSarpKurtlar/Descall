@@ -17,6 +17,7 @@ import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
+import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { SHARE_SHEET_PT_BR } from "./shareSheet.pt-BR.js";
@@ -35,6 +36,7 @@ import { SYSX_PT_BR } from "./sysx.pt-BR.js";
 import { ATOK_PT_BR } from "./atok.pt-BR.js";
 import { ANODES_PT_BR } from "./anodes.pt-BR.js";
 import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
+import { PERF_ADMIN_PT_BR } from "./perfAdmin.pt-BR.js";
 import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
 import { ANNC_PT_BR } from "./annc.pt-BR.js";
 import { COINPOP_PT_BR } from "./coinpop.pt-BR.js";
@@ -72,6 +74,7 @@ export const nested = {
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
   "dir": DIR_PT_BR,
+  "pubpage": PUBPAGE_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "shareSheet": SHARE_SHEET_PT_BR,
@@ -90,6 +93,7 @@ export const nested = {
   "atok": ATOK_PT_BR,
   "anodes": ANODES_PT_BR,
   "auditLog": AUDIT_LOG_PT_BR,
+  "perfAdmin": PERF_ADMIN_PT_BR,
   "livePopup": LIVE_POPUP_PT_BR,
   "annc": ANNC_PT_BR,
   "coinpop": COINPOP_PT_BR,
@@ -5985,6 +5989,11 @@ export const nested = {
     "au_SERVER_CREATE": "Criou o servidor",
     "au_SERVER_RENAME": "Renomeou o servidor para {name}",
     "au_SERVER_UPDATE": "Alterou as configurações do servidor",
+    "au_PUBLIC_PAGE_ENABLE": "Ligou Mostrar no Google",
+    "au_PUBLIC_PAGE_DISABLE": "Desligou Mostrar no Google",
+    "au_PUBLIC_PAGE_UNDO": "Desfez o desligamento",
+    "au_PUBLIC_PAGE_UPDATE": "Editou a página pública",
+    "au_PUBLIC_PAGE_AUTO_HIDE": "A página se ocultou sozinha",
     "badgeAnn": "AVISO",
     "banPrompt": "Banir {name}? Adicione um motivo, se quiser:",
     "banned": "Você foi banido deste servidor.",
@@ -7864,6 +7873,10 @@ export const phrases = {
   "Download Descall": "Baixar o Descall",
   "Download Desktop App": "Baixar app para computador",
   "Download all your data including messages, friends, and settings": "Baixe todos os seus dados, incluindo mensagens, amigos e configurações",
+  "A member": "Um membro",
+  "Your download should start now.": "Seu download deve começar agora.",
+  "Not starting?": "Não começou?",
+  "Direct link": "Link direto",
   "Download for Windows": "Baixar para Windows",
   "Download for {name}": "Baixar para {name}",
   "Download on the App Store": "Baixar na App Store",
@@ -8502,6 +8515,7 @@ export const phrases = {
   "In Progress": "Em andamento",
   "In Safari tap Share": "No Safari, toque em Compartilhar",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Em uma chamada em grupo ({count} pessoas), resolução/FPS altos podem causar travamentos. Recomendamos 720p / 20 FPS.",
+  "In a group call ({count} people), 1440p can cause lag. 1080p / 30 FPS is recommended.": "Em uma chamada em grupo ({count} pessoas), 1440p pode causar travamentos. Recomendamos 1080p / 30 FPS.",
   "In group": "No grupo",
   "In the air…": "No ar…",
   "In this channel": "Neste canal",
@@ -8669,7 +8683,7 @@ export const phrases = {
   "Join Server": "Entrar no servidor",
   "Join Voice": "Entrar na voz",
   "Join a Server": "Entrar em um servidor",
-  "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 720p. iPhone, Android, Windows e o navegador usam uma só conta.",
+  "Join a voice channel from the server list. Share your screen in 1080p. iPhone, Android, Windows, and the browser use one account.": "Entre em um canal de voz pela lista de servidores. Compartilhe sua tela em 1080p. iPhone, Android, Windows e o navegador usam uma só conta.",
   "Join as audience, then request to speak.": "Entre como plateia e depois peça para falar.",
   "Join lobby": "Entrar no lobby",
   "Join me on Descall, we both get DesCoin": "Entre no Descall comigo, nós dois ganhamos DesCoin",

@@ -203,9 +203,12 @@ mod tests {
     fn secure_store_writes_atomically() {
         let src = include_str!("../../../app/src-tauri/src/secure_store.rs");
         assert!(src.contains("dpapi::protect(value.as_bytes(), Some(entropy.as_bytes()))"));
-        assert!(src.contains("with_extension(\"bin.tmp\")") && src.contains("std::fs::rename(&tmp, &p)"));
-        assert!(!src.contains("std::fs::write(p, sealed)"), "no in-place write of the sealed token");
-        assert!(src.contains("ErrorKind::NotFound"));
+        // Temp file + rename, retried, never a stale previous token (crate::durable, tested there).
+        assert!(src.contains("descall_shell::durable::replace(&p, &sealed)"));
+        assert!(src.contains("descall_shell::durable::remove(&p)"));
+        assert!(!src.contains("std::fs::write(p, sealed)"), "no direct in-place write of the sealed token");
+        let durable = include_str!("durable.rs");
+        assert!(durable.contains("tmp.push(\".tmp\")") && durable.contains("ErrorKind::NotFound"));
     }
 
     #[test]

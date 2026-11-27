@@ -91,7 +91,12 @@ function createPasskeyService({ store, config, webauthn, now = () => Date.now() 
     return { challenge, row };
   }
 
-  async function registrationOptions({ user, sessionId = null, platform = "web", handoffId = null }) {
+  /**
+   * @param {"securityKey"|"remoteDevice"} [prefer] the control center's "second passkey on
+   *   another platform": a security key (USB / NFC) or a phone via QR code (hybrid). Browsers
+   *   read it as WebAuthn hints; the native paths ignore it.
+   */
+  async function registrationOptions({ user, sessionId = null, platform = "web", handoffId = null, prefer }) {
     if (!user?.id) throw new PasskeyError("NO_USER", 401, "Sign in first.");
     const existing = await store.listByUser(user.id);
     if (existing.length >= MAX_PASSKEYS_PER_USER) {
@@ -112,6 +117,7 @@ function createPasskeyService({ store, config, webauthn, now = () => Date.now() 
       authenticatorSelection: { residentKey: "required", requireResidentKey: true, userVerification: "required" },
       supportedAlgorithmIDs: SUPPORTED_ALGS,
       extensions: { credProps: true },
+      ...(prefer === "securityKey" || prefer === "remoteDevice" ? { preferredAuthenticatorType: prefer } : {}),
     });
     return options;
   }

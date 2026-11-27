@@ -272,6 +272,11 @@ export const API_ES = {
   "Confirm it is you first.": "Primero confirma que eres tú.",
   "Enter a name.": "Escribe un nombre.",
   "Passkey not found.": "Llave de acceso no encontrada.",
+  "Alert not found.": "Aviso no encontrado.",
+  "Choose an answer.": "Elige una respuesta.",
+  "This alert was already answered.": "Este aviso ya se respondió.",
+  "This link is not valid.": "Este enlace no es válido.",
+  "This link expired. Sign in and check Settings > Security.": "Este enlace caducó. Inicia sesión y revisa Ajustes > Seguridad.",
   "Passkeys are not available right now.": "Las llaves de acceso no están disponibles ahora.",
   "Passkeys are turned off.": "Las llaves de acceso están desactivadas.",
   "Passkeys can only be managed from a signed-in device.": "Las llaves de acceso solo se gestionan desde un dispositivo con la sesión iniciada.",
@@ -298,4 +303,11 @@ export const API_ES = {
   "Enter the code we sent you.": "Escribe el código que te enviamos.",
   "Sign in first.": "Primero inicia sesión.",
   "Unknown request.": "Solicitud desconocida.",
+  // Public server page desk (routes/publicPages.js).
+  "Public pages are not available yet.": "Las páginas públicas aún no están listas.",
+  "Turning the page off needs a reason.": "Para desactivar la página hace falta un motivo.",
+  "Choose a descall.com/s/ address first.": "Primero elige una dirección descall.com/s/.",
+  "Choose why you are turning the page off.": "Elige por qué desactivas la página.",
+  "Write a short reason.": "Escribe un motivo breve.",
+  "The undo window has passed.": "El tiempo para deshacer ya pasó.",
 };

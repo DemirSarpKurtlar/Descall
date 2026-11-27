@@ -42,5 +42,112 @@ export const VSC_DE = {
     "chat": "Chat öffnen",
     "place": "Server öffnen"
   },
-  "morePhrases": "+{count} weitere Formulierungen"
+  "morePhrases": "+{count} weitere Formulierungen",
+  "wg": {
+    "tabsLabel": "Siri- und Widget-Einstellungen",
+    "tab": {
+      "siri": "Siri",
+      "faces": "Lieblingsgesichter",
+      "lock": "Sperrbildschirm",
+      "shortcuts": "Kurzbefehle"
+    },
+    "people": "{count} Personen",
+    "waveReceived": "hat dir zugewinkt",
+    "wave": {
+      "cooldown": "Warte kurz, du hast gerade gewinkt.",
+      "limit": "Deine Winker für heute sind aufgebraucht.",
+      "notFriend": "Du kannst nur Freunden zuwinken.",
+      "failed": "Winken fehlgeschlagen. Versuche es erneut."
+    },
+    "act": {
+      "screen": "Teilt den Bildschirm",
+      "voice": "Im Sprachkanal",
+      "voiceIn": "Sprache · {name}",
+      "game": "Spielt {name}",
+      "music": "Hört {name}",
+      "app": "Nutzt {name}",
+      "idle": "Abwesend",
+      "dnd": "Bitte nicht stören",
+      "offline": "Offline"
+    },
+    "state": {
+      "loading": "Wird geladen",
+      "error": "Daten konnten nicht geladen werden.",
+      "offline": "Du bist offline.",
+      "retry": "Erneut versuchen"
+    },
+    "siri": {
+      "previewLabel": "Siri-Antwortvorschau",
+      "tryHint": "Wähle eine Frage, um die Antwort mit deinen Daten zu sehen",
+      "q": {
+        "unread": "Wie viele ungelesene Nachrichten habe ich?",
+        "online": "Wer ist online?",
+        "voice": "Wer ist im Sprachkanal?"
+      },
+      "aUnreadNone": "Du hast keine ungelesenen Nachrichten.",
+      "aUnreadOne": "Du hast 1 ungelesene Nachricht.",
+      "aUnreadMany": "Du hast {count} ungelesene Nachrichten.",
+      "aOnlineNone": "Gerade ist keiner deiner Freunde online.",
+      "aOnlineMany": "{count} deiner Freunde sind online.",
+      "aVoiceNone": "Gerade ist niemand im Sprachkanal.",
+      "aVoiceMany": "{count} Personen sind im Sprachkanal.",
+      "favTitle": "Für deine Favoriten",
+      "generalTitle": "Allgemein",
+      "callPhrase": "{name} anrufen",
+      "msgHint": "Von selbst bereit, ohne Einrichtung",
+      "callHint": "In der Kurzbefehle-App zu Siri hinzufügen",
+      "added": "Hinzugefügt",
+      "ready": "Bereit",
+      "noFav": "Wähle zuerst deine Leute unter Lieblingsgesichter; die Kurzbefehle entstehen von selbst.",
+      "favHint": "Nachrichten- und Anruf-Kurzbefehle für deine {count} Favoriten entstehen von selbst und folgen deinen Änderungen.",
+      "allPhrases": "Alle Sätze"
+    },
+    "faces": {
+      "previewLabel": "Vorschau des mittleren Widgets",
+      "online": "Online",
+      "emptyPreview": "Gesichter erscheinen hier, sobald du sie wählst",
+      "wallpaper": "Hintergrund",
+      "wall": {
+        "dark": "Dunkel",
+        "light": "Hell"
+      },
+      "pickTitle": "Wählen und ordnen",
+      "pickHint": "Halte ein Gesicht gedrückt und ziehe es, um die Reihenfolge zu ändern. Das Ein-Personen-Widget auf dem Sperrbildschirm zeigt das erste.",
+      "search": "Freunde suchen",
+      "reset": "Zurück zum Vorschlag",
+      "changed": "Lieblingsgesichter aktualisiert",
+      "undo": "Rückgängig",
+      "full": "Du kannst bis zu 8 Gesichter wählen. Entferne zuerst eines.",
+      "noFriends": "Noch keine Freunde. Sobald du welche hast, wählst du hier ihre Gesichter.",
+      "showActivity": "Aktivität zeigen",
+      "showActivityHint": "Spiele, Musik, Bildschirmfreigabe",
+      "wave": "Winken-Taste",
+      "waveHint": "Bis zu {count}-mal am Tag pro Freund",
+      "preview": "Nachrichtentext zeigen",
+      "previewHint": "In den Ungelesen-Blasen; aus: nur Absender und Anzahl"
+    },
+    "lock": {
+      "favPerson": "Lieblingsperson",
+      "favPersonHint": "Ein Gesicht und sein Status",
+      "lastMsg": "Neueste Nachricht",
+      "lastMsgHint": "Absender und Blase",
+      "cluster": "Kanalgruppe",
+      "clusterHint": "Wer ist im Sprachkanal",
+      "speaker": "Sprecher",
+      "speakerHint": "Während eines Anrufs",
+      "addWidget": "Widgets hinzufügen",
+      "widgetsCount": "{count} Widgets",
+      "placed": "Platziert",
+      "howToFor": "So fügst du {name} hinzu",
+      "step1": "Halte den Sperrbildschirm gedrückt und tippe auf Anpassen.",
+      "step2": "Wähle Sperrbildschirm und tippe auf den Widget-Bereich unter der Uhr.",
+      "step3": "Suche Descall in der Liste und füge das Widget {name} hinzu.",
+      "speaking": "{name} spricht",
+      "newMessages": "{count} neue Nachrichten",
+      "noMessages": "Keine neuen Nachrichten",
+      "liveOn": "Live-Aktivitäten sind an: Im Anruf erscheint das Gesicht des Sprechers in der Dynamic Island und auf dem Sperrbildschirm.",
+      "liveOff": "Live-Aktivitäten sind aus. Schalte sie unter Einstellungen > Descall > Live-Aktivitäten ein.",
+      "homeHint": "Home-Bildschirm: Halte eine leere Stelle gedrückt, tippe auf + und suche Descall. Die kleinen Größen erscheinen auch im StandBy."
+    }
+  }
 };

@@ -8,6 +8,17 @@ import {
   isSocialSignupRequired,
 } from "../api/auth";
 import { setToken, setUser } from "../lib/storage";
+import { noteSignIn } from "../lib/passkeys/visual.js";
+
+/** Draft A: a password / Google sign-in here may be followed by the passkey suggestion card. */
+function notePasskeySuggestion(method) {
+  try {
+    noteSignIn(window.localStorage, method);
+    sessionStorage.setItem("descall.pk.lastMethod", method);
+  } catch {
+    /* storage off */
+  }
+}
 import { markHeardAboutPending } from "../lib/heardAbout";
 import { banStateFromError } from "../lib/banState.js";
 import { serverMessage } from "../i18n/serverText.js";
@@ -69,12 +80,13 @@ export default function MarketingBoot() {
   }, []);
 
   const onLogin = useCallback(
-    async ({ username, password }) => {
+    async ({ username, password, signInMs }) => {
       setAuthLoading(true);
       setAuthError("");
       try {
-        const res = await apiLogin({ username, password });
+        const res = await apiLogin({ username, password, ...(signInMs ? { signInMs } : {}) });
         if (res?.requires2fa || res?.pendingToken) return res;
+        if (res?.token) notePasskeySuggestion("password");
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);
         enterApp();
@@ -144,6 +156,7 @@ export default function MarketingBoot() {
         const res = await apiGoogleLogin(credential, extra);
         // Account with two-factor (3.2.0): the modal asks for the code first.
         if (res?.requires2fa || (res?.pendingToken && !res?.token)) return res;
+        if (res?.token && !res?.isNewUser) notePasskeySuggestion("google");
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);
         if (res?.isNewUser) {
@@ -178,6 +191,7 @@ export default function MarketingBoot() {
         // empty body, and every correct code answered "Code is required."
         const { pendingToken, code } = verify2faArgs(payloadOrToken, codeArg);
         const res = await apiVerify2fa(pendingToken, code);
+        if (res?.token) notePasskeySuggestion("2fa");
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);
         enterApp();

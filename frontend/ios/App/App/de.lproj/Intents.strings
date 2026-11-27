@@ -16,6 +16,8 @@
 "error.message.tooLong" = "Die Nachricht ist zu lang. Höchstens 1000 Zeichen.";
 "error.call.none" = "Du bist gerade in keinem Anruf und keinem Sprachkanal.";
 "error.call.failed" = "Der Anruf hat nicht reagiert. Öffne Descall und versuche es erneut.";
+"error.call.busy" = "Du bist schon in einem Anruf. Verlasse ihn zuerst.";
+"dialog.call.calling" = "%@ wird in Descall angerufen.";
 "error.voice.failed" = "Beitritt zum Sprachkanal fehlgeschlagen. Versuche es in Descall erneut.";
 "error.voice.noPermission" = "Du darfst diesem Sprachkanal nicht beitreten.";
 "error.voice.mic" = "Descall braucht Zugriff auf das Mikrofon. Erlaube ihn in den Einstellungen.";
