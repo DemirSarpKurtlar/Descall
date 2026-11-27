@@ -42,6 +42,10 @@ const VOIP_PLATFORM = "ios_voip";
 const CALL_TYPES = new Set(["call", "group-call"]);
 const MESSAGE_TYPES = new Set(["dm", "group", "server-message", "mention"]);
 const MESSAGE_CATEGORY = "MESSAGE";
+// Growth 3B people notifications (friend in voice, a friend calls you back, streak nudge):
+// Katıl / Sessiz katıl / Yanıtla buttons (AppDelegate registers the PEOPLE category).
+const PEOPLE_CATEGORY = Object.freeze({ "friend-voice": "PEOPLE", "friend-call": "PEOPLE_CALL", "streak-nudge": "PEOPLE_NUDGE" });
+const PEOPLE_TYPES = new Set(Object.keys(PEOPLE_CATEGORY));
 const MAX_TITLE = 80;
 const MAX_BODY = 180;
 const MAX_PREVIEW = 140;
@@ -110,20 +114,21 @@ function stringifyData(payload) {
  * besides title/body/threadId is copied as top-level custom data.
  */
 function buildApnsBody(payload = {}) {
-  const { threadId, title: rawTitle, body: rawBody, subtitle: rawSubtitle, rich, ...rest } = payload || {};
+  const { threadId, title: rawTitle, body: rawBody, subtitle: rawSubtitle, rich, quiet, ...rest } = payload || {};
   const title = rawTitle || "Descall";
   const body = rawBody || "";
-  const isCall = String(rest.type || "").includes("call");
+  // "friend-call" (growth 3B win-back) is a person calling you back, not a ringing call.
+  const isCall = String(rest.type || "").includes("call") && !PEOPLE_TYPES.has(String(rest.type || ""));
   const alert = { title, body };
   if (rawSubtitle) alert.subtitle = String(rawSubtitle);
-  const aps = {
-    alert,
-    sound: "default",
-  };
+  const aps = { alert };
+  // Growth 3B: quiet hours for messages, a withdrawn (recalled) card: no sound, passive.
+  if (quiet) aps["interruption-level"] = "passive";
+  else aps.sound = "default";
   if (threadId) aps["thread-id"] = String(threadId);
   if (isCall) aps.category = "INCOMING_CALL";
   else if (rich) {
-    aps.category = MESSAGE_CATEGORY;
+    aps.category = PEOPLE_CATEGORY[String(rest.type || "")] || MESSAGE_CATEGORY;
     aps["mutable-content"] = 1;
   }
   const data = stringifyData(rest);
@@ -316,9 +321,13 @@ function describeEvent(event = {}, lang = "tr") {
     };
   }
   // Re-engagement (lib/reengage.js): a friend joined a voice channel the recipient can join.
+  // Growth 3B: the friend's face (Communication Notification), several names, the account's
+  // main button; text rendered per language by lib/reengage/copy.js (event.texts).
   if (type === "friend-voice") {
     const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");
     const channelName = clip(event.channelName, 60) || "voice";
+    const pre = event.texts ? event.texts[s.lang] || event.texts.tr : null;
+    const chatKey = event.fromId ? `dm:${event.fromId}` : "";
     return {
       ...base,
       threadId: "friend-voice",
@@ -326,9 +335,10 @@ function describeEvent(event = {}, lang = "tr") {
       // A voice hangout is stale after a couple of hours.
       expiresInSec: 2 * 3600,
       collapseId: event.channelId ? `fvoice-${event.channelId}`.slice(0, 64) : "",
-      title: bt(s.lang, "reengage.push.friendVoiceTitle", { friend: from }),
-      body: bt(s.lang, "reengage.push.friendVoiceBody", { server: serverName, channel: channelName }),
+      title: clip(pre?.title, MAX_TITLE) || bt(s.lang, "reengage.push.friendVoiceTitle", { friend: from }),
+      body: clip(pre?.body, MAX_BODY) || bt(s.lang, "reengage.push.friendVoiceBody", { server: serverName, channel: channelName }),
       data: {
+        ...(chatKey ? richFields({ ...event, senderId: event.fromId }, from, chatKey) : {}),
         type: "friend-voice",
         serverId: event.serverId,
         channelId: event.channelId,
@@ -337,6 +347,35 @@ function describeEvent(event = {}, lang = "tr") {
         channelType: "voice",
         fromId: event.fromId || null,
         from,
+        primary: event.primary === "quiet_join" ? "quiet_join" : "join",
+        rgKind: event.rgKind || null,
+      },
+    };
+  }
+  // Growth 3B: a friend calls you back (day 7), a shared streak nudge, a console campaign
+  // message and the silent replacement after a recall. Text comes ready per language.
+  if (type === "friend-call" || type === "streak-nudge" || type === "rg-campaign" || type === "rg-recall") {
+    const pre = (event.texts && (event.texts[s.lang] || event.texts.tr)) || {};
+    const people = type === "friend-call" || type === "streak-nudge";
+    const chatKey = people && event.fromId ? `dm:${event.fromId}` : "";
+    return {
+      ...base,
+      threadId: type === "rg-campaign" || type === "rg-recall" ? "descall-news" : type,
+      priority: type === "rg-recall" ? 5 : 10,
+      expiresInSec: type === "friend-call" ? 72 * 3600 : 24 * 3600,
+      collapseId: clip(event.collapse, 64) || "",
+      title: clip(pre.title, MAX_TITLE) || "Descall",
+      body: clip(pre.body, MAX_BODY),
+      quiet: type === "rg-recall" || Boolean(event.silent),
+      data: {
+        ...(chatKey ? richFields({ ...event, senderId: event.fromId }, clip(event.fromName, 48) || from, chatKey) : {}),
+        type,
+        fromId: event.fromId || null,
+        from: clip(event.fromName, 48) || null,
+        serverId: event.serverId || null,
+        channelId: event.channelId || null,
+        deepLink: clip(event.deepLink, 200) || null,
+        rgKind: event.rgKind || null,
       },
     };
   }
@@ -478,6 +517,7 @@ function buildAlertRequest(event, lang) {
   if (!d) return null;
   const body = buildApnsBody({
     ...d.data,
+    ...(d.quiet || event.quiet ? { quiet: true } : {}),
     title: clip(d.title, MAX_TITLE),
     subtitle: d.subtitle ? clip(d.subtitle, MAX_TITLE) : undefined,
     body: clip(d.body, MAX_BODY),

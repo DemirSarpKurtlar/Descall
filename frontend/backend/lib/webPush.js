@@ -264,9 +264,41 @@ async function sendCallRingEndedPush(userIds, payload = {}) {
   await sendLocalizedWebPush(userIds, body);
 }
 
+/**
+ * Growth 3B: recipients in their quiet hours who chose "messages quiet too" get the push
+ * without sound (lib/reengage/quietMessages.js); everyone else as before.
+ */
+async function withQuietSplit(userIds, payload, send) {
+  let loud = userIds || [];
+  let quiet = [];
+  try {
+    ({ loud, quiet } = await require("./reengage/quietMessages").split(userIds, payload.fromId || payload.excludeUserId || null));
+  } catch {
+    /* unknown: as before */
+  }
+  await Promise.allSettled([
+    loud.length ? send(loud, payload) : null,
+    quiet.length ? send(quiet, { ...payload, silent: true, quiet: true }) : null,
+  ]);
+}
+
+/**
+ * Growth 3B notification center types: "Bahsetmeler" (mentions) and "Okunmamış" (server
+ * messages) switched off drop those pushes for that account. Unknown settings keep everyone.
+ */
+async function withTypeOn(userIds, typeKey) {
+  const ids = userIds || [];
+  try {
+    const settings = await require("./reengage/store").getSettingsMany(ids);
+    return ids.filter((id) => settings.get(String(id))?.types?.[typeKey] !== false);
+  } catch {
+    return ids;
+  }
+}
+
 /** Direct message while recipient is backgrounded / offline. */
 function sendDmMessagePush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, deliverDmMessagePush);
+  return withPreviewSplit(userIds, payload, (ids, p) => withQuietSplit(ids, p, deliverDmMessagePush));
 }
 
 async function deliverDmMessagePush(userIds, payload = {}) {
@@ -291,12 +323,15 @@ async function deliverDmMessagePush(userIds, payload = {}) {
     text: payload.rawText != null ? payload.rawText : preview,
     previewKind: previewKindOf(payload),
     messageId: payload.messageId,
+    ...(payload.quiet ? { quiet: true } : {}),
   });
 }
 
 /** @mention in a server channel or DM. */
-function sendMentionPush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, deliverMentionPush);
+async function sendMentionPush(userIds, payload = {}) {
+  const ids = await withTypeOn(userIds, "mentions");
+  if (!ids.length) return;
+  return withPreviewSplit(ids, payload, (list, p) => withQuietSplit(list, p, deliverMentionPush));
 }
 
 async function deliverMentionPush(userIds, payload = {}) {
@@ -337,6 +372,7 @@ async function deliverMentionPush(userIds, payload = {}) {
     channelName: payload.channelName,
     dmConversationId: payload.dmConversationId || (payload.serverId ? null : payload.fromId),
     messageId: payload.messageId,
+    ...(payload.quiet ? { quiet: true } : {}),
   });
 }
 
@@ -348,7 +384,7 @@ async function deliverMentionPush(userIds, payload = {}) {
 
 /** New group DM message. Mentioned members get sendIosGroupMentionPush instead. */
 function sendGroupMessagePush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, deliverGroupMessagePush);
+  return withPreviewSplit(userIds, payload, (ids, p) => withQuietSplit(ids, p, deliverGroupMessagePush));
 }
 
 function deliverGroupMessagePush(userIds, payload = {}) {
@@ -361,6 +397,7 @@ function deliverGroupMessagePush(userIds, payload = {}) {
     previewKind: previewKindOf(payload),
     messageId: payload.messageId,
     excludeUserId: payload.fromId,
+    ...(payload.quiet ? { quiet: true } : {}),
   });
 }
 
@@ -383,8 +420,10 @@ function deliverIosGroupMentionPush(userIds, payload = {}) {
 }
 
 /** New server text channel message for members whose notification level is "all". */
-function sendServerMessagePush(userIds, payload = {}) {
-  return withPreviewSplit(userIds, payload, deliverServerMessagePush);
+async function sendServerMessagePush(userIds, payload = {}) {
+  const ids = await withTypeOn(userIds, "unread");
+  if (!ids.length) return;
+  return withPreviewSplit(ids, payload, (list, p) => withQuietSplit(list, p, deliverServerMessagePush));
 }
 
 function deliverServerMessagePush(userIds, payload = {}) {
@@ -399,6 +438,7 @@ function deliverServerMessagePush(userIds, payload = {}) {
     previewKind: previewKindOf(payload),
     messageId: payload.messageId,
     excludeUserId: payload.fromId,
+    ...(payload.quiet ? { quiet: true } : {}),
   });
 }
 
@@ -473,39 +513,142 @@ async function sendFriendWavePush(userId, payload = {}) {
 }
 
 /**
+ * Growth 3B people pushes: text rendered per recipient language by `build(lang)`
+ * (lib/reengage/copy.js), faces as the notification icon, action buttons. Web Push +
+ * Android get the web payload; iOS gets `ios` with `texts` for every language (the
+ * Notification Service Extension adds the face as a Communication Notification).
+ * Returns the recipient ids it tried.
+ */
+async function sendPeoplePush(userIds, build) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!ids.length) return [];
+  const copy = require("./reengage/copy");
+  const webIds = await withoutDndRecipients(ids, {});
+  const groups = webIds.length ? await groupByLanguage(webIds) : new Map();
+  const texts = {};
+  for (const l of copy.LANGS) {
+    const b = build(l);
+    texts[l] = { title: String(b.web.title || "").slice(0, 120), body: String(b.web.body || "").slice(0, 240) };
+  }
+  const iosBase = build("tr").ios || null;
+  await Promise.allSettled([
+    ...[...groups].flatMap(([lang, group]) => {
+      const p = build(lang).web;
+      return [sendWebPushToUsers(group, p), sendFcmToUsers(group, p)];
+    }),
+    iosBase ? sendIosAlertToUsers(ids, { ...iosBase, texts }) : Promise.resolve(),
+  ]);
+  return ids;
+}
+
+/** https avatar, else null (web push icons must be fetchable by the browser). */
+function faceUrl(face) {
+  const u = String(face?.avatar || "");
+  return /^https:\/\/[^\s]{4,1024}$/.test(u) ? u : null;
+}
+
+/**
  * Re-engagement: "<friend> is in voice in <server>" (lib/reengage.js decides who
- * gets it). Web push, Android and iOS; the tap opens the voice channel.
+ * gets it). Web push, Android and iOS; the tap opens the voice channel, the buttons
+ * join (or join muted). Growth 3B: faces (icon = the friend), several people in the
+ * title, the account's main button first.
  */
 async function sendFriendVoicePush(userIds, payload = {}) {
-  const friend = String(payload.friendName || "").slice(0, 48) || { key: "push.someone" };
-  const server = String(payload.serverName || "").slice(0, 60) || { key: "push.ownerServerFallback" };
-  const channel = String(payload.channelName || "").slice(0, 60) || "voice";
+  const copy = require("./reengage/copy");
+  const faces = Array.isArray(payload.faces) ? payload.faces.slice(0, 4) : [];
+  const names = faces.map((f) => String(f.name || "").slice(0, 32)).filter(Boolean);
+  if (!names.length && payload.friendName) names.push(String(payload.friendName).slice(0, 32));
   const deepLink =
     payload.serverId && payload.channelId
       ? `/servers/${encodeURIComponent(payload.serverId)}/${encodeURIComponent(payload.channelId)}`
       : "/servers";
-  const web = {
-    type: "friend-voice",
-    tag: `friend-voice-${payload.channelId || "x"}`,
-    deepLink,
-    serverId: payload.serverId || null,
-    channelId: payload.channelId || null,
-    channelType: "voice",
-    fromId: payload.friendId || null,
-    i18n: {
-      title: ref("reengage.push.friendVoiceTitle", { friend }),
-      body: ref("reengage.push.friendVoiceBody", { server, channel }),
-    },
+  const server = String(payload.serverName || "").slice(0, 60);
+  const channel = String(payload.channelName || "").slice(0, 60) || "voice";
+  const quietFirst = payload.primary === "quiet_join";
+  const build = (lang) => {
+    const others = names.slice(1, 3).join(", ");
+    const title = copy.voiceTitle(lang, names, payload.total);
+    const body = others
+      ? copy.rt(lang, "push.voiceWhereWith", { server: server || "Descall", channel, others })
+      : copy.rt(lang, "push.voiceWhere", { server: server || "Descall", channel });
+    const join = { action: "rg_join", title: copy.rt(lang, "push.join") };
+    const quiet = { action: "rg_quiet", title: copy.rt(lang, "push.quietJoin") };
+    return {
+      web: {
+        type: "friend-voice",
+        title,
+        body,
+        icon: faceUrl(faces[0]),
+        faces: faces.map((f) => ({ name: f.name, avatar: faceUrl(f) })),
+        tag: `friend-voice-${payload.channelId || "x"}`,
+        deepLink,
+        serverId: payload.serverId || null,
+        channelId: payload.channelId || null,
+        serverName: server || null,
+        channelName: channel,
+        channelType: "voice",
+        fromId: payload.friendId || null,
+        rgKind: payload.rgKind || null,
+        actions: quietFirst ? [quiet, join] : [join, quiet],
+      },
+      ios: {
+        type: "friend-voice",
+        fromId: payload.friendId,
+        fromName: payload.friendName,
+        senderAvatarUrl: faceUrl(faces[0]),
+        serverId: payload.serverId,
+        serverName: payload.serverName,
+        channelId: payload.channelId,
+        channelName: payload.channelName,
+        rgKind: payload.rgKind || null,
+        primary: quietFirst ? "quiet_join" : "join",
+      },
+    };
   };
-  await deliverPush(userIds, web, {
-    type: "friend-voice",
-    fromId: payload.friendId,
-    fromName: payload.friendName,
-    serverId: payload.serverId,
-    serverName: payload.serverName,
-    channelId: payload.channelId,
-    channelName: payload.channelName,
-  });
+  return sendPeoplePush(userIds, build);
+}
+
+/**
+ * Growth 3B pushes that are not "in voice": a friend calls you back (day 7), a shared
+ * streak nudge, a console campaign message, and the silent "withdrawn" replacement
+ * after a recall. `p` = { type, fromId, fromName, avatar, deepLink, tag, rgKind, rgToken,
+ * texts(lang) -> { title, body }, actions(lang) -> [{ action, title }], extra }.
+ */
+async function sendGrowthPush(userIds, p = {}) {
+  const build = (lang) => {
+    const t = p.texts ? p.texts(lang) : { title: "Descall", body: "" };
+    return {
+      web: {
+        type: p.type,
+        title: t.title,
+        body: t.body,
+        icon: faceUrl({ avatar: p.avatar }),
+        tag: p.tag || `rg-${p.type}`,
+        deepLink: p.deepLink || "/",
+        fromId: p.fromId || null,
+        from: p.fromName || null,
+        conversationId: p.fromId || null,
+        rgKind: p.rgKind || null,
+        rgToken: p.rgToken || null,
+        ackUrl: p.ackUrl || null,
+        silent: Boolean(p.silent),
+        actions: p.actions ? p.actions(lang) : [],
+        ...(p.extra || {}),
+      },
+      ios: {
+        type: p.type,
+        fromId: p.fromId || null,
+        fromName: p.fromName || null,
+        senderAvatarUrl: faceUrl({ avatar: p.avatar }),
+        collapse: p.tag || null,
+        rgKind: p.rgKind || null,
+        silent: Boolean(p.silent),
+        deepLink: p.deepLink || "/",
+        ...(p.extra || {}),
+      },
+    };
+  };
+  return sendPeoplePush(userIds, build);
 }
 
 /** Sunucu Ağı alert kinds -> push.* body key (lib/nodeKeys/monitor.js). */
@@ -572,5 +715,7 @@ module.exports = {
   sendFriendRequestPush,
   sendFriendWavePush,
   sendFriendVoicePush,
+  sendGrowthPush,
+  sendPeoplePush,
   sendMessageRequestPush,
 };

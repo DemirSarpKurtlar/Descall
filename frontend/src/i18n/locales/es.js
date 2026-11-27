@@ -52,6 +52,7 @@ import { INVL_ES } from "./invl.es.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_ES,
@@ -112,6 +113,7 @@ export const nested = {
   "invl": INVL_ES,
   "sgx": SIGNUP_GROWTH.es.nested,
   "dvt": INVITES_I18N.es,
+  rg3: RG3.es,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -2309,6 +2311,7 @@ export const nested = {
     "reportsSubtitle": "Quién denunció a quién, con el fragmento del mensaje y la hora. Descarta, aísla o banea con un clic. Tres denuncias abiertas sobre la misma persona abren su ficha.",
     "reportsTitle": "Bandeja de denuncias",
     "retention": "Retención",
+    "reengage": "Reactivación",
     "risk": {
       "critical": "Crítico",
       "high": "Alto",

@@ -52,6 +52,7 @@ import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_FR,
@@ -112,6 +113,7 @@ export const nested = {
   "invl": INVL_FR,
   "sgx": SIGNUP_GROWTH.fr.nested,
   "dvt": INVITES_I18N.fr,
+  rg3: RG3.fr,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -2309,6 +2311,7 @@ export const nested = {
     "reportsSubtitle": "Qui a signalé qui, avec l'extrait du message et l'heure. Rejette, exclus temporairement ou bannis en un clic. Trois signalements ouverts sur la même personne ouvrent son dossier.",
     "reportsTitle": "Boîte des signalements",
     "retention": "Rétention",
+    "reengage": "Réengagement",
     "risk": {
       "critical": "Critique",
       "high": "Élevé",

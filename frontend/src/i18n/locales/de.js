@@ -52,6 +52,7 @@ import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_DE,
@@ -112,6 +113,7 @@ export const nested = {
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
   "dvt": INVITES_I18N.de,
+  rg3: RG3.de,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -2309,6 +2311,7 @@ export const nested = {
     "reportsSubtitle": "Wer wen gemeldet hat, mit Nachrichtenausschnitt und Zeitpunkt. Ablehnen, Timeout oder Bann mit einem Klick. Bei drei offenen Meldungen zur selben Person öffnet sich ihre Akte.",
     "reportsTitle": "Meldungseingang",
     "retention": "Retention",
+    "reengage": "Rückgewinnung",
     "risk": {
       "critical": "Kritisch",
       "high": "Hoch",

@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ReengageBridge from "./components/reengage/ReengageBridge.jsx";
 import { isDesktopShell } from "./lib/desktopShell.js";
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
@@ -4551,8 +4552,11 @@ export default function App() {
         return;
       }
 
+      // Growth 3B: a friend calling you back / a streak nudge opens the DM with them ("Yanıtla");
+      // "Gel" on a call opens the server where your friends are.
+      const rgPerson = (type === "friend-call" && data.action !== "rg_come") || type === "streak-nudge";
       // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
-      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave" || rgPerson) {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =
@@ -4601,6 +4605,11 @@ export default function App() {
         return;
       }
 
+      // Growth 3B: "Gel" on a friend's call / a console message with a server opens that server.
+      if ((type === "friend-call" || type === "rg-campaign") && data.serverId && !data.channelId) {
+        onNotifClick({ detail: { ...data, type: "server-owner" } });
+        return;
+      }
       if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
@@ -4661,6 +4670,11 @@ export default function App() {
 
       if (type === "friend-request" || type === "message-request") {
         setActiveView("friends");
+        return;
+      }
+      // Growth 3B console messages without a server: their own in-app link.
+      if (type === "rg-campaign" && typeof data.deepLink === "string" && data.deepLink.startsWith("/") && !data.deepLink.startsWith("//")) {
+        navigate(data.deepLink);
         return;
       }
     };
@@ -6686,6 +6700,7 @@ export default function App() {
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
           </Suspense>
         ) : null}
+        {me?.id ? <ReengageBridge socket={socketApi} serverVoice={serverVoice} /> : null}
         {me?.id && heardAboutAsk ? (
           <Suspense fallback={null}>
             <HeardAboutPrompt userId={me.id} />

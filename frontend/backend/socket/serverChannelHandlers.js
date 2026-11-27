@@ -1622,6 +1622,8 @@ function registerServerChannelHandlers(io, socket) {
             return;
           }
         }
+        // Growth 3B: a returner who wrote in a channel (lib/reengage/hooks.js, 48 h tracking).
+        require("../lib/reengage/hooks").onServerMessage(myId, { serverId: channel.server_id, channelId });
         slowmode.commit();
         massSlot = { undo() {} };
         void recordFirstMessage(myId);

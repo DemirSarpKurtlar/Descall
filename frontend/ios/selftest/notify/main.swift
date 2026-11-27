@@ -180,6 +180,15 @@ check(!DescallNotify.isAllowedApiBase("https://descall.com.evil.com"), "suffix t
 check(!DescallNotify.isAllowedApiBase("https://des-call.onrender.com/x"), "path refused")
 eq(DescallNotify.quickReactions, ["❤️", "😂", "👍", "😮", "😢"], "reactions")
 
+// Growth 3B: people pushes get their own categories; everything else stays a message.
+eq(DescallNotify.category(for: "friend-voice"), "PEOPLE", "friend in voice")
+eq(DescallNotify.category(for: "friend-call"), "PEOPLE_CALL", "friend calls you back")
+eq(DescallNotify.category(for: "streak-nudge"), "PEOPLE_NUDGE", "nudge")
+eq(DescallNotify.category(for: "dm"), "MESSAGE", "dm unchanged")
+eq(DescallNotifyStrings(lang: .tr).text("people.quietJoin"), "Sessiz katıl", "tr quiet join")
+eq(DescallNotifyStrings(lang: .ru).text("people.join"), "Войти", "ru join")
+check(DescallNotify.Action.join.hasPrefix("rg_") && DescallNotify.Action.quietJoin.hasPrefix("rg_"), "web app action ids")
+
 if failures > 0 {
     print("notify logic selftest: \(failures) failure(s)")
     exit(1)

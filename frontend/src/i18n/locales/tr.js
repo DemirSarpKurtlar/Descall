@@ -48,6 +48,7 @@ import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -141,6 +142,7 @@ export const nested = {
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
   dvt: INVITES_I18N.tr,
+  rg3: RG3.tr,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
@@ -927,6 +929,7 @@ export const nested = {
     "read": "Okundu",
     "vs": "{a} ↔ {b}",
     "retention": "Elde tutma",
+    "reengage": "Yeniden kazanma",
     "economy": "DesCoin ekonomisi",
     "grRange": "Zaman aralığı",
     "grDays": "{n} gün",

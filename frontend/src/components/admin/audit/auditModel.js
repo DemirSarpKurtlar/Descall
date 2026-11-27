@@ -212,6 +212,7 @@ const PREFIX = [
   ["moderation_", "shield", "red", "moddesk"],
   ["flagged_", "flag", "violet", "flagged"],
   ["live_popup", "bell", "violet", "popup"],
+  ["reengage_", "undo", "violet", "reengage"],
   ["popup_", "bell", "violet", "popup"],
   ["announcement_", "megaphone", "violet", "announcement"],
   ["server_", "server", "violet", "server"],

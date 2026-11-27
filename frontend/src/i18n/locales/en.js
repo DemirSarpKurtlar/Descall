@@ -48,6 +48,7 @@ import { INVL_EN } from "./invl.en.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 // Davet Merkezi (growth phase 4, 4A): "dvt.*".
 import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -130,6 +131,7 @@ export const nested = {
   invl: INVL_EN,
   sgx: SIGNUP_GROWTH.en.nested,
   dvt: INVITES_I18N.en,
+  rg3: RG3.en,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {
@@ -916,6 +918,7 @@ export const nested = {
     "read": "Read",
     "vs": "{a} ↔ {b}",
     "retention": "Retention",
+    "reengage": "Re-engagement",
     "economy": "DesCoin economy",
     "grRange": "Time range",
     "grDays": "{n} days",

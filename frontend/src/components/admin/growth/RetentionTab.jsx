@@ -4,6 +4,7 @@ import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
 import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum, fmtPct, heatColor } from "./GrowthCharts.jsx";
 import "../../../styles/admin-growth.css";
+import ReengageOutcomesCard from "../reengage/ReengageOutcomesCard.jsx";
 import OnboardingCard from "./OnboardingCard.jsx";
 
 /**
@@ -76,6 +77,8 @@ export default function RetentionTab() {
       </header>
       {err ? <p className="admin-inline-error">{err}</p> : null}
       {!data && loading ? <p className="muted">{t("Loading...")}</p> : null}
+      {/* Growth 3B "Ölçüm": day-7 absentees back within 48 h, by source, and first messages. */}
+      <ReengageOutcomesCard />
       {data ? (
         <>
           <div className="agr-kpis">

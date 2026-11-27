@@ -501,6 +501,7 @@ export const AUDIT_LOG_EN = {
     "moddesk": "Moderation setting",
     "flagged": "Flagged content decision",
     "popup": "Live popup action",
+    "reengage": "Re-engagement action",
     "announcement": "Announcement action",
     "server": "Server action",
     "dm": "DM action",

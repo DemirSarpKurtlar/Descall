@@ -501,6 +501,7 @@ export const AUDIT_LOG_TR = {
     "moddesk": "Moderasyon ayarı",
     "flagged": "İşaretli içerik kararı",
     "popup": "Canlı popup işlemi",
+    "reengage": "Yeniden kazanma işlemi",
     "announcement": "Duyuru işlemi",
     "server": "Sunucu işlemi",
     "dm": "DM işlemi",

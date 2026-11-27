@@ -24,6 +24,9 @@
 const supabase = require("../db/supabase");
 
 const CAPS = {
+  // Growth 3B (lib/reengage/streaks.js): today's three tasks (15 + 25 + 25) and the shared
+  // streak bonus (+10). Paid once per task / day; still bound by the global daily cap.
+  reengage_task: { perHour: 75, perDay: 75 },
   voice_activity: { perHour: 30, perDay: 180 },
   screenshare_activity: { perHour: 40, perDay: 220 },
   message_activity: { perHour: 30, perDay: 60 },

@@ -617,6 +617,11 @@ app.use("/api/reengage", require("./routes/reengage"));
 // after the invitee's first message + next-day return (lib/referrals), and its sweeper.
 app.use("/api/invites", require("./routes/invites"));
 require("./lib/referrals/engine").startSweeper(io);
+// Growth 3B "Önce insanlar": notification center, shared streaks + tasks, friend win-back.
+app.use("/api/notify-center", require("./routes/notifyCenter"));
+app.use("/api/streaks", require("./routes/streaks"));
+app.use("/api/winback", require("./routes/winback"));
+require("./lib/reengage/io").setIo(app.get("io"));
 if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.

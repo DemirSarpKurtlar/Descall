@@ -86,6 +86,8 @@ router.use(require("./adminCasino"));
 router.use(require("./adminGrowth"));
 // Davet ödülleri (growth phase 4, 4A): control board, holds / revokes with undo, rules.
 router.use(require("./adminInvites"));
+// Growth 3B "Yeniden kazanma" console (section "retention").
+router.use(require("./adminReengage"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));

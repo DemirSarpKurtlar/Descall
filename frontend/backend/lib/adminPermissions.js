@@ -81,6 +81,8 @@ const RULES = [
   [/^\/agent(\/|$)/, "agent"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
   [/^\/signup-stats(\/|$)/, "signupStats"],
+  // Growth 3B "Yeniden kazanma" console: the Elde tutma permission.
+  [/^\/growth\/reengage(\/|$)/, "retention"],
   [/^\/premium(\/|$)/, "premium"],
   [/^\/maintenance\/windows(\/|$)/, "maintenance"],
   [/^\/people\//, "people"],
