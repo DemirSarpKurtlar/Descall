@@ -61,9 +61,17 @@ function noticeText(kind, { lang = "tr", count = 1, amount = 0, reasonCode = "ot
   if (reasonCode === "other" && cleanNote) reason = cleanNote;
   const args = { count, countPos: trPossessive(count), amount: model.formatAmount(amount, L), reason };
   if (kind === "revokeInviter" && !(Number(amount) > 0)) return pack.revokeInviterNoMoney(args);
-  // Only the pack's own entries: an inherited name such as "constructor" must not run.
-  const fn = Object.prototype.hasOwnProperty.call(pack, kind) ? pack[kind] : null;
-  return typeof fn === "function" ? fn(args) : "";
+  // A fixed list of notice kinds: any other value (an inherited name such as "constructor"
+  // included) gives an empty text and never calls anything.
+  switch (kind) {
+    case "revokeInviter": return pack.revokeInviter(args);
+    case "revokeInvitee": return pack.revokeInvitee(args);
+    case "holdInviter": return pack.holdInviter(args);
+    case "releaseInviter": return pack.releaseInviter(args);
+    case "pausedInviter": return pack.pausedInviter(args);
+    case "resumedInviter": return pack.resumedInviter(args);
+    default: return "";
+  }
 }
 
 /** One of the ready "Dürt" messages, picked by `variant` (0..2). */

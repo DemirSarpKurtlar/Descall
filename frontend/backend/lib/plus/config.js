@@ -132,11 +132,15 @@ function validatePatch(patch) {
       case "features": {
         if (!isObj(v)) bad(k);
         const allowed = Object.keys(DEFAULTS[k]);
-        out[k] = {};
-        for (const [fk, fv] of Object.entries(v)) {
-          if (!allowed.includes(fk) || typeof fv !== "boolean") bad(`${k}.${fk}`);
-          out[k][fk] = fv;
+        for (const fk of Object.keys(v)) if (!allowed.includes(fk)) bad(`${k}.${fk}`);
+        // Written under the catalog's own key names only, never a name taken from the body.
+        const section = {};
+        for (const name of allowed) {
+          if (!Object.prototype.hasOwnProperty.call(v, name)) continue;
+          if (typeof v[name] !== "boolean") bad(`${k}.${name}`);
+          section[name] = v[name];
         }
+        out[k] = section;
         break;
       }
       case "pilotUserIds":
