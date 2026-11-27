@@ -10,7 +10,9 @@
  * the row with round + 1. The DesCoin bonus goes through lib/descoin.js (reason bug_bounty,
  * meta.idempotency_key "bug_bounty:<feedback>:<round>", unique in the ledger), the take-back on
  * undo through descoin.debit (bug_bounty_revoke) and only while the coins are unspent; otherwise
- * they stay and the audit entry says "kept". Badges go through lib/specialBadges.js.
+ * they stay and the audit entry says "kept". Badges: the EXISTING #11 "bughunter" (and #32
+ * "glitch" for a visual / UI bug) through lib/specialBadges.js with the admin badge tools' source
+ * ("admin", the confirming admin as actor) and their audit codes (special_badge_grant / _revoke).
  *
  * Every step after the confirmation row is best effort and reported back (a failed push never
  * fails the admin's action); the row and the audit entry are the source of truth.
@@ -80,20 +82,26 @@ async function levelRow(sb, userId) {
 /** Recount one person's totals from their live rows and store them (self-healing). */
 async function recount(sb, userId, patch = {}) {
   const rows = await liveRowsOf(sb, userId);
-  const t = model.tally(rows).get(String(userId)) || { first: 0, also: 0, critical: 0, since: null, level: 0 };
+  const t = model.tally(rows).get(String(userId)) || { first: 0, also: 0, critical: 0, visual: 0, bySeverity: { low: 0, medium: 0, high: 0, critical: 0 }, since: null };
   const prev = await levelRow(sb, userId);
   const row = {
     user_id: userId,
-    level: t.level,
     first_count: t.first,
     also_count: t.also,
-    critical_count: t.critical,
+    critical_count: t.bySeverity.critical,
+    high_count: t.bySeverity.high,
+    medium_count: t.bySeverity.medium,
+    low_count: t.bySeverity.low,
+    visual_count: t.visual,
+    legacy_count: Number(prev?.legacy_count) || 0,
+    legacy_since: prev?.legacy_since || null,
     since: t.since || null,
     badge_granted_at: prev?.badge_granted_at || null,
-    critical_granted_at: prev?.critical_granted_at || null,
+    glitch_granted_at: prev?.glitch_granted_at || null,
     ...patch,
     updated_at: new Date().toISOString(),
   };
+  row.level = model.levelFor(model.levelCount(row));
   const { error } = await sb.from("bug_hunter_levels").upsert(row, { onConflict: "user_id" });
   if (error) throw error;
   return { prev, next: row };
@@ -109,10 +117,15 @@ async function appendThread(sb, feedback, entries, extra = {}) {
   return replies;
 }
 
-/** Grant a badge; "owned" (already held) is not an error. Returns { granted, owned, rowId, serial }. */
-async function grantBadge(d, userId, badgeId, actorId, note) {
+/**
+ * Grant a badge the way the admin badge tools do (source "admin", the admin as actor, an
+ * special_badge_grant audit entry); "owned" (already held) is not an error and is not
+ * announced again. Returns { granted, owned, rowId, serial }.
+ */
+async function grantBadge(d, userId, badgeId, actor, note, feedbackId) {
   try {
-    const g = await d.specialBadges.grant({ userId, badgeId, actorId, note });
+    const g = await d.specialBadges.grant({ userId, badgeId, actorId: actor?.id || null, note });
+    d.audit(actor, "special_badge_grant", userId, { badgeId, serial: g.serial ?? null, via: "bug_hunter", feedbackId });
     return { granted: true, owned: false, rowId: g.rowId || null, serial: g.serial ?? null };
   } catch (err) {
     if (err?.code === "owned") return { granted: false, owned: true };
@@ -165,6 +178,7 @@ async function confirm({ feedbackId, body, actor, io = null }) {
   const sb = d.supabase;
   if (!model.isUuid(String(feedbackId || ""))) throw new BugHuntError("NOT_FOUND", 404);
   const input = model.sanitizeConfirm(body);
+  const visual = input.visual === true;
   if (input.error) throw new BugHuntError(input.error, 400);
   if (input.duplicateOf === feedbackId) throw new BugHuntError("BAD_DUPLICATE", 400);
 
@@ -204,6 +218,7 @@ async function confirm({ feedbackId, body, actor, io = null }) {
     credit,
     duplicate_of: root ? root.feedback_id : null,
     note: input.note,
+    visual,
     round,
     reward: 0,
     reward_state: "none",
@@ -241,31 +256,31 @@ async function confirm({ feedbackId, body, actor, io = null }) {
   const userId = String(feedback.user_id);
   const out = { ok: true, already: false, credit, severity, round, steps: {} };
 
-  // Totals, level, badges.
-  let level = 0, levelBefore = 0, badge = "none", count = 0, criticalGranted = false, badgeGrant = null;
+  // Totals, level, badges (#11 for a first credit, #32 too for a visual / UI bug).
+  let level = 0, levelBefore = 0, badge = "none", count = 0, glitchGranted = false, badgeGrant = null;
   try {
     const { next } = await recount(sb, userId);
     level = next.level;
-    count = next.first_count;
-    levelBefore = credit === "first" ? model.levelFor(count - 1) : level;
+    count = model.levelCount(next);
+    const counts = credit === "first" || model.ALSO_LEVELS;
+    levelBefore = counts ? model.levelFor(count - 1) : level;
     const patch = {};
-    if (credit === "first" || model.ALSO_LEVELS) {
-      if (level >= 1) {
-        badgeGrant = await grantBadge(d, userId, model.BADGE_ID, actor?.id || null, `${model.GRANT_NOTE}:${feedbackId}`);
-        if (badgeGrant.granted) {
-          badge = "new";
-          patch.badge_granted_at = nowIso;
-        } else if (badgeGrant.owned) {
-          // Already held (an earlier bug, or a promo / hand grant): a level up, or one more bug.
-          badge = level > levelBefore && levelBefore >= 1 ? "up" : "more";
-        }
+    if (counts && level >= 1) {
+      badgeGrant = await grantBadge(d, userId, model.BADGE_ID, actor, `${model.GRANT_NOTE}:${feedbackId}`, feedbackId);
+      if (badgeGrant.granted) {
+        badge = "new";
+        patch.badge_granted_at = nowIso;
+      } else if (badgeGrant.owned) {
+        // Already held (an earlier bug, or a promo / hand grant): a level up, or one more bug.
+        badge = level > levelBefore && levelBefore >= 1 ? "up" : "more";
       }
-      if (credit === "first" && severity === "critical") {
-        const g = await grantBadge(d, userId, model.CRITICAL_BADGE_ID, actor?.id || null, `${model.GRANT_NOTE}:${feedbackId}`);
-        criticalGranted = g.granted;
-        if (g.granted) patch.critical_granted_at = nowIso;
-        out.steps.critical = g.granted ? "granted" : g.owned ? "owned" : g.error || "failed";
-      }
+    }
+    if (credit === "first" && visual) {
+      const g = await grantBadge(d, userId, model.GLITCH_BADGE_ID, actor, `${model.GRANT_NOTE}:${feedbackId}`, feedbackId);
+      glitchGranted = g.granted;
+      if (g.granted) patch.glitch_granted_at = nowIso;
+      out.steps.glitch = g.granted ? "granted" : g.owned ? "owned" : g.error || "failed";
+      if (g.granted && g.rowId) out.glitchRowId = g.rowId;
     }
     if (Object.keys(patch).length) await sb.from("bug_hunter_levels").update(patch).eq("user_id", userId);
     out.steps.badge = badgeGrant ? (badgeGrant.granted ? "granted" : badgeGrant.owned ? "owned" : badgeGrant.error || "failed") : "none";
@@ -304,7 +319,7 @@ async function confirm({ feedbackId, body, actor, io = null }) {
     level,
     badge,
     count,
-    critical: criticalGranted,
+    glitch: glitchGranted,
     fixedNow,
     reward: reward.carried ? 0 : reward.amount,
     round,
@@ -325,17 +340,19 @@ async function confirm({ feedbackId, body, actor, io = null }) {
   d.notify.bugHunt(io, userId, {
     feedbackId,
     entry: userView(entry),
-    badge: badge === "none" && !criticalGranted ? null : { id: criticalGranted ? model.CRITICAL_BADGE_ID : model.BADGE_ID, level, serial: badgeGrant?.serial ?? null },
+    badge: badge === "none" ? null : { id: model.BADGE_ID, level, serial: badgeGrant?.serial ?? null, isNew: badge === "new", glitch: glitchGranted },
     reward: reward.carried ? 0 : reward.amount,
     balance: reward.balance ?? null,
   });
-  if (online && badgeGrant?.rowId) {
-    try { await d.specialBadges.markNotified(userId, [badgeGrant.rowId]); } catch { /* popup on next connect */ }
+  const fresh = [badgeGrant?.rowId, out.glitchRowId].filter(Boolean);
+  delete out.glitchRowId;
+  if (online && fresh.length) {
+    try { await d.specialBadges.markNotified(userId, fresh); } catch { /* popup on next connect */ }
   } else if (io && d.badgeNotify.deliverPending) {
     // Offline (or the card missed): the deferred popup shows on the next connect.
     void Promise.resolve(d.badgeNotify.deliverPending(io, userId)).catch(() => {});
   }
-  if (badge !== "none" || criticalGranted) void Promise.resolve(d.badgeNotify.broadcastProfile?.(io, userId)).catch(() => {});
+  if (badge !== "none" || glitchGranted) void Promise.resolve(d.badgeNotify.broadcastProfile?.(io, userId)).catch(() => {});
 
   d.audit(actor, "feedback_bug_confirm", userId, {
     feedbackId,
@@ -347,13 +364,14 @@ async function confirm({ feedbackId, body, actor, io = null }) {
     rewardState: out.steps.reward,
     level,
     badge,
-    critical: criticalGranted,
+    visual,
+    glitch: glitchGranted,
     ...(input.note ? { note: input.note } : {}),
   });
 
   out.level = level;
   out.badge = badge;
-  out.critical = criticalGranted;
+  out.glitch = glitchGranted;
   out.reward = { amount: reward.amount, state: reward.state, carried: Boolean(reward.carried), skipped: reward.skipped || null };
   out.confirmation = model.shapeConfirmation(await loadConfirmation(sb, feedbackId));
   return out;
@@ -399,29 +417,30 @@ async function undo({ feedbackId, reason, actor, io = null, audit = true }) {
   await sb.from("feedback_bug_reports").update({ reward_state: reward.state === "paid" ? "kept" : reward.state }).eq("feedback_id", feedbackId);
   out.reward = { amount: reward.amount, state: reward.state, why: reward.why || null };
 
-  // Totals; take back only badges this feature gave, once nothing is left to hold them up.
-  let badgeRevoked = false, criticalRevoked = false, level = 0;
+  // Totals; take back only badges this feature gave, once nothing is left to hold them up
+  // (a promo / hand-granted #11 and the pre-feature history always stay).
+  let badgeRevoked = false, glitchRevoked = false, level = 0;
+  const takeBack = async (badgeId) => {
+    try {
+      const r = await d.specialBadges.revoke({ userId, badgeId, actorId: actor?.id || null, reason: why });
+      d.audit(actor, "special_badge_revoke", userId, { badgeId, serial: r?.serial ?? null, via: "bug_hunter", feedbackId });
+      return true;
+    } catch (err) {
+      if (err?.code !== "not_owned") console.warn("[bug-hunter] badge revoke failed:", badgeId, err?.code || err?.message || err);
+      return false;
+    }
+  };
   try {
     const { next } = await recount(sb, userId);
     level = next.level;
     const patch = {};
-    if (next.first_count === 0 && next.badge_granted_at) {
-      try {
-        await d.specialBadges.revoke({ userId, badgeId: model.BADGE_ID, actorId: actor?.id || null, reason: why });
-        badgeRevoked = true;
-      } catch (err) {
-        if (err?.code !== "not_owned") console.warn("[bug-hunter] badge revoke failed:", err?.code || err?.message || err);
-      }
+    if (model.levelCount(next) === 0 && next.badge_granted_at) {
+      badgeRevoked = await takeBack(model.BADGE_ID);
       patch.badge_granted_at = null;
     }
-    if (next.critical_count === 0 && next.critical_granted_at) {
-      try {
-        await d.specialBadges.revoke({ userId, badgeId: model.CRITICAL_BADGE_ID, actorId: actor?.id || null, reason: why });
-        criticalRevoked = true;
-      } catch (err) {
-        if (err?.code !== "not_owned") console.warn("[bug-hunter] critical badge revoke failed:", err?.code || err?.message || err);
-      }
-      patch.critical_granted_at = null;
+    if (next.visual_count === 0 && next.glitch_granted_at) {
+      glitchRevoked = await takeBack(model.GLITCH_BADGE_ID);
+      patch.glitch_granted_at = null;
     }
     if (Object.keys(patch).length) await sb.from("bug_hunter_levels").update(patch).eq("user_id", userId);
   } catch (err) {
@@ -443,15 +462,15 @@ async function undo({ feedbackId, reason, actor, io = null, audit = true }) {
   }
 
   if (io) {
-    if (badgeRevoked || criticalRevoked) void Promise.resolve(d.badgeNotify.deliverPending?.(io, userId)).catch(() => {});
+    if (badgeRevoked || glitchRevoked) void Promise.resolve(d.badgeNotify.deliverPending?.(io, userId)).catch(() => {});
     void Promise.resolve(d.badgeNotify.broadcastProfile?.(io, userId)).catch(() => {});
   }
   d.notify.bugHuntUndone(io, userId, { feedbackId, balance: reward.balance ?? null, delta: reward.state === "reversed" ? -reward.amount : 0 });
 
   out.level = level;
   out.badgeRevoked = badgeRevoked;
-  out.criticalRevoked = criticalRevoked;
-  out.meta = { feedbackId, reason: why, round: row.round, severity: row.severity, credit: row.credit, reward: reward.amount, rewardState: reward.state, keptWhy: reward.why || null, badgeRevoked, criticalRevoked, level };
+  out.glitchRevoked = glitchRevoked;
+  out.meta = { feedbackId, reason: why, round: row.round, severity: row.severity, credit: row.credit, reward: reward.amount, rewardState: reward.state, keptWhy: reward.why || null, badgeRevoked, glitchRevoked, level };
   if (audit) d.audit(actor, "feedback_bug_undo", userId, out.meta);
   out.confirmation = model.shapeConfirmation(await loadConfirmation(sb, feedbackId));
   return out;
@@ -516,7 +535,7 @@ async function levelsFor(userIds) {
   const out = new Map();
   if (!ids.length) return out;
   try {
-    const { data, error } = await deps().supabase.from("bug_hunter_levels").select("user_id, level, first_count, also_count, critical_count, since").in("user_id", ids);
+    const { data, error } = await deps().supabase.from("bug_hunter_levels").select("*").in("user_id", ids);
     if (error) return out;
     for (const r of data || []) out.set(String(r.user_id), model.badgeStats(r));
   } catch {
@@ -535,16 +554,19 @@ async function workspace({ limit = 5000 } = {}) {
   }
   const rows = data || [];
   const live = rows.filter(model.isLive);
-  const userIds = [...new Set(live.map((r) => String(r.user_id)).filter(Boolean))];
+  const levels = new Map();
+  const { data: lv } = await sb.from("bug_hunter_levels").select("*").limit(5000);
+  for (const r of lv || []) levels.set(String(r.user_id), r);
+  const userIds = [...new Set([...live.map((r) => String(r.user_id)), ...[...levels.keys()]].filter(Boolean))];
   const users = new Map();
-  if (userIds.length) {
-    const { data: us } = await sb.from("users").select("id, username, display_name, avatar_url").in("id", userIds);
+  for (let i = 0; i < userIds.length; i += 200) {
+    const { data: us } = await sb.from("users").select("id, username, display_name, avatar_url").in("id", userIds.slice(i, i + 200));
     for (const u of us || []) users.set(String(u.id), u);
   }
   return {
     installed: true,
     confirmations: rows.map(model.shapeConfirmation),
-    leaderboard: model.leaderboard(live, users, { limit: 10 }),
+    leaderboard: model.leaderboard(live, users, { limit: 10, levels }),
     totals: model.totals(rows),
     rules: rules(),
   };

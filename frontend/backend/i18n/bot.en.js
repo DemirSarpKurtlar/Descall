@@ -14,7 +14,7 @@ module.exports = {
     badgeNew: "You earned the Bug Hunter badge.",
     badgeUp: "Your badge leveled up to Bug Hunter {level}.",
     badgeMore: "One more real bug on your Bug Hunter badge: {count} in total.",
-    badgeCritical: "You also earned the rare Critical Bug Hunter badge.",
+    badgeGlitch: "You also earned the Glitch badge.",
     reward: "+{amount} DesCoin",
     undone: "{who} undid the bug confirmation: {reason}",
   },

@@ -9,7 +9,9 @@
  *                 "commit abc1234") or names the release that fixed it ("3.8.1'de düzeldi")
  *   resolved      the item is resolved (or was resolved before it was closed)
  *   fix_reply     a team reply / note says it was fixed ("düzelttik", "giderildi", "fixed")
- * Only bug or security items that are not confirmed yet, from accounts that still exist.
+ * Only bug or security items that are not confirmed yet, from accounts that still exist. Each item
+ * and person says whether they already hold #11 "bughunter" (holdsBadge), so the owner sees who
+ * would get it new and who already has it.
  */
 
 // Unicode letter edges (JS \b does not see Turkish letters as word characters).
@@ -59,9 +61,10 @@ function confidenceOf(signals) {
  * @param {object[]} rows user_feedback rows
  * @param {Map<string, object>} users id -> { username, display_name, deleted_at }
  * @param {Set<string>} confirmed feedback ids with a live confirmation
+ * @param {Set<string>} holders user ids that hold #11 "bughunter" now
  * @returns {{ items: object[], people: object[], counts: object }}
  */
-function findCandidates(rows, users = new Map(), confirmed = new Set()) {
+function findCandidates(rows, users = new Map(), confirmed = new Set(), holders = new Set()) {
   const items = [];
   for (const f of rows || []) {
     if (!f?.id || !f.user_id || !isBugItem(f) || confirmed.has(String(f.id))) continue;
@@ -79,20 +82,21 @@ function findCandidates(rows, users = new Map(), confirmed = new Set()) {
       createdAt: f.created_at || null,
       signals,
       confidence: confidenceOf(signals),
+      holdsBadge: holders.has(String(f.user_id)),
     });
   }
   const rank = { high: 0, medium: 1, low: 2 };
   items.sort((a, b) => rank[a.confidence] - rank[b.confidence] || String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
   const byUser = new Map();
   for (const it of items) {
-    const cur = byUser.get(it.userId) || { userId: it.userId, username: it.username, displayName: it.displayName, items: 0, high: 0, first: it.createdAt };
+    const cur = byUser.get(it.userId) || { userId: it.userId, username: it.username, displayName: it.displayName, holdsBadge: it.holdsBadge, items: 0, high: 0, first: it.createdAt };
     cur.items += 1;
     if (it.confidence === "high") cur.high += 1;
     if (it.createdAt && (!cur.first || it.createdAt < cur.first)) cur.first = it.createdAt;
     byUser.set(it.userId, cur);
   }
   const people = [...byUser.values()].sort((a, b) => b.high - a.high || b.items - a.items || String(a.first || "").localeCompare(String(b.first || "")));
-  const counts = { items: items.length, people: people.length, high: items.filter((i) => i.confidence === "high").length };
+  const counts = { items: items.length, people: people.length, high: items.filter((i) => i.confidence === "high").length, holders: people.filter((p) => p.holdsBadge).length };
   return { items, people, counts };
 }
 
@@ -124,7 +128,14 @@ async function load({ supabase, limit = 2000, pageSize = 500 } = {}) {
   } catch {
     /* before the migration nothing is confirmed */
   }
-  return { ...findCandidates(rows, users, confirmed), scanned: rows.length };
+  const holders = new Set();
+  try {
+    const { data, error } = await supabase.from("user_special_badges").select("user_id, revoked_at").eq("badge_id", "bughunter");
+    if (!error) for (const r of data || []) if (!r.revoked_at) holders.add(String(r.user_id));
+  } catch {
+    /* badges not installed: nobody holds it */
+  }
+  return { ...findCandidates(rows, users, confirmed, holders), scanned: rows.length };
 }
 
 module.exports = { findCandidates, signalsOf, confidenceOf, isBugItem, load, FIX_WORDS, FIX_LINK };

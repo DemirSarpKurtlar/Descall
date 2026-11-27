@@ -5,7 +5,7 @@
  * special-badge harness: re-runnable, the DesCoin reason CHECK only ever widens (from the
  * ARRAY form, the '{...}' literal form and the ANY (NULL) form a quoted-word rebuild leaves
  * behind), one bonus per confirmation round (unique ledger key), one confirmation per feedback,
- * the rare #39 badge row, cascades. Skips without SPECIAL_BADGES_TEST_PG_URL / PROMO_TEST_PG_URL.
+ * no new badge row (the existing #11 is used), today's holders seeded as history, cascades. Skips without SPECIAL_BADGES_TEST_PG_URL / PROMO_TEST_PG_URL.
  */
 
 const fs = require("fs");
@@ -51,8 +51,12 @@ function run() {
       if (form === "nulled") {
         pg.q(url, "ALTER TABLE descoin_ledger DROP CONSTRAINT descoin_ledger_reason_check; ALTER TABLE descoin_ledger ADD CONSTRAINT descoin_ledger_reason_check CHECK (reason = ANY (NULL::text[]))");
       }
+      // A holder of #11 before the feature (the 2 production holders): starting history.
+      pg.q(url, "SELECT public.special_badge_grant('00000000-0000-4000-8000-000000000010', 'bughunter', 'admin', NULL, 'eski', NULL)");
       pg.q(url, MIGRATION);
       pg.q(url, MIGRATION); // re-runnable
+      eq(pg.q(url, "SELECT user_id || ':' || level || ':' || legacy_count || ':' || first_count || ':' || (legacy_since IS NOT NULL) FROM bug_hunter_levels"), "00000000-0000-4000-8000-000000000010:1:1:0:true", `${form}: today's holder seeded once as history`);
+      eq(pg.q(url, "SELECT count(*) FROM descoin_ledger WHERE reason LIKE 'bug_bounty%'"), "0", `${form}: no retroactive DesCoin`);
       const def = reasons(url);
       for (const r of ["bug_bounty", "bug_bounty_revoke", "daily_claim", "admin_grant", "voice_activity"]) {
         if (!def.includes(r)) throw new Error(`FAIL: ${form}: ${r} kept/added in ${def}`);
@@ -79,16 +83,14 @@ function run() {
         fails(() => pg.q(url, `UPDATE feedback_bug_reports SET duplicate_of = feedback_id WHERE feedback_id = '${dup}'`), /feedback_bug_reports_not_self/, "a report cannot duplicate itself");
         pg.q(url, `DELETE FROM user_feedback WHERE id = '${fid}'`);
         eq(pg.q(url, "SELECT count(*) || ':' || coalesce(max(duplicate_of::text), 'null') || ':' || max(credit) FROM feedback_bug_reports"), "1:null:also", "root gone with its feedback; the duplicate keeps its credit");
-        pg.q(url, "INSERT INTO bug_hunter_levels (user_id, level, first_count) VALUES ('00000000-0000-4000-8000-000000000010', 1, 1)");
-        fails(() => pg.q(url, "UPDATE bug_hunter_levels SET level = 4"), /level_check/, "level 0..3");
+                fails(() => pg.q(url, "UPDATE bug_hunter_levels SET level = 4"), /level_check/, "level 0..3");
 
-        // Badges: #11 keeps its holders, new copy; #39 is efsanevi and admin-only.
-        eq(pg.q(url, "SELECT name || ':' || tier || ':' || grant_mode FROM special_badges WHERE id = 'bughunter'"), "Bug Avcısı:epik:promo", "#11 copy");
-        eq(pg.q(url, "SELECT no || ':' || tier || ':' || grant_mode FROM special_badges WHERE id = 'kritikbug'"), "39:efsanevi:admin_only", "#39 row");
-        const g = pg.json(url, "SELECT public.special_badge_grant('00000000-0000-4000-8000-000000000010', 'kritikbug', 'promo', NULL, NULL, NULL)");
-        eq(g.error, "admin_only", "no promo code can carry kritikbug");
-        const ok = pg.json(url, "SELECT public.special_badge_grant('00000000-0000-4000-8000-000000000010', 'kritikbug', 'admin', NULL, 'bughunt:x', NULL)");
-        eq(ok.granted, true, "the server grants kritikbug as admin");
+        // Badges: nothing added or changed; promo codes keep #11; admins can still grant it.
+        eq(pg.q(url, "SELECT count(*) FROM special_badges WHERE id = 'kritikbug'"), "0", "no new badge row");
+        eq(pg.q(url, "SELECT name || ':' || tier || ':' || grant_mode FROM special_badges WHERE id = 'bughunter'"), "Bug Hunter:epik:promo", "#11 untouched");
+        eq(pg.q(url, "SELECT name || ':' || grant_mode FROM special_badges WHERE id = 'glitch'"), "Glitch:promo", "#32 untouched");
+        const ok = pg.json(url, "SELECT public.special_badge_grant('00000000-0000-4000-8000-000000000011', 'glitch', 'admin', NULL, 'bughunt:x', NULL)");
+        eq(ok.granted, true, "the admin grant path works for a promo badge");
         eq(pg.q(url, "SELECT relrowsecurity FROM pg_class WHERE relname = 'feedback_bug_reports'"), "t", "RLS on");
       }
     } finally {

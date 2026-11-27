@@ -2970,7 +2970,7 @@ export const nested = {
       "badgeNew": "Tu as gagné le badge Chasseur de bugs.",
       "badgeUp": "Ton badge est passé à Chasseur de bugs {level}.",
       "badgeMore": "Un vrai bug de plus sur ton badge Chasseur de bugs : {count} au total.",
-      "badgeCritical": "Tu as aussi gagné le badge rare Chasseur de bugs critiques.",
+      "badgeGlitch": "Tu as aussi gagné le badge Glitch.",
       "reward": "+{amount} DesCoin",
       "undone": "{who} a annulé la confirmation du bug : {reason}",
     },

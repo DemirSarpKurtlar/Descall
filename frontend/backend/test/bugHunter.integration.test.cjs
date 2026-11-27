@@ -3,16 +3,18 @@
 /**
  * Bug Avcısı over real HTTP with the fake Supabase (special badge RPCs emulated here):
  *  - section: an admin without "feedback" is refused; nobody confirms their own feedback
- *  - confirm: first credit, badge #11 granted (note bughunt:<id>), DesCoin bonus by severity
+ *  - confirm: first credit, the EXISTING badge #11 granted with the admin grant path and its
+ *    special_badge_grant audit entry (note bughunt:<id>), DesCoin bonus by severity
  *    (reason bug_bounty, idempotency key), thread card, live card + bell + balance, audit entry
  *  - idempotency: a second confirm of the same item pays nothing and writes no audit entry
  *  - duplicates: also-found credit (smaller bonus, counted apart, no badge), same reporter refused,
  *    the root cannot be undone while a duplicate is linked
  *  - tier upgrade: the 5th first credit levels the badge to II in place; profiles read the level
- *  - critical: the rare kritikbug badge
+ *  - visual / UI bug: #32 glitch too; a critical bug is a severity, not a badge
+ *  - starting history: today's holders (legacy_count) level up from it and are not re-announced
  *  - resolved: "Düzeltildi" once for the root and its duplicates (dup resolved too), no generic ping
  *  - undo: reason required, DesCoin back while unspent ("kept" when spent), void thread lines,
- *    badges this feature gave go back at 0, a promo-granted badge stays; re-confirm carries a kept bonus
+ *    badges this feature gave go back at 0 (glitch too), a promo-granted badge stays; re-confirm carries a kept bonus
  *  - İşlem kaydı: the confirm entry can be undone from the console (meta.undoOf)
  *  - sender side: GET /api/me/feedback/:id shows the card, hides undone rounds and admin names
  */
@@ -64,11 +66,12 @@ const fake = createFakeSupabase({
   ],
   descoin_ledger: [],
   feedback_bug_reports: [],
-  bug_hunter_levels: [],
+  // Seeded by the migration for today's #11 holders: one earlier confirmed bug, no DesCoin.
+  bug_hunter_levels: [{ user_id: id(13), level: 1, first_count: 0, also_count: 0, legacy_count: 1, legacy_since: "2026-11-01T00:00:00.000Z", since: "2026-11-01T00:00:00.000Z" }],
 }, { uniqueKeys: { feedback_bug_reports: ["feedback_id"] }, missingTables: ["admin_audit_views", "admin_audit_rules", "admin_audit_reviews", "admin_audit_notes"] });
 
 // Special badge RPCs (the rules of 20261026_special_badges.sql that this feature relies on).
-const CATALOG = [{ id: "bughunter", no: 11, name: "Bug Avcısı", tier: "epik", grantMode: "promo" }, { id: "kritikbug", no: 39, name: "Kritik Bug Avcısı", tier: "efsanevi", grantMode: "admin_only" }];
+const CATALOG = [{ id: "bughunter", no: 11, name: "Bug Hunter", tier: "epik", grantMode: "promo" }, { id: "glitch", no: 32, name: "Glitch", tier: "nadir", grantMode: "promo" }];
 const badges = [];
 let rowSeq = 0;
 const live = (u, b) => badges.find((r) => r.user_id === u && r.badge_id === b && !r.revoked_at);
@@ -204,6 +207,8 @@ async function run() {
     const b11 = live(AYSE, "bughunter");
     assert(b11 && b11.note === `bughunt:${F(1)}` && b11.source === "admin", "badge #11 granted with the feature note");
     assert(b11.notified_at, "online sender: the live card replaces the generic popup");
+    const sbAudit = audits("special_badge_grant");
+    assert(sbAudit.length === 1 && sbAudit[0].target === AYSE && sbAudit[0].meta.badgeId === "bughunter" && sbAudit[0].meta.via === "bug_hunter" && sbAudit[0].meta.feedbackId === F(1), "badge grant audited like the badge tools");
     const lvl = T.bug_hunter_levels.rows.find((x) => x.user_id === AYSE);
     assert(lvl.level === 1 && lvl.first_count === 1 && lvl.badge_granted_at, "levels row");
     assert(fb(1).status === "in_progress", "new item moves to in progress");
@@ -255,10 +260,17 @@ async function run() {
     assert(mine.body.leaderboard[0].username === "ayse" && mine.body.leaderboard[0].first === 5 && mine.body.leaderboard[0].level === 2, "leaderboard");
     assert(mine.body.totals.first === 5 && mine.body.totals.also === 1, "totals");
 
-    /* ---- critical ---- */
-    r = await confirm(8, { severity: "critical" });
-    assert(r.status === 201 && r.body.critical === true && live(AYSE, "kritikbug"), "critical: kritikbug granted");
-    assert(fb(8).admin_replies.find((x) => x.type === "bughunt").badgeId === "kritikbug", "card shows the critical badge");
+    /* ---- critical + visual / UI: glitch, no extra bug badge ---- */
+    r = await confirm(8, { severity: "critical", visual: true });
+    assert(r.status === 201 && r.body.glitch === true && live(AYSE, "glitch") && r.body.reward.amount === 250, "visual bug: glitch granted, critical pays 250 " + r.raw);
+    assert(!badges.some((x) => !["bughunter", "glitch"].includes(x.badge_id)), "no new badge kind");
+    const c8 = fb(8).admin_replies.find((x) => x.type === "bughunt");
+    assert(c8.badgeId === "bughunter" && c8.severity === "critical" && c8.i18n.glitchLine.key === "bot.bughunt.badgeGlitch", "card: severity + glitch line");
+    assert(conf(8).visual === true, "visual stored");
+    const lv8 = T.bug_hunter_levels.rows.find((x) => x.user_id === AYSE);
+    assert(lv8.critical_count === 1 && lv8.high_count === 1 && lv8.low_count === 3 && lv8.medium_count === 1 && lv8.visual_count === 1, "severity mix stored " + JSON.stringify(lv8));
+    const eq8 = await specialBadges.equippedForUsers([AYSE]);
+    assert(eq8.get(AYSE).severity.critical === 1 && eq8.get(AYSE).severity.low === 3, "tooltip gets the severity mix");
 
     /* ---- resolved: Düzeltildi once, duplicates too ---- */
     emitted.length = 0;
@@ -293,7 +305,8 @@ async function run() {
     T.users.rows.find((u) => u.id === AYSE).descoin_balance = 10;
     r = await undo(8, "Kritik değil, yüksek");
     assert(r.status === 200 && r.body.reward.state === "kept" && r.body.reward.why === "spent" && balance(AYSE) === 10, "spent bonus kept " + r.raw);
-    assert(r.body.criticalRevoked === true && !live(AYSE, "kritikbug") && live(AYSE, "bughunter"), "kritikbug back, #11 stays");
+    assert(r.body.glitchRevoked === true && !live(AYSE, "glitch") && live(AYSE, "bughunter"), "glitch back (no visual bug left), #11 stays");
+    assert(audits("special_badge_revoke").some((e) => e.meta.badgeId === "glitch" && e.meta.via === "bug_hunter"), "take-back audited like the badge tools");
     assert(conf(8).reward_state === "kept", "row says kept");
     const ledBefore = ledger(AYSE).length;
     r = await confirm(8, { severity: "high" });
@@ -305,8 +318,14 @@ async function run() {
     assert(r.status === 201 && live(DENIZ, "bughunter"), "deniz gets the badge");
     r = await undo(9, "Yanlış kişi");
     assert(r.status === 200 && r.body.badgeRevoked === true && !live(DENIZ, "bughunter"), "deniz's badge goes back");
+    const grantsBefore = audits("special_badge_grant").length;
     r = await confirm(10, { severity: "medium" });
-    assert(r.status === 201 && r.body.badge === "more", "promo holder: no second badge");
+    assert(r.status === 201 && r.body.badge === "more" && r.body.level === 1, "existing holder: no second badge, not announced as new " + r.raw);
+    assert(audits("special_badge_grant").length === grantsBefore, "no grant entry for a badge already held");
+    assert(fb(10).admin_replies.find((x) => x.type === "bughunt").i18n.badgeLine.key === "bot.bughunt.badgeMore", "card says one more bug");
+    assert(T.bug_hunter_levels.rows.find((x) => x.user_id === PROMO).legacy_count === 1, "history kept");
+    const promoStats = (await specialBadges.equippedForUsers([PROMO])).get(PROMO);
+    assert(promoStats.bugs === 2 && promoStats.since === "2026-11-01T00:00:00.000Z", "tooltip counts the history " + JSON.stringify(promoStats));
     r = await undo(10, "Yanlış kayıt");
     assert(r.status === 200 && r.body.badgeRevoked === false && live(PROMO, "bughunter"), "a promo-granted badge stays");
 
@@ -336,8 +355,8 @@ async function run() {
 
     // Final totals after undos: 6 first credits live for ayse (1,4,5,7,8,12), level II.
     const lv = T.bug_hunter_levels.rows.find((x) => x.user_id === AYSE);
-    assert(lv.first_count === 6 && lv.level === 2 && lv.critical_count === 0, "recount after undos " + JSON.stringify(lv));
-    assert(model.levelFor(lv.first_count) === lv.level, "stored level matches the rules");
+    assert(lv.first_count === 6 && lv.level === 2 && lv.critical_count === 0 && lv.visual_count === 0, "recount after undos " + JSON.stringify(lv));
+    assert(model.levelFor(model.levelCount(lv)) === lv.level, "stored level matches the rules");
     console.log("bugHunter.integration.test: ok");
   } finally {
     server.close();

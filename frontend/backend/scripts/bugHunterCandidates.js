@@ -42,13 +42,13 @@ function formatReport(result, { min = "medium" } = {}) {
   const items = result.items.filter((i) => keep.has(i.confidence));
   const lines = [];
   lines.push(`Bug Avcısı geçmiş adayları (yalnızca okuma, hiçbir şey verilmedi)`);
-  lines.push(`Taranan: ${result.scanned ?? "?"} · Aday: ${items.length} · Kişi: ${new Set(items.map((i) => i.userId)).size} · Güveni yüksek: ${items.filter((i) => i.confidence === "high").length}`);
+  lines.push(`Taranan: ${result.scanned ?? "?"} · Aday: ${items.length} · Kişi: ${new Set(items.map((i) => i.userId)).size} · Güveni yüksek: ${items.filter((i) => i.confidence === "high").length} · Rozeti zaten olan: ${result.people.filter((p) => p.holdsBadge).length}`);
   lines.push("");
   lines.push("Kişiler (önce güveni yüksek olanlar):");
   for (const p of result.people) {
     const mine = items.filter((i) => i.userId === p.userId);
     if (!mine.length) continue;
-    lines.push(`  @${p.username || p.userId}  ${mine.length} bildirim (${mine.filter((i) => i.confidence === "high").length} yüksek), ilki ${day(p.first)}`);
+    lines.push(`  @${p.username || p.userId}  ${mine.length} bildirim (${mine.filter((i) => i.confidence === "high").length} yüksek), ilki ${day(p.first)}${p.holdsBadge ? "  [Bug Hunter rozeti zaten var]" : ""}`);
   }
   lines.push("");
   lines.push("Bildirimler:");
@@ -60,8 +60,8 @@ function formatReport(result, { min = "medium" } = {}) {
 }
 
 function formatCsv(result) {
-  const head = ["feedback_id", "user_id", "username", "created_at", "status", "confidence", "signals", "subject"];
-  const rows = result.items.map((i) => [i.feedbackId, i.userId, i.username, i.createdAt, i.status, i.confidence, i.signals.join("|"), i.subject].map(csvCell).join(","));
+  const head = ["feedback_id", "user_id", "username", "holds_bughunter", "created_at", "status", "confidence", "signals", "subject"];
+  const rows = result.items.map((i) => [i.feedbackId, i.userId, i.username, i.holdsBadge ? "yes" : "no", i.createdAt, i.status, i.confidence, i.signals.join("|"), i.subject].map(csvCell).join(","));
   return [head.join(","), ...rows].join("\n");
 }
 

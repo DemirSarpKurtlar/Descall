@@ -1,19 +1,23 @@
 -- "Bug Avcısı" (owner request 27 Nov 2026: "gercekten bug bulan kullanicilara bug hunter falan
--- rozeti ver geribildirimde").
+-- rozeti ver geribildirimde"; course correction the same day: the badge already exists).
 --
 -- An admin decides, in Admin > Geri Bildirim, that a feedback item is a REAL bug ("Gerçek bug
--- olarak doğrula": severity düşük / orta / yüksek / kritik, optional note). The first reporter
--- of a bug gets the credit; a later report of the same bug can be linked to it and its sender
--- gets a smaller "also found" credit, counted separately. Credits level up the existing special
--- badge #11 "bughunter" in place (Bug Avcısı I at 1 confirmed bug, II at 5, III at 15); a
--- confirmed critical bug also gives the rare #39 "kritikbug". Each confirmation pays a DesCoin
--- bonus scaled by severity (reason 'bug_bounty', one ledger row per confirmation round). Undo
--- needs a reason; the bonus goes back ('bug_bounty_revoke') only while it is unspent.
+-- olarak doğrula": severity düşük / orta / yüksek / kritik, "görsel / arayüz hatası", optional
+-- note). The first reporter of a bug gets the credit; a later report of the same bug can be
+-- linked to it and its sender gets a smaller "also found" credit, counted separately. A credit
+-- grants the EXISTING special badge #11 "bughunter" (same admin grant path and audit entry as
+-- the badge tools; holders keep theirs), a visual / UI bug also #32 "glitch". The confirmed-bug
+-- count gives the badge a level (I at 1, II at 5, III at 15) shown as pips on the existing art
+-- and in its tooltip with the severity mix. Each confirmation pays a DesCoin bonus scaled by
+-- severity (reason 'bug_bounty', one ledger row per confirmation round); an undo needs a
+-- reason and takes the bonus back ('bug_bounty_revoke') only while it is unspent.
 -- Backend: frontend/backend/lib/bugHunter/, routes/adminBugHunter.js.
 --
--- Additive and idempotent: two new tables, one partial unique index on descoin_ledger, the
--- ledger reason CHECK widened to a strict superset, one new badge catalog row and new copy for
--- badge #11 (id, holders and serial numbers untouched). Service role only (RLS on, no policies).
+-- Additive and idempotent: two new tables, one partial unique index on descoin_ledger and the
+-- ledger reason CHECK widened to a strict superset. No badge catalog row is added or changed
+-- (grant_mode 'promo' stays, promo codes keep working; admin grants are allowed for promo
+-- badges). Today's bughunter holders are seeded as starting history (one earlier confirmed bug
+-- each, no DesCoin). Service role only (RLS on, no policies).
 
 -- 1) One row per feedback item that an admin confirmed as a real bug. The primary key is the
 --    idempotency guard: confirming the same feedback twice changes nothing. An undo keeps the
@@ -26,6 +30,8 @@ CREATE TABLE IF NOT EXISTS public.feedback_bug_reports (
   -- "also found": the feedback id of the first (root) report of the same bug.
   duplicate_of      uuid REFERENCES public.feedback_bug_reports(feedback_id) ON DELETE SET NULL,
   note              text CHECK (note IS NULL OR length(note) <= 280),
+  -- A visual / UI bug also grants #32 "glitch".
+  visual            boolean NOT NULL DEFAULT false,
   round             integer NOT NULL DEFAULT 1 CHECK (round >= 1),
   reward            integer NOT NULL DEFAULT 0 CHECK (reward >= 0 AND reward <= 1000),
   -- paid: on the wallet; none: nothing paid (frozen wallet, deleted account); reversed: taken
@@ -58,12 +64,21 @@ CREATE TABLE IF NOT EXISTS public.bug_hunter_levels (
   level          smallint NOT NULL DEFAULT 0 CHECK (level BETWEEN 0 AND 3),
   first_count    integer NOT NULL DEFAULT 0 CHECK (first_count >= 0),
   also_count     integer NOT NULL DEFAULT 0 CHECK (also_count >= 0),
+  -- Severity mix of the first credits (tooltip, leaderboard).
   critical_count integer NOT NULL DEFAULT 0 CHECK (critical_count >= 0),
+  high_count     integer NOT NULL DEFAULT 0 CHECK (high_count >= 0),
+  medium_count   integer NOT NULL DEFAULT 0 CHECK (medium_count >= 0),
+  low_count      integer NOT NULL DEFAULT 0 CHECK (low_count >= 0),
+  visual_count   integer NOT NULL DEFAULT 0 CHECK (visual_count >= 0),
+  -- Confirmed bugs from before this feature (today's #11 holders: 1 each). Counted in the
+  -- level and the tooltip, never paid.
+  legacy_count   integer NOT NULL DEFAULT 0 CHECK (legacy_count >= 0),
+  legacy_since   timestamptz,
   since          timestamptz,
   -- Set when THIS feature granted the badge (not a promo code or a hand grant): an undo that
   -- brings the count back to 0 only takes back a badge it gave.
-  badge_granted_at    timestamptz,
-  critical_granted_at timestamptz,
+  badge_granted_at  timestamptz,
+  glitch_granted_at timestamptz,
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS bug_hunter_levels_rank
@@ -125,15 +140,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS descoin_ledger_bug_bounty_key
   ON public.descoin_ledger ((meta ->> 'idempotency_key'))
   WHERE reason IN ('bug_bounty', 'bug_bounty_revoke');
 
--- 4) Badges. #11 keeps its id, holders and serials; only the copy changes (the apps read names
---    from the locale files first). #39 "Kritik Bug Avcısı" is admin-only: no promo code can
---    carry it; the server grants it when an admin confirms a critical bug.
-UPDATE public.special_badges
-   SET name = 'Bug Avcısı', description = 'Geri bildirimde gerçek bir hata bulanlar.'
- WHERE id = 'bughunter';
-
-INSERT INTO public.special_badges (id, no, name, tier, description, grant_mode, max_holders) VALUES
-  ('kritikbug', 39, 'Kritik Bug Avcısı', 'efsanevi', 'Kritik bir hatayı ilk bildirenler.', 'admin_only', NULL)
-ON CONFLICT (id) DO UPDATE SET
-  no = EXCLUDED.no, name = EXCLUDED.name, tier = EXCLUDED.tier, description = EXCLUDED.description,
-  grant_mode = EXCLUDED.grant_mode, max_holders = EXCLUDED.max_holders;
+-- 4) Starting history: whoever holds #11 today counts one earlier confirmed bug (level I),
+--    since the day they got it. No DesCoin. Re-running never lowers or doubles it.
+DO $$
+BEGIN
+  IF to_regclass('public.user_special_badges') IS NOT NULL THEN
+    INSERT INTO public.bug_hunter_levels (user_id, level, legacy_count, legacy_since, since)
+    SELECT b.user_id, 1, 1, min(b.granted_at), min(b.granted_at)
+      FROM public.user_special_badges b
+      JOIN public.users u ON u.id = b.user_id AND u.deleted_at IS NULL
+     WHERE b.badge_id = 'bughunter' AND b.revoked_at IS NULL
+     GROUP BY b.user_id
+    ON CONFLICT (user_id) DO UPDATE SET
+      legacy_count = greatest(public.bug_hunter_levels.legacy_count, 1),
+      legacy_since = coalesce(public.bug_hunter_levels.legacy_since, EXCLUDED.legacy_since),
+      level = greatest(public.bug_hunter_levels.level, 1);
+  END IF;
+END $$;

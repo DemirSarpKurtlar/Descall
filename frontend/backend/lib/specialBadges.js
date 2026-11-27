@@ -111,7 +111,7 @@ async function bugStats(userIds) {
     return new Map();
   }
 }
-/** { level, bugs, also, since } next to a "bughunter" entry; level 1 for a promo / hand grant. */
+/** { level, bugs, also, severity, since } next to a "bughunter" entry; level 1 for a promo / hand grant. */
 function withStats(entry, stats) {
   if (!entry || entry.id !== LEVELED) return entry;
   const st = stats || null;
@@ -120,6 +120,7 @@ function withStats(entry, stats) {
     level: Math.max(1, Number(st?.level) || 0),
     bugs: Number(st?.bugs) || 0,
     also: Number(st?.also) || 0,
+    severity: st?.severity || null,
     since: st?.since || null,
   };
 }

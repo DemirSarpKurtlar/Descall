@@ -2970,7 +2970,7 @@ export const nested = {
       "badgeNew": "Du hast das Abzeichen Bugjäger bekommen.",
       "badgeUp": "Dein Abzeichen ist auf Bugjäger {level} gestiegen.",
       "badgeMore": "Ein weiterer echter Bug auf deinem Bugjäger-Abzeichen: insgesamt {count}.",
-      "badgeCritical": "Du hast außerdem das seltene Abzeichen Kritischer Bugjäger bekommen.",
+      "badgeGlitch": "Du hast außerdem das Abzeichen Glitch bekommen.",
       "reward": "+{amount} DesCoin",
       "undone": "{who} hat die Bug-Bestätigung zurückgenommen: {reason}",
     },

@@ -2970,7 +2970,7 @@ export const nested = {
       "badgeNew": "Ganaste la insignia Cazador de bugs.",
       "badgeUp": "Tu insignia subió a Cazador de bugs {level}.",
       "badgeMore": "Un bug real más en tu insignia Cazador de bugs: {count} en total.",
-      "badgeCritical": "También ganaste la rara insignia Cazador de bugs críticos.",
+      "badgeGlitch": "También ganaste la insignia Glitch.",
       "reward": "+{amount} DesCoin",
       "undone": "{who} deshizo la confirmación del bug: {reason}",
     },

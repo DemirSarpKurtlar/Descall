@@ -202,14 +202,14 @@ function bugHuntForUser(r) {
     level: Math.max(0, Math.min(3, Number(r.level) || 0)),
     badge: ["new", "up", "more", "none"].includes(r.badge) ? r.badge : "none",
     count: Math.max(0, Number(r.count) || 0),
-    critical: Boolean(r.critical),
+    glitch: Boolean(r.glitch),
     reward: Math.max(0, Number(r.reward) || 0),
-    badgeId: r.badgeId === "bughunter" || r.badgeId === "kritikbug" ? r.badgeId : null,
+    badgeId: r.badgeId === "bughunter" ? "bughunter" : null,
     text: clip(r.text || "", 400),
     badgeLine: r.badgeLine ? clip(r.badgeLine, 200) : null,
-    criticalLine: r.criticalLine ? clip(r.criticalLine, 200) : null,
+    glitchLine: r.glitchLine ? clip(r.glitchLine, 200) : null,
     rewardLine: r.rewardLine ? clip(r.rewardLine, 200) : null,
-    ...(i18n ? { i18n: Object.fromEntries(Object.entries(i18n).filter(([k]) => ["text", "badgeLine", "criticalLine", "rewardLine"].includes(k))) } : {}),
+    ...(i18n ? { i18n: Object.fromEntries(Object.entries(i18n).filter(([k]) => ["text", "badgeLine", "glitchLine", "rewardLine"].includes(k))) } : {}),
     created_at: r.created_at || null,
   };
 }

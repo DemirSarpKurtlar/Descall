@@ -52,7 +52,7 @@ router.get("/users/:userId", async (req, res) => {
         grantedBy: row.grantedBy ? { id: row.grantedBy.id, username: row.grantedBy.username, displayName: row.grantedBy.displayName || null } : null,
         equipped: Boolean(row.equipped),
         // Bug Avcısı level and the tooltip numbers ("12 gerçek bug buldu · Kasım 2026'dan beri").
-        ...(row.id === "bughunter" ? { level: row.level || 1, bugs: row.bugs || 0, also: row.also || 0, since: row.since || null } : {}),
+        ...(row.id === "bughunter" ? { level: row.level || 1, bugs: row.bugs || 0, also: row.also || 0, severity: row.severity || null, since: row.since || null } : {}),
       })),
     });
   } catch (err) {

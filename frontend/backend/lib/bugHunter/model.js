@@ -5,10 +5,12 @@
  *
  * - An admin confirms a feedback item as a real bug with a severity. The first report of a
  *   bug is the "first" credit; a later report of the same bug, linked to it, is "also found".
- * - The badge (special badge #11 "bughunter") levels up in place by first credits:
- *   I at 1, II at 5, III at 15. "Also found" credits are counted and shown apart and pay a
+ * - A first credit grants the EXISTING special badge #11 "bughunter" (holders keep theirs); a
+ *   visual / UI bug also #32 "glitch". The badge levels up in place by confirmed bugs (first
+ *   credits plus the pre-feature history of today's holders): I at 1, II at 5, III at 15, shown
+ *   as pips on the existing art. "Also found" credits are counted and shown apart and pay a
  *   smaller DesCoin bonus, but do not level the badge (owner can change ALSO_LEVELS).
- * - A first-credit critical bug also gives the rare #39 "kritikbug".
+ * - Severity (düşük / orta / yüksek / kritik) shows in the tooltip and the leaderboard.
  * - DesCoin bonus per confirmation, by severity (REWARDS), one ledger row per confirmation
  *   round: idempotency key "bug_bounty:<feedbackId>:<round>".
  */
@@ -28,7 +30,7 @@ const TIERS = Object.freeze([
 ]);
 const ROMAN = Object.freeze({ 1: "I", 2: "II", 3: "III" });
 const BADGE_ID = "bughunter";
-const CRITICAL_BADGE_ID = "kritikbug";
+const GLITCH_BADGE_ID = "glitch";
 /** Badge rows this feature granted carry this note, so an undo only takes back its own grants. */
 const GRANT_NOTE = "bughunt";
 const NOTE_MAX = 280;
@@ -37,6 +39,8 @@ const REASON_MAX = 300;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Whether "also found" credits count towards the badge level (owner decision; off by default). */
 const ALSO_LEVELS = false;
+
+const n0 = (v) => Math.max(0, Number(v) || 0);
 
 function isUuid(v) {
   return typeof v === "string" && UUID_RE.test(v);
@@ -82,7 +86,7 @@ function sanitizeConfirm(body) {
   if (severity !== null && !SEVERITIES.includes(severity)) return { error: "BAD_SEVERITY" };
   if (severity === null && duplicateOf === null) return { error: "BAD_SEVERITY" };
   const note = typeof b.note === "string" ? b.note.replace(/\s+/g, " ").trim().slice(0, NOTE_MAX) : "";
-  return { severity, note: note || null, duplicateOf };
+  return { severity, note: note || null, duplicateOf, visual: b.visual === true };
 }
 
 /** An undo reason: 3..300 characters, or null. */
@@ -105,13 +109,14 @@ function tally(rows) {
   for (const r of rows || []) {
     if (!isLive(r) || !r.user_id) continue;
     const id = String(r.user_id);
-    const cur = out.get(id) || { first: 0, also: 0, critical: 0, bySeverity: { low: 0, medium: 0, high: 0, critical: 0 }, since: null, last: null };
+    const cur = out.get(id) || { first: 0, also: 0, critical: 0, visual: 0, bySeverity: { low: 0, medium: 0, high: 0, critical: 0 }, since: null, last: null };
     if (r.credit === "also") cur.also += 1;
     else {
       cur.first += 1;
       if (r.severity === "critical") cur.critical += 1;
+      if (SEVERITIES.includes(r.severity)) cur.bySeverity[r.severity] += 1;
+      if (r.visual) cur.visual += 1;
     }
-    if (SEVERITIES.includes(r.severity)) cur.bySeverity[r.severity] += 1;
     const at = r.confirmed_at || null;
     if (at && (!cur.since || at < cur.since)) cur.since = at;
     if (at && (!cur.last || at > cur.last)) cur.last = at;
@@ -121,26 +126,38 @@ function tally(rows) {
   return out;
 }
 
-/** Leaderboard rows: most first credits, then also-found, then criticals, then the earliest. */
-function leaderboard(rows, users = new Map(), { limit = 10 } = {}) {
+/**
+ * Leaderboard rows: most confirmed bugs (first credits + pre-feature history), then also-found,
+ * then criticals, then the earliest. `levels` (userId -> bug_hunter_levels row) adds the history.
+ */
+function leaderboard(rows, users = new Map(), { limit = 10, levels = new Map() } = {}) {
   const t = tally(rows);
+  for (const [userId, lv] of levels) {
+    if (!t.has(userId) && n0(lv?.legacy_count) > 0) t.set(userId, { first: 0, also: 0, critical: 0, visual: 0, bySeverity: { low: 0, medium: 0, high: 0, critical: 0 }, since: null, last: null });
+  }
   const list = [...t.entries()].map(([userId, v]) => {
     const u = users.get(userId) || {};
+    const lv = levels.get(userId) || null;
+    const legacy = n0(lv?.legacy_count);
+    const since = [v.since, lv?.legacy_since].filter(Boolean).sort()[0] || null;
     return {
       userId,
       username: u.username || null,
       displayName: u.display_name || u.displayName || null,
       avatarUrl: u.avatar_url || u.avatarUrl || null,
       first: v.first,
+      legacy,
+      bugs: v.first + legacy,
       also: v.also,
       critical: v.critical,
+      visual: v.visual,
       bySeverity: v.bySeverity,
-      level: v.level,
-      since: v.since,
+      level: levelFor(v.first + legacy + (ALSO_LEVELS ? v.also : 0)),
+      since,
       last: v.last,
     };
   });
-  list.sort((a, b) => b.first - a.first || b.also - a.also || b.critical - a.critical || String(a.since || "").localeCompare(String(b.since || "")));
+  list.sort((a, b) => b.bugs - a.bugs || b.also - a.also || b.critical - a.critical || String(a.since || "").localeCompare(String(b.since || "")));
   return list.slice(0, Math.max(1, Math.min(100, limit)));
 }
 
@@ -172,6 +189,7 @@ function shapeConfirmation(r) {
     credit: r.credit === "also" ? "also" : "first",
     duplicateOf: r.duplicate_of || null,
     note: r.note ? clip(r.note, NOTE_MAX) : null,
+    visual: Boolean(r.visual),
     round: Number(r.round) || 1,
     reward: Number(r.reward) || 0,
     rewardState: r.reward_state || "none",
@@ -195,7 +213,7 @@ function newId() {
  *   event "confirmed": a first credit; "also": an also-found credit; "fixed": the fix shipped.
  * `badge` is "new" (first badge), "up" (level up), "more" (same level) or "none".
  */
-function threadEntry({ event, severity, level = 0, badge = "none", count = 0, critical = false, fixedNow = false, reward = 0, round = 1, adminUsername = null, at = new Date().toISOString() }) {
+function threadEntry({ event, severity, level = 0, badge = "none", count = 0, glitch = false, fixedNow = false, reward = 0, round = 1, adminUsername = null, at = new Date().toISOString() }) {
   const e = {
     id: newId(),
     type: "bughunt",
@@ -204,10 +222,10 @@ function threadEntry({ event, severity, level = 0, badge = "none", count = 0, cr
     level: Math.max(0, Math.min(3, Number(level) || 0)),
     badge,
     count: Math.max(0, Number(count) || 0),
-    critical: Boolean(critical),
+    glitch: Boolean(glitch),
     reward: Math.max(0, Number(reward) || 0),
     round: Math.max(1, Number(round) || 1),
-    badgeId: event === "fixed" ? null : critical ? CRITICAL_BADGE_ID : badge === "none" ? null : BADGE_ID,
+    badgeId: event === "fixed" || badge === "none" ? null : BADGE_ID,
     adminUsername: adminUsername ? clip(adminUsername, 40) : null,
     created_at: at,
   };
@@ -217,7 +235,7 @@ function threadEntry({ event, severity, level = 0, badge = "none", count = 0, cr
     const roman = ROMAN[e.level] || "I";
     const line = badge === "new" ? "bot.bughunt.badgeNew" : badge === "up" ? "bot.bughunt.badgeUp" : badge === "more" ? "bot.bughunt.badgeMore" : null;
     if (line) put(e, "badgeLine", line, { level: roman, count: e.count });
-    if (critical) put(e, "criticalLine", "bot.bughunt.badgeCritical");
+    if (glitch) put(e, "glitchLine", "bot.bughunt.badgeGlitch");
     if (e.reward > 0) put(e, "rewardLine", "bot.bughunt.reward", { amount: e.reward });
   }
   return e;
@@ -233,16 +251,22 @@ function notifyCopy(entry) {
   return { titleKey: "bot.notify.bugConfirmedTitle", bodyKey: "bot.notify.bugMoreBody", vars: { count: entry.count } };
 }
 
-/** The badge line the profile tooltip reads (frontend formats it): count, also, since, level. */
+/** Confirmed bugs that level the badge: first credits plus the pre-feature history. */
+function levelCount(row) {
+  return n0(row?.first_count) + n0(row?.legacy_count) + (ALSO_LEVELS ? n0(row?.also_count) : 0);
+}
+
+/** What the profile tooltip reads: "12 gerçek bug buldu · Kasım 2026'dan beri" + severity mix. */
 function badgeStats(row) {
   if (!row) return null;
-  const first = Math.max(0, Number(row.first_count) || 0);
+  const bugs = n0(row.first_count) + n0(row.legacy_count);
+  const sinces = [row.since, row.legacy_since].filter(Boolean).sort();
   return {
-    level: Math.max(0, Math.min(3, Number(row.level) || levelFor(first))),
-    bugs: first,
-    also: Math.max(0, Number(row.also_count) || 0),
-    critical: Math.max(0, Number(row.critical_count) || 0),
-    since: row.since || null,
+    level: Math.max(0, Math.min(3, levelFor(levelCount(row)))),
+    bugs,
+    also: n0(row.also_count),
+    severity: { critical: n0(row.critical_count), high: n0(row.high_count), medium: n0(row.medium_count), low: n0(row.low_count) },
+    since: sinces[0] || null,
   };
 }
 
@@ -259,7 +283,7 @@ module.exports = {
   TIERS,
   ROMAN,
   BADGE_ID,
-  CRITICAL_BADGE_ID,
+  GLITCH_BADGE_ID,
   GRANT_NOTE,
   NOTE_MAX,
   REASON_MIN,
@@ -280,5 +304,6 @@ module.exports = {
   threadEntry,
   notifyCopy,
   badgeStats,
+  levelCount,
   undoLine,
 };
