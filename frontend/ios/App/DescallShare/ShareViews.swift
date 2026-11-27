@@ -53,9 +53,16 @@ func shareRowSubtitle(_ e: ShareTarget, hasFiles: Bool, now: Double) -> String {
     }
 }
 
-private let avatarColors: [Color] = [0xE8457A, 0x19A2B3, 0x9B5DE5, 0xE1780F, 0x2DAA53, 0x5E5CE6, 0xC9A227, 0x3E7BFA].map {
-    Color(red: Double(($0 >> 16) & 0xFF) / 255, green: Double(($0 >> 8) & 0xFF) / 255, blue: Double($0 & 0xFF) / 255)
+private func colorFromHex(_ hex: Int) -> Color {
+    let r: Double = Double((hex >> 16) & 0xFF) / 255.0
+    let g: Double = Double((hex >> 8) & 0xFF) / 255.0
+    let b: Double = Double(hex & 0xFF) / 255.0
+    return Color(red: r, green: g, blue: b)
 }
+
+// Typed step by step: the one-line literal + map closure made swiftc give up on type-checking.
+private let avatarHexes: [Int] = [0xE8457A, 0x19A2B3, 0x9B5DE5, 0xE1780F, 0x2DAA53, 0x5E5CE6, 0xC9A227, 0x3E7BFA]
+private let avatarColors: [Color] = avatarHexes.map(colorFromHex)
 
 func avatarColor(_ id: String) -> Color {
     var h: UInt32 = 0
