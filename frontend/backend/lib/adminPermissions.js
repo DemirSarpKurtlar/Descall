@@ -20,6 +20,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "signupStats",
   "retention",
   "economy",
+  // Davet ödülleri (growth phase 4): invite rewards board, holds, revokes, rules.
+  "invites",
   "topUsers",
   "people",
   "reports",
@@ -93,6 +95,7 @@ const RULES = [
   [/^\/growth\/retention$/, "retention"],
   [/^\/growth\/onboarding(\/|$)/, "retention"],
   [/^\/growth\/economy$/, "economy"],
+  [/^\/invites(\/|$)/, "invites"],
   [/^\/feedback(\/|$)/, "feedback"],
   [/^\/perf(\/|$)/, "perf"],
   [/^\/(audit)(\/|$)/, "audit"],

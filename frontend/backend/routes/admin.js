@@ -84,6 +84,8 @@ router.use(require("./adminServerReview"));
 // Oyunlar / Kredi (section casino): player workspace, ledger, hand history, limits, statistics.
 router.use(require("./adminCasino"));
 router.use(require("./adminGrowth"));
+// Davet ödülleri (growth phase 4, 4A): control board, holds / revokes with undo, rules.
+router.use(require("./adminInvites"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));

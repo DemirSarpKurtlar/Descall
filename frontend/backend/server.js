@@ -613,6 +613,10 @@ app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
 // Everything is off until REENGAGE_ENABLED=1 (or REENGAGE_DRY_RUN=1 to only log).
 app.use("/api/reengage", require("./routes/reengage"));
+// Davet Merkezi (growth phase 4): invite dashboard, landing /r/<user>, rewards that unlock
+// after the invitee's first message + next-day return (lib/referrals), and its sweeper.
+app.use("/api/invites", require("./routes/invites"));
+require("./lib/referrals/engine").startSweeper(io);
 if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
