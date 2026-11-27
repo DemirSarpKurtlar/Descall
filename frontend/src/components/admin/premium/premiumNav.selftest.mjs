@@ -13,14 +13,14 @@ const require = createRequire(import.meta.url);
 const perms = require("../../../../backend/lib/adminPermissions.js");
 
 const PAGES = [
-  "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
+  "premiumWorkspace", "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
   "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
 ];
 
 // Menu group, in place.
 const keys = ADMIN_NAV_GROUPS.map(([k]) => k);
 assert.deepEqual(keys, ["general", "people", "premium", "content", "system"], "premium sits between people and content");
-assert.deepEqual(ADMIN_NAV_GROUPS.find(([k]) => k === "premium")[1], PAGES, "nine pages in menu order");
+assert.deepEqual(ADMIN_NAV_GROUPS.find(([k]) => k === "premium")[1], PAGES, "ten pages in menu order");
 for (const id of PAGES) assert.equal(sectionOfTab(id), "premium");
 assert.equal(sectionOfTab("promo"), "promo", "other pages are their own section");
 assert.deepEqual(Object.keys(TAB_SECTION).filter((id) => TAB_SECTION[id] === "premium"), PAGES);

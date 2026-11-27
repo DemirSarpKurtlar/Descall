@@ -128,6 +128,8 @@ const TABS = [
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
   // Premium Yönetimi (phase 1): nine pages under the one "premium" section.
+  // Descall+ 2.0 workspace (owner pick 5B section 4): list + person + plans, payments, funnel.
+  { id: "premiumWorkspace", label: "premiumAdmin.navWorkspace", icon: Gauge },
   { id: "premiumDashboard", label: "premiumAdmin.navDashboard", icon: Gauge },
   { id: "premiumUsers", label: "premiumAdmin.navUsers", icon: Crown },
   { id: "premiumBulk", label: "premiumAdmin.navBulk", icon: UsersThree },

@@ -12,6 +12,7 @@ import { MSG4_EN } from "./msg4.en.js";
 import { A11Y_EN } from "./a11y.en.js";
 import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
+import { PLUS2_EN } from "./plus2.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { PUBPAGE_EN } from "./pubpage.en.js";
 import { ONB_EN } from "./onb.en.js";
@@ -96,6 +97,7 @@ export const nested = {
   a11y: A11Y_EN,
   msg5: MSG5_EN,
   act: ACT_EN,
+  plus2: PLUS2_EN,
   dir: DIR_EN,
   pubpage: PUBPAGE_EN,
   onb: ONB_EN,

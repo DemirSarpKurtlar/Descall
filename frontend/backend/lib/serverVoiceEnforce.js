@@ -305,8 +305,19 @@ async function pushSeatToLiveKit(channelId, seat) {
   }
 }
 
+/** Screen ceiling (lib/plus): only where Descall+ is on sale for this platform; never throws. */
+async function screenCeilingOf(userId, channelId, platform) {
+  try {
+    const serverId = activeServerVoiceCalls.get(String(channelId))?.serverId || null;
+    require("./plus/screenGuard").rememberPlatform(String(userId), String(channelId), platform || "web");
+    return await require("./plus").screenCeilingFor(userId, { serverId: serverId ? String(serverId) : null, platform: platform || "web" });
+  } catch {
+    return null;
+  }
+}
+
 /** Mint a LiveKit voice token for a seated member (socket join payload and REST route). */
-async function mintVoiceToken({ userId, channelId, seat }) {
+async function mintVoiceToken({ userId, channelId, seat, platform = null }) {
   if (!isLiveKitConfigured()) return null;
   const { AccessToken } = require("livekit-server-sdk");
   const room = liveKitRoomName(channelId);
@@ -343,6 +354,9 @@ async function mintVoiceToken({ userId, channelId, seat }) {
     // client keeps the mute lock separate so an unmute does not need a new token.
     canSpeak: canSpeakPermissionOf(seat),
     canStream: canStreamSeat(seat),
+    // Descall+ 2.0: the screen share ceiling for this person here (null = no limit). Clients cap the
+    // next share to it; the LiveKit webhook checks published screen tracks against it.
+    screenCeiling: await screenCeilingOf(userId, channelId, platform),
     channelType: seat?.channelType || "voice",
     stageRole: seat?.channelType === "stage" ? seat?.stageRole || "audience" : "speaker",
     canRequestToSpeak: Boolean(seat?.canRequestToSpeak),
@@ -688,6 +702,7 @@ function _resetForTest() {
 }
 
 module.exports = {
+  screenCeilingOf,
   // contract
   evictFromServerVoice,
   recheckVoiceAccess,

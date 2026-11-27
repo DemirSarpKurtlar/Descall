@@ -12,6 +12,7 @@ import { MSG4_TR } from "./msg4.tr.js";
 import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
+import { PLUS2_TR } from "./plus2.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { PUBPAGE_TR } from "./pubpage.tr.js";
 import { ONB_TR } from "./onb.tr.js";
@@ -107,6 +108,7 @@ export const nested = {
   a11y: A11Y_TR,
   msg5: MSG5_TR,
   act: ACT_TR,
+  plus2: PLUS2_TR,
   dir: DIR_TR,
   pubpage: PUBPAGE_TR,
   onb: ONB_TR,

@@ -16,6 +16,7 @@ import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
+import { PLUS2_PT_BR } from "./plus2.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { PUBPAGE_PT_BR } from "./pubpage.pt-BR.js";
 import { ONB_PT_BR } from "./onb.pt-BR.js";
@@ -78,6 +79,7 @@ export const nested = {
   },
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
+  "plus2": PLUS2_PT_BR,
   "dir": DIR_PT_BR,
   "pubpage": PUBPAGE_PT_BR,
   "onb": ONB_PT_BR,
@@ -459,6 +461,7 @@ export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Gestão premium",
+    "navWorkspace": "Área de trabalho Descall+",
     "navDashboard": "Painel premium",
     "navUsers": "Assinaturas dos membros",
     "navBulk": "Ações em massa",

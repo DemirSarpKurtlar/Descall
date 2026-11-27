@@ -184,6 +184,11 @@ async function buildPage(slug) {
   const voice = voiceCountsFor(chData.channels.filter((c) => c.type === "voice" || c.type === "stage").map((c) => c.id));
   const channels = pp.publicChannels({ ...chData, hiddenIds: row.public_page_hidden_channels, voiceCounts: voice.map });
   const payload = pp.buildPublicPayload(row, { memberCount, onlineCount, voiceCount: voice.total, channels, events, qrSvg });
+  // Descall+ 2.0 thank-you wall (boosters who agreed, when the owner keeps it on); absent otherwise.
+  if (payload) {
+    const wall = await require("../lib/plus").publicWall(row.id).catch(() => null);
+    if (wall && wall.boosters.length) payload.boostWall = wall;
+  }
   return { payload, serverId: row.id };
 }
 
