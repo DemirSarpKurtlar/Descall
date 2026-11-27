@@ -6,8 +6,9 @@
  * Phone: full-screen sheet over the app. Desktop: a centered card. Shown once per account
  * by InviteCenterHost; `InviteGiftCard` is exported for the Başla panosu to embed.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "../../context/localeContextInstance.js";
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useToast } from "../../context/ToastContext";
 import { sendFriendRequest } from "../../api/friends.js";
 import { joinPublicServer } from "../../api/servers.js";
@@ -73,9 +74,8 @@ export default function InviteWelcome({ data, mobile = false, onClose, onNavigat
   const [joined, setJoined] = useState(Boolean(data?.server?.joined));
   const [joining, setJoining] = useState(false);
   const [added, setAdded] = useState({});
-  const ref = useRef(null);
+  const ref = useModalFocusRef();
   useEffect(() => {
-    ref.current?.focus?.();
     const onKey = (e) => {
       if (e.key === "Escape") onClose?.();
     };

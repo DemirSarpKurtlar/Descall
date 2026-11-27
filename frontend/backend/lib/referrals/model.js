@@ -40,7 +40,7 @@ const ms = (iso) => {
 };
 
 /** Salted one-way hash for device ids, addresses and visitors (never stored raw). */
-function hashOf(kind, value, salt = process.env.REFERRAL_HASH_SALT || process.env.JWT_SECRET || "descall-referrals") {
+function hashOf(kind, value, salt = process.env.JWT_SECRET || "descall-referrals") {
   const v = String(value || "").trim();
   if (!v) return null;
   return crypto.createHash("sha256").update(`${salt}|${kind}|${v}`).digest("hex").slice(0, 32);

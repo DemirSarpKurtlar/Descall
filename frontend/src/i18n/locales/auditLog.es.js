@@ -458,6 +458,7 @@ export const AUDIT_LOG_ES = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Recompensas por invitación",
     "adminToken": "Admin Token",
     "nodes": "Red de servidores",
     "overview": "Resumen",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_ES = {
     "system": "Acción del sistema"
   },
   "act": {
+    "invite_auto_hold": "Retuvo recompensas automáticamente",
+    "invite_hold": "Retuvo recompensas por invitación",
+    "invite_release": "Quitó una retención de invitación",
+    "invite_revoke": "Retiró recompensas por invitación",
+    "invite_pause_link": "Pausó un enlace de invitación",
+    "invite_resume_link": "Reactivó un enlace de invitación",
+    "invite_rules": "Cambió las reglas de invitación",
+    "invite_undo": "Deshizo una acción de invitación",
+    "invite_alert_ignore": "Ignoró una alerta de invitación",
+    "invite_export": "Exportó recompensas por invitación",
     "ban": "Baneó",
     "unban": "Levantó el baneo",
     "timeout": "Silenció",

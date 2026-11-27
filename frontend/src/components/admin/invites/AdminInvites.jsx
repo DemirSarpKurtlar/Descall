@@ -13,6 +13,7 @@ import { adminRawFetch } from "../../../lib/adminStepUp";
 import { apiBase } from "../../../lib/nodeRouting";
 import { getToken } from "../../../lib/storage";
 import { useLocale } from "../../../context/localeContextInstance.js";
+import { useModalFocusRef } from "../../../hooks/useModalFocus";
 import { useToast } from "../../../context/ToastContext";
 import { nameVars, trPossessiveNumber } from "../../../lib/trCase.js";
 import BanDialog from "../BanDialog.jsx";
@@ -349,7 +350,7 @@ export default function AdminInvites({ onOpenUser, socket }) {
         />
       ) : null}
 
-      {rulesOpen ? <RulesDialog rules={data.rules} t={t} onClose={() => setRulesOpen(false)} onSaved={() => { setRulesOpen(false); refresh(); }} onUndo={undo} /> : null}
+      {rulesOpen ? <RulesDialog rules={data.rules} t={t} locale={locale} onClose={() => setRulesOpen(false)} onSaved={() => { setRulesOpen(false); refresh(); }} onUndo={undo} /> : null}
       {logOpen ? <LogDialog t={t} locale={locale} onClose={() => setLogOpen(false)} onUndo={undo} /> : null}
 
       <BanDialog
@@ -449,13 +450,14 @@ function LogList({ lines, t, locale, onUndo }) {
 }
 
 function LogDialog({ t, locale, onClose, onUndo }) {
+  const trap = useModalFocusRef();
   const [items, setItems] = useState(null);
   useEffect(() => {
     api("/invites/log?limit=100").then((d) => setItems(d.items || [])).catch(() => setItems([]));
   }, []);
   return (
     <div className="dvt-modal-scrim" onClick={onClose} role="presentation">
-      <div className="dvt-opq dvt-dialog wide" role="dialog" aria-modal="true" aria-label={t("dvt.adm.log")} onClick={(e) => e.stopPropagation()}>
+      <div ref={trap} className="dvt-opq dvt-dialog wide" role="dialog" aria-modal="true" aria-label={t("dvt.adm.log")} onClick={(e) => e.stopPropagation()}>
         <div className="dvt-row">
           <div className="dvt-h sp"><Ico name="list" />{t("dvt.adm.log")}</div>
           <button type="button" className="dvt-btn ic g" onClick={onClose} aria-label={t("dvt.close")}><Ico name="x" /></button>
@@ -570,6 +572,7 @@ function InviterPanel({ panel, t, locale, onClose, onAction, onRelease, onResume
 }
 
 function ActionDialog({ kind, panel, t, locale, onClose, onConfirm }) {
+  const trap = useModalFocusRef();
   const u = panel.user;
   const nv = nameVars(u.displayName || u.username, locale);
   const suggested = panel.suggested?.ids || [];
@@ -612,7 +615,7 @@ function ActionDialog({ kind, panel, t, locale, onClose, onConfirm }) {
   };
   return (
     <div className="dvt-modal-scrim" onClick={onClose} role="presentation">
-      <div className="dvt-opq dvt-dialog" role="dialog" aria-modal="true" aria-labelledby="dvt-ad-t" onClick={(e) => e.stopPropagation()} data-testid="dvt-action-dialog">
+      <div ref={trap} className="dvt-opq dvt-dialog" role="dialog" aria-modal="true" aria-labelledby="dvt-ad-t" onClick={(e) => e.stopPropagation()} data-testid="dvt-action-dialog">
         <div className="dvt-row">
           <b id="dvt-ad-t" className="sp">{title}</b>
           {kind === "revoke" ? <Dc amount={-amount} tone="dgt" locale={locale} /> : null}
@@ -672,7 +675,8 @@ const NUM_FIELDS = [
 ];
 const SIG_CODES = ["same_device", "same_subnet", "disposable_email", "fast_first_message", "inviter_only"];
 
-function RulesDialog({ rules, t, onClose, onSaved, onUndo }) {
+function RulesDialog({ rules, t, locale, onClose, onSaved, onUndo }) {
+  const trap = useModalFocusRef();
   const { toast } = useToast();
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(rules)));
   const [note, setNote] = useState("");
@@ -708,7 +712,7 @@ function RulesDialog({ rules, t, onClose, onSaved, onUndo }) {
   };
   return (
     <div className="dvt-modal-scrim" onClick={onClose} role="presentation">
-      <div className="dvt-opq dvt-dialog wide" role="dialog" aria-modal="true" aria-labelledby="dvt-rules-t" onClick={(e) => e.stopPropagation()} data-testid="dvt-rules-dialog">
+      <div ref={trap} className="dvt-opq dvt-dialog wide" role="dialog" aria-modal="true" aria-labelledby="dvt-rules-t" onClick={(e) => e.stopPropagation()} data-testid="dvt-rules-dialog">
         <div className="dvt-row">
           <div className="dvt-h sp" id="dvt-rules-t"><Ico name="sliders" />{t("dvt.adm.rulesTitle")}</div>
           <Pill tone="tl">{t("dvt.adm.rulesLive", { v: rules.version })}</Pill>
@@ -747,7 +751,7 @@ function RulesDialog({ rules, t, onClose, onSaved, onUndo }) {
           <div className="dvt-col dvt-gap6">
             <span className="dvt-cap">{t("dvt.adm.rulesVersions")}</span>
             {versions.slice(0, 5).map((v) => (
-              <small key={v.version} className="mu">v{v.version} · {new Date(v.at).toLocaleString()}{v.note ? ` · ${v.note}` : ""}</small>
+              <small key={v.version} className="mu">v{v.version} · {relTime(v.at, locale)}{v.note ? ` · ${v.note}` : ""}</small>
             ))}
           </div>
         ) : null}

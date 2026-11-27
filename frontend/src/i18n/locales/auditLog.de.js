@@ -458,6 +458,7 @@ export const AUDIT_LOG_DE = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Einladungsbelohnungen",
     "adminToken": "Admin Token",
     "nodes": "Servernetz",
     "overview": "Übersicht",
@@ -515,6 +516,16 @@ export const AUDIT_LOG_DE = {
     "system": "Systemaktion"
   },
   "act": {
+    "invite_auto_hold": "Einladungsbelohnungen automatisch zurückgehalten",
+    "invite_hold": "Einladungsbelohnungen zurückgehalten",
+    "invite_release": "Zurückhaltung aufgehoben",
+    "invite_revoke": "Einladungsbelohnungen zurückgebucht",
+    "invite_pause_link": "Einladungslink pausiert",
+    "invite_resume_link": "Einladungslink wieder geöffnet",
+    "invite_rules": "Einladungsregeln geändert",
+    "invite_undo": "Einladungsaktion rückgängig gemacht",
+    "invite_alert_ignore": "Einladungswarnung ignoriert",
+    "invite_export": "Einladungsbelohnungen exportiert",
     "ban": "Gesperrt",
     "unban": "Sperre aufgehoben",
     "timeout": "Stummgeschaltet",

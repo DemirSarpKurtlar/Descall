@@ -7,10 +7,11 @@
  *  - after sign-up, attaches the invite channel / open (POST /api/invites/attach) once;
  *  - shows the invited friend's first-entry card once per account (InviteWelcome).
  */
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useLocale } from "../../context/localeContextInstance.js";
 import { useToast } from "../../context/ToastContext";
 import { useMobile } from "../../hooks/useMobile.js";
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { attachInviteOpen, getInviteWelcome, readInviteNotices } from "../../api/invites.js";
 import { INVITES_UPDATE_EVENT, clearInviteOpen, peekInviteOpen } from "../../lib/inviteShare.js";
 import "../../styles/invites.css";
@@ -37,7 +38,7 @@ export default function InviteCenterHost({ socket, meId, onNavigate }) {
   const { isMobile } = useMobile();
   const [open, setOpen] = useState(false);
   const [welcome, setWelcome] = useState(null);
-  const closeRef = useRef(null);
+  const trapRef = useModalFocusRef();
 
   const close = useCallback(() => {
     setOpen(false);
@@ -65,7 +66,6 @@ export default function InviteCenterHost({ socket, meId, onNavigate }) {
       if (e.key === "Escape" && !document.querySelector(".dvt-modal-scrim, .dvt-walletpop")) close();
     };
     document.addEventListener("keydown", onKey);
-    closeRef.current?.focus?.();
     return () => document.removeEventListener("keydown", onKey);
   }, [open, close]);
 
@@ -170,7 +170,7 @@ export default function InviteCenterHost({ socket, meId, onNavigate }) {
             aria-modal="true"
             aria-label={t("dvt.title")}
             tabIndex={-1}
-            ref={closeRef}
+            ref={trapRef}
             onClick={(e) => e.stopPropagation()}
           >
             <Suspense fallback={<div className="dvt-skel">{t("dvt.loading")}</div>}>

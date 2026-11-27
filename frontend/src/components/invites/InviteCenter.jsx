@@ -11,6 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../context/localeContextInstance.js";
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useToast } from "../../context/ToastContext";
 import { getInviteDashboard, nudgeInvitee, readInviteNotices } from "../../api/invites.js";
 import { copyText } from "../../lib/copyText.js";
@@ -136,6 +137,8 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
   const [nudging, setNudging] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const now = useNow();
+  const whyTrap = useModalFocusRef();
+  const qrTrap = useModalFocusRef();
   const loadSeq = useRef(0);
 
   const load = useCallback(async () => {
@@ -339,13 +342,13 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
 
   const whyPop = why ? (
     <div className="dvt-modal-scrim" onClick={() => setWhy(null)} role="presentation">
-      <div className="dvt-opq dvt-why" role="dialog" aria-modal="true" aria-labelledby="dvt-why-t" onClick={(e) => e.stopPropagation()}>
+      <div ref={whyTrap} className="dvt-opq dvt-why" role="dialog" aria-modal="true" aria-labelledby="dvt-why-t" onClick={(e) => e.stopPropagation()}>
         <div className="dvt-h" id="dvt-why-t">
           <Ico name="shield" className="brt" />
           {t("dvt.why.title")}
         </div>
         <p>{t(`dvt.why.${whyKey(why)}`)}</p>
-        <button type="button" className="dvt-btn sm" onClick={() => setWhy(null)} autoFocus>
+        <button type="button" className="dvt-btn sm" onClick={() => setWhy(null)}>
           {t("dvt.close")}
         </button>
       </div>
@@ -354,7 +357,7 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
 
   const qr = qrOpen ? (
     <div className="dvt-modal-scrim" onClick={() => setQrOpen(false)} role="presentation">
-      <div className="dvt-opq dvt-qrsheet" role="dialog" aria-modal="true" aria-labelledby="dvt-qr-t" onClick={(e) => e.stopPropagation()}>
+      <div ref={qrTrap} className="dvt-opq dvt-qrsheet" role="dialog" aria-modal="true" aria-labelledby="dvt-qr-t" onClick={(e) => e.stopPropagation()}>
         <div className="dvt-h" id="dvt-qr-t">
           <Ico name="qr" className="brt" />
           {t("dvt.qr.title")}
@@ -824,9 +827,8 @@ function WalletPopover({ data, t, locale, left, mobile, onClose, onWhy }) {
 
 function LandingPreview({ data, t, onClose }) {
   const [device, setDevice] = useState("desk");
-  const ref = useRef(null);
+  const ref = useModalFocusRef();
   useEffect(() => {
-    ref.current?.focus?.();
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
     };

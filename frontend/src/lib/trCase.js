@@ -6,20 +6,20 @@
  * Tested by trCase.selftest.mjs.
  */
 
-const VOWELS = "aeıioöuüAEIİOÖUÜ";
-const BACK = new Set(["a", "ı", "o", "u"]);
-const ROUND = new Set(["o", "ö", "u", "ü"]);
+import { TR_CASE } from "../i18n/trCaseData.js";
+
+const { VOWELS, BACK_VOWELS, ROUND_VOWELS, UNITS, TENS, ZERO, HUNDRED, THOUSAND, MILLION, HAS_VOWEL_RE, FOUR, TWO } = TR_CASE;
+const BACK = new Set(BACK_VOWELS);
+const ROUND = new Set(ROUND_VOWELS);
 
 function numberWord(n) {
   const v = Math.abs(Math.floor(Number(n) || 0));
-  const UNITS = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
-  const TENS = ["", "on", "yirmi", "otuz", "kırk", "elli", "altmış", "yetmiş", "seksen", "doksan"];
-  if (v === 0) return "sıfır";
+  if (v === 0) return ZERO;
   if (v % 10) return UNITS[v % 10];
   if (v % 100) return TENS[(v % 100) / 10];
-  if (v % 1000) return "yüz";
-  if (v % 1000000) return "bin";
-  return "milyon";
+  if (v % 1000) return HUNDRED;
+  if (v % 1000000) return THOUSAND;
+  return MILLION;
 }
 
 /** The word whose sound decides the suffix (last word, digits spoken as a number). */
@@ -30,7 +30,7 @@ function spoken(name) {
   const words = s.split(/[\s_.-]+/).filter(Boolean);
   const last = (words[words.length - 1] || "e").toLocaleLowerCase("tr");
   // Acronyms and names without a vowel: read with "e" (GK -> ge ka is rare; keep it simple).
-  return /[aeıioöuü]/.test(last) ? last : `${last}e`;
+  return HAS_VOWEL_RE.test(last) ? last : `${last}e`;
 }
 
 function lastVowel(word) {
@@ -46,8 +46,8 @@ function endsVowel(word) {
 }
 
 function four(v) {
-  if (BACK.has(v)) return ROUND.has(v) ? "u" : "ı";
-  return ROUND.has(v) ? "ü" : "i";
+  if (BACK.has(v)) return ROUND.has(v) ? FOUR.backRound : FOUR.back;
+  return ROUND.has(v) ? FOUR.frontRound : FOUR.front;
 }
 
 /** Ece -> Ece'nin, Bora -> Bora'nın, Kaan -> Kaan'ın */
@@ -64,7 +64,7 @@ export function trDative(name) {
   const base = String(name || "").trim();
   if (!base) return base;
   const w = spoken(base);
-  const a = BACK.has(lastVowel(w)) ? "a" : "e";
+  const a = BACK.has(lastVowel(w)) ? TWO.back : TWO.front;
   return `${base}'${endsVowel(w) ? "y" : ""}${a}`;
 }
 
