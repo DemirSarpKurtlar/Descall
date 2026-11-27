@@ -108,6 +108,8 @@ import {
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 import RangeSlider from "../../premium/ui/RangeSlider.jsx";
 import { useRumView } from "../../lib/perf/useRumTiming.js";
+import { platformHeaders } from "../../plus2/platform.js";
+const ProfileGifNote = lazy(() => import("../../plus2/ProfileGifNote.jsx"));
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -1419,11 +1421,15 @@ const UserPanel = forwardRef(function UserPanel({
     };
     const res = await fetch(`${apiBase()}/api/user/profile`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...platformHeaders() },
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || t("Failed to save profile"));
+    if (!res.ok) {
+      // Descall+ 2.0: a new animated photo / banner on a free account (where it is on sale) is refused.
+      if (data.code === "ANIMATED_PROFILE_PLUS") throw Object.assign(new Error(t("plus2.gif.serverRefused")), { code: data.code });
+      throw new Error(data.error || t("Failed to save profile"));
+    }
     keepTextDrafts();
     return applyProfileLocally(
       data.user || {
@@ -1937,6 +1943,8 @@ const UserPanel = forwardRef(function UserPanel({
                 <span className="us-hint">
                   {t("JPG, PNG, WebP or GIF, up to 8 MB. GIFs stay animated.")}
                 </span>
+                {/* Descall+ 2.0 moment 4: an animated avatar / banner from before stays (shown once). */}
+                <Suspense fallback={null}><ProfileGifNote avatarUrl={avatarUrl} bannerUrl={bannerUrl} /></Suspense>
               </div>
             </div>
             <input

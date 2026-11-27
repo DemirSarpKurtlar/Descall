@@ -5,6 +5,7 @@
  * adminFetch, writes behind the admin step-up code).
  */
 import PremiumDashboard from "./PremiumDashboard.jsx";
+import PlusWorkspace from "./PlusWorkspace.jsx";
 import PremiumUsers from "./PremiumUsers.jsx";
 import PremiumBulk from "./PremiumBulk.jsx";
 import PremiumHistory from "./PremiumHistory.jsx";
@@ -19,6 +20,7 @@ import "../../../styles/promo.css";
 import "../../../styles/premium-admin.css";
 
 const PAGES = {
+  premiumWorkspace: PlusWorkspace,
   premiumDashboard: PremiumDashboard,
   premiumUsers: PremiumUsers,
   premiumBulk: PremiumBulk,

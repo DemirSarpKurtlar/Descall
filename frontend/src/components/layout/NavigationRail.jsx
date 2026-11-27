@@ -23,6 +23,15 @@ import { UVP_STATUS_EVENT } from "../../lib/userVoicePanel";
 import useMaterialize from "../../hooks/useMaterialize";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { STATUS_EMOJIS, splitStatusEmoji, joinStatusEmoji } from "../../lib/statusPresets";
+import { usePlus } from "../../plus2/plusStore.js";
+import { openPlus } from "../../plus2/openPlus.js";
+import { usePremium } from "../../premium/usePremium.js";
+import { Sparkles as PlusSparkles } from "../ui/Icon.jsx";
+
+/** Rail glyph for Descall+ (same size / stroke contract as the other rail icons). */
+function RailPlusGlyph({ size = 24 }) {
+  return <PlusSparkles size={size} />;
+}
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
 
@@ -180,7 +189,16 @@ function NavigationRail({
     () => filterMainNavItems(buildMainNavItems(t)),
     [t]
   );
-  const toolItems = useMemo(() => buildToolNavItems(t), [t]);
+  // Descall+ 2.0: its own rail icon (draft 5B: "sunucu çubuğunda ayrı simge") once it is on sale here,
+  // or for members (their boosts and gifts live there).
+  const plusState = usePlus({ load: "offer" });
+  const { plan: premiumPlanNow } = usePremium();
+  const showPlus = Boolean(plusState.offer?.salesOn || (premiumPlanNow && plusState.offer?.boostsOn));
+  const toolItems = useMemo(() => {
+    const items = buildToolNavItems(t);
+    if (!showPlus) return items;
+    return [{ id: "plus", icon: RailPlusGlyph, label: t("plus2.rail"), group: "tools", action: "plus" }, ...items];
+  }, [t, showPlus]);
 
   const statusKey = STATUS_META[myStatus] ? myStatus : "online";
 
@@ -334,7 +352,8 @@ function NavigationRail({
   };
 
   const handleToolAction = (action) => {
-    if (action === "add") onAddClick?.();
+    if (action === "plus") openPlus({ view: "hub" });
+    else if (action === "add") onAddClick?.();
     else if (action === "settings") onUserClick?.();
   };
 

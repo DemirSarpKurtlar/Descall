@@ -11,6 +11,9 @@ import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { usePressFeedbackScope } from "../../hooks/usePressFeedback";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
+// Descall+ 2.0: plan ceiling (free 1080p / 30 once Descall+ is on sale here; nothing changes before that).
+import { ScreenQualityMoment, useScreenCeiling } from "../../plus2/ScreenQualityGate.jsx";
+import { clampToCeiling, optionLock } from "../../plus2/model.js";
 
 export const SCREEN_RESOLUTION_PRESETS = [
   { value: "480p", label: "480p", desc: "854×480", hintKey: "Smoothest, low bandwidth" },
@@ -100,6 +103,8 @@ export default function ScreenShareQualityPanel({
   participantCount = 2,
   onStartWithQuality,
   onRestartWithQuality,
+  serverId = null,
+  serverName = "",
 }) {
   const t = useT();
   const { locale } = useLocale() || {};
@@ -108,7 +113,11 @@ export default function ScreenShareQualityPanel({
   usePressFeedbackScope(panelRef, { enabled: open });
   const [applying, setApplying] = useState(false);
   const [appliedFlash, setAppliedFlash] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
   const quality = screenQuality || GROUP_SCREEN_DEFAULT_QUALITY;
+  const { ceiling, upsell } = useScreenCeiling(serverId, { enabled: open });
+  // Never a silent downgrade: the picked quality stays visible; the next share starts at the ceiling.
+  const overCeiling = Boolean(ceiling) && (optionLock({ resolution: quality.resolution }, ceiling).locked || optionLock({ fps: quality.fps }, ceiling).locked);
   const narrow = useIsNarrowViewport(720);
   // Ceiling per viewer copy: a mesh sends one per other participant, 1:1 and SFU send one.
   const mbps = useMemo(
@@ -169,21 +178,23 @@ export default function ScreenShareQualityPanel({
   );
 
   const pickContent = (value) => {
-    void applyChange(qualityForContent(value, quality, resolutionOptions, fpsOptions));
+    void applyChange(clampToCeiling(qualityForContent(value, quality, resolutionOptions, fpsOptions), ceiling));
   };
 
   const pickResolution = (resolution) => {
+    if (optionLock({ resolution }, ceiling).locked) { setGateOpen(true); return; }
     void applyChange({ ...quality, resolution });
   };
 
   const pickFps = (fps) => {
+    if (optionLock({ fps }, ceiling).locked) { setGateOpen(true); return; }
     void applyChange({ ...quality, fps });
   };
 
   const handleStart = async () => {
     setApplying(true);
     try {
-      await onStartWithQuality?.(quality);
+      await onStartWithQuality?.(clampToCeiling(quality, ceiling));
       onClose?.();
     } finally {
       setApplying(false);
@@ -298,18 +309,20 @@ export default function ScreenShareQualityPanel({
               <div className="ssq-seg" role="radiogroup" aria-labelledby="ssq-res">
                 {resolutionOptions.map((res) => {
                   const on = quality.resolution === res.value;
+                  const locked = optionLock({ resolution: res.value }, ceiling).locked;
                   return (
                     <button
                       key={res.value}
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      className={on ? "is-on" : undefined}
+                      className={[on ? "is-on" : "", locked ? "is-locked" : ""].filter(Boolean).join(" ") || undefined}
                       disabled={applying}
-                      title={`${res.desc} · ${t(res.hintKey)}`}
+                      title={locked ? t("plus2.screen.lockedTip") : `${res.desc} · ${t(res.hintKey)}`}
                       onClick={() => pickResolution(res.value)}
                     >
                       {res.value}
+                      {locked ? <span className="ssq-plus">{t("plus2.screen.withPlus")}</span> : null}
                     </button>
                   );
                 })}
@@ -319,6 +332,7 @@ export default function ScreenShareQualityPanel({
               <div className="ssq-seg" role="radiogroup" aria-labelledby="ssq-fps">
                 {fpsShown.map((fps) => {
                   const on = fpsValue === fps.value;
+                  const locked = optionLock({ fps: fps.value }, ceiling).locked;
                   return (
                     <button
                       key={fps.value}
@@ -326,16 +340,27 @@ export default function ScreenShareQualityPanel({
                       role="radio"
                       aria-checked={on}
                       aria-label={`${fps.value} FPS`}
-                      className={on ? "is-on" : undefined}
+                      className={[on ? "is-on" : "", locked ? "is-locked" : ""].filter(Boolean).join(" ") || undefined}
                       disabled={applying}
-                      title={t(fps.hintKey)}
+                      title={locked ? t("plus2.screen.lockedTip") : t(fps.hintKey)}
                       onClick={() => pickFps(fps.value)}
                     >
                       {fps.label}
+                      {locked ? <span className="ssq-plus">{t("plus2.screen.withPlus")}</span> : null}
                     </button>
                   );
                 })}
               </div>
+
+              {gateOpen && ceiling ? (
+                <ScreenQualityMoment ceiling={ceiling} upsell={upsell} serverId={serverId} serverName={serverName} onDone={() => setGateOpen(false)} />
+              ) : null}
+              {overCeiling && !isScreenSharing ? (
+                <div className="ssq-warn">
+                  <Info size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>{t("plus2.screen.nextShare", { h: ceiling.height, fps: ceiling.fps })}</span>
+                </div>
+              ) : null}
 
               <div className="ssq-sum" aria-live="polite" title={t("Estimated encode bitrate")}>
                 <Wifi size={16} aria-hidden="true" />

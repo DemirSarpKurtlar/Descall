@@ -12,7 +12,7 @@ export const ADMIN_NAV_GROUPS = [
   ["people", ["directory", "people", "reports", "feedback", "moderation", "appeals", "dmReview", "serverReview", "suspicious", "accessBans"]],
   // Premium Yönetimi (Descall+ / Ultra, phase 1): nine pages, one grantable section "premium".
   ["premium", [
-    "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
+    "premiumWorkspace", "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
     "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
   ]],
   ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
@@ -39,6 +39,7 @@ export const TAB_SECTION = Object.freeze({
   appeals: "moderation",
   // Vitrin ve Setler (Market 2.0) follows the shop permission, like /admin/shop2 on the server.
   shop2: "shop",
+  premiumWorkspace: "premium",
   premiumDashboard: "premium",
   premiumUsers: "premium",
   premiumBulk: "premium",

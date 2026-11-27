@@ -2,6 +2,7 @@
  * Screen-share capture + RTP sender tuning for WebRTC mesh calls.
  * DM (1:1) uses a higher-quality profile; group mesh stays conservative.
  */
+import { capCaptureSize, getScreenCeiling } from "../plus2/screenCeiling.js";
 import { isDesktopShell } from "./desktopShell.js";
 import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
 import { t } from "../i18n/runtime.js";
@@ -595,7 +596,8 @@ export function resolveScreenCaptureSize(quality = {}, opts = {}) {
   // (screenShareCodec.screenShareLimits, the same for every user).
   const hardCap = opts.maxFps ?? (peerCount <= 2 ? 60 : 30);
   const fps = Math.min(Math.max(Number(quality.fps) || (peerCount <= 2 ? 30 : 20), 10), hardCap);
-  return { ...size, fps };
+  // Descall+ 2.0: the plan's ceiling (null until Descall+ is on sale here, so nothing changes today).
+  return capCaptureSize({ ...size, fps }, getScreenCeiling(opts.serverId || ""));
 }
 
 /**

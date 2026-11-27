@@ -122,12 +122,26 @@ router.post("/iyzico", raw, async (req, res) => {
 // The hosted page posts the token back here (in the Descall+ window's frame or the system browser).
 // We confirm from the API and fulfil; the app sees it through its checkout status poll. The answer
 // is a plain page (no script) telling the buyer they can go back to Descall.
-function donePage(ok) {
-  const title = ok ? "Ödeme alındı / Payment received" : "Ödeme tamamlanmadı / Payment not completed";
-  const body = ok ? "Descall'a dönebilirsin. / You can go back to Descall." : "Descall'a dönüp tekrar deneyebilirsin. / Go back to Descall and try again.";
-  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>`
+const DONE_COPY = require("../lib/plus/donePage.copy.json");
+
+function pageLang(req) {
+  const want = String(req.get("accept-language") || "").toLowerCase();
+  if (want.startsWith("pt")) return "pt-BR";
+  const two = want.slice(0, 2);
+  return DONE_COPY[two] ? two : "tr";
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function donePage(ok, lang = "tr") {
+  const c = DONE_COPY[lang] || DONE_COPY.tr;
+  const head = escapeHtml(ok ? c.okTitle : c.failTitle);
+  const line = escapeHtml(ok ? c.okBody : c.failBody);
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${head}</title></head>`
     + `<body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#111214;color:#f2f3f5;font:15px -apple-system,system-ui,sans-serif;text-align:center">`
-    + `<div><h1 style="font-size:19px">${title}</h1><p style="color:#b5bac1">${body}</p></div></body></html>`;
+    + `<div><h1 style="font-size:19px">${head}</h1><p style="color:#b5bac1">${line}</p></div></body></html>`;
 }
 
 router.post("/iyzico/callback", express.urlencoded({ extended: false, limit: "16kb" }), async (req, res) => {
@@ -135,15 +149,15 @@ router.post("/iyzico/callback", express.urlencoded({ extended: false, limit: "16
   const token = String(req.body?.token || "");
   res.set("Cache-Control", "no-store");
   res.type("html");
-  if (!providers.isConfigured("iyzico") || !/^[0-9a-f-]{36}$/i.test(checkoutId) || !token) return res.status(400).send(donePage(false));
+  if (!providers.isConfigured("iyzico") || !/^[0-9a-f-]{36}$/i.test(checkoutId) || !token) return res.status(400).send(donePage(false, pageLang(req)));
   try {
     const cfg = await config.load();
     const ev = await confirmIyzico({ token, checkoutId, cfg });
     if (ev) await fulfil(ev, { cfg });
-    return res.send(donePage(Boolean(ev && ev.type !== "payment_failed")));
+    return res.send(donePage(Boolean(ev && ev.type !== "payment_failed"), pageLang(req)));
   } catch (err) {
     console.warn("[plus/webhook] iyzico callback:", err?.code || "error");
-    return res.status(500).send(donePage(false));
+    return res.status(500).send(donePage(false, pageLang(req)));
   }
 });
 

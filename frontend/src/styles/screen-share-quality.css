@@ -256,3 +256,7 @@ html.gd-lite:not(.electron-app) .ssq-sheet {
   .ssq-cta { transition: none; }
   .ssq-cta[data-pressed] { transform: none; }
 }
+
+/* Descall+ 2.0: options above the plan's ceiling (only once Descall+ is on sale here). */
+.ssq-seg button.is-locked { color: var(--text-3); flex-direction: column; gap: 1px; line-height: 1.1; }
+.ssq-seg button.is-locked .ssq-plus { font-size: 9.5px; font-weight: 750; letter-spacing: .02em; color: color-mix(in srgb, #8d86ff 70%, var(--text-0)); }

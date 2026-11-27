@@ -241,6 +241,12 @@ export function renderBody(page, lang) {
   const boxes = [];
   if (events.length) boxes.push(`<section class="box" data-s="ev"><h2>${icon("cal", 15)} ${a(c.upcoming)}</h2>${events.slice(0, 3).join("")}</section>`);
   if ((page.rules || []).length) boxes.push(`<section class="box" data-s="rules"><h2>${icon("book", 15)} ${a(c.rules)}</h2><ol class="rules">${page.rules.map((r) => `<li>${a(r)}</li>`).join("")}</ol></section>`);
+  // Descall+ 2.0 thank-you wall: boosters who agreed to be listed, oldest first (only names, never ids).
+  if (page.boostWall && page.boostWall.boosters.length) {
+    const w = page.boostWall;
+    const names = w.boosters.map((b) => `<span class="tg" title="${a(fill(c.wallSince, { date: b.since }))}">${a(b.displayName || b.username)}</span>`).join(" ");
+    boxes.push(`<section class="box" data-s="wall"><h2>${icon("pin", 15)} ${a(c.thankWall)} <span class="mut">${a(fill(c.wallMeta, { level: w.level, n: num(c, w.count) }))}</span></h2><div class="tags">${names}</div></section>`);
+  }
   if (page.pin) boxes.push(`<section class="box pinb" data-s="pin"><h2>${icon("pin", 15)} ${a(c.pinned)}</h2><p class="pin">${a(page.pin).replace(/\n/g, "<br>")}</p></section>`);
 
   const ch = page.channels;
@@ -473,6 +479,18 @@ function cacheKey(slug) {
 }
 
 /** Minimal shape check of the backend reply (never trust it blindly). */
+/** Descall+ thank-you wall from the API: names and months only, at most 60. */
+export function normalizeWall(w) {
+  if (!w || typeof w !== "object" || !Array.isArray(w.boosters)) return null;
+  const boosters = w.boosters.slice(0, 60).map((b) => ({
+    username: oneLine(b && b.username, 40),
+    displayName: oneLine(b && b.displayName, 40),
+    since: /^\d{4}-\d{2}/.test(String(b && b.since)) ? String(b.since).slice(0, 7) : "",
+  })).filter((b) => b.username);
+  if (!boosters.length) return null;
+  return { count: Math.max(0, Math.min(1000, Number(w.count) || 0)), level: Math.max(0, Math.min(3, Number(w.level) || 0)), boosters };
+}
+
 export function normalizePage(body) {
   const p = body && typeof body === "object" ? body.page : null;
   if (!p || typeof p !== "object") return null;
@@ -484,6 +502,7 @@ export function normalizePage(body) {
     events: Array.isArray(p.events) ? p.events.slice(0, 5) : [],
     rules: Array.isArray(p.rules) ? p.rules.slice(0, 3) : [],
     channels: p.channels && Array.isArray(p.channels.text) && Array.isArray(p.channels.voice) ? p.channels : null,
+    boostWall: normalizeWall(p.boostWall),
     qrSvg: typeof p.qrSvg === "string" && /^<svg[\s>]/.test(p.qrSvg) && !/<script|on\w+=|javascript:|<foreignObject/i.test(p.qrSvg) ? p.qrSvg : null,
   };
 }

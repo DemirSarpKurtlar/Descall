@@ -16,6 +16,7 @@ import { AMP_RU } from "./profileMediaPicker.ru.js";
 import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
+import { PLUS2_RU } from "./plus2.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { PUBPAGE_RU } from "./pubpage.ru.js";
 import { BAN_RU } from "./ban.ru.js";
@@ -73,6 +74,7 @@ export const nested = {
   },
   "msg5": MSG5_RU,
   "act": ACT_RU,
+  "plus2": PLUS2_RU,
   "dir": DIR_RU,
   "pubpage": PUBPAGE_RU,
   "ban": BAN_RU,
@@ -451,6 +453,7 @@ export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Управление премиумом",
+    "navWorkspace": "Рабочая область Descall+",
     "navDashboard": "Панель премиума",
     "navUsers": "Подписки участников",
     "navBulk": "Массовые действия",

@@ -56,6 +56,8 @@ import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
 import { VOICE_LIST_COLLAPSED, visibleVoiceMembers } from "../../lib/voiceMemberList";
 import { getChannelOverrides as getChannelOverridesForMove } from "../../api/servers";
 import { moveNeedsSyncChoice } from "../../lib/channelOverridesView";
+const BoostGoalBar = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.BoostGoalBar })));
+const ServerLevelChip = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.ServerLevelChip })));
 
 // Public server directory inside the app (item 8), loaded when first opened.
 const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
@@ -1083,6 +1085,8 @@ export default function ServersSidebar({
               <span className="server-shell-meta">
                 {t("{count} members", { count: activeServer.memberCount || 1 })}
                 {activeServer.isOwner ? ` · ${t("Owner")}` : ""}
+                {/* Descall+ 2.0: level chip; a tap opens the server's boost page. */}
+                <Suspense fallback={null}><ServerLevelChip serverId={activeServer.id} /></Suspense>
               </span>
             </div>
             {hubMode === "phone" ? (
@@ -1407,6 +1411,8 @@ export default function ServersSidebar({
           </ServerMenuFrame>
 
           <div className="sidebar-content server-channels-scroll">
+            {/* Descall+ 2.0: the owner's boost goal, a thin bar above the channels (live). */}
+            {activeServer?.id ? <Suspense fallback={null}><BoostGoalBar serverId={activeServer.id} /></Suspense> : null}
             {activeServer && !channelListReady ? (
               <ChannelListSkeleton count={8} label={t("Loading channels…")} />
             ) : null}

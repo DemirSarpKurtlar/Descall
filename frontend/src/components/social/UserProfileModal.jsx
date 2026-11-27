@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { fetchProfileShared, peekProfile } from "../../lib/profileCache.js";
 import { createPortal } from "react-dom";
 import OverlayPortal from "../ui/OverlayPortal";
@@ -47,6 +47,7 @@ import "./ProfileSheet.css";
 import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL, MIBell } from "./ProfileSheetIcons.jsx";
 import { openNotifyOptions } from "../../lib/notifyPrefs";
 import useModalFocus from "../../hooks/useModalFocus";
+const ProfileBoostNote = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.ProfileBoostNote })));
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -128,6 +129,7 @@ function UserProfileModal({
   onStartDm,
   onStartCall,
   onFriendSent,
+  plusServer = null,
 }) {
   const t = useT();
   const glassShell = useGlassShell();
@@ -557,6 +559,10 @@ function UserProfileModal({
             <PremiumBadge user={viewUser} variant="chip" />
           </div>
           {fetched?.bio ? <p className="pfs-bio">{fetched.bio}</p> : null}
+          {/* Descall+ 2.0 (moment 6): opened from a server, a booster's card says so; thanks first, then the look. */}
+          {plusServer?.id && viewUser?.id && String(viewUser.id) !== String(me?.id) ? (
+            <Suspense fallback={null}><ProfileBoostNote user={viewUser} serverId={plusServer.id} serverName={plusServer.name} /></Suspense>
+          ) : null}
           {tiles.length ? (
             <div className="pfs-acts" style={{ "--n": tiles.length }} data-testid="profile-actions">
               {tiles.map((tile) => {

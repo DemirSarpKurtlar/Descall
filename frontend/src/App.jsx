@@ -234,6 +234,8 @@ const CallTapCard = memoStableProps(CallTapCardView, "CallTapCard");
 const SpecialBadgeHost = memoStableProps(SpecialBadgeHostView, "SpecialBadgeHost");
 const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
+// Descall+ 2.0 (owner pick 5B): hub, server boosts, checkout, gifts; nothing sells until the admin turns it on.
+const PlusHost = lazy(() => import("./plus2/PlusHost.jsx"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
@@ -5852,6 +5854,12 @@ export default function App() {
         {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+          </Suspense>
+        ) : null}
+
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <PlusHost socket={socketApi} me={me} />
           </Suspense>
         ) : null}
 

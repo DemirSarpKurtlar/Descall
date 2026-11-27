@@ -16,6 +16,7 @@ import { AMP_DE } from "./profileMediaPicker.de.js";
 import { MSG4_DE } from "./msg4.de.js";
 import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
+import { PLUS2_DE } from "./plus2.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { PUBPAGE_DE } from "./pubpage.de.js";
 import { BAN_DE } from "./ban.de.js";
@@ -73,6 +74,7 @@ export const nested = {
   },
   "msg5": MSG5_DE,
   "act": ACT_DE,
+  "plus2": PLUS2_DE,
   "dir": DIR_DE,
   "pubpage": PUBPAGE_DE,
   "ban": BAN_DE,
@@ -451,6 +453,7 @@ export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Premium-Verwaltung",
+    "navWorkspace": "Descall+ Arbeitsbereich",
     "navDashboard": "Premium-Dashboard",
     "navUsers": "Mitglieder-Abos",
     "navBulk": "Sammelaktionen",
