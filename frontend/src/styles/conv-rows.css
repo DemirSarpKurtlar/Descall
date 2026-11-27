@@ -295,10 +295,59 @@ html.glass-desktop .server-list-row-wrap:has(> .server-list-item.active) > .serv
   }
 }
 
+/* Touch tablets in the desktop layout (iPad, Android tablet): the rows look
+   like Electron's. No permanent ⋯ on every row: holding a row opens its menu
+   at the finger (lib/touchLongPress.js), and only the selected row (or the
+   one whose menu is open) keeps a ⋯ as the visible affordance, with a 44pt
+   hit area. Long-press must not start WebKit text selection or the callout. */
+@media (hover: none), (pointer: coarse) {
+  .conv-group-wrap.is-desktop > .dm-item,
+  .conv-group-wrap.is-desktop > .group-item,
+  .conv-group-wrap.is-desktop > button.conv-row,
+  html.glass-desktop .conv-group-wrap.is-desktop > button.conv-row {
+    padding-right: 12px !important;
+  }
+
+  .conv-group-wrap.is-desktop {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .conv-group-wrap.is-desktop:not(.is-active-row):not(.menu-open) > .conv-more-btn {
+    display: none !important;
+  }
+
+  .conv-group-wrap.is-desktop:is(.is-active-row, .menu-open) > .conv-more-btn {
+    opacity: 1 !important;
+  }
+
+  .conv-group-wrap.is-desktop:is(.is-active-row, .menu-open) > .conv-more-btn::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+  }
+
+  .conv-group-wrap.is-desktop:is(.is-active-row, .menu-open) .conv-row-meta {
+    visibility: hidden;
+  }
+}
+
 /* Time/pin column: 44px fits "28 Eyl" and "Dün" and leaves the name room. */
 html.glass-desktop .conv-row-meta {
   flex-basis: 44px;
   width: 44px;
   min-width: 44px;
   max-width: 44px;
+}
+
+/* Server channels on a touch tablet in the desktop layout: holding a channel
+   opens its menu (ServersSidebar hub "tablet" long-press), so the ⋯ stays only
+   on the open channel instead of on every row. Hidden by opacity, not
+   display, so an open menu keeps its anchor geometry. */
+@media (hover: none), (pointer: coarse) {
+  html.glass-desktop .server-channel-row-wrap:not(.active) > .server-channel-row-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
