@@ -70,6 +70,59 @@ export function getIosAudioRouteSnapshot() {
 const owners = new Set();
 
 /**
+ * Settings default for call audio on this iPhone: "speaker" | "receiver" | ""
+ * (system default = loudspeaker unless headphones / Bluetooth). Mirrored to
+ * native (UserDefaults) so a call answered with the app closed honours it.
+ */
+export const IOS_OUTPUT_PREF_KEY = "descall:ios-call-output";
+
+function prefStorage() {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readIosCallAudioPreference(storage = prefStorage()) {
+  try {
+    const v = storage?.getItem(IOS_OUTPUT_PREF_KEY) || "";
+    return v === "receiver" || v === "speaker" ? v : "";
+  } catch {
+    return "";
+  }
+}
+
+export async function writeIosCallAudioPreference(route, storage = prefStorage()) {
+  const v = route === "receiver" || route === "speaker" ? route : "";
+  try {
+    if (v) storage?.setItem(IOS_OUTPUT_PREF_KEY, v);
+    else storage?.removeItem(IOS_OUTPUT_PREF_KEY);
+  } catch {
+    /* private mode */
+  }
+  if (!IOS_NATIVE) return;
+  try {
+    await initIosCallKit();
+    setState(await callKitPlugin.setCallAudioPreference({ route: v }));
+  } catch {
+    /* older native build without the method: the next call's begin carries it */
+  }
+}
+
+/** Re-read the live route (e.g. a settings screen opened mid-call). */
+export async function refreshIosAudioRoute() {
+  if (!IOS_NATIVE) return;
+  ensureTap();
+  try {
+    await initIosCallKit();
+    setState(await callKitPlugin.getAudioRoute());
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * A call is ringing out or active. Output is the loudspeaker unless wired
  * headphones or Bluetooth are connected. `owner` lets a DM and a group call
  * share the route without one ending the other's session.
@@ -81,7 +134,8 @@ export async function beginIosCallAudio({ video = false, owner = "dm" } = {}) {
   begun = true;
   try {
     await initIosCallKit();
-    setState(await callKitPlugin.beginCallAudio({ video: Boolean(video) }));
+    const preferred = readIosCallAudioPreference();
+    setState(await callKitPlugin.beginCallAudio({ video: Boolean(video), ...(preferred ? { preferred } : {}) }));
   } catch (err) {
     console.warn("[CallAudio] route begin failed:", err?.message || err);
   }
@@ -103,11 +157,20 @@ export async function endIosCallAudio(owner = "dm") {
 /** id: "receiver" | "speaker" | "system" | "input:<uid>" */
 export async function selectIosAudioRoute(id) {
   if (!IOS_NATIVE || !id) return;
+  ensureTap();
   try {
     setState(await callKitPlugin.setAudioRoute({ route: String(id) }));
   } catch (err) {
     console.warn("[CallAudio] route select failed:", err?.message || err);
   }
+  // iOS settles on the new route a moment later (the native side also emits
+  // an "audioRoute" event then); read it so the menu shows what is playing.
+  setTimeout(() => void refreshIosAudioRoute(), 700);
+}
+
+/** Owners currently holding the call audio route ("dm" | "group" | "server"). */
+export function iosCallAudioOwners() {
+  return [...owners];
 }
 
 /** Route list in the shape of enumerateDevices() output for the existing menus. */

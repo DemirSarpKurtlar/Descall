@@ -66,6 +66,7 @@ import {
 import { t as tRuntime } from "../i18n/runtime";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
 import { beginIosCallAudio, endIosCallAudio } from "../lib/iosAudioRoute";
+import { useIosAudioRoute } from "./useIosAudioRoute";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
@@ -222,6 +223,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       void endIosCallAudio("group");
     }
   }, [isInCall]);
+  // Native iOS output menu (Ahize / Hoparlör / Bluetooth) for group calls.
+  const iosRouteHook = useIosAudioRoute(isInCall);
 
   // Resume media + ICE after background; explain screen-share death on return.
   useEffect(() => {
@@ -2850,6 +2853,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   }, []);
 
   return {
+    // Native iOS AVAudioSession routes for the in-call device menus (null elsewhere).
+    iosAudioRoute: iosRouteHook.iosAudioRoute,
+    selectIosRoute: iosRouteHook.selectIosRoute,
     isInCall,
     isInitiator,
     callType,

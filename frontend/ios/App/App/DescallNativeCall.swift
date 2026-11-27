@@ -550,6 +550,38 @@ final class DescallNativeCall: NSObject {
         RTCAudioSessionConfiguration.setWebRTC(config)
     }
 
+    /// Earpiece / loudspeaker as the session's default built-in route
+    /// (27 Nov 2026). With .defaultToSpeaker set, overrideOutputAudioPort(.none)
+    /// lands on the loudspeaker, so the earpiece needs the option cleared.
+    /// The native engine's WebRTC configuration is updated too: WebRTC
+    /// re-applies it when its audio unit (re)starts, which would otherwise put
+    /// the option back. Category and mode stay the same. Returns true when the
+    /// live session changed.
+    @discardableResult
+    static func setDefaultToSpeaker(_ on: Bool, nativeEngine: Bool) -> Bool {
+        let session = AVAudioSession.sharedInstance()
+        if nativeEngine {
+            let config = RTCAudioSessionConfiguration.webRTC()
+            let raw = DescallNativeCallLogic.categoryOptions(config.categoryOptions.rawValue, defaultToSpeaker: on)
+            config.categoryOptions = AVAudioSession.CategoryOptions(rawValue: raw)
+            RTCAudioSessionConfiguration.setWebRTC(config)
+        }
+        guard session.category == .playAndRecord,
+              session.categoryOptions.contains(.defaultToSpeaker) != on else { return false }
+        let options = AVAudioSession.CategoryOptions(rawValue: DescallNativeCallLogic.categoryOptions(session.categoryOptions.rawValue, defaultToSpeaker: on))
+        let rtc = RTCAudioSession.sharedInstance()
+        if nativeEngine { rtc.lockForConfiguration() }
+        defer { if nativeEngine { rtc.unlockForConfiguration() } }
+        do {
+            try session.setCategory(.playAndRecord, mode: session.mode, options: options)
+            NSLog("[DescallAudioRoute] defaultToSpeaker=\(on) native=\(nativeEngine)")
+            return true
+        } catch {
+            NSLog("[DescallAudioRoute] defaultToSpeaker=\(on) failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     /// Category/mode only (no activation): CXAnswerCallAction, before fulfill.
     private func configureAudioSessionForCall() {
         let rtc = RTCAudioSession.sharedInstance()

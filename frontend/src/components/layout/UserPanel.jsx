@@ -8,6 +8,8 @@ import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
 import VoiceShortcutsPane from "../settings/VoiceShortcutsPane";
+import IosCallOutputField from "../settings/IosCallOutputField";
+import { IOS_NATIVE } from "../../lib/iosCallKit";
 import { nativePlatform } from "../../lib/nativeIntents.js";
 import { hasDesktopUpdater } from "../../lib/desktopUpdateState.js";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -2894,17 +2896,22 @@ const UserPanel = forwardRef(function UserPanel({
                     ))}
                   </select>
                 </label>
-                <label className="us-field">
-                  <span><Headphones size={13} /> {t("Speaker")}</span>
-                  <select value={selectedAudioOut} onChange={(e) => setSelectedAudioOut(e.target.value)}>
-                    <option value="">{t("System default")}</option>
-                    {audioOutputs.map((d) => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Speaker ${d.deviceId.slice(0, 6)}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {IOS_NATIVE ? (
+                  // iPhone app: WKWebView lists no outputs; the native router does (earpiece / speaker / Bluetooth).
+                  <IosCallOutputField />
+                ) : (
+                  <label className="us-field">
+                    <span><Headphones size={13} /> {t("Speaker")}</span>
+                    <select value={selectedAudioOut} onChange={(e) => setSelectedAudioOut(e.target.value)}>
+                      <option value="">{t("System default")}</option>
+                      {audioOutputs.map((d) => (
+                        <option key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Speaker ${d.deviceId.slice(0, 6)}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label className="us-field">
                   <span><Camera size={13} /> {t("Camera")}</span>
                   <select value={selectedVideoIn} onChange={(e) => setSelectedVideoIn(e.target.value)}>

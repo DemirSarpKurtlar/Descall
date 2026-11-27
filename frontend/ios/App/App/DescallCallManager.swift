@@ -952,6 +952,19 @@ final class DescallAudioRouter: NSObject {
     /// One delayed speaker retry. Immediate retries while ICE is checking
     /// fight WebKit and the call stays on "Bağlanıyor…".
     private var followUp: DispatchWorkItem?
+    /// 27 Nov 2026: a route the user picked is re-asserted whenever something
+    /// else (WebKit / WebRTC reconfiguring the session, a reconnect) moves the
+    /// audio away from it: at most once per second, this many times per pick.
+    private static let maxUserAsserts = 20
+    private var userAssertsLeft = maxUserAsserts
+    private var nextUserAssert = Date.distantPast
+    private var userFollowUp: DispatchWorkItem?
+    /// We cleared .defaultToSpeaker for the earpiece; put it back at the end.
+    private var clearedDefaultToSpeaker = false
+    /// Last built-in pick ("receiver" / "speaker") and when the call audio
+    /// ended, so a quick begin again (reconnect) keeps it.
+    private var rememberedChoice: String?
+    private var rememberedAt: TimeInterval?
 
     private override init() {
         super.init()
@@ -1029,14 +1042,39 @@ final class DescallAudioRouter: NSObject {
     // MARK: Public API (main thread)
 
     /// A DM call started ringing out / became active. Keeps an earlier user
-    /// choice when called again during the same call.
-    func begin(video: Bool) {
+    /// choice when called again during the same call. `preferred`
+    /// ("receiver" | "speaker") is the Settings default for call audio; a pick
+    /// made just before a reconnect wins over it.
+    /// Settings default for call audio ("receiver" | "speaker"), mirrored from
+    /// the web app so a call answered natively (app closed) honours it too.
+    static let preferenceKey = "descall.callAudioPreferred"
+
+    static func setPreference(_ route: String?) {
+        if let r = route, r == "receiver" || r == "speaker" {
+            UserDefaults.standard.set(r, forKey: preferenceKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: preferenceKey)
+        }
+    }
+
+    func begin(video: Bool, preferred: String? = nil) {
+        let preferred = preferred ?? UserDefaults.standard.string(forKey: Self.preferenceKey)
         let first = !active
         active = true
         self.video = video
         if first {
             userPicked = false
             choice = defaultChoice()
+            userAssertsLeft = Self.maxUserAsserts
+            if !prefersExternalRoute() {
+                let restored = DescallNativeCallLogic.restoredChoice(remembered: rememberedChoice, endedAt: rememberedAt, now: Date().timeIntervalSince1970)
+                if let pick = restored ?? (preferred == "receiver" ? "receiver" : nil) {
+                    choice = pick == "receiver" ? .receiver : .speaker
+                    userPicked = true
+                }
+            }
+            rememberedChoice = nil
+            rememberedAt = nil
         }
         assertsLeft = Self.maxAssertsPerChoice
         NSLog("[DescallAudioRoute] begin video=\(self.video) external=\(prefersExternalRoute())")
@@ -1047,6 +1085,10 @@ final class DescallAudioRouter: NSObject {
     /// The call ended: drop overrides so other audio plays normally again.
     func end() {
         guard active else { return }
+        if userPicked, choice == .receiver || choice == .speaker {
+            rememberedChoice = choice == .receiver ? "receiver" : "speaker"
+            rememberedAt = Date().timeIntervalSince1970
+        }
         active = false
         speakerArmed = false
         userPicked = false
@@ -1054,10 +1096,17 @@ final class DescallAudioRouter: NSObject {
         pending = nil
         followUp?.cancel()
         followUp = nil
+        userFollowUp?.cancel()
+        userFollowUp = nil
         choice = .system
         selfChangeUntil = Date().addingTimeInterval(0.8)
         try? session.overrideOutputAudioPort(.none)
         try? session.setPreferredInput(nil)
+        if clearedDefaultToSpeaker {
+            // The earpiece pick cleared it; later calls open on the loudspeaker again.
+            clearedDefaultToSpeaker = false
+            DescallNativeCall.setDefaultToSpeaker(true, nativeEngine: false)
+        }
     }
 
     /// "receiver" | "speaker" | "system" | "input:<uid>"
@@ -1076,8 +1125,12 @@ final class DescallAudioRouter: NSObject {
             active = true
         }
         assertsLeft = Self.maxAssertsPerChoice
+        userAssertsLeft = Self.maxUserAsserts
+        nextUserAssert = Date().addingTimeInterval(1.0)
+        NSLog("[DescallAudioRoute] select \(id.hasPrefix("input:") ? "input" : id) outputs=\(currentOutputs().map { Self.kind($0) }) options=\(session.categoryOptions.rawValue)")
         apply()
         emitState()
+        scheduleUserFollowUp()
         // Report again once iOS has settled on the new route.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.emitState() }
         return true
@@ -1107,22 +1160,25 @@ final class DescallAudioRouter: NSObject {
 
     // MARK: Applying
 
+    private var choiceName: String {
+        switch choice {
+        case .system: return "system"
+        case .receiver: return "receiver"
+        case .speaker: return "speaker"
+        case .input: return "input"
+        }
+    }
+
+    /// Override the port and, for the built-in routes, the session's
+    /// .defaultToSpeaker option (DescallNativeCallLogic.routePlan: with that
+    /// option set, "no override" IS the loudspeaker, so the earpiece pick used
+    /// to do nothing).
     private func apply() {
         guard active else { return }
         let s = session
-        let outs = currentOutputs()
         selfChangeUntil = Date().addingTimeInterval(0.8)
         do {
             switch choice {
-            case .system:
-                // Back to the connected headset / AirPods / A2DP speaker from a speaker override.
-                if outs.contains(.builtInSpeaker) {
-                    try s.overrideOutputAudioPort(.none)
-                }
-            case .speaker:
-                if !outs.contains(.builtInSpeaker) {
-                    try s.overrideOutputAudioPort(.speaker)
-                }
             case .receiver:
                 if externalConnected(), !wiredHeadphonesConnected(),
                    let mic = s.availableInputs?.first(where: { $0.portType == .builtInMic }),
@@ -1130,24 +1186,56 @@ final class DescallAudioRouter: NSObject {
                     // Leave Bluetooth HFP: the built-in mic pulls output to the receiver.
                     try s.setPreferredInput(mic)
                 }
-                if outs.contains(.builtInSpeaker) {
-                    try s.overrideOutputAudioPort(.none)
-                }
             case .input(let uid):
                 guard let port = s.availableInputs?.first(where: { $0.uid == uid }) else {
                     choice = defaultChoice()
                     return apply()
                 }
-                if outs.contains(.builtInSpeaker) {
-                    try s.overrideOutputAudioPort(.none)
-                }
                 if s.preferredInput?.uid != uid {
                     try s.setPreferredInput(port)
                 }
+            case .system, .speaker:
+                break
+            }
+            let native = DescallNativeCall.shared.isActive
+            let plan = DescallNativeCallLogic.routePlan(
+                choice: choiceName,
+                outputs: currentOutputs().map { Self.kind($0) },
+                categoryOptions: s.categoryOptions.rawValue,
+                nativeEngine: native
+            )
+            if let on = plan.defaultToSpeaker {
+                // Same category and mode, only the option: WebKit's capture unit
+                // is not torn down (that was category / mode changes, 2.9.133).
+                if DescallNativeCall.setDefaultToSpeaker(on, nativeEngine: native) {
+                    clearedDefaultToSpeaker = !on
+                }
+            }
+            switch plan.override {
+            case "speaker": try s.overrideOutputAudioPort(.speaker)
+            case "none": try s.overrideOutputAudioPort(.none)
+            default: break
             }
         } catch {
             NSLog("[DescallAudioRoute] apply failed: \(error.localizedDescription)")
         }
+    }
+
+    /// After a pick, check once the route settled; WebKit / WebRTC sometimes
+    /// reconfigure the session right after our change and undo it.
+    private func scheduleUserFollowUp() {
+        userFollowUp?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.userFollowUp = nil
+            guard self.active, self.userPicked, !self.matchesChoice(), self.userAssertsLeft > 0 else { return }
+            self.userAssertsLeft -= 1
+            NSLog("[DescallAudioRoute] pick undone by the system; re-applying \(self.choiceName)")
+            self.apply()
+            self.emitState()
+        }
+        userFollowUp = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
     }
 
     private func matchesChoice() -> Bool {
@@ -1221,6 +1309,12 @@ final class DescallAudioRouter: NSObject {
                     // Re-applying here fights WebKit in a loop while ICE is
                     // checking, and the call stays on "Bağlanıyor…".
                     self.scheduleSpeakerFollowUp()
+                } else if self.userPicked, !self.matchesChoice(), case .receiver = self.choice, !self.externalConnected() {
+                    // The user's earpiece pick was undone (WebKit / WebRTC
+                    // reconfigured the session): re-assert, rate limited.
+                    self.reassertUserPick()
+                } else if self.userPicked, !self.matchesChoice(), case .speaker = self.choice, !self.externalConnected() {
+                    self.reassertUserPick()
                 } else if self.prefersExternalRoute() {
                     self.choice = .system
                     self.assertsLeft = Self.maxAssertsPerChoice
@@ -1236,6 +1330,19 @@ final class DescallAudioRouter: NSObject {
         }
         pending = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.settleDelay, execute: work)
+    }
+
+    private func reassertUserPick() {
+        guard userAssertsLeft > 0 else { return }
+        let now = Date()
+        if now < nextUserAssert {
+            scheduleUserFollowUp()
+            return
+        }
+        userAssertsLeft -= 1
+        nextUserAssert = now.addingTimeInterval(1.0)
+        apply()
+        scheduleUserFollowUp()
     }
 
     /// One speaker retry after ICE has had a chance to finish. Not a loop.
@@ -1284,24 +1391,19 @@ final class DescallAudioRouter: NSObject {
             }
         }
 
-        let selected: String
-        if outs.contains(where: { $0.portType == .builtInSpeaker }) {
-            selected = "speaker"
-        } else if outs.contains(where: { $0.portType == .builtInReceiver }) {
-            selected = "receiver"
-        } else if let input = currentInputs.first(where: { listedInputUids.contains($0.uid) }) {
-            selected = "input:\(input.uid)"
-        } else if outs.contains(where: { !Self.isBuiltIn($0.portType) }) {
-            selected = "system"
-        } else {
-            selected = ""
-        }
+        // What the user actually hears right now (not what was asked for).
+        let selected = DescallNativeCallLogic.selectedRoute(
+            outputs: outs.map { Self.kind($0.portType) },
+            currentInputUid: currentInputs.first(where: { listedInputUids.contains($0.uid) })?.uid
+        )
         let current = outs.first.map { Self.kind($0.portType) } ?? "none"
         return [
             "active": active,
             "current": current,
             "selected": selected,
             "routes": routes,
+            "userPicked": userPicked,
+            "defaultToSpeaker": s.categoryOptions.contains(.defaultToSpeaker),
         ]
     }
 

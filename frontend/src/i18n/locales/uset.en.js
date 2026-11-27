@@ -14,6 +14,11 @@ export const USET_EN = {
     "notificationsApp": "Manage alerts and sounds on this device.",
     "voiceApp": "Pick the devices used for calls on this device."
   },
+  "iosOutput": {
+    "label": "Call audio output",
+    "hint": "Calls and voice channels start on this output. You can switch during a call too; the output you hear right now is shown as selected.",
+    "now": "Now"
+  },
   "notify": {
     "loadFailed": "Could not load these settings."
   }
