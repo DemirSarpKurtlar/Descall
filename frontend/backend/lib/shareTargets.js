@@ -286,10 +286,19 @@ function normalizeLink(raw) {
 }
 
 /** Every http(s) link in a text, normalized, unique, at most 5. */
+const TRAILING_PUNCT = new Set([")", ",", ".", ";", "!", "?"]);
+// Linear trim of sentence punctuation after a link (a regex anchored at $ backtracks on long runs).
+function trimTrailingPunct(s) {
+  let end = s.length;
+  while (end > 0 && TRAILING_PUNCT.has(s[end - 1])) end -= 1;
+  return s.slice(0, end);
+}
+
 function linksIn(text) {
   const out = [];
-  for (const m of String(text || "").matchAll(/https?:\/\/[^\s<>"']+/gi)) {
-    const n = normalizeLink(m[0].replace(/[),.;!?]+$/, ""));
+  // A share caption is short; the cap keeps the scan bounded for any input.
+  for (const m of String(text || "").slice(0, 20000).matchAll(/https?:\/\/[^\s<>"']{1,2048}/gi)) {
+    const n = normalizeLink(trimTrailingPunct(m[0]));
     if (n && !out.includes(n)) out.push(n);
     if (out.length >= 5) break;
   }
