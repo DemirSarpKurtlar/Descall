@@ -2,10 +2,10 @@
 // today's 4 personal cards (or the dense console list), lock one card for the refresh,
 // refresh confirm with the cart warning, featured set banner, yesterday + wishlist strips,
 // 7-day storefront history, action log with undo, and the live preview panel on the right.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
-import { SET_PIECE_ORDER, lastDays, refreshPlan, setPricing, setProgress, undoLeft, mmss, countdownParts } from "../../lib/shop2Logic.js";
+import { SET_PIECE_ORDER, slotStripFit, lastDays, refreshPlan, setPricing, setProgress, undoLeft, mmss, countdownParts } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
 import { keyStep, wrapIndex } from "../../lib/shop2Swipe.js";
 import { useShop2Swipe } from "../../hooks/useShop2Swipe.js";
@@ -282,6 +282,51 @@ export function setGradient(palette = []) {
 }
 
 // ---------------------------------------------------------------------------
+// The hero's piece strip: every tile gets the same explicit square size (measured, never a
+// % height of an aspect-ratio grid item, which WebKit leaves unresolved: the owner's iPad
+// showed empty, cropped and uneven tiles). The CSS says how many columns the layout wants
+// (--s2-strip-cols) or a fixed tile (--s2-strip-fixed); slotStripFit() turns the strip's
+// width into the tile size, the stage scale (--s2-k, 64 px design box) and whether the strip
+// has to scroll sideways (with snap) because 9 tiles of the minimum size do not fit.
+
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+function useSlotStrip(count) {
+  const [el, setEl] = useState(null);
+  useIsoLayoutEffect(() => {
+    if (!el) return undefined;
+    let last = "";
+    const apply = () => {
+      const cs = getComputedStyle(el);
+      const fit = slotStripFit({
+        width: el.clientWidth,
+        count,
+        cols: parseFloat(cs.getPropertyValue("--s2-strip-cols")),
+        fixed: parseFloat(cs.getPropertyValue("--s2-strip-fixed")),
+        min: parseFloat(cs.getPropertyValue("--s2-strip-min")),
+        max: parseFloat(cs.getPropertyValue("--s2-strip-max")),
+        gap: parseFloat(cs.columnGap),
+      });
+      const sig = `${fit.tile}|${fit.cols}|${fit.scroll}`;
+      if (sig === last) return;
+      last = sig;
+      el.style.setProperty("--s2-tile", `${fit.tile}px`);
+      el.style.setProperty("--s2-k", String(fit.k));
+      el.style.setProperty("--s2-cols", String(fit.cols));
+      el.classList.toggle("is-scroll", fit.scroll);
+      el.classList.toggle("is-small", fit.tile < 52);
+    };
+    apply();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(apply) : null;
+    ro?.observe(el);
+    // The banner switches layout (row / stacked) with its container: re-read the CSS then.
+    if (el.parentElement) ro?.observe(el.parentElement);
+    return () => ro?.disconnect();
+  }, [el, count]);
+  return setEl;
+}
+
+// ---------------------------------------------------------------------------
 // Featured set banner (A), auto-advances every 8 s; pauses on hover, focus and touch, and
 // restarts the 8 s after a manual change. Switch sets by swipe (touch), the prev / next
 // buttons, the dots, the "Siradaki" chip, or Left / Right / Home / End while focused.
@@ -316,6 +361,12 @@ function SetBanner({ sets }) {
     for (const s of list) if (!s2.data.setDetails[s.key]) loadSet(s.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.map((s) => s.key).join(",")]);
+  // A set whose pieces failed to load (offline, timeout) is asked again when it is shown.
+  useEffect(() => {
+    if (cur && !s2.data.setDetails[cur.key]) loadSet(cur.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur?.key]);
+  const stripRef = useSlotStrip(SET_PIECE_ORDER.length);
   useEffect(() => {
     if (hover || focused || n < 2) return undefined;
     const id = setTimeout(() => { setDir(1); setI((x) => (x + 1) % n); }, 8000);
@@ -345,15 +396,29 @@ function SetBanner({ sets }) {
       aria-roledescription={t("shop2.banner.carousel")}
       aria-label={s2.setName(cur)}
     >
-      <div className="s2-banner-slots" key={cur.key}>
-        {(pieces.length ? pieces : Array.from({ length: SET_PIECE_ORDER.length }, () => null)).slice(0, SET_PIECE_ORDER.length).map((p, k) => (
-          <span key={p?.item?.id ?? k} className={`s2-slot${p?.owned ? " is-owned" : ""}`} style={{ "--i": k }}>
-            {p ? <Shop2Art item={p.item} size="slot" me={s2.me} /> : null}
-            {p?.owned ? <em>{t("shop2.common.owned")}</em> : null}
-          </span>
-        ))}
+      {/* The strip and the controls stay mounted across sets (only the tiles and the title
+          block re-mount for their entry animation): removing the focused arrow made the
+          browser move the page and dropped keyboard focus. */}
+      <div className={`s2-banner-slots${pieces.length ? "" : " is-loading"}`} ref={stripRef} aria-busy={pieces.length ? undefined : "true"}>
+        {(pieces.length ? pieces : Array.from({ length: SET_PIECE_ORDER.length }, () => null)).slice(0, SET_PIECE_ORDER.length).map((p, k) => {
+          const label = p ? `${s2.itemName(p.item)} · ${t(`shop2.cat.${p.item.category || "other"}`)}` : undefined;
+          return (
+            <span
+              key={`${cur.key}-${p?.item?.id ?? k}`}
+              className={`s2-slot${p?.owned ? " is-owned" : ""}${p ? "" : " is-skel"}`}
+              style={{ "--i": k }}
+              data-cat={p?.item?.category || undefined}
+              role={p ? "img" : undefined}
+              aria-label={p ? (p.owned ? `${label} · ${t("shop2.common.owned")}` : label) : undefined}
+              title={label}
+            >
+              {p ? <Shop2Art item={p.item} size="slot" me={s2.me} fit /> : null}
+              {p?.owned ? <em>{t("shop2.common.owned")}</em> : null}
+            </span>
+          );
+        })}
       </div>
-      <div className="s2-banner-text" key={`t-${cur.key}`}>
+      <div className="s2-banner-text">
         <div className="s2-banner-chips">
           <Chip tone="violet" icon={Star}>{t("shop2.banner.featured", { i: at + 1, n })}</Chip>
           {left && !left.done ? <Chip icon={Clock}>{t("shop2.banner.left", { d: Math.floor(left.h / 24), h: left.h % 24 })}</Chip> : null}
@@ -365,22 +430,24 @@ function SetBanner({ sets }) {
             </button>
           ) : null}
         </div>
-        <h2>{s2.setName(cur)}</h2>
-        <p className="s2-muted">{cur.tagline ? s2.itemName({ name: cur.tagline }) : t("shop2.banner.desc")}</p>
-        <div className="s2-banner-price">
-          <div className="s2-ladder is-compact">
-            <span>{t("shop2.buy.sum")}</span><s className="s2-num"><Num value={pricing?.sum ?? cur.sum} /> {t("shop2.common.d")}</s>
-            <span>{t("shop2.buy.setPricePct", { n: pricing?.discountPct ?? 0 })}</span><b className="s2-num"><Num value={pricing?.setPrice ?? cur.setPrice} /> {t("shop2.common.d")}</b>
-            {pricing?.ownedCount ? (
-              <>
-                <span className="is-green">{t("shop2.buy.ownedDeductedN", { n: pricing.ownedCount })}</span>
-                <b className="s2-num is-green">-<Num value={pricing.ownedDeduction} /> {t("shop2.common.d")}</b>
-              </>
-            ) : null}
-          </div>
-          <div className="s2-banner-your">
-            <span className="s2-eyebrow">{t("shop2.banner.yourPrice")}</span>
-            <Price value={pricing?.yourPrice ?? cur.yourPrice ?? cur.setPrice} size="xl" />
+        <div className="s2-banner-anim" key={`t-${cur.key}`}>
+          <h2>{s2.setName(cur)}</h2>
+          <p className="s2-muted">{cur.tagline ? s2.itemName({ name: cur.tagline }) : t("shop2.banner.desc")}</p>
+          <div className="s2-banner-price">
+            <div className="s2-ladder is-compact">
+              <span>{t("shop2.buy.sum")}</span><s className="s2-num"><Num value={pricing?.sum ?? cur.sum} /> {t("shop2.common.d")}</s>
+              <span>{t("shop2.buy.setPricePct", { n: pricing?.discountPct ?? 0 })}</span><b className="s2-num"><Num value={pricing?.setPrice ?? cur.setPrice} /> {t("shop2.common.d")}</b>
+              {pricing?.ownedCount ? (
+                <>
+                  <span className="is-green">{t("shop2.buy.ownedDeductedN", { n: pricing.ownedCount })}</span>
+                  <b className="s2-num is-green">-<Num value={pricing.ownedDeduction} /> {t("shop2.common.d")}</b>
+                </>
+              ) : null}
+            </div>
+            <div className="s2-banner-your">
+              <span className="s2-eyebrow">{t("shop2.banner.yourPrice")}</span>
+              <Price value={pricing?.yourPrice ?? cur.yourPrice ?? cur.setPrice} size="xl" />
+            </div>
           </div>
         </div>
         <div className="s2-row">

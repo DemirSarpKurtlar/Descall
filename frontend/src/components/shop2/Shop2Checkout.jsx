@@ -79,7 +79,7 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
       </div>
       {c.kind === "set" && s2.layout !== "phone" ? (
         <div className="s2-co-slots">
-          {set.pieces.map((p) => <span key={p.item.id} className={`s2-slot is-sm${p.owned ? " is-owned" : ""}`}><Shop2Art item={p.item} size="slot" me={s2.me} /></span>)}
+          {set.pieces.map((p) => <span key={p.item.id} className={`s2-slot is-sm${p.owned ? " is-owned" : ""}`}><Shop2Art item={p.item} size="slot" me={s2.me} fit /></span>)}
         </div>
       ) : null}
       <div className="s2-co-rows">
@@ -320,7 +320,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
             const have = !set || p.owned || newIds.has(String(p.item.id));
             return (
             <span key={p.item.id} className={`s2-cele-slot${have ? "" : " is-missing"}`} style={{ "--i": i }}>
-              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} />{have ? <i className="s2-tickmark"><Check size={10} weight="bold" /></i> : null}</span>
+              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} fit />{have ? <i className="s2-tickmark"><Check size={10} weight="bold" /></i> : null}</span>
               <small>{t(`shop2.catShort.${p.item.category}`)}</small>
             </span>
             );
