@@ -26,7 +26,10 @@ export default function WinbackCallCard({ compact = false }) {
     winbackApi
       .suggestion()
       .then((r) => {
-        const sug = r?.suggestion || null;
+        // Only a real suggestion (an object with its friend): a malformed answer
+        // must not crash the chat list (s.target.name below).
+        const raw = r?.suggestion;
+        const sug = raw && typeof raw === "object" && !Array.isArray(raw) && raw.target && typeof raw.target === "object" ? raw : null;
         setS(sug);
         if (sug) setMessage(defaultCallMessage(sug, t, locale));
       })
