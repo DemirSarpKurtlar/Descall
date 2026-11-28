@@ -741,6 +741,7 @@ export const API_TR = {
   // Ban experience (2026-11-14): ban screen, appeals, admin ban protection.
   "Appeals are not available yet. Try again later.": "İtirazlar henüz kullanılamıyor. Daha sonra tekrar dene.",
   "Owner and admin accounts cannot be banned.": "Sahip ve yönetici hesapları yasaklanamaz.",
+  "This action cannot be used on an owner or admin account.": "Bu işlem sahip veya yönetici hesaplarında kullanılamaz.",
   "Could not load appeals.": "İtirazlar yüklenemedi.",
   "Invalid appeal.": "Geçersiz itiraz.",
   "Choose accept or reject.": "Kabul et ya da reddet seç.",

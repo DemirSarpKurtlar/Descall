@@ -750,6 +750,7 @@ router.post("/users/:id/timeout", async (req, res) => {
   try {
     const id = req.params.id;
     if (id === req.user.id) return res.status(400).json({ error: "Cannot timeout yourself." });
+    if (await banExperience.targetProtected(id)) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
     const body = req.body || {};
     const result = await moderation.applyTimeout({
       targetUserId: id,
@@ -815,8 +816,13 @@ router.post("/users/:id/untimeout", async (req, res) => {
   }
 });
 
-router.post("/users/:id/kick", (req, res) => {
+router.post("/users/:id/kick", async (req, res) => {
   const id = req.params.id;
+  try {
+    if (await banExperience.targetProtected(id)) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
+  } catch {
+    return res.status(500).json({ error: "Internal server error." });
+  }
   const body = req.body || {};
   const { category: cat, reason } = moderation.normalizeCategory(body.category, body.otherText || body.reason);
   const message = String(body.message || "").trim() || null;
@@ -860,8 +866,8 @@ router.post("/users/bulk", async (req, res) => {
   const { userIds, action } = req.body || {};
   if (!Array.isArray(userIds)) return res.status(400).json({ error: "userIds array required." });
   const io = getIo(req);
-  if (action === "ban") {
-    // Owner and admin accounts are never banned: refuse the whole batch.
+  if (action === "ban" || action === "kick") {
+    // Owner and admin accounts are never banned or kicked: refuse the whole batch.
     const protectedIds = [];
     for (const id of userIds) {
       if (typeof id !== "string" || id === req.user.id) continue;
