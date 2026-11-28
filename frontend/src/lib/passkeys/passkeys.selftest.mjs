@@ -11,6 +11,8 @@ import { normalizePasskeyError, passkeyErrorKey, isSilentPasskeyError, PasskeyCl
 import { runHandoff, openExternal } from "./handoff.js";
 import * as pk from "./index.js";
 let fakeFresh = false;
+/** A fake DescallPasskey plugin, boxed the way index.js loads the real one ({ plugin }). */
+const box = (plugin) => async () => ({ plugin });
 
 // ---- codec -------------------------------------------------------------------------------
 {
@@ -196,7 +198,7 @@ const nativeResponse = (id) => JSON.stringify({ id, rawId: id, type: "public-key
   });
   const ls = new Map();
   win.localStorage = { getItem: (k) => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: (k) => ls.delete(k) };
-  pk.__setPasskeyEnvForTests({ win: () => win, api: fakeApi(log), plugin: async () => { throw new Error("no plugin on the web"); } });
+  pk.__setPasskeyEnvForTests({ win: () => win, api: fakeApi(log), loadPlugin: async () => { throw new Error("no plugin on the web"); } });
   const avail = await pk.isAvailable();
   assert.deepEqual(avail, { available: true, path: "web", conditional: true, reason: null });
   const body = await pk.signIn();
@@ -242,7 +244,7 @@ const nativeResponse = (id) => JSON.stringify({ id, rawId: id, type: "public-key
   win.navigator.credentials.create = async () => ({ id: "n", rawId: buf([2]), type: "public-key", response: { clientDataJSON: buf([1]), attestationObject: buf([1]) } });
   await pk.register("x", { reauthToken: "rt", prepared });
   assert.equal(log.filter((l) => l[0] === "registerOptions").length, before, "register used the prepared options");
-  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi([]), plugin: async () => ({ isAvailable: async () => ({ available: true }) }) });
+  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi([]), loadPlugin: box({ isAvailable: async () => ({ available: true }) }) });
   assert.equal(await pk.prepareSignIn(), false, "native paths need no prefetch");
   assert.equal(await pk.prepareRegister("rt"), null);
 }
@@ -279,7 +281,7 @@ for (const platform of ["ios", "android"]) {
       return { response: nativeResponse(`${platform}-new`) };
     },
   };
-  pk.__setPasskeyEnvForTests({ win: () => cap(platform), api: fakeApi(log), plugin: async () => plugin });
+  pk.__setPasskeyEnvForTests({ win: () => cap(platform), api: fakeApi(log), loadPlugin: async () => ({ plugin }) });
   assert.equal((await pk.isAvailable()).path, platform);
   assert.equal((await pk.signIn()).token, "tok");
   assert.deepEqual(log.slice(0, 3), [["authOptions", platform], ["plugin.get", "descall.com"], ["authVerify", platform, `${platform}-cred`]]);
@@ -287,13 +289,13 @@ for (const platform of ["ios", "android"]) {
   assert.ok(log.some((l) => l[0] === "plugin.create"));
   assert.ok(log.some((l) => l[0] === "registerVerify" && l[2] === undefined && l[3] === platform), "an empty name lets the server choose");
   // Old OS: the plugin says no and the entry hides.
-  pk.__setPasskeyEnvForTests({ win: () => cap(platform), api: fakeApi([]), plugin: async () => ({ isAvailable: async () => ({ available: false, reason: "os_too_old" }) }) });
+  pk.__setPasskeyEnvForTests({ win: () => cap(platform), api: fakeApi([]), loadPlugin: box({ isAvailable: async () => ({ available: false, reason: "os_too_old" }) }) });
   assert.deepEqual(await pk.isAvailable(), { available: false, path: platform, conditional: false, reason: "os_too_old" });
   // Plugin errors are normalised.
   pk.__setPasskeyEnvForTests({
     win: () => cap(platform),
     api: fakeApi([]),
-    plugin: async () => ({ isAvailable: async () => ({ available: true }), get: async () => { throw Object.assign(new Error("none"), { code: "no_credential" }); } }),
+    loadPlugin: box({ isAvailable: async () => ({ available: true }), get: async () => { throw Object.assign(new Error("none"), { code: "no_credential" }); } }),
   });
   await assert.rejects(pk.signIn(), (e) => e instanceof PasskeyClientError && e.code === "no_credential");
 }
@@ -317,7 +319,7 @@ for (const platform of ["ios", "android"]) {
     },
     get: async () => ({ response: nativeResponse("ios-modal") }),
   };
-  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi(log), plugin: async () => plugin });
+  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi(log), loadPlugin: async () => ({ plugin }) });
   const got = new Promise((resolve, reject) => {
     const stop = pk.startConditional({ onResult: (b) => { stop(); resolve(b); }, onError: reject });
   });
@@ -338,7 +340,7 @@ for (const platform of ["ios", "android"]) {
   pk.__setPasskeyEnvForTests({
     win: () => cap("ios"),
     api: fakeApi([]),
-    plugin: async () => ({ isAvailable: async () => ({ available: true }), autofill: async () => { calls += 1; throw Object.assign(new Error("not implemented"), { code: "UNIMPLEMENTED" }); } }),
+    loadPlugin: box({ isAvailable: async () => ({ available: true }), autofill: async () => { calls += 1; throw Object.assign(new Error("not implemented"), { code: "UNIMPLEMENTED" }); } }),
   });
   const stop3 = pk.startConditional({ onError: (e) => errors.push(e) });
   await new Promise((r) => setTimeout(r, 1300));
@@ -349,7 +351,7 @@ for (const platform of ["ios", "android"]) {
 // Android without a configured app origin on the server: hidden (sign-ins would fail).
 {
   const api = { ...fakeApi([]), config: async () => ({ enabled: true, android: false }) };
-  pk.__setPasskeyEnvForTests({ win: () => cap("android"), api, plugin: async () => ({ isAvailable: async () => ({ available: true }) }) });
+  pk.__setPasskeyEnvForTests({ win: () => cap("android"), api, loadPlugin: box({ isAvailable: async () => ({ available: true }) }) });
   assert.equal((await pk.isAvailable()).available, false);
 }
 
@@ -397,7 +399,7 @@ for (const platform of ["ios", "android"]) {
 {
   let release;
   const plugin = { isAvailable: async () => ({ available: true }), get: () => new Promise((r) => { release = () => r({ response: nativeResponse("x") }); }) };
-  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi([]), plugin: async () => plugin });
+  pk.__setPasskeyEnvForTests({ win: () => cap("ios"), api: fakeApi([]), loadPlugin: async () => ({ plugin }) });
   const first = pk.signIn();
   await new Promise((r) => setTimeout(r, 5));
   await assert.rejects(pk.signIn(), (e) => e.code === "busy");
