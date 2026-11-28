@@ -9,6 +9,7 @@
 
 const express = require("express");
 const supabase = require("../db/supabase");
+const { escapeLike } = require("../lib/usernamePolicy");
 const { requireAuth } = require("../middleware/auth");
 const {
   EVERYONE_DEFAULT,
@@ -2355,7 +2356,7 @@ router.get("/discover", requireAuth, async (req, res) => {
       .eq("is_public", true)
       .is("directory_hidden_at", null)
       .order(sort === "active" ? "updated_at" : "created_at", { ascending: false });
-    if (q) query = query.ilike("name", `%${q.replace(/[%_\\]/g, "")}%`);
+    if (q) query = query.ilike("name", `%${escapeLike(q)}%`);
     query = windowed ? query.limit(200) : query.range(offset, offset + limit);
 
     const { data: fetchedFirst, error } = await query;

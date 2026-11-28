@@ -15,6 +15,7 @@
 
 const model = require("./auditConsoleModel");
 const auditStore = require("./adminAuditStore");
+const { escapeLike } = require("./usernamePolicy");
 
 let dbOverride = null;
 const db = () => dbOverride || require("../db/supabase");
@@ -66,7 +67,7 @@ async function resolveFilterNames(f) {
       }
     }
     if (qWord.length >= 3) {
-      const res = await withTimeout(db().from("users").select("id, username").ilike("username", `${qWord}%`).limit(20), 4000, { data: [] });
+      const res = await withTimeout(db().from("users").select("id, username").ilike("username", `${escapeLike(qWord)}%`).limit(20), 4000, { data: [] });
       out.qIds = (res?.data || []).map((u) => u.id);
     }
   } catch {

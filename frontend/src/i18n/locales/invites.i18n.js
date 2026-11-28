@@ -1052,8 +1052,19 @@ const CARD_REWARD = {
   ru: "Когда друг станет активным, ты получишь {a}, а он {b} DesCoin",
 };
 
+// Friends sidebar invite card, draft B "Kazanç panosu" (28 Nov 2026): dvt.board.*
+const BOARD = {
+  tr: { short: "Sen +{a}, arkadaşın +{b}", active: "aktif davet", earned: "kazandığın", pending: "{n} bekleyen", pendingCoins: "+{n} yolda", first: "İlk daveti gönder", next: "Sonraki ödüle {n} davet", nextAll: "Tüm ödülleri açtın", paused: "Davet linkin duraklatıldı", copied: "Link kopyalandı", newNotice: "Yeni" },
+  en: { short: "You +{a}, your friend +{b}", active: "active invites", earned: "earned", pending: "{n} pending", pendingCoins: "+{n} on the way", first: "Send your first invite", next: "{n} more to the next reward", nextAll: "All rewards unlocked", paused: "Your invite link is paused", copied: "Link copied", newNotice: "New" },
+  de: { short: "Du +{a}, dein Freund +{b}", active: "aktive Einladungen", earned: "verdient", pending: "{n} ausstehend", pendingCoins: "+{n} unterwegs", first: "Erste Einladung senden", next: "Noch {n} bis zur nächsten Belohnung", nextAll: "Alle Belohnungen freigeschaltet", paused: "Dein Einladungslink ist pausiert", copied: "Link kopiert", newNotice: "Neu" },
+  es: { short: "Tú +{a}, tu amigo +{b}", active: "invitaciones activas", earned: "ganados", pending: "{n} pendientes", pendingCoins: "+{n} en camino", first: "Envía tu primera invitación", next: "{n} más para la próxima recompensa", nextAll: "Todas las recompensas desbloqueadas", paused: "Tu enlace de invitación está en pausa", copied: "Enlace copiado", newNotice: "Nuevo" },
+  fr: { short: "Toi +{a}, ton ami +{b}", active: "invitations actives", earned: "gagnés", pending: "{n} en attente", pendingCoins: "+{n} en route", first: "Envoie ta première invitation", next: "Encore {n} avant la prochaine récompense", nextAll: "Toutes les récompenses débloquées", paused: "Ton lien d'invitation est en pause", copied: "Lien copié", newNotice: "Nouveau" },
+  "pt-BR": { short: "Você +{a}, seu amigo +{b}", active: "convites ativos", earned: "ganhos", pending: "{n} pendentes", pendingCoins: "+{n} a caminho", first: "Envie seu primeiro convite", next: "Faltam {n} para a próxima recompensa", nextAll: "Todas as recompensas desbloqueadas", paused: "Seu link de convite está pausado", copied: "Link copiado", newNotice: "Novo" },
+  ru: { short: "Тебе +{a}, другу +{b}", active: "активных приглашений", earned: "заработано", pending: "ожидают: {n}", pendingCoins: "+{n} в пути", first: "Пригласи первого друга", next: "Ещё {n} до следующей награды", nextAll: "Все награды открыты", paused: "Твоя ссылка-приглашение на паузе", copied: "Ссылка скопирована", newNotice: "Новое" },
+};
+
 function finish(id, pack) {
-  return { ...pack, adminNav: pack.adm.nav, adminNew: pack.adm.navNew, cardRule: CARD_RULE[id], cardReward: CARD_REWARD[id] };
+  return { ...pack, adminNav: pack.adm.nav, adminNew: pack.adm.navNew, cardRule: CARD_RULE[id], cardReward: CARD_REWARD[id], board: BOARD[id] };
 }
 
 export const INVITES_I18N = {

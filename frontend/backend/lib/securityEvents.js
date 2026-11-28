@@ -25,6 +25,7 @@
  */
 
 const crypto = require("crypto");
+const { escapeLike } = require("./usernamePolicy");
 
 const TABLE = "security_events";
 const TYPES = Object.freeze(["brute_force", "failed_login", "account_locked", "ip_blocked", "access_ban", "rate_limit", "signup_denied", "admin_step_up"]);
@@ -296,7 +297,7 @@ async function resolveLookups(rows) {
     const name = String(r.detail.lookup || "");
     delete r.detail.lookup;
     try {
-      const { data } = await db().from("users").select("id, username").ilike("username", name.replace(/[%_\\]/g, "")).maybeSingle();
+      const { data } = await db().from("users").select("id, username").ilike("username", escapeLike(name)).maybeSingle();
       if (data) {
         r.user_id = data.id;
         r.username = data.username;

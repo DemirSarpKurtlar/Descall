@@ -26,6 +26,7 @@
 
 const { apiError } = require("../lib/apiError");
 const express = require("express");
+const { escapeLike } = require("../lib/usernamePolicy");
 const state = require("../runtime/sharedState");
 const supabase = require("../db/supabase");
 const { withTimeout } = require("../lib/adminOverview");
@@ -300,10 +301,10 @@ router.get("/system/flags/:key/history", async (req, res) => {
 });
 
 router.get("/system/staff-search", async (req, res) => {
-  const q = String(req.query.q || "").trim().replace(/[%_,()]/g, "").slice(0, 32);
+  const q = String(req.query.q || "").trim().slice(0, 32);
   try {
     let query = supabase.from("users").select("id, username, is_admin").limit(8);
-    query = q ? query.ilike("username", `${q}%`) : query.eq("is_admin", true);
+    query = q ? query.ilike("username", `${escapeLike(q)}%`) : query.eq("is_admin", true);
     const r = await withTimeout(query, 4000, { data: [] });
     const people = (r?.data || []).map((u) => ({ id: String(u.id).toLowerCase(), username: u.username, staff: Boolean(u.is_admin) }));
     people.sort((a, b) => Number(b.staff) - Number(a.staff) || String(a.username).localeCompare(String(b.username)));
