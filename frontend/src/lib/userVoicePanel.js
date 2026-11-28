@@ -165,8 +165,14 @@ export function writeDeafenPref(on, s = store()) {
   }
 }
 
-/** Panel is web + Electron desktop only: never mobile layout, glass phone shell, or native iOS/Android. */
-export function shouldShowUserVoicePanel({ isMobile, glassShell, native, view }) {
-  if (isMobile || glassShell || native) return false;
+/**
+ * Panel belongs to the desktop layout: web, Electron, Tauri, and the iPad /
+ * Android tablet app while it shows that layout (nativeTablet, wider than
+ * 768 px). Never the phone layout, the glass phone shell, or a phone app.
+ */
+export function shouldShowUserVoicePanel({ isMobile, glassShell, native, nativeTablet = false, view }) {
+  void view;
+  if (isMobile || glassShell) return false;
+  if (native && !nativeTablet) return false;
   return true;
 }

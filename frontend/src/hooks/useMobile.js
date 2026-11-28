@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { readDeviceLayout } from "../lib/deviceLayout.js";
 
+// Phone layout: phones always, touch tablets and desktop windows up to 768px
+// (lib/deviceLayout.js). An iPad / Android tablet UA no longer forces the phone
+// tree at desktop widths, and a Split View / iPad mini portrait window gets it
+// cleanly instead of a hybrid.
 function readIsMobile() {
   if (typeof window === "undefined") return false;
-  const userAgent = (navigator.userAgent || "").toLowerCase();
-  const isMobileDevice =
-    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(
-      userAgent
-    );
-  const isSmallScreen = window.innerWidth <= 768;
-  return isMobileDevice || isSmallScreen;
+  return readDeviceLayout(window).phoneLayout;
 }
 
 function readIsPortrait() {

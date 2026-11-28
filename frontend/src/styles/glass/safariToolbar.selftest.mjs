@@ -26,7 +26,7 @@ assert.match(unlock, /background-color:\s*#101118/);
 assert.match(unlock, /padding-bottom:\s*env\(safe-area-inset-bottom/);
 assert.match(unlock, /#root[\s\S]*overflow:\s*visible/);
 assert.match(unlock, /#root[\s\S]*background-color:\s*transparent/);
-assert.match(html, /width < 960 && \(mobileUa \|\| \(width > 0 && width <= 768\)\)/, "phone UA counts even when innerWidth is still 0");
+assert.match(html, /width < 960 && \(\(mobileUa && \(!tabletUa \|\| width === 0\)\) \|\| \(width > 0 && width <= 768\)\)/, "phone UA counts even when innerWidth is still 0; a tablet UA wider than 768 is the desktop layout");
 
 assert.match(shell, /html\.glass-ui:not\(\.native-app\):not\(\.mobile-keyboard-lock\) body[\s\S]*padding-bottom:\s*env\(safe-area-inset-bottom/);
 assert.match(shell, /html\.glass-ui:not\(\.native-app\):not\(\.mobile-keyboard-lock\) #root[\s\S]*background-color:\s*transparent !important/);

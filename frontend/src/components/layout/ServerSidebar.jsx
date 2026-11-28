@@ -52,6 +52,7 @@ import { serverErrorText } from "../../api/httpError";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
+import { touchLongPressHandlers } from "../../lib/touchLongPress.js";
 import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
 import { isContextMenuKey, menuArrowKeys, useKeyboardMenuFocus } from "../../lib/menuKeys";
@@ -807,6 +808,14 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
       setOpenMenuId(dm.id);
     },
     keyboardMenu: (dm) => kbdMenuRef.current.id === dm.id,
+    // Touch tablet, desktop layout: holding the row opens its menu at the finger.
+    longPress: (dm, point) => {
+      if (isMobile) return;
+      hapticImpactMedium();
+      kbdMenuRef.current = { id: null, at: 0 };
+      setMenuPoint({ id: dm.id, x: point.clientX, y: point.clientY });
+      setOpenMenuId(dm.id);
+    },
   };
   const rowApi = rowApiRef;
 
@@ -924,6 +933,7 @@ const DmListRow = memo(function DmListRow({ dm, isActive, unread, presence, isOn
       onMouseEnter={() => api().prefetch(dm.id)}
       onContextMenu={(e) => api().contextMenu(dm, e)}
       onKeyDown={(e) => api().keyMenu(dm, e)}
+      {...(isMobile ? null : touchLongPressHandlers((p) => api().longPress(dm, p)))}
     >
       {isMobile ? (
         <SwipeableDmRow
@@ -1684,6 +1694,15 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                         setMenuPoint(null);
                         setOpenMenuId(group.id);
                       }}
+                      {...(isMobile
+                        ? null
+                        : touchLongPressHandlers((p) => {
+                            // Touch tablet, desktop layout: hold the row to open its menu at the finger.
+                            hapticImpactMedium();
+                            kbdMenuRef.current = { id: null, at: 0 };
+                            setMenuPoint({ id: group.id, x: p.clientX, y: p.clientY });
+                            setOpenMenuId(group.id);
+                          }))}
                     >
                       {isMobile ? (
                         <SwipeableGroupRow

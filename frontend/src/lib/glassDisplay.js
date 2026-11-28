@@ -221,18 +221,25 @@ export function setPhoneLandscapeAllowed(allowed) {
   }
 }
 
-export function stopGlassDisplay() {
+/**
+ * keepStatusBar: the iPad app leaving the phone layout (Split View widened,
+ * rotation) stays on glass-desktop, which still follows the theme for the
+ * status-bar ink (watchNativeAccessibility). Only the glass-ui material goes.
+ */
+export function stopGlassDisplay({ keepStatusBar = false } = {}) {
   try {
     listenerHandle?.remove?.();
   } catch {
     /* ignore */
   }
   listenerHandle = null;
-  themeObserver?.disconnect();
-  themeObserver = null;
-  // Back to the pre-glass default (white status-bar content).
-  if (plugin && lastStatusStyle === "dark") plugin.setStatusBarStyle?.({ style: "light" })?.catch?.(() => {});
-  lastStatusStyle = null;
+  if (!keepStatusBar) {
+    themeObserver?.disconnect();
+    themeObserver = null;
+    // Back to the pre-glass default (white status-bar content).
+    if (plugin && lastStatusStyle === "dark") plugin.setStatusBarStyle?.({ style: "light" })?.catch?.(() => {});
+    lastStatusStyle = null;
+  }
   sentinelStop?.();
   sentinelStop = null;
   if (typeof document === "undefined") return;

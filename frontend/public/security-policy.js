@@ -22,7 +22,7 @@ export const PC_NODE_WS_ORIGIN = "wss://pc.descall.com";
 export const INLINE_SCRIPT_HASHES = [
   // @csp-hashes-start
   "sha256-hW6e7vZQr0DeTAluM4bI22reVfsLuMGI8T/B5r6aEGY=",
-  "sha256-8DfRHI8tBT7aebwoSE1O7M5Eyi53vXPaVkKg6Ts+tXs=",
+  "sha256-UyceTnsM/vydDNIbzHC01J8sc4AbqopRyDBIyt8XrQw=",
   "sha256-KaoFSX3TCKiHgad1CVsr8xoDclCAffaQrQtErU7iRqc=",
   "sha256-55Lg65UfHgpMWGmpdWaAw1ij+9uyiGVYnh+XvLULkP0=",
   "sha256-yBF1MUju54iRuL/fti/cWyhku2cnv6Ff2scoFZLOa3c=",

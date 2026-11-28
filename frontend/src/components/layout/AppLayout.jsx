@@ -10,6 +10,7 @@ import ChatPanel from "./ChatPanel";
 import UserVoicePanel from "./UserVoicePanel";
 import { shouldShowUserVoicePanel } from "../../lib/userVoicePanel";
 import { isNativeMobileApp } from "../../lib/userVoicePanelEnv";
+import { readDeviceLayout } from "../../lib/deviceLayout.js";
 import { usePremium } from "../../premium/usePremium.js";
 import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
@@ -171,12 +172,17 @@ export default function AppLayout({
   const glassUi = useGlassUi();
   const glassShell = Boolean(glassUi && isMobile);
   const animateMainViews = isMobile && !reduceMotion;
-  useMobileKeyboard(isMobile);
+  // Touch tablets in the desktop layout (iPad / Android tablet app, iPad Safari)
+  // have the same on-screen keyboard: the shell follows the visible height too.
+  const [touchTablet] = useState(() => readDeviceLayout().tablet);
+  useMobileKeyboard(isMobile || touchTablet);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [localActiveView, setLocalActiveView] = useState("chat");
   const [localUserPanelOpen, setLocalUserPanelOpen] = useState(false);
   const activeView = controlledActiveView ?? localActiveView;
-  const showUserVoicePanel = shouldShowUserVoicePanel({ isMobile, glassShell, native: isNativeMobileApp(), view: activeView });
+  // The device's form factor never changes at runtime (the window does: isMobile).
+  const [nativeTablet] = useState(() => isNativeMobileApp() && readDeviceLayout().tablet);
+  const showUserVoicePanel = shouldShowUserVoicePanel({ isMobile, glassShell, native: isNativeMobileApp(), nativeTablet, view: activeView });
   const userPanelOpen = controlledUserPanelOpen ?? localUserPanelOpen;
   const setActiveView = useCallback((view) => {
     if (onActiveViewChange) onActiveViewChange(view);
