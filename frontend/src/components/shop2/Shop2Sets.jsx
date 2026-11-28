@@ -153,7 +153,7 @@ function PieceRow({ piece, hidden, onEye, open, onOpen, closed = false }) {
   return (
     <div className={`s2-piece${open ? " is-open" : ""}${hidden ? " is-hidden" : ""}`}>
       <div className="s2-piece-main" role="button" tabIndex={0} onClick={(e) => !e.target.closest("button") && onOpen()} onKeyDown={(e) => e.key === "Enter" && onOpen()}>
-        <Shop2Art item={item} size="tile" me={s2.me} />
+        <Shop2Art item={item} size="tile" me={s2.me} fit />
         <span className="s2-piece-text">
           <b>{s2.itemName(item)}</b>
           <small>{t(`shop2.cat.${item.category}`)}</small>
@@ -529,12 +529,13 @@ function SaveLookDialog({ onSave, onClose, phone }) {
 // ---------------------------------------------------------------------------
 // Phone (A telefon + C telefon).
 
-function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode, setMode, onPick, joinItem, onSaveLook }) {
+function PhoneSet({ set, activeKey, loading = false, sets, pricing, user, me, hidden, setHidden, stage, mode, setMode, onPick, joinItem, onSaveLook }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const [focus, setFocus] = useState("all");
   const [device, setDevice] = useState("phone");
-  const idx = sets.findIndex((x) => x.key === set.key);
+  const curKey = activeKey || set.key;
+  const idx = Math.max(0, sets.findIndex((x) => x.key === curKey));
   const go = (d) => {
     const next = sets[(idx + d + sets.length) % sets.length];
     if (next) onPick(next.key);
@@ -548,14 +549,14 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
   const inToday = (id) => (s2.data.storefront?.slots || []).some((x) => sameId(x.item.id, id));
   const wished = set.pieces.filter((p) => !p.owned).every((p) => s2.data.wishlist.some((w) => sameId(w.id, p.item.id)));
   return (
-    <div className="s2-pset">
+    <div className={`s2-pset${loading ? " is-loading" : ""}`} aria-busy={loading ? "true" : undefined}>
       <div className="s2-pset-top">
         <button type="button" className="s2-ibtn" onClick={() => s2.setTab("vitrin")} aria-label={t("shop2.common.back")}><ChevronLeft size={18} /></button>
         <span className="s2-pset-title">
-          <b>{s2.setName(set)}</b>
+          <b>{s2.setName(sets[idx] || set)}</b>
           <span className="s2-pdots">
-            <HScroller className="s2-pdots-vp" wrapClassName="s2-pdots-hs" arrows={false} activeKey={set.key}>
-              {sets.map((x) => <button key={x.key} type="button" aria-label={s2.setName(x)} aria-current={x.key === set.key ? "true" : undefined} className={x.key === set.key ? "is-on" : ""} style={{ background: x.palette?.[2] }} onClick={() => onPick(x.key)} />)}
+            <HScroller className="s2-pdots-vp" wrapClassName="s2-pdots-hs" arrows={false} activeKey={curKey}>
+              {sets.map((x) => <button key={x.key} type="button" aria-label={s2.setName(x)} aria-current={x.key === curKey ? "true" : undefined} className={x.key === curKey ? "is-on" : ""} style={{ background: x.palette?.[2] }} onClick={() => onPick(x.key)} />)}
             </HScroller>
             <small className="s2-num">{idx + 1} / {sets.length}</small>
           </span>
@@ -644,7 +645,7 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
                 }
               }}
             >
-              <Shop2Art item={p.item} size="tile" me={s2.me} />
+              <Shop2Art item={p.item} size="tile" me={s2.me} fit />
               <span className="s2-ppiece-t">
                 <b>{s2.itemName(p.item)}</b>
                 {p.owned ? <small className="is-green"><Check size={12} />{t("shop2.common.owned")}</small> : <Price value={price} old={p.item.price_descoin} size="sm" />}
@@ -685,7 +686,16 @@ export default function Shop2Sets({ setKey, onSetKey }) {
   const s2 = useS2();
   const list = s2.data.sets.length ? s2.data.sets : s2.data.storefront?.featuredSets || [];
   const key = setKey || list[0]?.key || null;
-  const set = key ? s2.data.setDetails[key] : null;
+  const loaded = key ? s2.data.setDetails[key] : null;
+  // While the picked set loads, the previous one stays on screen (dimmed): swapping the page
+  // for a short skeleton collapsed the pane, so the browser scrolled it up, and unmounted the
+  // focused arrow.
+  const [shown, setShown] = useState(null);
+  useEffect(() => {
+    if (loaded) setShown(loaded);
+  }, [loaded]);
+  const set = loaded || shown;
+  const loading = !loaded && !!set;
   const [hidden, setHidden] = useState(() => new Set());
   const [mode, setMode] = useState(() => s2.data.prefs.setMode || "cabin");
   const [saving, setSaving] = useState(false);
@@ -697,6 +707,17 @@ export default function Shop2Sets({ setKey, onSetKey }) {
     setHidden(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+  // The neighbours of the open set load in the background, so the arrows switch at once.
+  useEffect(() => {
+    if (!loaded || list.length < 2) return;
+    const at = list.findIndex((x) => x.key === key);
+    if (at < 0) return;
+    for (const d of [1, -1]) {
+      const nb = list[(at + d + list.length) % list.length];
+      if (nb && !s2.data.setDetails[nb.key]) loadSet(nb.key);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, !!loaded, list.length]);
   useEffect(() => {
     if (set?.palette?.length) setPalette(set.palette);
     return () => setPalette(null);
@@ -739,14 +760,14 @@ export default function Shop2Sets({ setKey, onSetKey }) {
   if (s2.layout === "phone") {
     return (
       <>
-        <PhoneSet set={set} sets={allSets} pricing={pricing} user={user} me={s2.me} hidden={hidden} setHidden={setHidden} stage={stage} mode={mode} setMode={changeMode} onPick={onSetKey} joinItem={joinItem} onSaveLook={() => setSaving(true)} />
+        <PhoneSet set={set} activeKey={key} loading={loading} sets={allSets} pricing={pricing} user={user} me={s2.me} hidden={hidden} setHidden={setHidden} stage={stage} mode={mode} setMode={changeMode} onPick={onSetKey} joinItem={joinItem} onSaveLook={() => setSaving(true)} />
         {saving ? <SaveLookDialog phone onSave={saveLook} onClose={() => setSaving(false)} /> : null}
       </>
     );
   }
   return (
-    <div className="s2-sets">
-      <SetSwitcher sets={allSets} active={set.key} onPick={onSetKey} />
+    <div className={`s2-sets${loading ? " is-loading" : ""}`} aria-busy={loading ? "true" : undefined}>
+      <SetSwitcher sets={allSets} active={key} onPick={onSetKey} />
       <Hero set={set} pricing={pricing} />
       <div className="s2-sets-grid">
         <Pieces set={set} hidden={hidden} setHidden={setHidden} onCurrentLook={() => setHidden(new Set(set.pieces.map((p) => String(p.item.id))))} />
