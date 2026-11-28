@@ -816,6 +816,22 @@ for (const [k, channel] of Object.entries(LISTENERS)) {
   s.emit("app:visibility", null);
   deq(v, [{ backgrounded: true }, {}], "app:visibility payload as appVisibility.js expects");
 }
+{
+  // The previous run's crash arrives once, at app-mounted, before admin > Error logs reporting
+  // subscribes (lateBoot, 3 s later): a late onMainError subscriber still gets it, once.
+  const s = loadShim();
+  await tick();
+  s.emit("app:main-error", { kind: "panic", name: "RustPanic", message: "boom" });
+  const early = [];
+  s.api.onMainError((p) => early.push(p));
+  await tick();
+  deq(early, [{ kind: "panic", name: "RustPanic", message: "boom" }], "late subscriber gets the earlier error");
+  s.emit("app:main-error", { kind: "native-crash", name: "NativeCrash", message: "0xC0000005" });
+  deq(early.map((p) => p.kind), ["panic", "native-crash"], "and later ones once each");
+  const admin = loadShim({ boot: { mode: "admin" } });
+  await tick();
+  assert.equal((admin.listeners.get("app:main-error") || []).length, 0, "admin windows keep no main-error buffer");
+}
 
 // 3b. Kind parity, derived from the preload sources (no hand-kept list) ----------------------
 // Every member a preload exposes is classified by what it does on the fake ipcRenderer:

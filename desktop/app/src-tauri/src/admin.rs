@@ -51,15 +51,67 @@ fn fit_centered(w: f64, h: f64, area: (i32, i32, u32, u32), scale: f64) -> Place
     Placement { width, height, x, y }
 }
 
-/// Open (or focus) the admin window for `url`. Runs on the main thread.
-pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
+/// Labels whose window is being built right now: a second click (or the other admin window's
+/// link) while the first build runs focuses nothing and builds nothing, instead of a second
+/// build of the same label (Tauri refuses it).
+static OPENING: std::sync::Mutex<Vec<&'static str>> = std::sync::Mutex::new(Vec::new());
+
+/// Claims `label` for one build; false while another build of it runs.
+fn claim(list: &mut Vec<&'static str>, label: &'static str) -> bool {
+    if list.contains(&label) {
+        return false;
+    }
+    list.push(label);
+    true
+}
+
+fn release(list: &mut Vec<&'static str>, label: &'static str) {
+    list.retain(|l| *l != label);
+}
+
+/// Releases the claim when the build is done, also on an early return.
+struct Opening(&'static str);
+
+impl Drop for Opening {
+    fn drop(&mut self) {
+        release(&mut OPENING.lock().unwrap_or_else(|e| e.into_inner()), self.0);
+    }
+}
+
+/// From a page's `on_new_window` (main window, or the other admin window): open or focus the
+/// admin window for `url`, never inside that handler. tauri-runtime-wry runs
+/// `run_on_main_thread` synchronously when it is called on the main thread, which is where wry
+/// calls `on_new_window` (inside the main window's message handler, while WebView2 still holds
+/// the window.open request open with a deferral). The old `run_on_main_thread(open)` therefore
+/// built the admin WebView2 re-entrantly inside that request, the case Tauri documents as
+/// deadlocking / crashing on Windows ("WebviewWindowBuilder::build ... in event handlers").
+/// A blocking-pool thread lets the handler return first; `build()` from there hands the window
+/// to the event loop and waits for it, as an async command would.
+pub fn request_open<R: Runtime>(app: &AppHandle<R>, url: tauri::Url) {
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || open(&app, &url));
+}
+
+/// Open (or focus) the admin window for `url`. Call off the event-loop thread
+/// ([`request_open`]); nothing here panics, a failure is logged and the main window stays.
+fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
     let Some((label, path, w, h, min_w, min_h, title_key)) = spec(url.path()) else { return };
     if let Some(win) = app.get_webview_window(label) {
-        let _ = win.unminimize();
-        let _ = win.show();
-        let _ = win.set_focus();
+        // Already open: bring it back. A window that is being closed answers with errors here;
+        // logged, and the next click builds a fresh one.
+        if let Err(e) = win.unminimize().and_then(|_| win.show()) {
+            log::warn!("[admin] {label} could not be shown: {e}");
+            return;
+        }
+        crate::commands::window::focus_soon(&win);
         return;
     }
+    if !claim(&mut OPENING.lock().unwrap_or_else(|e| e.into_inner()), label) {
+        log::info!("[admin] {label} is already opening");
+        return;
+    }
+    let _opening = Opening(label);
+    log::info!("[admin] opening {label}");
     let boot = crate::boot::boot_script_for(app, "admin");
     let script = format!("{boot}\n{}", crate::SHIM);
     let target = format!("{}{}", path.trim_start_matches('/'), url.query().map(|q| format!("?{q}")).unwrap_or_default());
@@ -90,8 +142,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
         // other admin window opens as its own window, as from the main window.
         .on_new_window(move |next, _| {
             if is_admin_url(&next) {
-                let h = nav_app.clone();
-                let _ = nav_app.run_on_main_thread(move || open(&h, &next));
+                request_open(&nav_app, next);
             } else if !crate::boot::is_app_url(&next) && descall_shell::trust::is_safe_external_url(next.as_str()) {
                 use tauri_plugin_opener::OpenerExt;
                 let _ = nav_app.opener().open_url(next.as_str(), None::<&str>);
@@ -105,7 +156,9 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, url: &tauri::Url) {
                 let _ = win.set_position(tauri::PhysicalPosition::new(p.x, p.y));
             }
             let _ = win.show();
-            let _ = win.set_focus();
+            // From this thread tao queues show(); a set_focus() right after it saw the window
+            // still hidden and did nothing (commands::window::focus_soon).
+            crate::commands::window::focus_soon(&win);
             crate::webview::install_permission_handler(&win);
             // No browser menu / Reload / Back / Print in the admin windows either (main.rs).
             crate::webview::install_browser_guards(&win);
@@ -132,6 +185,33 @@ mod tests {
         assert_eq!(spec("/admin/signup-stats").map(|s| s.0), Some("signup-stats"));
         assert_eq!(spec("/admin").map(|s| s.0), None);
         assert_eq!(spec("/").map(|s| s.0), None);
+    }
+
+    #[test]
+    fn one_build_per_label_at_a_time() {
+        let mut list = Vec::new();
+        assert!(claim(&mut list, "admin"));
+        assert!(!claim(&mut list, "admin"), "a second click while the first build runs");
+        assert!(claim(&mut list, "signup-stats"), "the other admin window is independent");
+        release(&mut list, "admin");
+        assert!(claim(&mut list, "admin"), "free again once the build is done");
+    }
+
+    /// The window is never built inside a page's `on_new_window`: tauri-runtime-wry runs
+    /// `run_on_main_thread` at once when called on the main thread (where wry calls that
+    /// handler), so `run_on_main_thread(open)` built the WebView2 inside the window.open request.
+    #[test]
+    fn admin_windows_are_built_after_the_new_window_handler() {
+        let main = include_str!("main.rs");
+        let admin = include_str!("admin.rs");
+        let shipped = |s: &'static str| &s[..s.find("#[cfg(test)]").unwrap()];
+        assert!(shipped(main).contains("admin::request_open(&nav_app, url);"));
+        assert!(!shipped(main).contains("admin::open("));
+        assert!(shipped(admin).contains("request_open(&nav_app, next);"));
+        assert!(!shipped(admin).contains("run_on_main_thread(move || open("));
+        let req = &admin[admin.find("pub fn request_open").unwrap()..];
+        assert!(req[..200].contains("spawn_blocking(move || open(&app, &url))"));
+        assert!(shipped(admin).contains("\nfn open<R: Runtime>"), "open stays private");
     }
 
     #[test]

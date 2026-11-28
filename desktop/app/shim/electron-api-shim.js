@@ -68,6 +68,10 @@
     }, OWN).then((u) => { if (dead) u(); else un = u; }).catch(noop);
     return () => { dead = true; if (un) { un(); un = null; } };
   };
+  // app:main-error summaries this page received (shell panics, renderer crashes, the previous
+  // run's crash file), the last 10, for onMainError subscribers that come later.
+  const mainErrorsSeen = [];
+  if (!ADMIN) on("app:main-error", (p) => { mainErrorsSeen.push(p || {}); if (mainErrorsSeen.length > 10) mainErrorsSeen.shift(); });
   /**
    * window:maximized, plus the state at subscribe time. The shell maximizes a window that was
    * left maximized before the page loads, so that event is gone by the time the title bar
@@ -261,7 +265,13 @@
     onMaximizedChange: (cb) => onMaximized(cb),
     onAppVisibility: (cb) => on("app:visibility", cb, (p) => p || {}),
     // Main-process errors (preload onMainError); admin windows get a no-op like adminPreload.
-    onMainError: ADMIN ? () => noop : (cb) => on("app:main-error", cb, (p) => p || {}),
+    // A late subscriber first gets what already came (mainErrorsSeen below): the previous
+    // run's crash arrives once, at app-mounted, before admin > Error logs reporting starts.
+    onMainError: ADMIN ? () => noop : (cb) => {
+      if (typeof cb !== "function") return noop;
+      for (const s of mainErrorsSeen.slice()) { try { cb(s); } catch (err) { console.error(err); } }
+      return on("app:main-error", cb, (p) => p || {});
+    },
     getContentBox: () => invoke("window_content_box"),
     onContentBox: (cb) => on("window:content-box", cb),
 

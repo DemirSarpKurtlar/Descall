@@ -357,6 +357,17 @@ export function installGlobalErrorReporting() {
     if (!worthReporting(error)) return;
     captureError(error, { action: 'unhandled_promise_rejection' });
   });
+  // Desktop shell errors (electronAPI.onMainError: a Rust panic, a WebView2 crash, the crash
+  // file of the previous run) reached Sentry only, never Error logs: a desktop app that died
+  // left nothing there. The Tauri shim replays the ones that came before this subscribes.
+  try {
+    window.electronAPI?.onMainError?.((s) => {
+      if (!s || !s.message) return;
+      reportHandled(`[desktop-main] ${String(s.kind || 'error')}: ${String(s.name || 'Error')}: ${String(s.message)}`, { severity: 'error', source: 'desktop-main' });
+    });
+  } catch {
+    /* older shell */
+  }
 }
 
 /** A handled failure worth seeing in Error logs (e.g. a Descall+ action that failed). */

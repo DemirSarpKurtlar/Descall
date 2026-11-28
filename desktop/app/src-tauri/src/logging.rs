@@ -47,7 +47,17 @@ impl log::Log for FileLog {
         if cfg!(debug_assertions) {
             eprint!("{line}");
         }
-        let Ok(mut slot) = self.file.lock() else { return };
+        // The panic hook logs too: a panic raised while this thread held the lock (a write in
+        // progress) must not wait on itself, and a poisoned lock still writes.
+        let mut slot = if std::thread::panicking() {
+            match self.file.try_lock() {
+                Ok(g) => g,
+                Err(std::sync::TryLockError::Poisoned(p)) => p.into_inner(),
+                Err(std::sync::TryLockError::WouldBlock) => return,
+            }
+        } else {
+            self.file.lock().unwrap_or_else(|e| e.into_inner())
+        };
         if slot.is_none() {
             *slot = self.open();
         }
@@ -64,7 +74,9 @@ impl log::Log for FileLog {
     }
 
     fn flush(&self) {
-        if let Ok(mut slot) = self.file.lock() {
+        // try_lock: flushed from the panic hook too (see log()); a write in progress flushes
+        // nothing there, every line is written straight to the file anyway.
+        if let Ok(mut slot) = self.file.try_lock() {
             if let Some((f, _)) = slot.as_mut() {
                 let _ = f.flush();
             }
