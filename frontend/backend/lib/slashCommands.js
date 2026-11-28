@@ -14,6 +14,7 @@
  */
 
 const supabase = require("../db/supabase");
+const { escapeLike } = require("./usernamePolicy");
 const {
   Permissions,
   hasPermission,
@@ -1409,7 +1410,8 @@ async function resolveUserArg(ctx, rawArg) {
   const { data: users, error } = await supabase
     .from("users")
     .select("id")
-    .ilike("username", username)
+    // Escaped so "_" and "%" are literal, not wildcards (audit 28 Nov 2026).
+    .ilike("username", escapeLike(username))
     .limit(1);
   if (error) throw error;
   if (!users?.[0]?.id) return null;
