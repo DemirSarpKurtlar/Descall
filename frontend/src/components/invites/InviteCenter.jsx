@@ -32,6 +32,7 @@ import { BadgeArt, Brand, Dc, Ico, PAvatar, Pill, Ring, Seg, Spark, StageBar } f
 import { channelLabel, fmtCountdown, fmtNum, pctLabel, pctText, relTime } from "./format.js";
 import InviteLandingView from "./InviteLandingView.jsx";
 import { inviteArtUrl } from "./format.js";
+import { saveImageFile } from "../../lib/saveImageFile.js";
 
 const CACHE_KEY = "descall:inviteCenter:last";
 
@@ -228,13 +229,8 @@ export default function InviteCenter({ mobile = false, onClose, onNavigate, fetc
     if (!data?.qrSvg) return;
     try {
       const png = await svgToPng(data.qrSvg, 768);
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(png);
-      a.download = `descall-davet-${username}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      // Phones get the share sheet ("Save Image" puts it in Photos); desktops download it.
+      await saveImageFile(png, `descall-davet-${username}.png`, { title: t("dvt.qr.title") });
     } catch {
       toast(t("dvt.link.copyFailed"), "error");
     }
