@@ -36,7 +36,7 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain (stable + windows-gnu target)
         run: |
           rustup toolchain install stable --profile minimal --component clippy
@@ -49,7 +49,7 @@ jobs:
         run: cargo test -p descall-capture -p descall-capture-bench
       - name: Clippy, no warnings (x86_64-pc-windows-gnu)
         run: cargo clippy -p descall-capture -p descall-capture-bench --all-targets --target x86_64-pc-windows-gnu -- -D warnings
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Page shim tests
@@ -64,7 +64,7 @@ jobs:
         working-directory: desktop
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain
         run: |
           rustup toolchain install stable --profile minimal
@@ -243,7 +243,7 @@ jobs:
           exit 0
       - name: Upload the exe and the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: descall-capture-bench
           path: desktop/bench-out/

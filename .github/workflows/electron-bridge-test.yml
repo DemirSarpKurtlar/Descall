@@ -21,8 +21,8 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - name: Test version and bridge switch
         working-directory: frontend
@@ -76,7 +76,7 @@ jobs:
           npx --yes @electron/asar@3.2.17 extract-file $asar electron/migrationBridgeConfig.cjs
           if (-not (Select-String -Path migrationBridgeConfig.cjs -Pattern "MIGRATION_BRIDGE_ENABLED: true" -Quiet)) { throw "bridge switch is not on in the packaged app" }
           Write-Host "bridge switch on in app.asar"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: electron-bridge-test
           path: frontend/release/Descall-Setup-*.exe

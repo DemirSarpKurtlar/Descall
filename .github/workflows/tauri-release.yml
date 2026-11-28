@@ -62,7 +62,7 @@ jobs:
       setup_pub: ${{ steps.parts.outputs.setup_pub }}
       updater_pub: ${{ steps.parts.outputs.updater_pub }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Version and tag
         id: version
@@ -90,7 +90,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Release helper tests
         run: |
@@ -168,10 +168,10 @@ jobs:
       REL: desktop/target/x86_64-pc-windows-msvc/release
       OUT: dist-desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: x86_64-pc-windows-msvc }
@@ -370,7 +370,7 @@ jobs:
         shell: pwsh
         run: if ($env:DESCALL_SIGN_PFX) { Remove-Item -Force -ErrorAction SilentlyContinue $env:DESCALL_SIGN_PFX }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: descall-desktop-release-${{ needs.preflight.outputs.version }}
           path: dist-desktop/
@@ -390,8 +390,8 @@ jobs:
       VERSION: ${{ needs.preflight.outputs.version }}
     steps:
       # gh needs the repository context (and the notes file, if any).
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: descall-desktop-release-${{ needs.preflight.outputs.version }}
           path: dist-desktop
