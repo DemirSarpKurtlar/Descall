@@ -193,6 +193,21 @@ export async function getDisplayMediaStream(opts = {}) {
   }
 
   const primary = buildDisplayMediaConstraints(opts);
+  if (opts.audio === false) {
+    // The shell cannot leave Descall's own playback out of system audio here
+    // (Electron select-source policy "off"): never ask for it.
+    const videoOnly = [{ ...primary, audio: false }, { video: true, audio: false }];
+    let lastErr = null;
+    for (const constraints of videoOnly) {
+      try {
+        return await navigator.mediaDevices.getDisplayMedia(constraints);
+      } catch (err) {
+        lastErr = err;
+        if (err?.name === "NotAllowedError" || err?.name === "AbortError") throw err;
+      }
+    }
+    throw lastErr || screenShareUnsupportedError();
+  }
   const attempts = [
     primary,
     // Engines that reject the detailed audio object may still accept the
@@ -458,8 +473,27 @@ export async function captureScreenShareStream(opts = {}) {
   return processScreenShareAudio(await captureScreenShareStreamRaw(opts));
 }
 
+export const SCREEN_AUDIO_VIDEO_ONLY_NOTICE = "System audio cannot be shared on this PC; sharing video only.";
+let videoOnlyNoticeShown = false;
+
+/** Once per app run: the share goes out without system audio (it would carry the call). */
+function noticeVideoOnly(notify) {
+  if (videoOnlyNoticeShown || typeof notify !== "function") return;
+  videoOnlyNoticeShown = true;
+  try {
+    notify(t(SCREEN_AUDIO_VIDEO_ONLY_NOTICE));
+  } catch {
+    /* a notice must never break the share */
+  }
+}
+
+/** Test hook. */
+export function _resetScreenShareNotices() {
+  videoOnlyNoticeShown = false;
+}
+
 async function captureScreenShareStreamRaw(opts = {}) {
-  const { width, height, fps, preferTab, pickSource = showElectronScreenPicker } = opts;
+  const { width, height, fps, preferTab, pickSource = showElectronScreenPicker, notify } = opts;
 
   if (isElectronRuntime() && typeof window.electronAPI?.getScreenSources === "function") {
     try {
@@ -474,14 +508,21 @@ async function captureScreenShareStreamRaw(opts = {}) {
           throw err;
         }
         if (typeof window.electronAPI?.selectDisplaySource === "function") {
-          // 3.7.33 echo fix: route the chosen source through getDisplayMedia so
-          // `restrictOwnAudio` excludes Descall's own playback from loopback.
+          // Echo fix (3.7.33, 4.2.1): route the chosen source through
+          // getDisplayMedia; Electron main grants system audio only as
+          // loopbackWithoutChrome (Descall's own playback left out) and answers
+          // { ok, audio: "exclude-self" | "off" }. The Tauri shell answers
+          // true and runs its own native lane with its own notices.
           // The legacy chromeMediaSource:"desktop" path below captures the
           // whole system mix, including the call, and viewers hear themselves.
+          let electronPolicy = null;
           try {
-            const ok = await window.electronAPI.selectDisplaySource(sourceId);
-            if (ok) {
-              const stream = await getDisplayMediaStream({ width, height, fps, preferTab });
+            const picked = await window.electronAPI.selectDisplaySource(sourceId);
+            electronPolicy = picked && typeof picked === "object" ? picked : null;
+            if (picked) {
+              const audioOff = electronPolicy?.audio === "off";
+              const stream = await getDisplayMediaStream({ width, height, fps, preferTab, ...(audioOff ? { audio: false } : {}) });
+              if (electronPolicy && !stream.getAudioTracks().length) noticeVideoOnly(notify);
               return guardDisplayCapture(stream);
             }
           } catch (err) {
@@ -489,9 +530,13 @@ async function captureScreenShareStreamRaw(opts = {}) {
             console.warn("[ScreenShare] Electron getDisplayMedia path failed, video-only fallback:", err);
           }
           // Never fall back to whole-system loopback: that is the echo.
+          if (electronPolicy) noticeVideoOnly(notify);
           return await captureElectronDesktop(sourceId, { width, height, fps }, { audio: false });
         }
-        return await captureElectronDesktop(sourceId, { width, height, fps });
+        // A shell without selectDisplaySource: desktop audio there is the whole
+        // system mix (the call included), so the share is video only.
+        noticeVideoOnly(notify);
+        return await captureElectronDesktop(sourceId, { width, height, fps }, { audio: false });
       }
       // Empty sources (macOS Screen Recording denied), try getDisplayMedia next.
     } catch (err) {

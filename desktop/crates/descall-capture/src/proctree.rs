@@ -43,9 +43,28 @@ pub fn is_webview_exe(exe: &str) -> bool {
     e.ends_with("msedgewebview2.exe")
 }
 
+/// `StartInfo.audio_error` when the echo guard turned system audio off.
+pub const ECHO_RISK_AUDIO_ERROR: &str = "echo-risk";
+
+/// Whether a share may start the process loopback: the page asked for audio and the echo
+/// guard trusts the loopback. An untrusted loopback could carry the call (viewers hear
+/// themselves), so the share goes out video only instead.
+pub fn share_system_audio(wanted: bool, echo_risk: bool) -> bool {
+    wanted && !echo_risk
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn echo_risk_turns_system_audio_off() {
+        assert!(share_system_audio(true, false));
+        assert!(!share_system_audio(true, true), "untrusted loopback: video only");
+        assert!(!share_system_audio(false, false));
+        assert!(!share_system_audio(false, true));
+        assert_eq!(ECHO_RISK_AUDIO_ERROR, "echo-risk");
+    }
 
     fn p(pid: u32, ppid: u32, created: u64) -> ProcEntry {
         ProcEntry { pid, ppid, created, exe: format!("p{pid}.exe") }

@@ -328,4 +328,16 @@ function windowBuilders(direct = /\bWebview(?:Window)?Builder::new\b/) {
   assert.doesNotMatch(ns, /notice\("[^"]{20,}"/, "no hard-coded notice text at the call sites");
 }
 
+// ---- echo guard (4.2.1): a loopback the guard does not trust never starts ---------------------
+// The guard used to only log, so a call played outside Descall's process tree still went out
+// in the share (the viewer heard themselves). Now: video only and the "echo" notice.
+{
+  const host = readFileSync(join(here, "..", "..", "crates", "descall-capture", "src", "host.rs"), "utf8");
+  assert.match(host, /let system_audio = share_system_audio\(plan\.audio, echo_risk\);/, "echo risk gates the loopback");
+  assert.match(host, /ShareRequest \{[^}]*system_audio,[^}]*\}/, "the gated flag reaches the pipeline");
+  assert.doesNotMatch(host, /system_audio: plan\.audio/, "never the raw request flag");
+  const ns = readFileSync(join(here, "native-screen-share.js"), "utf8");
+  assert.match(ns, /notice\(info\.echoRisk \? "echoOff" : "noAudio"\)/, "the sharer is told why it is video only");
+}
+
 console.log("media-calls.test: ok");

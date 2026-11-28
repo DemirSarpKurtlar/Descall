@@ -17,6 +17,9 @@ class DescallBridgeViewController: CAPBridgeViewController {
     private var keyboardObservers: [NSObjectProtocol] = []
     /// iOS 26 Liquid Glass tab bar over the WebView (DescallGlassTabBar).
     let glassTabBarPlugin = DescallGlassTabBarPlugin()
+    /// The web view's UI delegate in front of Capacitor's (kept alive here: WKWebView
+    /// holds its uiDelegate weakly). See DescallWebUIDelegate.
+    private var webUIDelegate: DescallWebUIDelegate?
 
     override open func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -57,6 +60,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
 
     override open func viewDidLoad() {
         super.viewDidLoad()
+        installMediaCapturePolicy()
         // Back is the web app's own iOS edge swipe (useEdgeSwipeBack), which runs
         // the same back handler as each screen's ‹ button. WebKit's history swipe
         // would fire a second, unrelated back (history.back() / blank page) on the
@@ -78,6 +82,18 @@ class DescallBridgeViewController: CAPBridgeViewController {
 
     deinit {
         keyboardObservers.forEach { NotificationCenter.default.removeObserver($0) }
+    }
+
+    /// Microphone / camera for getUserMedia: granted for the app's own page only,
+    /// denied for any other origin or frame, never a WebKit prompt
+    /// (DescallMediaCaptureLogic). Everything else still goes to Capacitor's
+    /// delegate (alerts, confirm, prompt, new windows).
+    private func installMediaCapturePolicy() {
+        guard webUIDelegate == nil, let webView else { return }
+        let apps = DescallMediaCaptureLogic.appOrigins(localURL: bridge?.config.localURL, serverURL: bridge?.config.serverURL)
+        let proxy = DescallWebUIDelegate(base: webView.uiDelegate, appOrigins: apps)
+        webUIDelegate = proxy
+        webView.uiDelegate = proxy
     }
 
     /// WKWebView often leaves the layout viewport full-screen while the keyboard
@@ -184,6 +200,49 @@ class DescallBridgeViewController: CAPBridgeViewController {
         UIView.animate(withDuration: 0.2) {
             self.setNeedsStatusBarAppearanceUpdate()
         }
+    }
+}
+
+// MARK: - Media capture permission (4.2.1)
+
+/// WKUIDelegate in front of Capacitor's WebViewDelegationHandler. It answers the
+/// media capture question itself (DescallMediaCaptureLogic: the app's own origin
+/// only, never `.prompt`) and forwards every other UIDelegate call to Capacitor's
+/// handler. WebKit reads which delegate methods exist when uiDelegate is set, so
+/// `responds(to:)` reports the base's methods too and `forwardingTarget(for:)`
+/// sends those calls on.
+final class DescallWebUIDelegate: NSObject, WKUIDelegate {
+    private let base: WKUIDelegate?
+    private let appOrigins: [DescallMediaCaptureLogic.Origin]
+
+    init(base: WKUIDelegate?, appOrigins: [DescallMediaCaptureLogic.Origin]) {
+        self.base = base
+        self.appOrigins = appOrigins
+        super.init()
+    }
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        if super.responds(to: aSelector) { return true }
+        return base?.responds(to: aSelector) ?? false
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        if let base, base.responds(to: aSelector) { return base }
+        return super.forwardingTarget(for: aSelector)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        type: WKMediaCaptureType,
+        decisionHandler: @escaping (WKPermissionDecision) -> Void
+    ) {
+        let request = DescallMediaCaptureLogic.Origin(scheme: origin.protocol, host: origin.host, port: origin.port)
+        let fo = frame.securityOrigin
+        let caller = DescallMediaCaptureLogic.Origin(scheme: fo.protocol, host: fo.host, port: fo.port)
+        let decision = DescallMediaCaptureLogic.decision(request: request, frame: caller, allowed: appOrigins)
+        decisionHandler(decision == .grant ? .grant : .deny)
     }
 }
 

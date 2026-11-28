@@ -28,3 +28,100 @@ for (const loc of ["tr", "en"]) {
   }
 }
 console.log("voiceMicError join fallback ok");
+
+// 4.2.1: a refused microphone on iOS ("Mikrofona izin veriyorum", 4.1.4 feedback). iOS asks
+// once; after "Don't Allow" getUserMedia fails at once and never asks again, so the old
+// "İzin ver" button (getUserMedia again) did nothing. Now: Open Settings on iOS, and
+// everywhere else "Allow" asks again and then retries the call / join / recording.
+{
+  const m = await import("./voiceMicError.js");
+  assert.equal(m.isMicPermissionError({ name: "NotAllowedError" }), true);
+  assert.equal(m.isMicPermissionError({ name: "NotReadableError" }), false);
+  assert.deepEqual(m.micBlockedPlan({ nativeIos: true, permission: "denied", canOpenSettings: true }), { message: m.MIC_OFF_IN_SETTINGS, action: "settings" });
+  assert.deepEqual(m.micBlockedPlan({ nativeIos: true, permission: "restricted", canOpenSettings: false }), { message: m.MIC_OFF_IN_SETTINGS, action: null });
+  assert.equal(m.micBlockedPlan({ nativeIos: true, permission: "granted" }).action, "ask");
+  assert.equal(m.micBlockedPlan({ nativeIos: true, permission: null }).action, "ask", "old binary without the plugin method");
+  assert.equal(m.micBlockedPlan({ nativeIos: false, permission: "denied" }).action, "ask", "web: the browser can ask again");
+
+  const iosWin = (state, { opened = [] } = {}) => ({
+    Capacitor: {
+      isNativePlatform: () => true,
+      getPlatform: () => "ios",
+      Plugins: { DescallDisplay: { getMicrophonePermission: async () => ({ state }), openAppSettings: async () => { opened.push(1); return { opened: true }; } } },
+    },
+  });
+  const t = (k) => `T:${k}`;
+  const denied = Object.assign(new Error("denied"), { name: "NotAllowedError" });
+
+  // iOS, refused in the system: Settings toast whose button opens Settings.
+  {
+    const shown = [];
+    const opened = [];
+    const r = await m.voiceMicErrorToast(denied, { toast: (...a) => shown.push(a), t, win: iosWin("denied", { opened }) });
+    assert.equal(r, "settings");
+    assert.equal(shown[0][0], `T:${m.MIC_OFF_IN_SETTINGS}`);
+    assert.equal(shown[0][2].actionLabel, "T:Open Settings");
+    shown[0][2].onOpen();
+    await new Promise((res) => setTimeout(res, 0));
+    assert.equal(opened.length, 1, "the button opens Descall's Settings page");
+  }
+
+  // Granted after "Allow": the call is placed again (no second tap on the call button).
+  {
+    const shown = [];
+    let retried = 0;
+    const r = await m.voiceMicErrorToast(denied, {
+      toast: (...a) => shown.push(a), t, retry: () => { retried += 1; },
+      win: iosWin("prompt"), getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }),
+    });
+    assert.equal(r, "ask");
+    assert.equal(shown[0][0], "T:Allow microphone access to call");
+    assert.equal(shown[0][2].actionLabel, "T:Allow");
+    shown[0][2].onOpen();
+    await new Promise((res) => setTimeout(res, 0));
+    assert.equal(retried, 1, "allowed -> retry");
+  }
+
+  // Still refused after "Allow": never a silent no-op.
+  {
+    const shown = [];
+    const outcome = await m.askMicAgain({ toast: (...a) => shown.push(a), t, win: iosWin("denied"), getUserMedia: async () => { throw denied; } });
+    assert.equal(outcome, "blocked");
+    assert.equal(shown[0][0], `T:${m.MIC_OFF_IN_SETTINGS}`, "iOS: points to Settings");
+    shown.length = 0;
+    const web = await m.askMicAgain({ toast: (...a) => shown.push(a), t, win: {}, getUserMedia: async () => { throw denied; } });
+    assert.equal(web, "blocked");
+    assert.equal(shown[0][0], `T:${m.MIC_STILL_BLOCKED}`, "web / desktop: browser or system settings");
+    shown.length = 0;
+    const ok = await m.askMicAgain({ toast: (...a) => shown.push(a), t, win: {}, getUserMedia: async () => ({ getTracks: () => [] }) });
+    assert.equal(ok, "allowed");
+    assert.equal(shown[0][0], `T:${m.MIC_ALLOWED_TRY_AGAIN}`);
+  }
+
+  // Not a permission problem: the plain device message, no button.
+  {
+    const shown = [];
+    const r = await m.voiceMicErrorToast({ name: "NotReadableError" }, { toast: (...a) => shown.push(a), t, win: iosWin("granted") });
+    assert.equal(r, "copy");
+    assert.deepEqual(shown, [["T:Microphone is already in use by another app.", "error"]]);
+  }
+
+  // Call sites: DM call retries the call, server voice rejoins, the voice note restarts,
+  // and the voice note no longer reports every failure as a denied microphone.
+  const call = readFileSync(new URL("../hooks/useCall.js", import.meta.url), "utf8");
+  assert.match(call, /retry: \(\) => startCallRef\.current\?\.\(friend, type\)/);
+  const sv = readFileSync(new URL("../hooks/useServerVoice.js", import.meta.url), "utf8");
+  assert.match(sv, /retry: \(\) => joinRef\.current\?\.\(serverId, channel\)/);
+  const gc = readFileSync(new URL("../hooks/useGroupCall.js", import.meta.url), "utf8");
+  assert.equal((gc.match(/voiceMicErrorToast\(err,/g) || []).length, 4);
+  const composer = readFileSync(new URL("../components/chat/MessageComposer.jsx", import.meta.url), "utf8");
+  assert.ok(!composer.includes('t("Microphone access denied.")'), "voice note: real reason, not always 'denied'");
+  assert.match(composer, /retry: \(\) => startRecordingRef\.current\?\.\(\)/);
+  const { MID_APP_I18N } = await import("../i18n/locales/midApp.i18n.js");
+  for (const loc of ["tr", "de", "es", "fr", "pt-BR", "ru"]) {
+    for (const k of [m.MIC_OFF_IN_SETTINGS, m.MIC_STILL_BLOCKED, m.MIC_ALLOWED_TRY_AGAIN, "Open Settings"]) {
+      assert.ok(MID_APP_I18N[loc][k], `${loc} missing ${k}`);
+    }
+  }
+  console.log("voiceMicError refused-microphone flow ok");
+}
