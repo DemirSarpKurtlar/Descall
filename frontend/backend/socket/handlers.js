@@ -1035,6 +1035,11 @@ function registerSocketHandlers(io) {
 
     // Shared with friend:request: adding someone who already asked you accepts it.
     async function acceptFrom(fromUserId) {
+      // Never across a block, either way (REST /friends/accept already refused it).
+      if (fromUserId === myId || await isBlockedEitherWay(myId, fromUserId)) {
+        socket.emit("friend:error", apiText("message", "You can't add this user.", null, { code: "blocked" }));
+        return;
+      }
 
       // Verify pending request exists in DB (handles REST-sent requests not in memory)
       const { data: pendingRow, error: checkError } = await supabase
@@ -1187,6 +1192,13 @@ function registerSocketHandlers(io) {
         socket.emit("dm:request:error", { message: "Message request not found.", fromUserId: fromId || null });
         return;
       }
+      // A request that outlived a block (either way) is dropped, never accepted.
+      if (await isBlockedEitherWay(myId, fromId)) {
+        await deleteMessageRequest(supabase, fromId, myId);
+        socket.emit("dm:request:error", { ...apiText("message", "Message request not found."), fromUserId: fromId });
+        socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+        return;
+      }
       const removed = await deleteMessageRequest(supabase, fromId, myId);
       if (!removed) {
         socket.emit("dm:request:error", { message: "Message request not found.", fromUserId: fromId });
@@ -1311,6 +1323,8 @@ function registerSocketHandlers(io) {
         if (!friends.get(myId)?.has(toUserId)) return;
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: false });
       } else if (context === "group" && typeof groupId === "string") {
+        // Same room gate as typing:start (any socket could post into any group room).
+        if (!socket.rooms?.has?.(`group:${groupId}`)) return;
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: false });
       } else if (context === "server" && typeof channelId === "string") {
         if (!socket.rooms?.has?.(`server-channel:${channelId}`)) return;
