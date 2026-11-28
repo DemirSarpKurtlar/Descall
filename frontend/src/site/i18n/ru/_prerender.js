@@ -43,7 +43,5 @@ export default {
   "WebRTC calls with quality presets": "Звонки на WebRTC с пресетами качества",
   "Why teams switch": "Почему команды переходят",
   "iPhone, Windows desktop, Android, and full web app": "iPhone, приложение для Windows, Android и полноценная веб-версия",
-  "name@example.com": "imya@primer.ru",
-  "or": "или",
   "or with your email": "или по email"
 };

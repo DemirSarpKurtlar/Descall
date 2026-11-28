@@ -88,18 +88,38 @@ function Field({ id, label, labelRight, icon: Icon, state, children, hint, trail
   );
 }
 
-function IdRow({ value, pill, onChange, compact }) {
+function IdRow({ value, pill, onChange, compact, phone = false }) {
   const t = useT();
+  // Phone (draft B): a letter avatar and a labelled "Change" chip.
+  const letter = String(value || "").replace(/^@/, "").charAt(0).toLocaleUpperCase();
   return (
-    <div className="asu-idrow">
-      <Mail size={17} aria-hidden="true" />
+    <div className={`asu-idrow${phone ? " is-phone" : ""}`}>
+      {phone ? (
+        <span className="asu-av" aria-hidden="true">
+          {letter || <User size={15} aria-hidden="true" />}
+        </span>
+      ) : (
+        <Mail size={17} aria-hidden="true" />
+      )}
       <span className="asu-v" data-testid="asu-idrow-value">{value}</span>
       {pill}
       <button type="button" className="asu-ed" onClick={onChange} aria-label={t("Change the email")}>
         <Pencil size={13} aria-hidden="true" />
-        {compact ? null : <span>{t("Change")}</span>}
+        {compact && !phone ? null : <span>{t("Change")}</span>}
       </button>
     </div>
+  );
+}
+
+/** Phone (draft B): what the first field reads the input as, inside the field. */
+function KindChip({ kind }) {
+  const t = useT();
+  if (kind !== "email" && kind !== "username") return null;
+  return (
+    <span className="asu-kind" data-testid="asu-kind" data-kind={kind}>
+      <Check size={12} weight="bold" aria-hidden="true" />
+      {kind === "email" ? t("Email") : t("Username")}
+    </span>
   );
 }
 
@@ -116,6 +136,8 @@ export default function AdaptiveAuthCard({
   intent = "login",
   surface = "site",
   compact = false,
+  // The app's phone page (AdaptiveAuthShell, draft B); the site modal is only `compact`.
+  phone = false,
   onLogin,
   onRegister,
   onGoogle,
@@ -181,7 +203,7 @@ export default function AdaptiveAuthCard({
             hideWhenUnavailable
             onUnavailable={() => setGoogleGone(true)}
             disabled={loading}
-            label={primary ? t("Continue with Google") : "Google"}
+            label={primary || phone ? t("Continue with Google") : "Google"}
             onCredential={(credential) => onGoogle?.(credential)}
           />
         </div>
@@ -190,7 +212,7 @@ export default function AdaptiveAuthCard({
     if (p === "apple") {
       return (
         <div key="apple" className={primary ? "is-primary" : ""}>
-          <AppleSignInButton disabled={loading} label={primary ? t("Continue with Apple") : "Apple"} onApple={(apple) => onApple?.(apple)} />
+          <AppleSignInButton disabled={loading} label={primary || phone ? t("Continue with Apple") : "Apple"} onApple={(apple) => onApple?.(apple)} />
         </div>
       );
     }
@@ -199,7 +221,7 @@ export default function AdaptiveAuthCard({
         <PasskeySignInButton
           disabled={loading}
           showNote={false}
-          label={primary ? "" : t("Passwordless")}
+          label={primary ? "" : phone ? t("Passwordless sign-in") : t("Passwordless")}
           onSignedIn={handlePasskeyBody}
           onError={(err) => onPasskeyError?.(err)}
           onUsePassword={() => document.getElementById("asu-identifier")?.focus()}
@@ -212,6 +234,23 @@ export default function AdaptiveAuthCard({
   const kind = identifierKind(identifier);
   const chips = step === "start" ? domainChips(identifier, locale) : [];
   const typoFix = step === "start" && kind === "email" ? emailTypoFix(identifier) : null;
+  // Phone (draft B, keyboard open): while the first field has focus the card is just the
+  // field and the button under a compact top bar, so the keyboard never hides them. The
+  // rest comes back a moment after blur, so a tap on "Continue" lands where it was aimed.
+  const [typing, setTyping] = useState(false);
+  const typingOff = useRef(0);
+  useEffect(() => () => window.clearTimeout(typingOff.current), []);
+  useEffect(() => {
+    if (step !== "start") setTyping(false);
+  }, [step]);
+  const onIdFocus = () => {
+    window.clearTimeout(typingOff.current);
+    if (phone) setTyping(true);
+  };
+  const onIdBlur = () => {
+    window.clearTimeout(typingOff.current);
+    typingOff.current = window.setTimeout(() => setTyping(false), 220);
+  };
 
   useEffect(() => {
     saveCardDraft({ identifier: kind === "email" || kind === "username" ? identifier.trim() : "" });
@@ -503,13 +542,18 @@ export default function AdaptiveAuthCard({
   const [googleOpen, setGoogleOpen] = useState(false);
   const typingStart = useRef(0);
   const [loginBusy, setLoginBusy] = useState(false);
+  // A sign-in attempt was answered: with an error it was a wrong password (or a refusal),
+  // and the phone card turns "Send code" into a full-width button (draft B).
+  const [loginTried, setLoginTried] = useState(false);
 
   useEffect(() => {
     if (step === "login") {
       setLoginPw("");
-      setTimeout(() => document.getElementById("asu-login-password")?.focus(), 40);
+      setLoginTried(false);
+      // Phone: no keyboard over the "Welcome back" card; the passkey button comes first.
+      if (!phone) setTimeout(() => document.getElementById("asu-login-password")?.focus(), 40);
     }
-  }, [step]);
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitLogin = async (e) => {
     e?.preventDefault?.();
@@ -526,6 +570,7 @@ export default function AdaptiveAuthCard({
       /* the error prop shows the message */
     } finally {
       setLoginBusy(false);
+      setLoginTried(true);
     }
   };
 
@@ -624,7 +669,14 @@ export default function AdaptiveAuthCard({
   // ---- render -----------------------------------------------------------------------
   let body = null;
   if (step === "start") {
-    const [primary, ...rest] = providers;
+    // Phone (draft B): at most two providers, stacked full width like every other button.
+    const shown = phone ? providers.slice(0, 2) : providers;
+    const [primary, ...rest] = shown;
+    const restNodes = rest.map((p) => renderProvider(p, false));
+    // A chip tap keeps the keyboard and the focus in the field (phone typing layout).
+    const keepFocus = (e) => e.preventDefault();
+    const typoDomain = typoFix ? typoFix.slice(typoFix.lastIndexOf("@") + 1) : "";
+    const typoText = typoFix ? String(t("Did you mean {email}?", { email: "\u0001" })).split("\u0001") : [];
     body = (
       <form className="asu-step" onSubmit={submitStart} noValidate key="start">
         <div className="asu-title">
@@ -637,24 +689,25 @@ export default function AdaptiveAuthCard({
             <span>{t("Invited by @{username}", { username: inviteRef })}</span>
           </p>
         ) : null}
-        {providers.length ? (
-          <div className="asu-social">
+        {shown.length ? (
+          <div className="asu-social asu-hide-typing">
             {renderProvider(primary, true)}
-            {rest.length ? <div className="asu-row2">{rest.map((p) => renderProvider(p, false))}</div> : null}
+            {rest.length ? phone ? restNodes : <div className="asu-row2">{restNodes}</div> : null}
           </div>
         ) : null}
-        {providers.length ? <div className="asu-dv">{t("or with your email or username")}</div> : null}
+        {shown.length ? <div className="asu-dv asu-hide-typing">{phone ? t("or") : t("or with your email or username")}</div> : null}
         <Field
           id="asu-identifier"
           label={t("Email or username")}
-          icon={kind === "username" ? User : Mail}
+          icon={phone ? (kind === "email" || kind === "partial" ? Mail : AtSign) : kind === "username" ? AtSign : Mail}
           state={startError ? "err" : null}
+          trailing={phone ? <KindChip kind={kind} /> : null}
           hint={
             <>
               {chips.length ? (
                 <div className="asu-chips" aria-label={t("Complete the address")}>
                   {chips.map((d, i) => (
-                    <button key={d} type="button" className={`asu-chip${i === 0 ? " is-sel" : ""}`} onClick={() => setIdentifier(withDomain(identifier, d))}>
+                    <button key={d} type="button" className={`asu-chip${i === 0 ? " is-sel" : ""}`} onPointerDown={keepFocus} onMouseDown={keepFocus} onClick={() => setIdentifier(withDomain(identifier, d))}>
                       @{d}
                     </button>
                   ))}
@@ -662,9 +715,20 @@ export default function AdaptiveAuthCard({
               ) : null}
               {typoFix ? (
                 <div className="asu-chips">
-                  <button type="button" className="asu-chip" onClick={() => setIdentifier(typoFix)}>
-                    {t("Did you mean {email}?", { email: typoFix })}
-                  </button>
+                  {phone ? (
+                    <button type="button" className="asu-chip is-fix" data-testid="asu-typo" onPointerDown={keepFocus} onMouseDown={keepFocus} onClick={() => setIdentifier(typoFix)}>
+                      <Pencil size={13} aria-hidden="true" />
+                      <span>
+                        {typoText[0]}
+                        <b>{typoDomain}</b>
+                        {typoText[1]}
+                      </span>
+                    </button>
+                  ) : (
+                    <button type="button" className="asu-chip" onClick={() => setIdentifier(typoFix)}>
+                      {t("Did you mean {email}?", { email: typoFix })}
+                    </button>
+                  )}
                 </div>
               ) : null}
               {startError ? (
@@ -685,22 +749,27 @@ export default function AdaptiveAuthCard({
             autoCorrect="off"
             spellCheck={false}
             maxLength={254}
-            placeholder={t("name@example.com or username")}
+            placeholder={phone ? t("name@example.com") : t("name@example.com or username")}
             value={identifier}
             onChange={(e) => {
               setIdentifier(e.target.value);
               if (startError) setStartError("");
             }}
+            onFocus={onIdFocus}
+            onBlur={onIdBlur}
+            enterKeyHint="go"
             aria-invalid={startError ? "true" : undefined}
             aria-describedby="asu-start-morph"
           />
         </Field>
-        <p className="asu-morph" id="asu-start-morph">
+        <p className="asu-morph asu-hide-typing" id="asu-start-morph">
           <Info size={13} aria-hidden="true" />
           <span>
-            {compact
-              ? t("If you have an account the card turns into sign-in, otherwise we open yours right here.")
-              : t("If you have an account the card turns into the sign-in card, otherwise we open your account right here. No separate page. You can also sign in with your username.")}
+            {phone
+              ? t("If you have an account we go to sign-in, otherwise to sign-up.")
+              : compact
+                ? t("If you have an account the card turns into sign-in, otherwise we open yours right here.")
+                : t("If you have an account the card turns into the sign-in card, otherwise we open your account right here. No separate page. You can also sign in with your username.")}
           </span>
         </p>
         {alert}
@@ -939,29 +1008,38 @@ export default function AdaptiveAuthCard({
   } else if (step === "login") {
     const isEmail = account?.kind === "email";
     const hint = account?.hint || account?.value || "";
+    const pkShown = Boolean(onPasskeyLogin && pk.available);
+    // Phone (draft B): the error and the Caps Lock warning sit under the password field,
+    // and after a failed attempt "Send code" is a full-width button.
+    const pwError = phone ? shownError : "";
+    const failed = phone && loginTried && Boolean(shownError);
     body = (
       <form className="asu-step" onSubmit={submitLogin} noValidate key="login">
-        <div className="asu-title">
-          <h2>{t("Welcome back")}</h2>
-          <span className="asu-pill is-known">
-            <User size={11} aria-hidden="true" />
-            {compact ? t("Registered") : t("Registered account")}
-          </span>
-        </div>
-        <IdRow value={account?.value} compact={compact} onChange={changeEmail} pill={null} />
+        {phone ? null : (
+          <div className="asu-title">
+            <h2>{t("Welcome back")}</h2>
+            <span className="asu-pill is-known">
+              <User size={11} aria-hidden="true" />
+              {compact ? t("Registered") : t("Registered account")}
+            </span>
+          </div>
+        )}
+        <IdRow value={account?.value} compact={compact} phone={phone} onChange={changeEmail} pill={null} />
         {/* The identifier for password managers and the passkey autofill. */}
         <input type="text" name="username" className="asu-sr" autoComplete="username" value={account?.value || ""} readOnly aria-hidden="true" tabIndex={-1} />
-        <p className="asu-morph">
-          <Info size={13} aria-hidden="true" />
-          <span>
-            {!isEmail
-              ? t("You are signing in with your username.")
-              : compact
-                ? t("You already have an account with this email; the card turned into sign-in, no need to type it again.")
-                : t("You already have an account with this email, so the card turned into the sign-in card. No need to type the email again.")}
-          </span>
-        </p>
-        {onPasskeyLogin && pk.available ? (
+        {phone ? null : (
+          <p className="asu-morph">
+            <Info size={13} aria-hidden="true" />
+            <span>
+              {!isEmail
+                ? t("You are signing in with your username.")
+                : compact
+                  ? t("You already have an account with this email; the card turned into sign-in, no need to type it again.")
+                  : t("You already have an account with this email, so the card turned into the sign-in card. No need to type the email again.")}
+            </span>
+          </p>
+        )}
+        {pkShown ? (
           <div className="asu-pk-white">
             <PasskeySignInButton
               disabled={loading}
@@ -972,6 +1050,7 @@ export default function AdaptiveAuthCard({
             />
           </div>
         ) : null}
+        {phone && pkShown ? <div className="asu-dv">{t("or with your password")}</div> : null}
         <Field
           id="asu-login-password"
           label={t("Password")}
@@ -979,11 +1058,21 @@ export default function AdaptiveAuthCard({
           state={error ? "err" : null}
           trailing={<PasswordToggle shown={showLoginPw} onToggle={() => setShowLoginPw((v) => !v)} />}
           hint={
-            caps ? (
-              <p className="asu-fh is-warn" role="status">
-                <AlertTriangle size={13} aria-hidden="true" />
-                <span>{t("Caps Lock is on")}</span>
-              </p>
+            pwError || caps ? (
+              <>
+                {pwError ? (
+                  <p className="asu-fh is-err" role="alert" id="asu-error">
+                    <AlertTriangle size={13} aria-hidden="true" />
+                    <span>{pwError}</span>
+                  </p>
+                ) : null}
+                {caps ? (
+                  <p className="asu-fh is-warn" role="status">
+                    <AlertTriangle size={13} aria-hidden="true" />
+                    <span>{pwError ? t("Caps Lock is on. Turn it off and try again.") : t("Caps Lock is on")}</span>
+                  </p>
+                ) : null}
+              </>
             ) : null
           }
         >
@@ -1000,36 +1089,53 @@ export default function AdaptiveAuthCard({
             }}
             onKeyUp={(e) => setCaps(Boolean(e.getModifierState?.("CapsLock")))}
             onKeyDown={(e) => setCaps(Boolean(e.getModifierState?.("CapsLock")))}
+            enterKeyHint="go"
             aria-invalid={error ? "true" : undefined}
             aria-describedby={error ? "asu-error" : undefined}
           />
         </Field>
-        {alert}
+        {pwError ? null : alert}
         <button type="submit" className="asu-btn is-prim" disabled={!loginPw || loginBusy || loading} aria-busy={loginBusy || loading || undefined}>
           {loginBusy || loading ? <span className="asu-spin" aria-hidden="true" /> : <LogIn size={17} aria-hidden="true" />}
           <span>{t("Sign in")}</span>
         </button>
-        <div className="asu-tp">
-          <div className="asu-bp-h">
-            <span className="asu-ico">
-              <Mail size={16} aria-hidden="true" />
-            </span>
-            <div>
-              <b>{t("Don't remember your password?")}</b>
-              <span>
-                {!isEmail
-                  ? t("We send a 6-digit code to the email of your account.")
-                  : compact
-                    ? t("A 6-digit code to {email}.", { email: hint })
-                    : t("We send a 6-digit code to {email}; set a new password without leaving the card.", { email: hint })}
+        {phone ? (
+          failed ? (
+            <button type="button" className="asu-btn is-glass asu-recover" data-testid="asu-recover" onClick={sendCode} disabled={resetBusy} aria-busy={resetBusy || undefined}>
+              {resetBusy ? <span className="asu-spin" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
+              <span>{t("Send code, reset my password")}</span>
+            </button>
+          ) : (
+            <p className="asu-rec">
+              {t("Don't remember your password?")}{" "}
+              <button type="button" className="asu-lnk" onClick={sendCode} disabled={resetBusy} aria-busy={resetBusy || undefined}>
+                {t("Send code")}
+              </button>
+            </p>
+          )
+        ) : (
+          <div className="asu-tp">
+            <div className="asu-bp-h">
+              <span className="asu-ico">
+                <Mail size={16} aria-hidden="true" />
               </span>
+              <div>
+                <b>{t("Don't remember your password?")}</b>
+                <span>
+                  {!isEmail
+                    ? t("We send a 6-digit code to the email of your account.")
+                    : compact
+                      ? t("A 6-digit code to {email}.", { email: hint })
+                      : t("We send a 6-digit code to {email}; set a new password without leaving the card.", { email: hint })}
+                </span>
+              </div>
             </div>
+            <button type="button" className="asu-btn is-glass is-sm" onClick={sendCode} disabled={resetBusy} aria-busy={resetBusy || undefined}>
+              {resetBusy ? <span className="asu-spin" aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
+              <span>{t("Send code")}</span>
+            </button>
           </div>
-          <button type="button" className="asu-btn is-glass is-sm" onClick={sendCode} disabled={resetBusy} aria-busy={resetBusy || undefined}>
-            {resetBusy ? <span className="asu-spin" aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
-            <span>{t("Send code")}</span>
-          </button>
-        </div>
+        )}
         {googleOpen && providers.includes("google") ? <div className="asu-social">{renderProvider("google", true)}</div> : null}
         {compact ? null : (
           <div className="asu-lead">
@@ -1164,7 +1270,12 @@ export default function AdaptiveAuthCard({
   }
 
   return (
-    <section className="asu-card" aria-label={step === "login" ? t("Sign in") : t("Create account")} data-step={step}>
+    <section
+      className={`asu-card${phone ? " is-phone" : ""}`}
+      aria-label={step === "login" ? t("Sign in") : t("Create account")}
+      data-step={step}
+      data-typing={phone && typing && step === "start" ? "1" : undefined}
+    >
       <span className="asu-ready" style={{ width: `${ready}%` }} aria-hidden="true" data-testid="asu-ready" />
       {body}
     </section>

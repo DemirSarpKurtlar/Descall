@@ -43,7 +43,5 @@ export default {
   "WebRTC calls with quality presets": "Llamadas WebRTC con ajustes de calidad predefinidos",
   "Why teams switch": "Por qué se cambian los equipos",
   "iPhone, Windows desktop, Android, and full web app": "iPhone, escritorio de Windows, Android y una app web completa",
-  "name@example.com": "nombre@ejemplo.com",
-  "or": "o",
   "or with your email": "o con tu correo"
 };

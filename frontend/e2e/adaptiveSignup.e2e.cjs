@@ -432,7 +432,10 @@ async function main() {
         await page.locator('.asu-card').waitFor({ timeout: 20000 });
         check(await page.locator('.asu-page.is-phone').count(), `phone ${i + 1}: phone layout`);
         await states[i](page);
-        if (i > 0) check(await page.locator('.asu-ptop').isVisible(), `phone ${i + 1}: compact top bar`);
+        // Draft B: typing in the first field and the sign-up use the compact top bar; the
+        // sign-in step keeps the head ("Tekrar hoş geldin") over the card.
+        if (i < 3) check(await page.locator('.asu-ptop').isVisible(), `phone ${i + 1}: compact top bar`);
+        else check(/Tekrar hoş geldin/.test(await page.locator('.asu-head h1').innerText().catch(() => '')), 'phone 4: "Tekrar hoş geldin" head on the sign-in step');
         await page.waitForTimeout(500);
         const file = path.join(OUT, `phone-${i + 1}.png`);
         await page.screenshot({ path: file });
@@ -447,6 +450,64 @@ async function main() {
       await page.setContent(`<html><body style="margin:0;background:#0a0b10;display:flex;gap:28px;padding:28px;box-sizing:border-box">${imgs.replace(/<img /g, '<img style="width:393px;height:852px;border-radius:44px;box-shadow:0 0 0 8px #1c1d25,0 30px 70px -25px #000" ')}</body></html>`);
       await page.waitForTimeout(300);
       await shot(page, 'phone-states.jpg', { fullPage: true });
+      await ctx.close();
+    }
+
+    // ---------------- phone, draft B: geometry and the five extras ----------------
+    for (const vp of [{ width: 393, height: 852 }, { width: 375, height: 667 }, { width: 412, height: 915 }]) {
+      const tag = `phone B ${vp.width}x${vp.height}`;
+      const { ctx, page, errors } = await newPage(vp, { mobile: true });
+      await page.goto(`${base}/login?gd=1`, { waitUntil: 'load' });
+      await page.locator('.asu-card').waitFor({ timeout: 20000 });
+      await page.locator('.asu-pfoot .asu-herepill').waitFor({ timeout: 8000 }).catch(() => fails.push(`${tag}: no live counter in the bottom strip`));
+      await page.waitForTimeout(400);
+      const g = await page.evaluate(() => {
+        const box = (e) => e.getBoundingClientRect();
+        const controls = [...document.querySelectorAll('.asu-card .asu-btn, .asu-card .apple-signin-btn, .asu-card .pk-signin-btn, .asu-card .google-signin-glass-face, .asu-card .asu-fi')]
+          .filter((e) => e.offsetParent)
+          .map((e) => ({ w: Math.round(box(e).width), h: Math.round(box(e).height) }));
+        const card = box(document.querySelector('.asu-card'));
+        const page = document.querySelector('.asu-page');
+        return { controls, cardX: Math.round(card.x), cardW: Math.round(card.width), vw: innerWidth, fits: page.scrollHeight <= innerHeight + 1, lang: Boolean(document.querySelector('.asu-pfoot .asu-lang select')) };
+      });
+      check(g.controls.length >= 3 && g.controls.every((c) => c.h === 52 && c.w === g.controls[0].w), `${tag}: every button and field 52 tall and one width (${JSON.stringify(g.controls)})`);
+      check(g.cardX === 16 && g.cardW === g.vw - 32, `${tag}: 16 side margins (x ${g.cardX}, w ${g.cardW})`);
+      check(g.fits, `${tag}: the start screen fits without scrolling`);
+      check(g.lang, `${tag}: language picker in the bottom strip`);
+      if (vp.width === 393) {
+        // (1) what the field reads the input as, (2) typo fix chip with one tap
+        await page.locator('#asu-identifier').click();
+        await page.keyboard.type('deniz@gmial.com');
+        check((await page.locator('[data-testid="asu-kind"]').innerText().catch(() => '')).trim() === 'E-posta', `${tag}: "E-posta" chip in the field`);
+        check(await page.locator('.asu-ptop').isVisible() && !(await page.locator('.asu-head').isVisible()), `${tag}: typing swaps the head for the top bar`);
+        await page.locator('[data-testid="asu-typo"]').click();
+        check((await page.inputValue('#asu-identifier')) === 'deniz@gmail.com', `${tag}: the typo chip fixes the address`);
+        await page.fill('#asu-identifier', 'admin');
+        check((await page.locator('[data-testid="asu-kind"]').innerText().catch(() => '')).trim() === 'Kullanıcı adı', `${tag}: "Kullanıcı adı" chip in the field`);
+        await shot(page, 'phone-b-typing.jpg');
+        // (3) show / hide password, (5) a wrong password makes "Kod gönder" a full-width button
+        await page.fill('#asu-identifier', REGISTERED);
+        await page.click('button[type=submit]:has-text("Devam")');
+        await page.locator('.asu-card[data-step="login"]').waitFor({ timeout: 10000 });
+        check(await page.locator('.asu-rec button:has-text("Kod gönder")').isVisible(), `${tag}: "Kod gönder" link under "Giriş yap"`);
+        await page.fill('#asu-login-password', 'yanlis-sifre');
+        await page.click('.asu-fi .asu-tr button');
+        check((await page.getAttribute('#asu-login-password', 'type')) === 'text', `${tag}: the eye shows the password`);
+        await page.click('button[type=submit]:has-text("Giriş yap")');
+        const rec = page.locator('[data-testid="asu-recover"]');
+        const shown = await rec.waitFor({ timeout: 8000 }).then(() => true, () => false);
+        check(shown, `${tag}: after a wrong password "Kod gönder, şifremi yenile" is a full-width button`);
+        if (shown) {
+          const w = await rec.evaluate((e) => Math.round(e.getBoundingClientRect().width));
+          check(w === g.controls[0].w, `${tag}: the recovery button is as wide as the others (${w})`);
+        }
+        check(await page.locator('.asu-f.is-err .asu-fh.is-err').isVisible(), `${tag}: the error sits under the password field`);
+        await page.evaluate(() => document.getElementById('asu-login-password').dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, modifierCapsLock: true })));
+        check(/Caps Lock açık/.test(await page.locator('.asu-fh.is-warn').innerText().catch(() => '')), `${tag}: Caps Lock warning`);
+        await page.waitForTimeout(300);
+        await shot(page, 'phone-b-error.jpg');
+      }
+      if (errors.length) fails.push(`${tag}: page errors ${errors.join(' | ')}`);
       await ctx.close();
     }
 
