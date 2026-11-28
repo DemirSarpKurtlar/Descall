@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { serverDisplayName } from "../../lib/serverL10n.js";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -95,7 +96,7 @@ export default function InviteLinkEmbed({ invite }) {
 
   const title =
     invite.kind === "server"
-      ? preview?.server?.name || t("Server invite")
+      ? serverDisplayName(preview?.server) || t("Server invite")
       : invite.kind === "group"
         ? preview?.group?.name || t("Group invite")
         : t("Friend invite");
@@ -159,7 +160,7 @@ export default function InviteLinkEmbed({ invite }) {
           server: server ? { ...server, isMember: true } : prev?.server,
           alreadyMember: true,
         }));
-        toast(t("Joined {name}", { name: server?.name || t("server") }), "success");
+        toast(t("Joined {name}", { name: serverDisplayName(server) || t("server") }), "success");
         window.dispatchEvent(
           new CustomEvent("descall:joined-server", { detail: { server, channelId: data?.channelId || null } })
         );

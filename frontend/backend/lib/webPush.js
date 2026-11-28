@@ -438,6 +438,7 @@ function deliverServerMessagePush(userIds, payload = {}) {
     previewKind: previewKindOf(payload),
     messageId: payload.messageId,
     excludeUserId: payload.fromId,
+    ...(payload.namesByLang ? { namesByLang: payload.namesByLang } : {}),
     ...(payload.quiet ? { quiet: true } : {}),
   });
 }

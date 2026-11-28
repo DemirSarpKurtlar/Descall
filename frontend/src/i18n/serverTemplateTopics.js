@@ -14,6 +14,7 @@
  * backend/i18n/<locale>.js templates.*; serverTemplateTopics.selftest.mjs checks both).
  */
 import { t as runtimeT } from "./runtime.js";
+import { channelTopicL10n } from "../lib/serverL10n.js";
 
 export const SERVER_TEMPLATE_TOPICS = Object.freeze([
   "Official server news and patch notes. Read-only for members.",
@@ -83,6 +84,9 @@ export function templateTopicKey(channel) {
 export function channelTopicText(channel, t = runtimeT) {
   const raw = typeof channel?.topic === "string" ? channel.topic.trim() : "";
   if (!raw) return "";
+  // Localized servers (draft C): the reader's language version, unless "Show original" is on.
+  const localized = channelTopicL10n(channel);
+  if (localized) return localized.text;
   const key = templateTopicKey(channel);
   return key ? t(key) : raw;
 }

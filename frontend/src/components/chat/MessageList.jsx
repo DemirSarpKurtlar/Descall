@@ -52,6 +52,8 @@ import EmptyState from "../ui/EmptyState";
 import ConversationStart, { ChannelTile } from "./ConversationStart";
 import GroupIcon from "../groups/GroupIcon";
 import { channelTopicText } from "../../i18n/serverTemplateTopics.js";
+import { OfficialMessageBody, TopicWithToggle } from "../servers/l10n/ServerL10nBits.jsx";
+import { channelDisplayName, serverDisplayName, withServerDisplayVars } from "../../lib/serverL10n.js";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageMediaImage, MessageMediaVideo } from "./MessageMedia";
 import { readMediaDims } from "../../lib/mediaBox";
@@ -369,6 +371,10 @@ function MessageList({
     || activeGroup?.id
     || dmConversationId(currentUser?.id || me?.id, activeDmUser?.id);
   const serverId = activeServer?.id || activeChannel?.serverId || null;
+  // Draft C: the localized server block (stable until the list is refetched) and its name.
+  const serverL10nBlock = conversationType === "server" && activeServer?.l10n?.enabled ? activeServer.l10n : null;
+  const serverNameOriginal = serverL10nBlock ? activeServer?.name || "" : "";
+  const serverNameShown = serverL10nBlock ? serverDisplayName(activeServer) : "";
 
   // Performans: "İlk mesaj listesi" (open -> first painted list) and the route of every
   // sample taken while this conversation shows (lib/perf/useRumTiming.js).
@@ -777,14 +783,15 @@ function MessageList({
   // UI audit #144 / 2026-11 owner request: an empty text channel, DM or group opens
   // on its start block (ConversationStart), centred in the free space of the list.
   if (activeChannel?.id && !isSearching && groupedMessages.length === 0) {
-    const channelName = activeChannel.name || "";
+    const channelName = channelDisplayName(activeChannel);
+    const startFallback = channelTopicText(activeChannel, t) || t("This is the start of the #{channel} channel.", { channel: channelName });
     return (
       <div className="message-list is-conv-start" ref={listRef}>
         <ConversationStart
           variant="channel"
           media={<ChannelTile />}
           title={t("Welcome to #{channel}", { channel: channelName })}
-          body={channelTopicText(activeChannel, t) || t("This is the start of the #{channel} channel.", { channel: channelName })}
+          body={<TopicWithToggle channel={activeChannel} sourceLocale={activeServer?.l10n?.sourceLocale} fallback={startFallback} />}
         />
       </div>
     );
@@ -974,6 +981,9 @@ function MessageList({
                   conversationType={conversationType}
                   conversationId={conversationId}
                   serverId={serverId}
+                  serverL10n={serverL10nBlock}
+                  serverNameOriginal={serverNameOriginal}
+                  serverNameShown={serverNameShown}
                   canManageMessages={canManageMessages}
                   onReply={onReply}
                   onStartEdit={onStartEdit}
@@ -1143,6 +1153,9 @@ function MessageBubbleView({
   conversationType,
   conversationId,
   serverId = null,
+  serverL10n = null,
+  serverNameOriginal = "",
+  serverNameShown = "",
   canManageMessages = false,
   onReply,
   onStartEdit,
@@ -2075,7 +2088,17 @@ function MessageBubbleView({
         ) : (
           message.text && (
             <>
-              <MessageContent text={localizedField(message, "text")} highlight={highlight} />
+              {/* Draft C: official messages of a localized server in the reader's language (marker + "Show original"). */}
+              {serverL10n ? (
+                <OfficialMessageBody
+                  message={message}
+                  serverL10n={serverL10n}
+                  highlight={highlight}
+                  fallback={<MessageContent text={localizedField(withServerDisplayVars(message, serverNameOriginal, serverNameShown), "text")} highlight={highlight} />}
+                />
+              ) : (
+                <MessageContent text={localizedField(message, "text")} highlight={highlight} />
+              )}
               {message.editedAt ? (
                 <span className="msg-edited" style={{ fontSize: 11, opacity: 0.65, marginLeft: 4 }}>
                   ({t("edited")})

@@ -5,6 +5,7 @@
 import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
+import { uiLanguageHeaders } from "./uiLanguageHeader.js";
 
 async function directoryRequest(path, { method = "GET", body, auth = false, signal } = {}) {
   const token = auth ? getToken() : null;
@@ -13,6 +14,7 @@ async function directoryRequest(path, { method = "GET", body, auth = false, sign
     signal,
     headers: {
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...uiLanguageHeaders(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

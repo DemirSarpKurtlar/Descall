@@ -13,6 +13,8 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { userTextLang } from "../../lib/userTextLang";
+import { channelDisplayName, serverDisplayName, serverNameLocale } from "../../lib/serverL10n.js";
+import { L10nMarker } from "./l10n/ServerL10nBits.jsx";
 import useEscapeClose from "../../hooks/useEscapeClose";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
@@ -481,7 +483,8 @@ export default function ServersSidebar({
     const unfiled = [];
     const q = serverQuery.trim().toLocaleLowerCase("tr");
     for (const server of servers || []) {
-      if (q && !String(server?.name || "").toLocaleLowerCase("tr").includes(q)) continue;
+      // Localized servers (draft C) are found by the original and the shown name.
+      if (q && !`${server?.name || ""} ${serverDisplayName(server)}`.toLocaleLowerCase("tr").includes(q)) continue;
       const fid = server.folderId ? String(server.folderId) : null;
       if (fid && folderMap.has(fid)) {
         folderMap.get(fid).servers.push(server);
@@ -649,7 +652,7 @@ export default function ServersSidebar({
       >
         <ServerAvatar server={server} />
         <div className="server-list-copy">
-          <span className="server-list-name">{server.name}</span>
+          <span className="server-list-name">{serverDisplayName(server)}</span>
           <span className="server-list-sub">
             {t("{count} members", { count: server.memberCount || 1 })}
             {server.isOwner ? ` · ${t("Owner")}` : ""}
@@ -1035,7 +1038,7 @@ export default function ServersSidebar({
                     key={server.id}
                     type="button"
                     className={`g-server-rail-btn${String(server.id) === String(activeServer.id) ? " on" : ""}`}
-                    aria-label={server.name}
+                    aria-label={serverDisplayName(server)}
                     aria-current={String(server.id) === String(activeServer.id) ? "page" : undefined}
                     onClick={() => onSelectServer?.(server)}
                     onContextMenu={(e) => {
@@ -1081,7 +1084,10 @@ export default function ServersSidebar({
               <ChevronLeft size={20} />
             </button>
             <div className="server-shell-title-wrap">
-              <h2 className="sidebar-title server-shell-title">{activeServer.name}</h2>
+              <h2 className="sidebar-title server-shell-title">
+                {serverDisplayName(activeServer)}
+                {serverNameLocale(activeServer) ? <L10nMarker locale={serverNameLocale(activeServer)} sourceLocale={activeServer.l10n?.sourceLocale} className="sl10n-server-chip" /> : null}
+              </h2>
               <span className="server-shell-meta">
                 {t("{count} members", { count: activeServer.memberCount || 1 })}
                 {activeServer.isOwner ? ` · ${t("Owner")}` : ""}
@@ -1176,7 +1182,7 @@ export default function ServersSidebar({
                 <div className="g-server-sheet-id">
                   <ServerAvatar server={activeServer} />
                   <div>
-                    <strong>{activeServer.name}</strong>
+                    <strong>{serverDisplayName(activeServer)}</strong>
                     <span>
                       {t("{count} members", { count: activeServer.memberCount || 1 })}
                       {voiceNote}
@@ -1440,7 +1446,7 @@ export default function ServersSidebar({
                         }
                       >
                         {closed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                        <span lang={userTextLang(node.name)}>{node.name}</span>
+                        <span lang={userTextLang(channelDisplayName(node))}>{channelDisplayName(node)}</span>
                       </button>
                       {canManageChannels || canManageRoles ? (
                         <div className="server-channel-cat-actions">
@@ -2495,12 +2501,13 @@ function ChannelRow({
       <button
         type="button"
         className={`server-channel-row ${active ? "active" : ""}`}
-        title={channel.name}
+        title={channelDisplayName(channel)}
         aria-current={active ? "page" : undefined}
         onClick={onSelect}
+        data-channel-id={channel.id}
       >
         <Icon size={16} aria-hidden="true" />
-        <span>{channel.name}</span>
+        <span>{channelDisplayName(channel)}</span>
         {/* Read after the name: "general, Text channel, Muted" / "lobby, Voice channel, 3 in voice". */}
         <span className="a11y-sr">
           {`, ${t(channel.type === "voice" ? "Voice channel" : channel.type === "stage" ? "Stage channel" : "Text channel")}`}

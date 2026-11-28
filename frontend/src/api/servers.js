@@ -2,6 +2,7 @@ import { apiBase } from "../lib/nodeRouting";
 import { getToken } from "../lib/storage";
 import { httpError } from "./httpError";
 import { takePageVisit } from "../lib/publicPageAttribution.js";
+import { uiLanguageHeaders } from "./uiLanguageHeader.js";
 
 async function serversRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
@@ -9,6 +10,8 @@ async function serversRequest(path, { method = "GET", body } = {}) {
     method,
     headers: {
       "Content-Type": "application/json",
+      // Localized servers (draft C) answer in the app's language.
+      ...uiLanguageHeaders(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

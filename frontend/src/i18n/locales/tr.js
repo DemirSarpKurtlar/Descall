@@ -39,6 +39,7 @@ import { AUDIT_LOG_TR } from "./auditLog.tr.js";
 import { PERF_ADMIN_TR } from "./perfAdmin.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
+import { SRV_LOC_TR } from "./srvLoc.tr.js";
 import { COINPOP_TR } from "./coinpop.tr.js";
 import { SHOP2_TR } from "./shop2.tr.js";
 import { ADMIN_SHOP2_TR } from "./adminShop2.tr.js";
@@ -137,6 +138,7 @@ export const nested = {
   perfAdmin: PERF_ADMIN_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,
+  srvLoc: SRV_LOC_TR,
   coinpop: COINPOP_TR,
   shop2: SHOP2_TR,
   adminShop2: ADMIN_SHOP2_TR,

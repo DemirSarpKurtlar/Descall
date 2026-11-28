@@ -110,6 +110,8 @@ router.use(require("./adminSystem"));
 router.use(require("./adminDesktopMigration"));
 // Duyurular (section announcements): board, list + inspector, composer, templates, languages, approvals.
 router.use(require("./adminAnnouncements"));
+// Topluluk çevirileri (draft C): translation editor of the localized servers ("announcements" section).
+router.use(require("./adminServerTranslations"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
 // Descall+ 2.0 workspace (draft 5B section 4): before /premium so its own paths win.
 router.use("/premium/plus", require("./adminPlus"));

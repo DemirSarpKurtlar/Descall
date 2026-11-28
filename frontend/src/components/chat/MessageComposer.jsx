@@ -39,6 +39,7 @@ import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import { channelDisplayName } from "../../lib/serverL10n.js";
 import { CHAT_UPLOAD_MAX_MB, checkChatFile, uploadChatFile, uploadErrorKey } from "../../lib/chatUpload";
 import { decodeRoleMentions, encodeRoleMentions, registerRoles, roleSuggestions } from "../../lib/roleMentions";
 import {
@@ -2032,7 +2033,7 @@ function MessageComposer({
             aria-controls={suggestOpen ? suggestId : undefined}
             aria-activedescendant={suggestActive >= 0 ? optionId(suggestId, suggestActive) : undefined}
             enterKeyHint="send"
-            placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: activeChannel.name }) : t("Message…"))}
+            placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: channelDisplayName(activeChannel) }) : t("Message…"))}
             className="composer-input"
             rows={1}
             style={{ minHeight: "44px", resize: "none" }}

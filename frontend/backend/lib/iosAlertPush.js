@@ -512,7 +512,10 @@ function describeEvent(event = {}, lang = "tr") {
   return null;
 }
 
-function buildAlertRequest(event, lang) {
+function buildAlertRequest(rawEvent, lang) {
+  // Localized server content (draft C): server / channel names in this device's language.
+  const names = rawEvent && rawEvent.namesByLang ? rawEvent.namesByLang[lang] : null;
+  const event = names ? { ...rawEvent, ...names } : rawEvent;
   const d = describeEvent(event, lang);
   if (!d) return null;
   const body = buildApnsBody({

@@ -380,10 +380,15 @@ function parseJsonBlock(text) {
 }
 
 /**
- * @param {{title: string, content: string, ctaLabel?: string, from: string, to: string[]}} input
+ * @param {{title: string, content: string, ctaLabel?: string, from: string, to: string[],
+ *          limits?: {title?: number, content?: number}}} input
+ *   `limits` raises the length caps for other callers (the server translation editor
+ *   drafts channel names, topics and long pinned messages through this same helper).
  * @returns {Promise<Record<string, {title: string, content: string, cta_label: string}>>}
  */
-async function translate({ title, content, ctaLabel = "", from = "tr", to = [] }) {
+async function translate({ title, content, ctaLabel = "", from = "tr", to = [], limits = null }) {
+  const maxTitle = Math.max(1, Number(limits?.title) || model.LIMITS.title);
+  const maxContent = Math.max(1, Number(limits?.content) || model.LIMITS.content);
   const client = translateClient();
   if (!client) {
     const e = new Error("Automatic translation is not set up on the server.");
@@ -407,7 +412,7 @@ async function translate({ title, content, ctaLabel = "", from = "tr", to = [] }
     "Write natural, friendly, correct text a native speaker would write; keep the meaning, tone and line breaks.",
     "Keep the product names Descall, Descall+, Descall Ultra and DesCoin exactly as they are. Keep URLs, numbers, times and @usernames.",
     "Write dates and times the way the target language writes them. Do not add emojis, quotes or notes.",
-    "Keep the title within 80 characters and the button text within 32 characters.",
+    `Keep the title within ${maxTitle} characters and the button text within 32 characters.`,
     "Answer with JSON only: an object with one key per target language code, each {title, content, cta_label}.",
   ].join(" ");
   const user = JSON.stringify({ source_language: LANG_NAMES[from] || from, targets: Object.fromEntries(targets.map((l) => [l, LANG_NAMES[l]])), title, content, cta_label: ctaLabel || "" });
@@ -432,8 +437,8 @@ async function translate({ title, content, ctaLabel = "", from = "tr", to = [] }
     const t = parsed[l];
     if (!t || !t.title || !t.content) continue;
     out[l] = {
-      title: model.stripEmoji(String(t.title)).slice(0, model.LIMITS.title),
-      content: model.stripEmoji(String(t.content)).slice(0, model.LIMITS.content),
+      title: model.stripEmoji(String(t.title)).slice(0, maxTitle),
+      content: model.stripEmoji(String(t.content)).slice(0, maxContent),
       cta_label: model.stripEmoji(String(t.cta_label || "")).slice(0, model.LIMITS.ctaLabel),
     };
   }
