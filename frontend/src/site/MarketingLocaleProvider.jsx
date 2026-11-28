@@ -8,6 +8,7 @@ import { forcedLocaleForPath } from "./localePaths.js";
 import { SITE_LOCALES, isPrefixedLocale, isSiteLocale, localeNativeName } from "./siteLocales.js";
 import { siteLookup } from "./siteText.js";
 import { loadSiteCatalog, onSiteCatalogChange, siteCatalogReady } from "./loadSiteCatalog.js";
+import { isNestedKey, nestedLookup, onNestedCatalog } from "./siteNestedText.js";
 
 const LOCALES = SITE_LOCALES.map((id) => ({ id, nativeLabel: localeNativeName(id) }));
 
@@ -44,6 +45,7 @@ export default function MarketingLocaleProvider({ children }) {
   const [extraTr, setExtraTr] = useState(null);
   const [trTick, setTrTick] = useState(0);
   const [catalogTick, setCatalogTick] = useState(0);
+  const [nestedTick, setNestedTick] = useState(0);
 
   const setLocale = useCallback((next) => {
     const normalized = normalizeLocale(next);
@@ -109,6 +111,11 @@ export default function MarketingLocaleProvider({ children }) {
     if (id === locale) setCatalogTick((n) => n + 1);
   }), [locale]);
 
+  // A nested namespace (passkey.*) arrived: re-render so the shared components show it.
+  useEffect(() => onNestedCatalog((id) => {
+    if (id === locale || id === "en") setNestedTick((n) => n + 1);
+  }), [locale]);
+
   useEffect(() => {
     if (!isPrefixedLocale(locale) || siteCatalogReady(locale)) return undefined;
     let cancelled = false;
@@ -124,6 +131,12 @@ export default function MarketingLocaleProvider({ children }) {
     (key, vars) => {
       if (key == null) return "";
       const k = String(key);
+      // Dotted catalog keys of shared components (the passkey button on the sign-in card):
+      // the phrase catalogs are keyed by English text and never have them.
+      if (isNestedKey(k)) {
+        const nested = nestedLookup(k, locale);
+        if (nested != null) return interpolate(nested, vars);
+      }
       if (locale === "tr") {
         const translated = getMarketingTr()?.[k] || extraTr?.[k];
         if (translated) return interpolate(translated, vars);
@@ -133,9 +146,9 @@ export default function MarketingLocaleProvider({ children }) {
       }
       return interpolate(k, vars);
     },
-    // catalogTick / trTick re-create t once a catalog arrives.
+    // catalogTick / trTick / nestedTick re-create t once a catalog arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [locale, extraTr, catalogTick, trTick]
+    [locale, extraTr, catalogTick, trTick, nestedTick]
   );
 
   const value = useMemo(

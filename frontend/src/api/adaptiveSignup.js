@@ -1,6 +1,6 @@
 /**
  * Uyarlanan kart (growth 1B) endpoints, backend routes/auth.js and routes/publicPages.js:
- *   POST /auth/identify               { email, surface, visitorKey } -> { status, emailHint?, registrationClosed? }
+ *   POST /auth/identify               { email | username, surface, visitorKey } -> { status, emailHint?, registrationClosed? }
  *   GET  /auth/password/range/:prefix  breach list range (text "SUFFIX:COUNT" lines)
  *   POST /auth/username/ideas          { candidates } -> { free }
  *   GET  /api/public-pages/live        live snippets around the card
@@ -26,6 +26,22 @@ export function identifyEmail(email, { surface } = {}) {
       httpRequest("/auth/identify", {
         method: "POST",
         body: JSON.stringify({ email, surface, visitorKey: visitorKey(), ...hc }),
+      }),
+    { always: false },
+  );
+}
+
+/**
+ * Whether a username has an account ({ status: "registered" | "new" }, no email hint).
+ * Same endpoint, limit and step-up human check as the email lookup.
+ */
+export function identifyUsername(username, { surface } = {}) {
+  return runWithHumanCheck(
+    "register",
+    (hc) =>
+      httpRequest("/auth/identify", {
+        method: "POST",
+        body: JSON.stringify({ username, surface, visitorKey: visitorKey(), ...hc }),
       }),
     { always: false },
   );

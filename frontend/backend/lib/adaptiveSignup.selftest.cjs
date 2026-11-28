@@ -19,6 +19,15 @@ assert.strictEqual(a.maskEmail("ece.yilmaz@outlook.com"), "e***@outlook.com");
 assert.strictEqual(a.maskEmail("nope"), "");
 assert.strictEqual(a.looksLikeEmail("demir"), false);
 assert.strictEqual(a.looksLikeEmail("demir@x"), true);
+// Usernames typed in the first field (POST /auth/identify { username })
+assert.strictEqual(a.cleanLoginName("  Demirkaya "), "Demirkaya");
+assert.strictEqual(a.cleanLoginName("@demirkaya"), "demirkaya");
+assert.strictEqual(a.cleanLoginName("admin"), "admin", "reserved names still sign in");
+assert.strictEqual(a.cleanLoginName("a"), null);
+assert.strictEqual(a.cleanLoginName("demir kaya"), null);
+assert.strictEqual(a.cleanLoginName("abc@"), null);
+assert.strictEqual(a.cleanLoginName("x".repeat(33)), null);
+assert.strictEqual(a.cleanLoginName(null), null);
 
 // Range prefix + body
 assert.strictEqual(a.cleanPrefix("abcde"), "ABCDE");

@@ -38,29 +38,25 @@ import { isNativeAndroid } from "../lib/platform";
 import AdaptiveAuthShell from "./auth/adaptive/AdaptiveAuthShell.jsx";
 import AdaptiveAuthCard from "./auth/adaptive/AdaptiveAuthCard.jsx";
 import { peekInviteEmail } from "../lib/inviteShare.js";
+import { readDeviceLayout } from "../lib/deviceLayout.js";
 
-/** Phone layout of the sign-up card: the native apps and narrow windows. */
-function usePhoneLayout(native) {
-  const query = "(max-width: 699px)";
-  const [narrow, setNarrow] = useState(() => {
-    try {
-      return window.matchMedia(query).matches;
-    } catch {
-      return false;
-    }
-  });
+/**
+ * Phone layout of the sign-up card (draft B): the same decision as the app shell
+ * (lib/deviceLayout.js): phones always, tablets and browsers up to 768 px wide. The iPad
+ * app keeps the desktop card.
+ */
+function usePhoneLayout() {
+  const [phone, setPhone] = useState(() => readDeviceLayout().phoneLayout);
   useEffect(() => {
-    let mq = null;
-    try {
-      mq = window.matchMedia(query);
-    } catch {
-      return undefined;
-    }
-    const on = () => setNarrow(mq.matches);
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
+    const on = () => setPhone(readDeviceLayout().phoneLayout);
+    window.addEventListener("resize", on);
+    window.addEventListener("orientationchange", on);
+    return () => {
+      window.removeEventListener("resize", on);
+      window.removeEventListener("orientationchange", on);
+    };
   }, []);
-  return native || narrow;
+  return phone;
 }
 
 export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, onPasskeyLogin, onPasskeyError, loading, error: errorProp }) {
@@ -168,7 +164,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   };
   // The card's first field carries the passkey autofill (Uyarlanan kart, growth 1B).
   usePasskeyAutofill({ enabled: !twoFa && !socialSignup && mode !== "forgot" && Boolean(onPasskeyLogin), onSignedIn: handlePasskeyBody, onError: handlePasskeyError });
-  const phoneLayout = usePhoneLayout(isNativeApp);
+  const phoneLayout = usePhoneLayout();
   const cardSurface = isElectron ? "desktop" : isNativeIOS() ? "ios" : isNativeAndroid() ? "android" : "app";
 
   useEffect(() => {
@@ -655,11 +651,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           phone={phoneLayout}
           desktopShell={isElectron}
           onOpenLegal={setLegalModal}
-          renderCard={({ onStepChange, compact }) => (
+          renderCard={({ onStepChange, compact, phone }) => (
             <AdaptiveAuthCard
               intent={mode === "register" ? "register" : "login"}
               surface={cardSurface}
               compact={compact}
+              phone={phone}
               onLogin={onLogin}
               onRegister={async (payload) => {
                 const invitedBy = inviteRef || peekInviteRef();

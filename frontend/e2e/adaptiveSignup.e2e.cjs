@@ -12,7 +12,11 @@
  *   "use this and save" puts a 4-word suggestion in, the register body carries card.surface,
  *   breachWarned and fixedVia=suggested (and no function / no password in analytics).
  *   A registered email turns the card into sign-in without retyping, a wrong password shows
- *   the server error, "send code" opens the in-card reset.
+ *   the server error, "send code" opens the in-card reset. The field takes an email or a
+ *   username: "abc@" is still the email error, an unknown username shows the inline "no
+ *   account, type your email" message, a registered one ("admin") turns into sign-in. The
+ *   sign-in step's passkey button shows its words, never the raw "passkey.*" key (app and
+ *   web site modal).
  * Phone (iPhone 393 x 852): the four states of the draft's phone row.
  * Web site (/register): the same card in the sign-up modal.
  * Admin: Kayıt İstatistikleri shows the card's Ölçüm (aggregated by the real backend code).
@@ -49,6 +53,11 @@ const API_HOSTS = new Set(['des-call.onrender.com', 'api.descall.com', 'des-call
 const BREACHED = 'galatasaray1905';
 const BREACHED_HASH = crypto.createHash('sha1').update(BREACHED).digest('hex').toUpperCase();
 const REGISTERED = 'ece.yilmaz@outlook.com';
+/** A registered username (the owner's case: "admin" is reserved for sign-up but signs in). */
+const REGISTERED_NAME = 'admin';
+const PASSKEY_LABEL_TR = 'Passkey ile giriş yap';
+/** The real host, served from the mock (passkeys need it): see newPage({ onHost }). */
+const HOST = 'https://descall.com';
 
 /** Synthetic public pages (the shape of GET /api/public-pages/live). */
 function liveFixture() {
@@ -97,7 +106,12 @@ async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const srv = await mock.start({ dist: DIST, port: PORT });
   const base = `http://127.0.0.1:${srv.port}`;
-  const browser = await pw.chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, args: ['--no-sandbox'] });
+  // The onHost pages (https://descall.com, served from the mock) call the build's local API:
+  // let them reach it (mixed content and the loopback address space are blocked otherwise).
+  const browser = await pw.chromium.launch({
+    executablePath: process.env.CHROME_PATH || undefined,
+    args: ['--no-sandbox', '--allow-running-insecure-content', '--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults'],
+  });
   const fails = [];
   const check = (cond, msg) => { if (!cond) fails.push(msg); };
   const registers = [];
@@ -106,7 +120,7 @@ async function main() {
   const events = [];
   const logins = [];
 
-  async function routeApi(ctx, { admin = false } = {}) {
+  async function routeApi(ctx, { admin = false, hostDocs = false } = {}) {
     await ctx.route('**/*', async (r) => {
       const req = r.request();
       const url = req.url();
@@ -116,7 +130,9 @@ async function main() {
         return r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.google={accounts:{id:{initialize:function(){},renderButton:function(el){el.innerHTML="<div style=\\"height:46px;width:100%\\"></div>";},prompt:function(){},cancel:function(){}}}};' });
       }
       const u = new URL(url);
-      const foreignApi = !url.startsWith(base) && API_HOSTS.has(u.hostname) && req.resourceType() !== 'document';
+      // hostDocs: the page itself runs on https://descall.com (served from the mock) so the
+      // passkey button, which needs the real host and a secure context, renders.
+      const foreignApi = !url.startsWith(base) && API_HOSTS.has(u.hostname) && (hostDocs || req.resourceType() !== 'document');
       if (!url.startsWith(base) && !foreignApi) return r.abort();
       const p = u.pathname;
       // Anything not mocked below goes to the local mock server (never the real host).
@@ -136,6 +152,8 @@ async function main() {
         const body = JSON.parse(req.postData() || '{}');
         identifies.push(body);
         if (body.email === 'busy@example.com') return json(503, { error: 'Service unavailable' });
+        // A username lookup: same shape, no email hint.
+        if (body.username != null) return json(200, { status: String(body.username).toLowerCase() === REGISTERED_NAME ? 'registered' : 'new' });
         return json(200, body.email === REGISTERED ? { status: 'registered', emailHint: 'e***@outlook.com' } : { status: 'new' });
       }
       const range = p.match(/\/auth\/password\/range\/([0-9A-Fa-f]{5})$/);
@@ -182,12 +200,12 @@ async function main() {
     }
   };
 
-  async function newPage(viewport, { mobile = false, theme = 'dark', admin = false, token = false } = {}) {
+  async function newPage(viewport, { mobile = false, theme = 'dark', admin = false, token = false, onHost = false } = {}) {
     const ctxOpts = { viewport, deviceScaleFactor: 2, locale: 'tr-TR', timezoneId: 'Europe/Istanbul', colorScheme: theme };
     if (mobile) Object.assign(ctxOpts, { isMobile: true, hasTouch: true, userAgent: IPHONE_UA });
     const ctx = await browser.newContext(ctxOpts);
-    await routeApi(ctx, { admin });
-    await ctx.addInitScript(initScript, [base, { token, me: { ...mock.ME, is_admin: true } }]);
+    await routeApi(ctx, { admin, hostDocs: onHost });
+    await ctx.addInitScript(initScript, [onHost ? HOST : base, { token, me: { ...mock.ME, is_admin: true } }]);
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e.message || e)));
@@ -197,6 +215,25 @@ async function main() {
 
   const setTheme = (page, theme) => page.evaluate((th) => document.documentElement.setAttribute('data-theme', th), theme);
   const shot = (page, name, opts = {}) => page.screenshot({ path: path.join(OUT, name), type: 'jpeg', quality: 86, ...opts });
+
+  // No raw catalog key ("passkey.login.button.passkey") on the signed-out card, and the
+  // sign-in step's passkey button carries its Turkish words (the app's LocaleProvider and
+  // the web site's MarketingLocaleProvider both). The button only renders on the real host
+  // (rpId descall.com, a secure context): `required` on the onHost pages.
+  async function checkPasskeyWords(page, scope, where, { required = false } = {}) {
+    const card = page.locator(`${scope}.asu-card`.trim());
+    const btn = card.locator('.asu-pk-white .pk-signin-btn');
+    const shown = await btn.waitFor({ state: 'visible', timeout: required ? 10000 : 1500 }).then(() => true, () => false);
+    if (required) check(shown, `${where}: the passkey button shows on the sign-in step`);
+    if (shown) {
+      await page.waitForFunction((el) => el && el.textContent.trim() !== '', await btn.elementHandle(), { timeout: 5000 }).catch(() => {});
+      const label = (await btn.innerText()).trim();
+      check(label === PASSKEY_LABEL_TR, `${where}: passkey button label "${label}" (want "${PASSKEY_LABEL_TR}")`);
+    }
+    const text = await card.innerText().catch(() => '');
+    const raw = text.match(/\bpasskey\.[A-Za-z]+(\.[A-Za-z]+)*/);
+    check(!raw, `${where}: no raw catalog key on the card (${raw ? raw[0] : ''})`);
+  }
 
   async function pickBirth(page, d, m, y) {
     for (const [id, value] of [['asu-birth-day', d], ['asu-birth-month', m], ['asu-birth-year', y]]) {
@@ -299,12 +336,51 @@ async function main() {
       await page.locator('.asu-card[data-step="register"]').waitFor({ timeout: 15000 }).catch(() => fails.push('login: a failed lookup does not fall back to the sign-up card'));
       await page.click('.asu-idrow .asu-ed');
       await page.locator('.asu-card[data-step="start"]').waitFor({ timeout: 5000 });
+      // The field asks for an email or a username.
+      check((await page.locator('label[for="asu-identifier"]').innerText()).trim() === 'E-posta veya kullanıcı adı', 'start: label "E-posta veya kullanıcı adı"');
+      check(/kullanıcı adı/.test((await page.getAttribute('#asu-identifier', 'placeholder')) || ''), 'start: placeholder mentions the username');
+      // Something with "@" that is not an address yet: still the email error, no lookup.
+      const before = identifies.length;
+      await page.fill('#asu-identifier', 'abc@');
+      await page.click('button[type=submit]:has-text("Devam")');
+      await page.locator('.asu-fh.is-err').waitFor({ timeout: 5000 });
+      check(/Geçerli bir e-posta adresi yaz/.test(await page.locator('.asu-fh.is-err').innerText()), 'start: "abc@" shows the email error');
+      check(identifies.length === before && (await page.locator('.asu-card[data-step="start"]').count()) === 1, 'start: "abc@" stays on the first step without a lookup');
+      // An unknown username: the inline message, the card stays (sign-up needs an email).
+      await page.fill('#asu-identifier', 'kimseyok42');
+      await page.click('button[type=submit]:has-text("Devam")');
+      await page.locator('.asu-fh.is-err:has-text("Bu kullanıcı adıyla hesap yok")').waitFor({ timeout: 8000 }).catch(() => fails.push('start: unknown username shows no inline message'));
+      check(/Hesap açmak için e-postanı yaz/.test(await page.locator('.asu-fh.is-err').innerText().catch(() => '')), 'start: the message asks for an email to sign up');
+      check(identifies.some((b) => b.username === 'kimseyok42' && !('email' in b)), 'start: identify asked by username');
+      check((await page.locator('.asu-card[data-step="start"]').count()) === 1, 'start: unknown username does not open sign-up or sign-in');
+      await page.waitForTimeout(300);
+      await shot(page, 'desktop-7-username-unknown.jpg');
+      // A registered username (reserved for sign-up, as in the owner's report): sign-in step.
+      await page.fill('#asu-identifier', REGISTERED_NAME);
+      check(!(await page.locator('.asu-fh.is-err').count()), 'start: typing clears the message');
+      await page.waitForTimeout(300);
+      const startCard = page.locator('.asu-card');
+      await startCard.screenshot({ path: path.join(OUT, 'signup-username.png') });
+      await page.click('button[type=submit]:has-text("Devam")');
+      await page.locator('.asu-card[data-step="login"]').waitFor({ timeout: 10000 }).catch(() => fails.push('login: a registered username did not turn the card into sign-in'));
+      check((await page.locator('[data-testid="asu-idrow-value"]').innerText().catch(() => '')).trim() === REGISTERED_NAME, 'login: the username is kept');
+      check(/Kullanıcı adınla giriş yapıyorsun/.test(await page.locator('.asu-card').innerText()), 'login: "signing in with your username" line');
+      await checkPasskeyWords(page, '', 'app sign-in (username)');
+      await page.fill('#asu-login-password', 'yanlis-sifre');
+      await page.click('button[type=submit]:has-text("Giriş yap")');
+      await page.locator('.asu-alert').waitFor({ timeout: 8000 }).catch(() => fails.push('login: wrong password by username shows no error'));
+      check(logins.some((l) => l.username === REGISTERED_NAME), 'login: signs in with the username as identifier');
+      await page.waitForTimeout(300);
+      await shot(page, 'desktop-8-username-login.jpg');
+      await page.click('.asu-idrow .asu-ed');
+      await page.locator('.asu-card[data-step="start"]').waitFor({ timeout: 5000 });
       await page.fill('#asu-identifier', REGISTERED);
       await page.click('button[type=submit]:has-text("Devam")');
       await page.locator('.asu-card[data-step="login"]').waitFor({ timeout: 10000 });
       check(/Tekrar hoş geldin/.test(await page.locator('.asu-title h2').innerText()), 'login: welcome back title');
       check((await page.locator('[data-testid="asu-idrow-value"]').innerText()).trim() === REGISTERED, 'login: email kept, not typed again');
       check(!(await page.locator('text=Email is already in use').count()), 'login: no "email taken" error');
+      await checkPasskeyWords(page, '', 'app sign-in (email)');
       await page.waitForTimeout(400);
       await shot(page, 'desktop-5-login-dark.jpg');
       await page.fill('#asu-login-password', 'yanlis-sifre');
@@ -356,7 +432,10 @@ async function main() {
         await page.locator('.asu-card').waitFor({ timeout: 20000 });
         check(await page.locator('.asu-page.is-phone').count(), `phone ${i + 1}: phone layout`);
         await states[i](page);
-        if (i > 0) check(await page.locator('.asu-ptop').isVisible(), `phone ${i + 1}: compact top bar`);
+        // Draft B: typing in the first field and the sign-up use the compact top bar; the
+        // sign-in step keeps the head ("Tekrar hoş geldin") over the card.
+        if (i < 3) check(await page.locator('.asu-ptop').isVisible(), `phone ${i + 1}: compact top bar`);
+        else check(/Tekrar hoş geldin/.test(await page.locator('.asu-head h1').innerText().catch(() => '')), 'phone 4: "Tekrar hoş geldin" head on the sign-in step');
         await page.waitForTimeout(500);
         const file = path.join(OUT, `phone-${i + 1}.png`);
         await page.screenshot({ path: file });
@@ -374,6 +453,64 @@ async function main() {
       await ctx.close();
     }
 
+    // ---------------- phone, draft B: geometry and the five extras ----------------
+    for (const vp of [{ width: 393, height: 852 }, { width: 375, height: 667 }, { width: 412, height: 915 }]) {
+      const tag = `phone B ${vp.width}x${vp.height}`;
+      const { ctx, page, errors } = await newPage(vp, { mobile: true });
+      await page.goto(`${base}/login?gd=1`, { waitUntil: 'load' });
+      await page.locator('.asu-card').waitFor({ timeout: 20000 });
+      await page.locator('.asu-pfoot .asu-herepill').waitFor({ timeout: 8000 }).catch(() => fails.push(`${tag}: no live counter in the bottom strip`));
+      await page.waitForTimeout(400);
+      const g = await page.evaluate(() => {
+        const box = (e) => e.getBoundingClientRect();
+        const controls = [...document.querySelectorAll('.asu-card .asu-btn, .asu-card .apple-signin-btn, .asu-card .pk-signin-btn, .asu-card .google-signin-glass-face, .asu-card .asu-fi')]
+          .filter((e) => e.offsetParent)
+          .map((e) => ({ w: Math.round(box(e).width), h: Math.round(box(e).height) }));
+        const card = box(document.querySelector('.asu-card'));
+        const page = document.querySelector('.asu-page');
+        return { controls, cardX: Math.round(card.x), cardW: Math.round(card.width), vw: innerWidth, fits: page.scrollHeight <= innerHeight + 1, lang: Boolean(document.querySelector('.asu-pfoot .asu-lang select')) };
+      });
+      check(g.controls.length >= 3 && g.controls.every((c) => c.h === 52 && c.w === g.controls[0].w), `${tag}: every button and field 52 tall and one width (${JSON.stringify(g.controls)})`);
+      check(g.cardX === 16 && g.cardW === g.vw - 32, `${tag}: 16 side margins (x ${g.cardX}, w ${g.cardW})`);
+      check(g.fits, `${tag}: the start screen fits without scrolling`);
+      check(g.lang, `${tag}: language picker in the bottom strip`);
+      if (vp.width === 393) {
+        // (1) what the field reads the input as, (2) typo fix chip with one tap
+        await page.locator('#asu-identifier').click();
+        await page.keyboard.type('deniz@gmial.com');
+        check((await page.locator('[data-testid="asu-kind"]').innerText().catch(() => '')).trim() === 'E-posta', `${tag}: "E-posta" chip in the field`);
+        check(await page.locator('.asu-ptop').isVisible() && !(await page.locator('.asu-head').isVisible()), `${tag}: typing swaps the head for the top bar`);
+        await page.locator('[data-testid="asu-typo"]').click();
+        check((await page.inputValue('#asu-identifier')) === 'deniz@gmail.com', `${tag}: the typo chip fixes the address`);
+        await page.fill('#asu-identifier', 'admin');
+        check((await page.locator('[data-testid="asu-kind"]').innerText().catch(() => '')).trim() === 'Kullanıcı adı', `${tag}: "Kullanıcı adı" chip in the field`);
+        await shot(page, 'phone-b-typing.jpg');
+        // (3) show / hide password, (5) a wrong password makes "Kod gönder" a full-width button
+        await page.fill('#asu-identifier', REGISTERED);
+        await page.click('button[type=submit]:has-text("Devam")');
+        await page.locator('.asu-card[data-step="login"]').waitFor({ timeout: 10000 });
+        check(await page.locator('.asu-rec button:has-text("Kod gönder")').isVisible(), `${tag}: "Kod gönder" link under "Giriş yap"`);
+        await page.fill('#asu-login-password', 'yanlis-sifre');
+        await page.click('.asu-fi .asu-tr button');
+        check((await page.getAttribute('#asu-login-password', 'type')) === 'text', `${tag}: the eye shows the password`);
+        await page.click('button[type=submit]:has-text("Giriş yap")');
+        const rec = page.locator('[data-testid="asu-recover"]');
+        const shown = await rec.waitFor({ timeout: 8000 }).then(() => true, () => false);
+        check(shown, `${tag}: after a wrong password "Kod gönder, şifremi yenile" is a full-width button`);
+        if (shown) {
+          const w = await rec.evaluate((e) => Math.round(e.getBoundingClientRect().width));
+          check(w === g.controls[0].w, `${tag}: the recovery button is as wide as the others (${w})`);
+        }
+        check(await page.locator('.asu-f.is-err .asu-fh.is-err').isVisible(), `${tag}: the error sits under the password field`);
+        await page.evaluate(() => document.getElementById('asu-login-password').dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, modifierCapsLock: true })));
+        check(/Caps Lock açık/.test(await page.locator('.asu-fh.is-warn').innerText().catch(() => '')), `${tag}: Caps Lock warning`);
+        await page.waitForTimeout(300);
+        await shot(page, 'phone-b-error.jpg');
+      }
+      if (errors.length) fails.push(`${tag}: page errors ${errors.join(' | ')}`);
+      await ctx.close();
+    }
+
     // ---------------- web site: the sign-up modal ----------------
     {
       const { ctx, page, errors } = await newPage({ width: 1280, height: 860 });
@@ -381,6 +518,23 @@ async function main() {
       const ok = await page.locator('.login-modal .asu-card').waitFor({ timeout: 25000 }).then(() => true, () => false);
       check(ok, 'site: the sign-up modal shows the adaptive card');
       if (ok) {
+        // The site's slim locale provider: the same sign-in step and passkey words, by email
+        // (the owner's report) and by username.
+        for (const who of [REGISTERED, REGISTERED_NAME]) {
+          await page.fill('.login-modal #asu-identifier', who);
+          await page.click('.login-modal button[type=submit]:has-text("Devam")');
+          const toLogin = await page.locator('.login-modal .asu-card[data-step="login"]').waitFor({ timeout: 10000 }).then(() => true, () => false);
+          check(toLogin, `site: ${who} turns the modal card into sign-in`);
+          if (toLogin) {
+            await checkPasskeyWords(page, '.login-modal ', `site sign-in (${who})`);
+            if (who === REGISTERED) await shot(page, 'site-modal-login.jpg');
+            await page.click('.login-modal .asu-idrow .asu-ed');
+            await page.locator('.login-modal .asu-card[data-step="start"]').waitFor({ timeout: 5000 });
+          }
+        }
+        await page.fill('.login-modal #asu-identifier', 'kimseyok42');
+        await page.click('.login-modal button[type=submit]:has-text("Devam")');
+        await page.locator('.login-modal .asu-fh.is-err:has-text("Bu kullanıcı adıyla hesap yok")').waitFor({ timeout: 8000 }).catch(() => fails.push('site: unknown username shows no inline message'));
         await page.fill('.login-modal #asu-identifier', 'demir.kaya@gmail.com');
         await page.click('.login-modal button[type=submit]:has-text("Devam")');
         await page.locator('.login-modal .asu-card[data-step="register"]').waitFor({ timeout: 10000 }).catch(() => fails.push('site: modal did not turn into sign-up'));
@@ -388,6 +542,33 @@ async function main() {
         await shot(page, 'site-modal.jpg');
       }
       if (errors.length) fails.push(`site: page errors ${errors.join(' | ')}`);
+      await ctx.close();
+    }
+
+    // ---------------- passkey words on the real host (app and web site modal) ----------------
+    // The owner's report: "Tekrar hoş geldin" showed "passkey.login.button.passkey".
+    for (const [where, route, scope] of [['app', '/login?gd=1', ''], ['site', '/register', '.login-modal ']]) {
+      const { ctx, page, errors } = await newPage({ width: 1440, height: 900 }, { onHost: true });
+      await page.goto(`${HOST}${route}`, { waitUntil: 'load' });
+      const ok = await page.locator(`${scope}.asu-card`.trim()).waitFor({ timeout: 25000 }).then(() => true, () => false);
+      check(ok, `${where} on ${HOST}: the card renders`);
+      if (ok) {
+        for (const who of [REGISTERED, REGISTERED_NAME]) {
+          await page.fill(`${scope}#asu-identifier`, who);
+          await page.click(`${scope}button[type=submit]:has-text("Devam")`);
+          const toLogin = await page.locator(`${scope}.asu-card[data-step="login"]`).waitFor({ timeout: 10000 }).then(() => true, () => false);
+          check(toLogin, `${where} on ${HOST}: ${who} turns the card into sign-in`);
+          if (!toLogin) continue;
+          await checkPasskeyWords(page, scope, `${where} on ${HOST} (${who})`, { required: true });
+          if (who === REGISTERED) {
+            await page.waitForTimeout(300);
+            await shot(page, `${where}-host-login-passkey.jpg`);
+          }
+          await page.click(`${scope}.asu-idrow .asu-ed`);
+          await page.locator(`${scope}.asu-card[data-step="start"]`).waitFor({ timeout: 5000 });
+        }
+      }
+      if (errors.length) fails.push(`${where} on ${HOST}: page errors ${errors.join(' | ')}`);
       await ctx.close();
     }
 

@@ -2106,10 +2106,13 @@ const CARD_ERR = Object.freeze({
 const IDENTIFY_OPTS = { windowMs: adaptive.IDENTIFY_WINDOW_MS, max: adaptive.IDENTIFY_MAX };
 
 /**
- * POST /auth/identify { email, surface?, visitorKey? } -> { status: "new" | "registered",
- * emailHint?, registrationClosed? }. Decides which card the email gets. Registered means the
- * same as POST /register's email_taken (a verified holder or one still inside its first day).
- * Rate limited per address; the human check after IDENTIFY_STEPUP lookups (like sign-in).
+ * POST /auth/identify { email | username, surface?, visitorKey? } -> { status: "new" |
+ * "registered", emailHint?, registrationClosed? }. Decides which card the identifier gets.
+ * Email: registered means the same as POST /register's email_taken (a verified holder or one
+ * still inside its first day). Username (the field had no "@"): registered when an account
+ * has that name, the same match POST /login uses; "new" means no such account (the card asks
+ * for an email to sign up) and never carries emailHint, so a name does not reveal its email.
+ * Both share one limit per address and the human check after IDENTIFY_STEPUP lookups.
  */
 router.post("/identify", identifyBurst, async (req, res) => {
   try {
@@ -2120,20 +2123,29 @@ router.post("/identify", identifyBurst, async (req, res) => {
       securityEvents.note("ip_blocked", { req, reason: "identify", detail: { scope: "identify" } });
       return;
     }
-    const email = adaptive.normalizeEmail(req.body?.email);
-    if (!email) return res.status(400).json({ error: CARD_ERR.email, code: "EMAIL_INVALID" });
+    const byName = req.body?.email == null && req.body?.username != null;
+    const email = byName ? null : adaptive.normalizeEmail(req.body?.email);
+    const name = byName ? adaptive.cleanLoginName(req.body?.username) : null;
+    if (byName && !name) return res.status(400).json({ error: CARD_ERR.badInput, code: "USERNAME_INVALID" });
+    if (!byName && !email) return res.status(400).json({ error: CARD_ERR.email, code: "EMAIL_INVALID" });
     if (recentCount(key, { windowMs: adaptive.IDENTIFY_WINDOW_MS }) >= adaptive.IDENTIFY_STEPUP) {
       if (await turnstile.rejectUnlessHuman(req, res, { action: "register", ip })) return;
     }
     recordFailure(key, IDENTIFY_OPTS);
     if (await accessGate(req, res, { action: "register" })) return;
-    const holders = await emailHolders(email, null);
-    const registered = Boolean(holders.confirmed || holders.fresh);
+    let registered = false;
+    if (byName) {
+      registered = await usernameTaken(name);
+    } else {
+      const holders = await emailHolders(email, null);
+      registered = Boolean(holders.confirmed || holders.fresh);
+    }
     const surface = adaptive.cleanSurface(req.body?.surface);
     if (registered) {
       void recordAnalyticsEvent({ visitorKey: req.body?.visitorKey || "", event: "identifier_routed", props: surface ? { source: surface } : {} });
-      return res.json({ status: "registered", emailHint: adaptive.maskEmail(email) });
+      return res.json(byName ? { status: "registered" } : { status: "registered", emailHint: adaptive.maskEmail(email) });
     }
+    if (byName) return res.json({ status: "new" });
     const closed = platformPolicy.checkRegistration({ config: systemConfig });
     return res.json({ status: "new", ...(closed.ok ? {} : { registrationClosed: true }) });
   } catch (err) {
