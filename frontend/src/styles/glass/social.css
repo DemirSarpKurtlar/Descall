@@ -101,11 +101,15 @@ html.glass-ui .g-invite-head {
 
 html.glass-ui .g-invite-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
+/* Three buttons never run past the card: on a phone the one that does not fit moves to a
+   second row and fills it (it was cut off at the right edge on a 393 pt iPhone). */
 html.glass-ui .g-invite-actions .g-invite-btn {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   justify-content: center;
   white-space: nowrap;
 }
