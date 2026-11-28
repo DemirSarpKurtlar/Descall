@@ -172,7 +172,10 @@ export default function AppLayout({
   const glassUi = useGlassUi();
   const glassShell = Boolean(glassUi && isMobile);
   const animateMainViews = isMobile && !reduceMotion;
-  useMobileKeyboard(isMobile);
+  // Touch tablets in the desktop layout (iPad / Android tablet app, iPad Safari)
+  // have the same on-screen keyboard: the shell follows the visible height too.
+  const [touchTablet] = useState(() => readDeviceLayout().tablet);
+  useMobileKeyboard(isMobile || touchTablet);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [localActiveView, setLocalActiveView] = useState("chat");
   const [localUserPanelOpen, setLocalUserPanelOpen] = useState(false);

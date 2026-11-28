@@ -1068,6 +1068,14 @@ html.kb-open .app-root.is-mobile {
   max-height: var(--vv-height, 100dvh);
 }
 
+/* The tablet desktop layout (no .is-mobile since 27 Nov, lib/deviceLayout.js):
+   kb-open is only ever set on touch layouts (AppLayout useMobileKeyboard), so
+   Electron, Tauri and mouse browsers never match. */
+html.kb-open .app-root:not(.is-mobile) {
+  height: var(--vv-height, 100dvh);
+  max-height: var(--vv-height, 100dvh);
+}
+
 /* Touch targets: small icon buttons keep their look but get a 44pt-class hit
    area on touch screens (same pattern as .server-channel-mini-btn, 3.7.32).
    Horizontal growth stays small where buttons sit in a row. */

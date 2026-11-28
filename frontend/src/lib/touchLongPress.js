@@ -41,6 +41,28 @@ export function touchLongPressFired() {
   return Boolean(active?.fired) || now() < swallowUntil;
 }
 
+/**
+ * After a hold fired, the browser still sends the compatibility mouse events
+ * and the click of that touch. They must not reach the page: the row would
+ * open the chat, and the menu's own outside-mousedown listener (document)
+ * would close the menu that just opened. Window capture runs first.
+ */
+let guardInstalled = false;
+function guardCompatEvents(e) {
+  if (!touchLongPressFired()) return;
+  e.preventDefault?.();
+  e.stopPropagation?.();
+  if (e.type === "click") {
+    if (!active?.fired) active = null;
+    swallowUntil = 0;
+  }
+}
+function installGuard() {
+  if (guardInstalled || typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+  guardInstalled = true;
+  for (const type of ["mousedown", "mouseup", "click"]) window.addEventListener(type, guardCompatEvents, true);
+}
+
 /** The finger left the screen: a fired hold owns only the click that follows right now. */
 function release() {
   if (active?.fired) {
@@ -65,6 +87,7 @@ export function touchLongPressHandlers(
       if (!e || (e.pointerType !== "touch" && e.pointerType !== "pen")) return;
       if (e.button > 0 || e.isPrimary === false) return;
       cancelTouchLongPress();
+      installGuard();
       const press = { x: e.clientX, y: e.clientY, fired: false, clear: clearTimer, target: e.currentTarget };
       press.timer = setTimer(() => {
         if (active !== press) return;
