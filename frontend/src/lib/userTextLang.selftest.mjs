@@ -23,7 +23,8 @@ assert.equal(userTextLang("München", "en"), "und");
 
 // Every uppercase surface that shows a user-provided name carries the hint.
 const sidebar = read("ServersSidebar.jsx");
-assert.match(sidebar, /<span lang=\{userTextLang\(node\.name\)\}>\{node\.name\}<\/span>/);
+// Category names show the reader's language on localized servers (draft C, lib/serverL10n.js).
+assert.match(sidebar, /<span lang=\{userTextLang\(channelDisplayName\(node\)\)\}>\{channelDisplayName\(node\)\}<\/span>/);
 assert.match(sidebar, /<span lang=\{userTextLang\(folder\.name\)\}>\{folder\.name\}<\/span>/);
 assert.match(sidebar, /className="server-voice-member-menu-title" lang=\{userTextLang\(title\)\}/);
 assert.match(read("ServerMembersPanel.jsx"), /lang=\{section\.userLabel \? userTextLang\(section\.label\) : undefined\}/);

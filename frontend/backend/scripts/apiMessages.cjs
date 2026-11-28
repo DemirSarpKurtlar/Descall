@@ -42,6 +42,8 @@ const INTERNAL_ONLY = new Set([
   // Sunucu Ağı tab (owner only): the panel shows its own text per error code (anodes.err.*).
   "routes/adminNodes.js",
   "lib/nodeKeys/store.js",
+  // Topluluk çevirileri (draft C): the panel shows its own text per error code (srvLoc.admin.err.*).
+  "routes/adminServerTranslations.js",
 ]);
 
 // Developer / diagnostic text: never shown in the app (logs, health checks, protocol

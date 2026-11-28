@@ -5,6 +5,7 @@ import { PageFrame, useHub } from "./hubCore";
 import { serverHasPermission, serverIsOwner } from "../../../lib/serverPermissions";
 import { channelIcon, channelLabel, countServerChannels, inviteActive, memberName, presenceOf, rulesList } from "./hubData";
 import { getServerMute } from "./serverMute";
+import { channelDisplayName, channelMatches } from "../../../lib/serverL10n.js";
 
 export function usePerms(server) {
   return useMemo(() => {
@@ -161,12 +162,13 @@ export function SearchPage({ route }) {
   const [q, setQ] = useState("");
   useEffect(() => { hub.load("members"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const needle = q.trim().toLocaleLowerCase("tr");
-  const channels = (server?.channels || []).filter((c) => c.type !== "category" && (!needle || c.name.toLocaleLowerCase("tr").includes(needle))).slice(0, 30);
+  // Localized servers (draft C): found by the original and the translated name, shown translated.
+  const channels = (server?.channels || []).filter((c) => c.type !== "category" && (!needle || channelMatches(c, needle))).slice(0, 30);
   const members = needle ? (data.members || []).filter((m) => [m.nickname, m.displayName, m.username].some((x) => x && String(x).toLocaleLowerCase("tr").includes(needle))).slice(0, 30) : [];
   return (
     <PageFrame route={route} title={s.qSearch}>
       <Field value={q} onChange={setQ} placeholder={f("searchInN", { n: server?.memberCount || data.members?.length || 1 })} icon="search" autoFocus style={{ margin: "2px 0 6px" }} />
-      {channels.length ? <><Sec>{s.rChannels}</Sec><Group>{channels.map((c) => { const ic = channelIcon(c); return <Row key={c.id} ico={ic.n} c={ic.c} t={channelLabel(c)} chev onClick={() => { hub.close(); deps.onSelectChannel?.(c); }} />; })}</Group></> : null}
+      {channels.length ? <><Sec>{s.rChannels}</Sec><Group>{channels.map((c) => { const ic = channelIcon(c); return <Row key={c.id} ico={ic.n} c={ic.c} t={channelLabel({ ...c, name: channelDisplayName(c) })} chev onClick={() => { hub.close(); deps.onSelectChannel?.(c); }} />; })}</Group></> : null}
       {members.length ? <><Sec>{s.rMembers}</Sec><Group>{members.map((m) => <Row key={m.userId} av={<Av user={{ ...m, id: m.userId }} s={32} />} inset={58} t={memberName(m)} sub={`@${m.username}`} chev onClick={() => hub.push({ id: "member", userId: m.userId })} />)}</Group></> : null}
       {needle && !channels.length && !members.length ? <Foot>{s.noResults}</Foot> : null}
     </PageFrame>

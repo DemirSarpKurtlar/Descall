@@ -58,7 +58,14 @@ const {
 
 const { starterChannelNames } = require("../lib/starterChannelNames");
 const { requestLang } = require("../lib/i18n");
+const serverL10n = require("../lib/serverL10n/decorate");
+const serverL10nStore = require("../lib/serverL10n/store");
 const router = express.Router();
+
+// Draft C (owner pick, 28 Nov 2026): opted-in servers (the official community server)
+// answer with the reader's language version next to the original fields
+// (nameLocalized, topicLocalized, content_localized; lib/serverL10n/decorate.js).
+router.use(serverL10n.localizeResponses);
 
 // Ids from the URL are compared in JS (owner, self, hierarchy) and in Postgres (uuid,
 // case-insensitive). An UPPERCASE owner id passed every JS check and still hit the
@@ -1036,6 +1043,8 @@ function emitToUsers(req, userIds, event, payload) {
 
 /** Emit channel create/update only to members who can VIEW_CHANNEL (no private channel leaks). */
 async function emitChannelToViewers(req, serverId, event, channel, extra = {}) {
+  // A created / edited channel: its localized names and topics are re-read (stale check).
+  serverL10nStore.invalidateIfLocalized(serverId);
   const io = getIo(req);
   if (!io || !serverId || !event || !channel?.id) return;
   const pub = publicChannel(channel);
@@ -2349,8 +2358,17 @@ router.get("/discover", requireAuth, async (req, res) => {
     if (q) query = query.ilike("name", `%${q.replace(/[%_\\]/g, "")}%`);
     query = windowed ? query.limit(200) : query.range(offset, offset + limit);
 
-    const { data: fetchedRaw, error } = await query;
+    const { data: fetchedFirst, error } = await query;
     if (error) throw error;
+    let fetchedRaw = fetchedFirst || [];
+    // Draft C: a localized server is also found by its name in any language ("Comunidade").
+    if (q && offset === 0) {
+      const extraIds = (await serverL10nStore.serversNamed(q)).filter((id) => !fetchedRaw.some((r) => String(r.id) === id));
+      if (extraIds.length) {
+        const { data: extra } = await supabase.from("servers").select(cols).in("id", extraIds).eq("is_public", true).is("directory_hidden_at", null);
+        fetchedRaw = [...(extra || []), ...fetchedRaw];
+      }
+    }
     // ...and so do servers whose owner account is banned or deleted (like the web directory).
     const owners = await loadOwnerStates((fetchedRaw || []).map((r) => r.owner_id));
     const fetched = (fetchedRaw || []).filter((r) => ownerStateOk(owners.get(String(r.owner_id))));
@@ -5265,6 +5283,7 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
       changes: { name: existing.name, type: existing.type },
     });
 
+    serverL10nStore.invalidateIfLocalized(serverId);
     emitToUsers(req, viewerIds, "server:channel:deleted", {
       serverId,
       channelId,
@@ -5886,6 +5905,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
         // leaked to every member, SC-8); members who can see them refetch.
         await redactHiddenSettingRefs(serverId, pub);
       }
+      serverL10nStore.invalidateIfLocalized(serverId);
       emitToServer(req, serverId, "server:updated", { server: pub });
       // Owner hears about visibility / vanity / verification changes made by an admin.
       if (io && sensitiveChanges.length && String(server.owner_id) !== String(req.user.id)) {

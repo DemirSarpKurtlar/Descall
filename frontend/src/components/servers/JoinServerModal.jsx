@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { serverDisplayDescription, serverDisplayName } from "../../lib/serverL10n.js";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Compass, LogIn, Server } from "../ui/Icon.jsx";
@@ -195,7 +196,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
                   <div className="server-join-preview">
                     <ServerIcon server={preview.server} />
                     <div>
-                      <strong>{preview.server.name}</strong>
+                      <strong>{serverDisplayName(preview.server)}</strong>
                       <span>
                         {t("{count} members", { count: preview.server.memberCount || 1 })}
                         {preview.server.isMember ? ` · ${t("Already a member")}` : ""}
@@ -263,14 +264,14 @@ export default function JoinServerModal({ onClose, onJoined }) {
                     <ServerIcon server={s} />
                     <div className="server-list-copy">
                       <span className="server-list-name">
-                        {s.name}
+                        {serverDisplayName(s)}
                         {s.communityEnabled ? (
                           <em className="server-community-pill">{t("Community")}</em>
                         ) : null}
                       </span>
                       <span className="server-list-sub">
                         {t("{count} members", { count: s.memberCount || 1 })}
-                        {s.description ? ` · ${s.description}` : ""}
+                        {s.description ? ` · ${serverDisplayDescription(s)}` : ""}
                       </span>
                     </div>
                     <button

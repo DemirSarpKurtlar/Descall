@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { serverDisplayName } from "../../lib/serverL10n.js";
 import { motion } from "framer-motion";
 import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, Ban } from "../ui/Icon.jsx";
 import { savePendingLanding, clearPendingLanding, serverInviteErrorKey } from "../../lib/serverInviteRoute";
@@ -122,7 +123,7 @@ export default function ServerVanityLanding({ slug, me, autoJoin = false, onJoin
                 }
               />
               <div>
-                <strong>{server.name || t("Server")}</strong>
+                <strong>{serverDisplayName(server) || t("Server")}</strong>
                 <span>
                   {[
                     Number.isFinite(Number(server.memberCount)) && server.memberCount != null

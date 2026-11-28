@@ -38,6 +38,9 @@ const service = dir.createDirectoryService({ supabase, presence: livePresence, g
 
 const router = express.Router();
 
+// Draft C: directory cards of opted-in servers carry the reader's language name too.
+router.use(require("../lib/serverL10n/decorate").localizeResponses);
+
 router.use((req, _res, next) => {
   if (!ioRef) ioRef = req.app?.get?.("io") || null;
   next();

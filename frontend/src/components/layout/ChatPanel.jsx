@@ -29,6 +29,8 @@ import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
 import { channelTopicText } from "../../i18n/serverTemplateTopics.js";
+import { channelDisplayName, channelTopicL10n, messageL10n, serverDisplayName } from "../../lib/serverL10n.js";
+import { TopicMarkerToggle, useOriginalsVersion } from "../servers/l10n/ServerL10nBits.jsx";
 import { displayText } from "../../lib/profanity";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
@@ -123,6 +125,8 @@ export default function ChatPanel({
   serverVoice = null,
 }) {
   const { t, locale } = useLocale();
+  // Draft C: a "Show original" toggle on a topic re-renders the header.
+  useOriginalsVersion();
   const glass = useGlassUi();
   const messagesRef = useRef(null);
   // Live typing comes from lib/typingStore (App no longer re-renders per typing
@@ -471,9 +475,9 @@ export default function ChatPanel({
     if (headerDm) return resolveDisplayName(headerDm);
     if (headerGroup) return headerGroup.name;
     if (activeView === "servers" && activeChannel) {
-      return activeChannel.type === "voice" || activeChannel.type === "stage" ? activeChannel.name : `#${activeChannel.name}`;
+      return activeChannel.type === "voice" || activeChannel.type === "stage" ? channelDisplayName(activeChannel) : `#${channelDisplayName(activeChannel)}`;
     }
-    if (activeServer) return activeServer.name;
+    if (activeServer) return serverDisplayName(activeServer);
     if (activeView === "chat") return t("Chats");
     if (activeView === "dms") return t("Direct Messages");
     if (activeView === "groups") return t("Groups");
@@ -494,14 +498,15 @@ export default function ChatPanel({
     }
     if (activeView === "servers" && activeChannel) {
       if (glass && activeServer?.name) {
+        const shownServer = serverDisplayName(activeServer);
         const count = activeServer.memberCount || 0;
-        return `${activeServer.name} · ${t("{count} members", { count })}`;
+        return `${shownServer} · ${t("{count} members", { count })}`;
       }
       const topic = channelTopicText(activeChannel, t);
       if (topic) return topic;
       if (activeChannel.type === "voice") return t("Voice channel");
       if (activeChannel.type === "stage") return t("Stage channel");
-      return activeServer?.name || t("Text channel");
+      return serverDisplayName(activeServer) || t("Text channel");
     }
     if (activeServer) {
       return t("{count} members", { count: activeServer.memberCount || 1 });
@@ -753,12 +758,20 @@ export default function ChatPanel({
               style={{ cursor: headerDm || headerGroup ? "pointer" : "default" }}
             >
               <h1 className={glassConv ? "header-title g-peer-name" : "header-title"}>
-                <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? (activeChannel?.name || "") : getTitle()}</span>
+                <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? channelDisplayName(activeChannel) : getTitle()}</span>
                 {headerDm && <AdminBadge user={headerDm} variant="inline" />}
                 {headerDm && <PremiumBadge user={headerDm} variant="inline" />}
               </h1>
               {getSubtitle() && (
-                <span className={`header-subtitle${glassConv ? " g-peer-status" : ""}${glass && (headerGroup || glassServerChannel || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
+                <span className={`header-subtitle${glassConv ? " g-peer-status" : ""}${glass && (headerGroup || glassServerChannel || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>
+                  {/* Draft C: a translated topic carries its marker; tapping it shows the original. */}
+                  {activeView === "servers" && activeChannel && !(glass && activeServer?.name) && channelTopicL10n(activeChannel)?.canToggle ? (
+                    <span className="sl10n-topic">
+                      <span className="sl10n-topic-text">{getSubtitle()}</span>
+                      <TopicMarkerToggle channel={activeChannel} sourceLocale={activeServer?.l10n?.sourceLocale} />
+                    </span>
+                  ) : getSubtitle()}
+                </span>
               )}
             </div>
           </div>
@@ -971,10 +984,10 @@ export default function ChatPanel({
           icon={activeChannel?.type === "voice" || activeChannel?.type === "stage" ? Phone : Hash}
           title={activeChannel
             ? activeChannel.type === "voice" || activeChannel.type === "stage"
-              ? activeChannel.name
-              : `#${activeChannel.name}`
+              ? channelDisplayName(activeChannel)
+              : `#${channelDisplayName(activeChannel)}`
             : activeServer
-              ? activeServer.name
+              ? serverDisplayName(activeServer)
               : t("Servers")}
           body={channelTopicText(activeChannel, t)
             ? channelTopicText(activeChannel, t)
@@ -1310,7 +1323,12 @@ export default function ChatPanel({
       items={pinnedMessages}
       t={t}
       resolveName={resolveDisplayName}
-      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? mediaTypeLabel(pm.mediaType, t) : t("Message"))}
+      renderText={(pm) => {
+        // Draft C: a pinned official message of a localized server in the reader's language.
+        const shown = activeView === "servers" ? messageL10n(pm, activeServer, { readerLocale: locale }) : null;
+        if (shown) return displayText(shown.text);
+        return displayText(pm.text) || (pm.mediaType ? mediaTypeLabel(pm.mediaType, t) : t("Message"));
+      }}
       onUnpin={unpinMessage}
     />
     {groupActions.element}

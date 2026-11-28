@@ -3,6 +3,7 @@ import ReengageBridge from "./components/reengage/ReengageBridge.jsx";
 import { isDesktopShell } from "./lib/desktopShell.js";
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
+import { notificationNames, rememberServerList } from "./lib/serverL10n.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { pageHiddenFromUser } from "./lib/appVisibility.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
@@ -449,6 +450,9 @@ function normalizeGroupMessage(m) {
     editedAt: m.edited_at || m.editedAt || null,
     pinnedAt: m.pinned_at || m.pinnedAt || null,
     pinnedBy: m.pinned_by || m.pinnedBy || null,
+    // Draft C: an official message of a localized server in the reader's language
+    // (lib/serverL10n.js messageL10n; the original stays in `text`).
+    ...(m.content_localized ? { contentLocalized: m.content_localized, l10n: m.l10n || null } : {}),
     // 2.12.0: a Descall Apps card someone shared into the channel ("Kanala paylaş").
     ...(m.media_type === "app_card" && m.system_meta?.embed
       ? { embed: m.system_meta.embed, appType: m.system_meta.appType || m.system_kind || null, text: "" }
@@ -720,6 +724,10 @@ export default function App() {
   const [serversLoadError, setServersLoadError] = useState(false);
   const [activeServer, setActiveServer] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
+  // Notifications (outside React) read the localized server / channel names from here.
+  useEffect(() => {
+    rememberServerList(myServers);
+  }, [myServers]);
   useEffect(() => {
     setEditingMessage(null);
   }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
@@ -2829,6 +2837,8 @@ export default function App() {
       if (channelId && serverId && activeChannelRef.current?.id !== channelId) {
         bumpChannelUnreadRef.current?.(channelId, messageId || `mention:${channelId}:${text}`);
       }
+      // Localized servers (draft C): server / channel names in the reader's language.
+      const shown = serverId ? notificationNames(null, { serverId, serverName, channelId, channelName }) : { serverName, channelName };
       notificationService.mention({
         groupId,
         dmConversationId,
@@ -2837,8 +2847,8 @@ export default function App() {
         groupName,
         serverId,
         channelId,
-        serverName,
-        channelName,
+        serverName: shown.serverName,
+        channelName: shown.channelName,
       });
     });
 
@@ -5425,6 +5435,20 @@ export default function App() {
     t,
   });
 
+  // Draft C: localized servers answer in the UI language, so a language switch refetches
+  // the list (and merges it into the open server and channel). These hooks must stay above
+  // the early returns below (boot error, session check, invites, sign-in): hooks after them
+  // run only once signed in, and React then throws "rendered more hooks" (#310) on sign-in.
+  const refreshServersRef = useRef(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onLocale = () => {
+      if (getToken()) void refreshServersRef.current?.();
+    };
+    window.addEventListener("descall:locale", onLocale);
+    return () => window.removeEventListener("descall:locale", onLocale);
+  }, []);
+
   if (bootError && !me) {
     return (
       <>
@@ -5659,6 +5683,10 @@ export default function App() {
       setTimeout(() => setFriendNotice(""), 4000);
     }
   };
+
+  // Draft C: the language-switch refetch is wired up above the early returns (hooks there);
+  // this keeps its ref pointing at the current handler.
+  refreshServersRef.current = handleRefreshServers;
 
   const handleCreateServer = async ({ name, iconUrl, templateId, starterLocale }) => {
     const { server, ownedCount, maxOwned } = await createServer({ name, iconUrl, templateId, starterLocale });

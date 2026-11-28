@@ -15,7 +15,7 @@ export const ADMIN_NAV_GROUPS = [
     "premiumWorkspace", "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
     "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
   ]],
-  ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
+  ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "serverTranslations", "livepopup", "casino"]],
   // Admin Token (owner only) sits under Güvenlik, like the draft's breadcrumb.
   // Sunucu Ağı (owner only) sits right after Sistem.
   ["system", ["system", "nodes", "security", "adminToken", "errors", "perf", "audit", "staff"]],
@@ -41,6 +41,8 @@ export const TAB_SECTION = Object.freeze({
   reengage: "retention",
   // Vitrin ve Setler (Market 2.0) follows the shop permission, like /admin/shop2 on the server.
   shop2: "shop",
+  // Topluluk çevirileri (draft C) follows Duyurular, like /admin/server-translations on the server.
+  serverTranslations: "announcements",
   premiumWorkspace: "premium",
   premiumDashboard: "premium",
   premiumUsers: "premium",
