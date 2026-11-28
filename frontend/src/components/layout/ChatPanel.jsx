@@ -48,6 +48,13 @@ import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 import { HELLO_STICKER_TOKEN } from "../../lib/descallStickers";
 import { typingFlareKey } from "../../lib/typingFlare.js";
+import {
+  readServerMembersPanelOpen,
+  writeServerMembersPanelOpen,
+  subscribeServerMembersPanel,
+  serverMembersPanelDocks,
+  resolveMembersPanelOpen,
+} from "../../lib/serverMembersPanelPref.js";
 const DmGiftStrip = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.DmGiftStrip })));
 
 function glassGroupInitials(name, locale) {
@@ -126,8 +133,33 @@ export default function ChatPanel({
   const typingChannelUsers = typingChannelUsersProp !== undefined ? typingChannelUsersProp : typingLive.channel;
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showMembers, setShowMembers] = useState(false);
+  // Members panel: beside a server text channel on the desktop layout it follows the
+  // saved choice (lib/serverMembersPanelPref.js) across channel, server and tab
+  // switches and reloads. Groups, voice rooms and the phone sheet keep local state.
+  const [looseMembers, setLooseMembers] = useState(false);
+  const savedServerMembers = useSyncExternalStore(subscribeServerMembersPanel, readServerMembersPanelOpen, readServerMembersPanelOpen);
   const [showPinned, setShowPinned] = useState(false);
+  const membersDock = serverMembersPanelDocks({
+    isMobile,
+    activeView,
+    hasServer: Boolean(activeServer),
+    channelType: activeChannel?.type || null,
+  });
+  const showMembers = resolveMembersPanelOpen({
+    docks: membersDock,
+    saved: savedServerMembers,
+    local: looseMembers,
+    searchOpen: showSearch,
+    pinnedOpen: showPinned,
+  });
+  const setShowMembers = useCallback((open) => {
+    if (membersDock) {
+      writeServerMembersPanelOpen(open);
+      if (open) { setShowSearch(false); setShowPinned(false); }
+    } else {
+      setLooseMembers(Boolean(open));
+    }
+  }, [membersDock]);
   const pinButtonRef = useRef(null);
   // DM header "⋯" (A2, mockup #05): pinned messages, pin chat, mute, report, block.
   // Same handlers as the sidebar swipe actions / row menu.
@@ -307,14 +339,15 @@ export default function ChatPanel({
   useEffect(() => {
     setPinnedMessages([]);
     setShowPinned(false);
-    setShowMembers(false);
+    setLooseMembers(false);
     setProfileTarget(null);
   }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
 
   const togglePinnedPanel = () => {
     const next = !showPinned;
     setShowPinned(next);
-    setShowMembers(false);
+    // Docked server list: hidden while the popover is open, the saved choice stays.
+    setLooseMembers(false);
     setShowSearch(false);
     if (next && socket && conversationKey) {
       if (conversationKey.kind === "dm") socket.emit("dm:pinned:list", { withUserId: conversationKey.withUserId });
@@ -391,7 +424,7 @@ export default function ChatPanel({
   // Close members sheet when leaving a conversation / server surface
   useEffect(() => {
     if (!activeDmUser && !activeGroup && !(activeView === "servers" && activeServer)) {
-      setShowMembers(false);
+      setLooseMembers(false);
     }
   }, [activeDmUser, activeGroup, activeView, activeServer]);
 
@@ -739,7 +772,7 @@ export default function ChatPanel({
             title={t("Search")}
             aria-label={t("Search")}
             data-shortcut="chat-search"
-            onClick={() => { setShowSearch(!showSearch); setShowMembers(false); }}
+            onClick={() => { setShowSearch(!showSearch); setLooseMembers(false); }}
           >
             <Search size={20} />
           </button>
@@ -748,6 +781,7 @@ export default function ChatPanel({
               className={`icon-btn ${showMembers ? "active" : ""}`}
               title={t("Members")}
               aria-label={t("Members")}
+              aria-pressed={showMembers}
               onClick={() => { setShowMembers(!showMembers); setShowSearch(false); }}
             >
               <Users size={20} />
