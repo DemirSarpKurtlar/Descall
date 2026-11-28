@@ -2059,8 +2059,9 @@ button.s2-tile:hover:not(:disabled) {
   flex-direction: column;
   gap: 4px;
 }
-/* Only the title block re-mounts (and slides in) when the set changes; the chips, buttons and
-   arrows stay mounted so focus and the page scroll stay where they are. */
+/* The title block slides in on first paint; on a set change Shop2Vitrin replays it (and the
+   tiles' rise) with the Web Animations API on the same nodes, so nothing is re-mounted: focus
+   and the page scroll stay where they are. */
 .s2-banner-anim {
   display: flex;
   flex-direction: column;
@@ -2111,9 +2112,7 @@ button.s2-tile:hover:not(:disabled) {
 .s2-banner {
   touch-action: pan-y;
 }
-.s2-banner.is-back .s2-banner-anim {
-  animation-name: s2-slidein-back;
-}
+
 .s2-banner-nav {
   margin-left: auto;
   display: inline-flex;
@@ -2178,19 +2177,8 @@ button.s2-tile:hover:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-@keyframes s2-slidein-back {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .s2-banner-anim,
-  .s2-banner.is-back .s2-banner-anim {
+  .s2-banner-anim {
     animation: none;
   }
 }

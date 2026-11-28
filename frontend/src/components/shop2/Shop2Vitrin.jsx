@@ -367,6 +367,33 @@ function SetBanner({ sets }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cur?.key]);
   const stripRef = useSlotStrip(SET_PIECE_ORDER.length);
+  // Set change: the tiles and the title block keep their DOM nodes (no keyed re-mount) and
+  // replay their entry animation. Re-mounting them removed nodes mid-commit; WebKit (iPad,
+  // iPhone) then scrolled the page, and a removed focused arrow lost keyboard focus.
+  const stripNode = useRef(null);
+  const animNode = useRef(null);
+  const setStrip = (n) => {
+    stripNode.current = n;
+    stripRef(n);
+  };
+  const firstShow = useRef(true);
+  useIsoLayoutEffect(() => {
+    if (firstShow.current) {
+      firstShow.current = false; // the first paint uses the CSS entry animation
+      return;
+    }
+    if (typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const ease = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+    try {
+      animNode.current?.animate?.([{ opacity: 0, transform: `translateX(${dir < 0 ? -14 : 14}px)` }, { opacity: 1, transform: "none" }], { duration: 420, easing: ease, fill: "backwards" });
+      [...(stripNode.current?.children || [])].forEach((tile, k) => {
+        tile.animate?.([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: 360, delay: k * 45, easing: ease, fill: "backwards" });
+      });
+    } catch {
+      /* no Web Animations: the content just swaps */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur?.key]);
   useEffect(() => {
     if (hover || focused || n < 2) return undefined;
     const id = setTimeout(() => { setDir(1); setI((x) => (x + 1) % n); }, 8000);
@@ -385,7 +412,7 @@ function SetBanner({ sets }) {
   };
   return (
     <section
-      className={`s2-banner${dir < 0 ? " is-back" : ""}`}
+      className="s2-banner"
       style={{ "--set-bg": setGradient(cur.palette), "--set-accent": cur.palette?.[2] || "#587af5" }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -396,15 +423,13 @@ function SetBanner({ sets }) {
       aria-roledescription={t("shop2.banner.carousel")}
       aria-label={s2.setName(cur)}
     >
-      {/* The strip and the controls stay mounted across sets (only the tiles and the title
-          block re-mount for their entry animation): removing the focused arrow made the
-          browser move the page and dropped keyboard focus. */}
-      <div className={`s2-banner-slots${pieces.length ? "" : " is-loading"}`} ref={stripRef} aria-busy={pieces.length ? undefined : "true"}>
+      {/* Everything stays mounted across sets (see the animation effect above). */}
+      <div className={`s2-banner-slots${pieces.length ? "" : " is-loading"}`} ref={setStrip} aria-busy={pieces.length ? undefined : "true"}>
         {(pieces.length ? pieces : Array.from({ length: SET_PIECE_ORDER.length }, () => null)).slice(0, SET_PIECE_ORDER.length).map((p, k) => {
           const label = p ? `${s2.itemName(p.item)} · ${t(`shop2.cat.${p.item.category || "other"}`)}` : undefined;
           return (
             <span
-              key={`${cur.key}-${p?.item?.id ?? k}`}
+              key={k}
               className={`s2-slot${p?.owned ? " is-owned" : ""}${p ? "" : " is-skel"}`}
               style={{ "--i": k }}
               data-cat={p?.item?.category || undefined}
@@ -430,7 +455,7 @@ function SetBanner({ sets }) {
             </button>
           ) : null}
         </div>
-        <div className="s2-banner-anim" key={`t-${cur.key}`}>
+        <div className="s2-banner-anim" ref={animNode}>
           <h2>{s2.setName(cur)}</h2>
           <p className="s2-muted">{cur.tagline ? s2.itemName({ name: cur.tagline }) : t("shop2.banner.desc")}</p>
           <div className="s2-banner-price">
