@@ -270,11 +270,16 @@ html[data-theme="light"] .wgs-add:not(.is-ok) {
   line-height: 1;
 }
 
+/* Pinned to the circle: a percentage height inside the inline-grid did not resolve in
+   WebKit, so portrait photos kept their own aspect and ran down over the name. */
 .wgs-face img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
 }
 
 .wgs-face.is-speaking {
