@@ -24,6 +24,7 @@ import { VSC_TR } from "./vsc.tr.js";
 import { LX_TR } from "./lx.tr.js";
 import { USET_TR } from "./uset.tr.js";
 import { SVOICE_TR } from "./svoice.tr.js";
+import { ADA_TR } from "./ada.tr.js";
 import { BAN_ADMIN_TR } from "./banAdmin.tr.js";
 import { SERVER_REVIEW_TR } from "./serverReview.tr.js";
 import { DOSSIER_TR } from "./dossier.tr.js";
@@ -121,6 +122,7 @@ export const nested = {
   lx: LX_TR,
   uset: USET_TR,
   svoice: SVOICE_TR,
+  ada: ADA_TR,
   banAdmin: BAN_ADMIN_TR,
   serverReview: SERVER_REVIEW_TR,
   dossier: DOSSIER_TR,

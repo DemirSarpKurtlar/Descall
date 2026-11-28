@@ -28,6 +28,7 @@ import { VSC_DE } from "./vsc.de.js";
 import { LX_DE } from "./lx.de.js";
 import { USET_DE } from "./uset.de.js";
 import { SVOICE_DE } from "./svoice.de.js";
+import { ADA_DE } from "./ada.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
 import { DOSSIER_DE } from "./dossier.de.js";
@@ -92,6 +93,7 @@ export const nested = {
   "lx": LX_DE,
   "uset": USET_DE,
   "svoice": SVOICE_DE,
+  "ada": ADA_DE,
   "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
   "dossier": DOSSIER_DE,
