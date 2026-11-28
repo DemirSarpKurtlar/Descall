@@ -313,6 +313,89 @@ for (const layout of ["desktop", "phone"]) {
     assert.ok(/>K</.test(th) && !/>\[</.test(th), `${cat} thumb letter`);
   }
 }
+{
+  // Featured set hero strip, EVERY set of the real catalog (owner report 27 Nov, iPad: empty,
+  // cropped, pushed-out and uneven tiles). Each of the 9 tiles: its category, a "fit" art that
+  // is never empty; the fixed-size renderers on the scaled 64 px stage (so they can never
+  // overflow the tile); a banner whole (contained over its blurred cover); the join sound as
+  // its icon tile; a missing art as the type icon + name. Geometry in every browser width:
+  // e2e/shop2SetStrip.e2e.cjs.
+  const { createRequire } = await import("node:module");
+  const req = createRequire(import.meta.url);
+  const { catalogRows } = req(join(src, "../backend/lib/shop2/catalogSeed.js"));
+  const rows = catalogRows().map((r, i) => ({ id: `cat-${i}`, ...r }));
+  const keys = [...new Set(rows.filter((r) => r.set_key).map((r) => r.set_key))];
+  assert.ok(keys.length >= 16, `catalog lists 16+ sets (${keys.length})`);
+  const STAGED = new Set(["avatar_frame", "profile_aura", "profile_badge", "avatar_effect", "chat_bubble"]);
+  const tilesOf = (html) => {
+    const strip = html.slice(html.indexOf('class="s2-banner-slots'), html.indexOf('class="s2-banner-text"'));
+    return strip.split('<span class="s2-slot').slice(1);
+  };
+  const heroFor = (detail, layout = "desktop") => {
+    const c = ctx(layout);
+    const summary = { key: detail.key, name: detail.name, palette: detail.palette, sum: detail.sum, setPrice: detail.setPrice, yourPrice: detail.yourPrice };
+    return m.render("vitrin", { ...c, data: { ...c.data, storefront: { ...storefront, featuredSets: [summary] }, sets: [detail], setDetails: { [detail.key]: detail } } });
+  };
+  for (const key of keys) {
+    const pieces = rows.filter((r) => r.set_key === key).map((r) => ({ category: r.category, item: r, owned: false }));
+    const detail = L.normalizeSet({ key, name: { tr: key }, palette: ["#111", "#222", "#587af5", "#ccc"], pieces, sum: 4000, setPrice: 3000 });
+    for (const layout of ["desktop", "phone"]) {
+      const tiles = tilesOf(heroFor(detail, layout));
+      assert.equal(tiles.length, 9, `${key} ${layout}: 9 tiles`);
+      tiles.forEach((tile, i) => {
+        const cat = (tile.match(/data-cat="([a-z_]+)"/) || [])[1];
+        assert.ok(cat, `${key} tile ${i}: data-cat`);
+        assert.ok(/class="s2-art is-slot is-fit is-cat-/.test(tile), `${key} ${cat}: fit art`);
+        assert.ok(!/is-empty/.test(tile), `${key} ${cat}: tile is empty`);
+        assert.ok(/role="img"/.test(tile) && /aria-label="[^"]+ · /.test(tile), `${key} ${cat}: labelled tile`);
+        if (STAGED.has(cat)) assert.ok(/s2-art-stage/.test(tile), `${key} ${cat}: drawn on the scaled stage (can not overflow)`);
+        if (cat === "banner") assert.ok(/s2-art-bk/.test(tile) && /<img class="s2-art-banner"/.test(tile), `${key} banner: whole banner over its cover`);
+        if (cat === "voice_tile") assert.ok(/s2-art-vtile/.test(tile), `${key} voice tile skin`);
+        if (cat === "join_sound") assert.ok(/s2-art-sound/.test(tile) && /s2-wave/.test(tile), `${key} join sound icon tile`);
+        if (cat === "profile_color") assert.ok(/s2-art-pcolor/.test(tile), `${key} name colour surface`);
+      });
+      assert.deepEqual(tilesOf(heroFor(detail, layout)).map((x) => (x.match(/data-cat="([a-z_]+)"/) || [])[1]), [...L.SET_PIECE_ORDER], `${key}: the 9 pieces in order`);
+    }
+  }
+  // Art missing (no banner picture, a frame with neither art nor key): type icon + name.
+  {
+    const pieces = rows.filter((r) => r.set_key === keys[0]).map((r) => ({ category: r.category, item: r.category === "banner" ? { ...r, asset_url: "", preview_url: "" } : r.category === "avatar_frame" ? { ...r, asset_url: null, preview_url: null, effect_key: null } : r }));
+    const detail = L.normalizeSet({ key: keys[0], name: { tr: "x" }, pieces, sum: 1, setPrice: 1 });
+    const tiles = tilesOf(heroFor(detail));
+    for (const cat of ["banner", "avatar_frame"]) {
+      const tile = tiles.find((x) => x.includes(`data-cat="${cat}"`));
+      assert.ok(/is-missing/.test(tile) && /<svg/.test(tile) && /s2-art-miss-name">[^<]+</.test(tile), `${cat} without art shows icon + name`);
+    }
+  }
+  // Pieces still loading: 9 shimmer tiles (aria-busy), never 9 blank boxes.
+  {
+    const c = ctx("desktop");
+    const html = m.render("vitrin", { ...c, data: { ...c.data, setDetails: {} } });
+    assert.ok(/s2-banner-slots is-loading" aria-busy="true"/.test(html), "loading strip is aria-busy");
+    assert.equal(tilesOf(html).filter((x) => /is-skel/.test(x)).length, 9, "9 skeleton tiles while loading");
+  }
+  // The prev / next arrows and the "Siradaki" chip are outside the re-mounted (keyed) block,
+  // so pressing them never unmounts the focused control (that moved the page).
+  {
+    const html = heroFor(set);
+    const anim = html.slice(html.indexOf('class="s2-banner-anim"'), html.indexOf('class="s2-row"'));
+    assert.ok(anim.length > 0 && !/s2-banner-step|s2-banner-next|s2-dots/.test(anim), "controls live outside the animated block");
+  }
+  // CSS contract: explicit tile size, absolute art, a strip that scrolls with snap instead of
+  // overflowing the hero, and no aspect-ratio / % height tiles left in the hero.
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(join(src, "styles/shop2-ui.css"), "utf8");
+  const rule = (sel) => {
+    const re = new RegExp(`(^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`);
+    return (css.match(re) || [])[2] || "";
+  };
+  assert.ok(/width:\s*var\(--s2-tile-own\)/.test(rule(".s2-slot")) && /height:\s*var\(--s2-tile-own\)/.test(rule(".s2-slot")), "tiles have an explicit size");
+  assert.ok(/position:\s*absolute/.test(rule(".s2-slot > .s2-art")) && /inset:\s*0/.test(rule(".s2-slot > .s2-art")), "tile art fills the tile absolutely");
+  assert.ok(/overflow-x:\s*auto/.test(rule(".s2-banner-slots")) && /scroll-snap-type:\s*x mandatory/.test(rule(".s2-banner-slots")), "strip scrolls sideways with snap");
+  assert.ok(/overflow:\s*hidden/.test(rule(".s2-slot")), "a tile clips to its box");
+  assert.ok(/scale\(var\(--s2-k/.test(rule(".s2-art-stage")), "the stage scales to the tile");
+  assert.ok(!/\.s2-banner-slots[^{]*\.s2-slot\s*\{[^}]*aspect-ratio/.test(css), "no aspect-ratio tiles in the hero strip");
+}
 const shell = m.renderMarket({ me: { id: "me", username: "d" }, balance: 2940, inventory: [], ownedItemIds: new Set(), allProducts: null });
 has(shell, "s2-root", "market shell renders");
 has(shell, "s2-tabs", "tab bar");

@@ -208,7 +208,11 @@ export default function Shop2Market({
 
   const setName = useCallback((set) => (set?.name && typeof set.name === "object" ? itemName({ name: set.name }) : String(set?.name || set?.key || "")), [itemName]);
 
+  // Opening a set from elsewhere (Vitrin hero, a card, "Diğer setler") lands at the set page's
+  // top; switching set in place (switcher, hero arrows, swipe, keys) never moves the pane.
+  const scrollResetRef = useRef(false);
   const openSet = useCallback((key) => {
+    scrollResetRef.current = true;
     setSetKey(key);
     setTab("sets");
   }, []);
@@ -257,6 +261,7 @@ export default function Shop2Market({
       if (off || peekShopFocus() !== p) return;
       if (setKeyOf) {
         takeShopFocus();
+        scrollResetRef.current = true;
         setSetKey(setKeyOf);
         setTab("sets");
         return;
@@ -283,6 +288,7 @@ export default function Shop2Market({
         return;
       }
       if (f.kind === "set") {
+        scrollResetRef.current = true;
         setSetKey(f.ref);
         setTab("sets");
       } else pendingFocus.current = f.ref;
@@ -419,15 +425,22 @@ export default function Shop2Market({
     setTab(id);
     if (id !== "sets") setPalette(null);
   };
-  // A new tab (or another set) starts at its top: the market shares one scroll box with
-  // every tab (the Settings pane, .us-main-scroll on phones), so "Seti incele" from the
-  // middle of Vitrin used to land in the middle of the set page.
+  // A new tab (or a set opened from elsewhere) starts at its top: the market shares one
+  // scroll box with every tab (the Settings pane, .us-main-scroll on phones), so "Seti
+  // incele" from the middle of Vitrin used to land in the middle of the set page. Changing
+  // the set in place keeps the scroll (owner report: the page jumped up on every switch).
   const firstPage = useRef(true);
+  const lastTab = useRef(tab);
   useLayoutEffect(() => {
+    const tabChanged = lastTab.current !== tab;
+    lastTab.current = tab;
+    const reset = scrollResetRef.current;
+    scrollResetRef.current = false;
     if (firstPage.current) {
       firstPage.current = false;
       return;
     }
+    if (!tabChanged && !reset) return;
     const root = rootRef.current;
     if (!root) return;
     let box = root.parentElement;

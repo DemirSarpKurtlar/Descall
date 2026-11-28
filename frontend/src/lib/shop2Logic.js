@@ -297,6 +297,50 @@ export const pieceIndex = (category) => {
   return i < 0 ? 99 : i;
 };
 
+/** Design size (px) of a piece tile's stage; fixed-size renderers are scaled from it. */
+export const SLOT_STAGE_PX = 64;
+
+/**
+ * Piece strip layout (featured set hero, set pages): one explicit square size for every tile.
+ *   width  the strip's content width (px)       count  tiles (9)
+ *   cols   columns the layout wants (3, 5, 9)   fixed  a fixed tile size (px), or 0 / NaN
+ *   min    smallest readable tile (px)          max    largest tile (px)
+ *   gap    column gap (px)
+ * Returns { tile, k, cols, rows, scroll }: k = tile / 64 (the stage scale). When `cols` tiles
+ * of the minimum size do not fit, the strip becomes one row that scrolls sideways (snap).
+ */
+export function slotStripFit({ width, count = 9, cols, fixed, min = 44, max = 84, gap = 8 } = {}) {
+  const n = Math.max(1, Math.floor(Number(count) || 9));
+  const lo = Number.isFinite(min) && min > 0 ? min : 44;
+  const hi = Number.isFinite(max) && max >= lo ? max : Math.max(lo, 84);
+  const g = Number.isFinite(gap) && gap >= 0 ? gap : 8;
+  let c = Math.max(1, Math.min(n, Math.floor(Number(cols) || n)));
+  let tile;
+  let scroll = false;
+  if (Number.isFinite(fixed) && fixed > 0) {
+    tile = Math.round(fixed);
+  } else {
+    const w = Number.isFinite(width) && width > 0 ? width : 0;
+    const each = (w - (c - 1) * g) / c;
+    if (!w) tile = lo;
+    else if (each < lo) {
+      tile = lo;
+      // Two even rows (5 + 4) when they fit at the minimum size, else one row that scrolls
+      // sideways (never a ragged 7 + 2).
+      const alt = Math.ceil(n / 2);
+      if (c > alt && (w - (alt - 1) * g) / alt >= lo) {
+        c = alt;
+        tile = Math.min(hi, Math.floor((w - (c - 1) * g) / c));
+      } else {
+        c = n;
+        scroll = true;
+      }
+    } else tile = Math.min(hi, Math.floor(each));
+  }
+  const rows = scroll ? 1 : Math.ceil(n / c);
+  return { tile, k: Math.round((tile / SLOT_STAGE_PX) * 10000) / 10000, cols: c, rows, scroll };
+}
+
 // ---------------------------------------------------------------------------
 // Set pricing.
 

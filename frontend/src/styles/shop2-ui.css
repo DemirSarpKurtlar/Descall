@@ -1404,6 +1404,112 @@ button.s2-tile:hover:not(:disabled) {
   background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--s2-accent) 22%, transparent), transparent 70%);
 }
 
+/* Piece tiles of a set ("fit": hero strip, set pages, checkout). The fixed-size renderers are
+   drawn on a 64 px stage, centred and scaled to the tile by --s2-k (tile / 64), so a frame,
+   effect ring, aura card or bubble is never cropped or pushed out at any tile size. */
+.s2-art.is-tile.is-fit {
+  --s2-k: 0.6875;
+}
+.s2-art-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%) scale(var(--s2-k, 1));
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+.is-fit .s2-art-stage .s2-art-letter {
+  font-size: var(--fs-15);
+}
+.is-fit .s2-art-frame {
+  width: 54px;
+}
+.is-fit .s2-art-badge {
+  width: 44px;
+  height: 44px;
+}
+/* The 72 x 38 mini card at 0.78 (56 px) so it and its breathing glow (up to 1.1x) stay
+   inside the 64 px stage. */
+.is-fit .s2-art-stage .spa-live.is-compact {
+  scale: 0.78;
+}
+.is-fit .s2-art-pcolor b {
+  font-size: calc(var(--fs-20) * var(--s2-k, 1));
+}
+/* Banner: the whole banner, contained (a ~3:1 picture in a square), over a blurred cover of
+   itself so the tile is still full. */
+.s2-art-bk {
+  position: absolute;
+  inset: -8px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(7px) saturate(1.25) brightness(0.8);
+  opacity: 0.9;
+}
+.s2-art-stage.is-wide {
+  width: 64px;
+}
+.s2-art-banner {
+  display: block;
+  max-width: 60px;
+  max-height: 56px;
+  width: auto;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+/* Art missing or not loading: the type icon + the item name, never an empty box. */
+.s2-art.is-missing {
+  background: radial-gradient(120% 90% at 30% 10%, rgba(88, 122, 245, 0.18), transparent 60%), #161829;
+}
+.s2-art-miss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 0 4px;
+  color: rgba(225, 230, 255, 0.82);
+  text-align: center;
+}
+.s2-art-miss > svg {
+  flex: none;
+  color: #9fb2ff;
+}
+.s2-art-miss-name {
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font: 700 var(--fs-11) / 1.15 Inter, sans-serif;
+  overflow-wrap: anywhere;
+}
+.is-fit .s2-art-miss {
+  width: 62px;
+}
+.is-card .s2-art-miss-name {
+  font-size: var(--fs-13);
+}
+.is-tile:not(.is-fit) .s2-art-miss-name {
+  display: none;
+}
+
+/* Set page while the picked set loads: the previous one stays (no collapse, no scroll jump). */
+.s2-sets.is-loading .s2-hero,
+.s2-sets.is-loading .s2-sets-grid,
+.s2-pset.is-loading > :not(.s2-pset-top):not(.s2-pset-hero) {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
 /* ---------- vitrin ---------- */
 
 .s2-vitrin {
@@ -1842,24 +1948,68 @@ button.s2-tile:hover:not(:disabled) {
   z-index: -1;
   background: linear-gradient(90deg, rgba(10, 10, 20, 0.15), rgba(10, 10, 20, 0.62) 40%, rgba(10, 10, 20, 0.72));
 }
-/* 9 set pieces: a 3 x 3 square on desktop (5 + 4 on phones, one row when the banner stacks). */
+/* 9 set pieces: a 3 x 3 square of 58 px tiles next to the text on desktop; one row of 9 when
+   the banner stacks (tablet, narrow window), 5 + 4 or a sideways scroller on phones. Every tile
+   has the same explicit size: --s2-tile comes from slotStripFit() (Shop2Vitrin useSlotStrip),
+   which reads the --s2-strip-* settings below. No tile depends on aspect-ratio + % height
+   (WebKit left those unresolved: empty, cropped, uneven tiles on the owner's iPad). */
 .s2-banner-slots {
+  --s2-strip-cols: 3;
+  --s2-strip-fixed: 58;
+  --s2-strip-min: 44;
+  --s2-strip-max: 84;
+  --s2-tile: 58px;
+  --s2-k: 0.9063;
+  --s2-cols: 3;
   display: grid;
-  grid-template-columns: repeat(3, 58px);
-  grid-auto-rows: 58px;
+  grid-template-columns: repeat(var(--s2-cols), var(--s2-tile));
+  grid-auto-rows: var(--s2-tile);
   gap: 8px;
   align-content: center;
+  justify-content: start;
   flex: none;
+  min-width: 0;
+  max-width: 100%;
+  /* Fits, or scrolls sideways with snap; never paints outside the hero. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.s2-banner-slots::-webkit-scrollbar {
+  display: none;
+}
+.s2-banner-slots.is-scroll {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--s2-tile);
+  /* the last tile peeks out under the fade, so it reads as scrollable */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
 .s2-slot {
+  --s2-tile-own: var(--s2-tile, 58px);
   position: relative;
-  display: grid;
-  place-items: center;
+  display: block;
+  width: var(--s2-tile-own);
+  height: var(--s2-tile-own);
+  min-width: 0;
   border-radius: 14px;
   background: rgba(10, 11, 20, 0.5);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
   overflow: hidden;
+  scroll-snap-align: start;
   animation: s2-rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 45ms) both;
+}
+/* The tile's art fills it exactly (absolute, so its size never depends on a % height). */
+.s2-slot > .s2-art {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
 }
 .s2-slot em {
   position: absolute;
@@ -1873,13 +2023,34 @@ button.s2-tile:hover:not(:disabled) {
   background: rgba(52, 199, 123, 0.92);
   color: #062814;
 }
+.s2-banner-slots.is-small .s2-slot em {
+  left: 3px;
+  bottom: 3px;
+  padding: 0 4px;
+  line-height: 15px;
+}
 .s2-slot.is-sm {
-  width: 44px;
-  height: 44px;
+  --s2-tile-own: 44px;
+  --s2-k: 0.6875;
   border-radius: 12px;
 }
 .s2-slot.is-owned {
   opacity: 0.86;
+}
+/* Pieces still loading: a soft shimmer, not 9 empty boxes. */
+.s2-slot.is-skel {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04) 30%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.04) 70%) 0 0 / 300% 100%, rgba(10, 11, 20, 0.5);
+  animation: s2-rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 45ms) both, s2-skel-slide 1.4s linear infinite;
+}
+@keyframes s2-skel-slide {
+  to {
+    background-position: -150% 0, 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s2-slot.is-skel {
+    animation: none;
+  }
 }
 .s2-banner-text {
   flex: 1;
@@ -1887,6 +2058,15 @@ button.s2-tile:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+/* The title block slides in on first paint; on a set change Shop2Vitrin replays it (and the
+   tiles' rise) with the Web Animations API on the same nodes, so nothing is re-mounted: focus
+   and the page scroll stay where they are. */
+.s2-banner-anim {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
   animation: s2-slidein 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .s2-banner-chips {
@@ -1932,9 +2112,7 @@ button.s2-tile:hover:not(:disabled) {
 .s2-banner {
   touch-action: pan-y;
 }
-.s2-banner.is-back .s2-banner-text {
-  animation-name: s2-slidein-back;
-}
+
 .s2-banner-nav {
   margin-left: auto;
   display: inline-flex;
@@ -1999,18 +2177,8 @@ button.s2-tile:hover:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-@keyframes s2-slidein-back {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .s2-banner.is-back .s2-banner-text {
+  .s2-banner-anim {
     animation: none;
   }
 }
@@ -6493,6 +6661,10 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
 .s2-root.is-tablet .s2-banner {
   flex-direction: column;
 }
+.s2-root.is-tablet .s2-banner-slots {
+  --s2-strip-cols: 9;
+  --s2-strip-fixed: 0;
+}
 .s2-root.is-tablet .s2-hero {
   flex-direction: column;
   align-items: stretch;
@@ -6585,11 +6757,9 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
   padding: 14px;
 }
 .s2-root.is-phone .s2-banner-slots {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-auto-rows: auto;
-}
-.s2-root.is-phone .s2-banner-slots .s2-slot {
-  aspect-ratio: 1;
+  --s2-strip-cols: 5;
+  --s2-strip-fixed: 0;
+  --s2-strip-max: 72;
 }
 /* Phone: the set switcher gets its own full-width row with 36 px prev / next targets. */
 .s2-root.is-phone .s2-banner-nav {
@@ -7133,11 +7303,8 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
     flex-direction: column;
   }
   .s2-banner-slots {
-    grid-template-columns: repeat(9, minmax(0, 1fr));
-    grid-auto-rows: auto;
-  }
-  .s2-banner-slots .s2-slot {
-    aspect-ratio: 1;
+    --s2-strip-cols: 9;
+    --s2-strip-fixed: 0;
   }
   .s2-sets-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -7204,7 +7371,8 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
     grid-column: 1 / -1;
   }
   .s2-banner-slots {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    --s2-strip-cols: 5;
+    --s2-strip-max: 72;
   }
 }
 .s2-layer-panel.s2-side {
