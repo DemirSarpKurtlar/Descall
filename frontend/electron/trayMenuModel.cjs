@@ -78,6 +78,8 @@ function normalizeAppState(raw) {
     statusText: str(r.statusText, 80),
     unreadMessages: count(r.unreadMessages),
     friendRequests: count(r.friendRequests),
+    // Taskbar / dock badge (taskbarBadge.cjs); 0 when the user turned it off or is signed out.
+    badgeCount: count(r.badgeCount),
     micMuted: Boolean(r.micMuted),
     deafened: Boolean(r.deafened),
     inCall: Boolean(r.inCall),

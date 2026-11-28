@@ -604,8 +604,15 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
                 publish_content_box(&win);
                 save_window_state_soon(&win);
             }
-            WindowEvent::Focused(true) => visibility(&win, false),
-            WindowEvent::ScaleFactorChanged { .. } => publish_content_box(&win),
+            WindowEvent::Focused(true) => {
+                visibility(&win, false);
+                // Shown again from the tray: a new taskbar button, without the overlay badge.
+                crate::taskbar::refresh(app, true);
+            }
+            WindowEvent::ScaleFactorChanged { .. } => {
+                publish_content_box(&win);
+                crate::taskbar::refresh(app, false); // badge redrawn at the new scale factor
+            }
             _ => {}
         }
     });

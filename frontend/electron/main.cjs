@@ -76,6 +76,8 @@ const trayModel = require('./trayMenuModel.cjs');
 // 4.2 taskbar jump list: Yeni mesaj, status, recent DMs (rules in jumpList.cjs).
 const jumpList = require('./jumpList.cjs');
 const { createTrayPanel } = require('./trayMenuWindow.cjs');
+// Unread badge on the taskbar button / dock, every user (Discord-like "3", "9+").
+const { createTaskbarBadge } = require('./taskbarBadge.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
 const premiumNotify = require('./premium/notifyHooks.cjs');
@@ -314,6 +316,7 @@ trustedOn('app:locale', (event, locale) => {
 trustedOn('tray:set-state', (event, raw) => {
   if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return;
   const next = trayModel.normalizeAppState(raw);
+  taskbarBadge.set(next.badgeCount);
   if (trayModel.sameAppState(next, trayAppState)) return;
   trayAppState = next;
   trayPanel?.refresh();
@@ -945,6 +948,13 @@ let isQuitting = false;
 let trayPanel = null;
 /** Latest tray state from the main page (electronAPI.setTrayState), normalised. */
 let trayAppState = trayModel.normalizeAppState({});
+/** Taskbar overlay / dock badge: the count is the page's badgeCount (tray state). */
+const taskbarBadge = createTaskbarBadge({
+  electron: { app, nativeImage, screen },
+  getWindow: () => mainWindow,
+  describe: (n) => et('tray.unread', { count: n }),
+  log,
+});
 /** Tray panel "Mute notifications": desktop cards stay quiet until this time (ms, 0 = off). */
 let notifSnoozeUntil = 0;
 const NOTIF_SNOOZE_FILE = () => path.join(app.getPath('userData'), 'notification-snooze.json');
@@ -1998,8 +2008,10 @@ function createMainWindow() {
     sendVisibility(true);
     tryBackgroundCheck('hide');
   });
-  mainWindow.on('show', () => { setStartInBackground(false); sendVisibility(false); });
-  mainWindow.on('focus', () => { setStartInBackground(false); sendVisibility(false); });
+  mainWindow.on('show', () => { setStartInBackground(false); sendVisibility(false); taskbarBadge.refresh(); });
+  mainWindow.on('focus', () => { setStartInBackground(false); sendVisibility(false); taskbarBadge.refresh(); });
+  // Another display (scale factor): the badge is redrawn at the new size.
+  mainWindow.on('moved', () => taskbarBadge.rescale());
   mainWindow.on('restore', () => { setStartInBackground(false); sendVisibility(false); });
   mainWindow.on('blur', () => {
     if (!isAppInBackground()) return;
