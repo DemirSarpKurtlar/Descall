@@ -20,6 +20,8 @@ const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
 const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts, codeLockMinutes } = require("../lib/authAttempts");
+/** auth_code_attempts purpose of wrong authenticator-app codes at sign-in. */
+const TOTP_LOGIN_PURPOSE = "2fa_totp";
 
 /**
  * Five wrong codes lock that code purpose for the rest of the rolling hour (also for
@@ -119,6 +121,7 @@ async function secondFactorGate(res, user) {
   const method = twoFactor.methodFor(user, row);
   if (!method) return false;
   if (method === "email" && (await rejectIfCodeLocked(res, user.id, "2fa_login"))) return true;
+  if (method === "totp" && (await rejectIfCodeLocked(res, user.id, TOTP_LOGIN_PURPOSE))) return true;
   const pendingToken = signPending2faToken({ id: user.id, username: user.username });
   if (method === "totp") {
     res.status(200).json({
@@ -307,6 +310,16 @@ async function issueAndSendCode({
     console.warn(`[AUTH] ${purpose} email failed`, result.error);
   }
   return result;
+}
+
+/**
+ * Google / Apple link an existing account by its address only when it is the same address
+ * (case-insensitive). An unescaped ILIKE let "_" match any character, so a verified
+ * "john_doe@outlook.com" signed in as "john.doe@outlook.com" (auth audit 28 Nov 2026).
+ */
+function sameEmail(a, b) {
+  const x = String(a || "").trim().toLowerCase();
+  return Boolean(x) && x === String(b || "").trim().toLowerCase();
 }
 
 function maskEmail(email) {
@@ -997,7 +1010,15 @@ router.post("/2fa/verify-login", async (req, res) => {
     }
     let verdict;
     if (twoFactor.methodFor(user, totpRow) === "totp") {
+      // Same persisted lock as the e-mail code (five wrong codes per rolling hour), so an
+      // attacker who has the password cannot keep guessing app codes (auth audit 28 Nov 2026).
+      if (await rejectIfCodeLocked(res, user.id, TOTP_LOGIN_PURPOSE)) return;
       const v = await twoFactor.verifySecondFactor(user.id, code, { row: totpRow });
+      if (v.ok) {
+        await clearCodeAttempts(user.id, TOTP_LOGIN_PURPOSE).catch(() => {});
+      } else if (v.reason !== "replay") {
+        await bumpCodeAttempts(user.id, TOTP_LOGIN_PURPOSE).catch(() => 0);
+      }
       verdict = v.ok ? { ok: true, via: v.via } : { ok: false, reason: v.reason === "replay" ? "replay" : "mismatch", totp: true };
     } else {
       verdict = await judgeCode({
@@ -1171,16 +1192,18 @@ router.post("/google", async (req, res) => {
     // capture their Google login. Mirrors the Sign in with Apple rule (2.9.123).
     let emailTakenUnverified = false;
     if (!user && email && emailVerified) {
-      const { data: byEmail, error: byEmailError } = await supabase
+      let { data: byEmail, error: byEmailError } = await supabase
         .from("users")
         .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`)
-        .ilike("email", email)
+        .ilike("email", escapeLike(email))
         .maybeSingle();
 
       if (byEmailError) {
-        console.error("[AUTH] Email lookup error:", byEmailError);
+        console.error("[AUTH] Email lookup error:", byEmailError?.message || byEmailError);
         return res.status(500).json({ error: "Database error." });
       }
+      // Wildcards are escaped above; the address must also be the same one (auth audit 28 Nov 2026).
+      if (byEmail && !sameEmail(byEmail.email, email)) byEmail = null;
 
       if (byEmail && !byEmail.email_confirmed_at) emailTakenUnverified = true;
       if (byEmail && byEmail.email_confirmed_at) {
@@ -1412,7 +1435,8 @@ router.post("/apple", async (req, res) => {
     // email; otherwise someone could pre-register a victim's address and capture their Apple login.
     let emailTakenUnverified = false;
     if (!user && email && !apple.isPrivateEmail) {
-      const { data: byEmail } = await supabase.from("users").select(userCols).ilike("email", email).maybeSingle();
+      let { data: byEmail } = await supabase.from("users").select(userCols).ilike("email", escapeLike(email)).maybeSingle();
+      if (byEmail && !sameEmail(byEmail.email, email)) byEmail = null;
       if (byEmail && !byEmail.email_confirmed_at) emailTakenUnverified = true;
       if (byEmail && byEmail.email_confirmed_at) {
         if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
