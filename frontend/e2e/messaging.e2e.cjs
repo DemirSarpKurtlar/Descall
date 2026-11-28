@@ -119,7 +119,8 @@ function startServer() {
     socket.on('app:ping', (ack) => { if (typeof ack === 'function') ack(Date.now()); });
     const react = (kind) => (p = {}, ack) => {
       state.events.push({ kind, ...p });
-      if (state.failReactions) { if (typeof ack === 'function') setTimeout(() => ack({ ok: false, error: 'failed' }), 120); return; }
+      // The rejection comes late enough that the optimistic chip can be seen before it, also on a loaded runner.
+      if (state.failReactions) { if (typeof ack === 'function') setTimeout(() => ack({ ok: false, error: 'failed' }), 1500); return; }
       setTimeout(() => {
         socket.emit('reaction:update', { messageId: p.messageId, emoji: p.emoji, userId: ME.id, username: ME.username, conversationType: p.conversationType, conversationId: p.conversationId, removed: kind === 'remove', clientReqId: p.clientReqId });
         if (typeof ack === 'function') ack({ ok: true });
@@ -204,12 +205,21 @@ async function reactionsOf(page, id) {
   }, id);
 }
 
-async function touchTap(cdp, x, y) {
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+// `at` (seconds since epoch) stamps the events like a real finger did them: the double-tap
+// detector reads event.timeStamp, so a loaded runner whose CDP round trips stretch the gap
+// past DOUBLE_TAP_MS no longer splits one double tap into two single taps.
+async function touchTap(cdp, x, y, at) {
+  const ts = (dt) => (at ? { timestamp: at + dt } : {});
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }], ...ts(0) });
   await sleep(40);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [], ...ts(0.04) });
 }
-async function touchDoubleTap(cdp, x, y) { await touchTap(cdp, x, y); await sleep(110); await touchTap(cdp, x + 2, y + 1); }
+async function touchDoubleTap(cdp, x, y) {
+  const at = Date.now() / 1000;
+  await touchTap(cdp, x, y, at);
+  await sleep(110);
+  await touchTap(cdp, x + 2, y + 1, at + 0.15);
+}
 async function longPress(cdp, x, y, ms = 650) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
   await sleep(ms);
@@ -259,6 +269,8 @@ async function runDevice(browser, base, dev) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e).slice(0, 300)));
   const cdp = await ctx.newCDPSession(page);
+  // DESCALL_E2E_CPU_THROTTLE=4 slows the page like a loaded CI runner (timing checks).
+  if (Number(process.env.DESCALL_E2E_CPU_THROTTLE) > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: Number(process.env.DESCALL_E2E_CPU_THROTTLE) });
   const problems = [];
   const check = (cond, msg) => { if (!cond) problems.push(`${dev}: ${msg}`); else log(`${dev}: ok - ${msg}`); };
 
@@ -370,8 +382,13 @@ async function runDevice(browser, base, dev) {
     box = await bubbleBox(page, peerId);
     if (d.touch) await touchDoubleTap(cdp, box.r - 5, box.t + box.h / 2);
     else await page.mouse.dblclick(box.r - 5, box.t + box.h / 2);
-    await sleep(60);
-    const optimistic = await reactionsOf(page, peerId);
+    // Polled until the (1.5 s late) rejection: the chip must show before the ack, not at one instant.
+    let optimistic = null;
+    for (const until = Date.now() + 1200; Date.now() < until;) {
+      optimistic = await reactionsOf(page, peerId);
+      if (optimistic && optimistic.includes('❤️1*')) break;
+      await sleep(40);
+    }
     const t = await waitFor(page, `${dev} toast`, () => {
       const el = [...document.querySelectorAll('[role="status"], [role="alert"], .toast, [class*="toast"]')].find((e) => /Tepki gönderilemedi/.test(e.textContent));
       return { ok: !!el };
