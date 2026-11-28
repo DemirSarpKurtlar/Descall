@@ -64,6 +64,80 @@ pub fn on_panic(info: &std::panic::PanicHookInfo<'_>) {
     send(out);
 }
 
+/// Native crashes (an access violation in our code, a COM callback or a DLL) never reach the
+/// panic hook: the process just vanished with nothing in main.log or Error logs. A top-level
+/// exception filter writes the same crash file (exception code, module and offset), which the
+/// next start forwards like a panic, and a main.log line. Call first thing in main().
+#[cfg(windows)]
+pub fn install_native_crash_filter() {
+    use std::ffi::c_void;
+
+    // EXCEPTION_RECORD / EXCEPTION_POINTERS (winnt.h); only code and address are read.
+    #[repr(C)]
+    #[allow(dead_code)]
+    struct ExceptionRecord {
+        code: u32,
+        flags: u32,
+        next: *mut ExceptionRecord,
+        address: *mut c_void,
+        params: u32,
+        info: [usize; 15],
+    }
+    #[repr(C)]
+    #[allow(dead_code)]
+    struct ExceptionPointers {
+        record: *mut ExceptionRecord,
+        context: *mut c_void,
+    }
+    type Filter = Option<unsafe extern "system" fn(*const ExceptionPointers) -> i32>;
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn SetUnhandledExceptionFilter(filter: Filter) -> Filter;
+    }
+
+    /// Module (file name) and offset of `addr`, best effort.
+    fn module_of(addr: *mut c_void) -> (Option<String>, Option<usize>) {
+        use windows::Win32::Foundation::HMODULE;
+        use windows::Win32::System::LibraryLoader::{GetModuleFileNameW, GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT};
+        let mut module = HMODULE::default();
+        let flags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
+        // SAFETY: with FROM_ADDRESS the "name" argument is the address itself.
+        if unsafe { GetModuleHandleExW(flags, windows_core::PCWSTR(addr as *const u16), &mut module) }.is_err() {
+            return (None, None);
+        }
+        let mut buf = [0u16; 260];
+        let n = unsafe { GetModuleFileNameW(Some(module), &mut buf) } as usize;
+        let name = (n > 0).then(|| String::from_utf16_lossy(&buf[..n.min(buf.len())]));
+        (name, (addr as usize).checked_sub(module.0 as usize))
+    }
+
+    unsafe extern "system" fn filter(info: *const ExceptionPointers) -> i32 {
+        static ONCE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        if !ONCE.swap(true, std::sync::atomic::Ordering::AcqRel) {
+            // SAFETY: Windows passes valid pointers for the duration of the filter.
+            if let Some(rec) = unsafe { info.as_ref() }.and_then(|i| unsafe { i.record.as_ref() }) {
+                let (module, offset) = module_of(rec.address);
+                let thread = std::thread::current();
+                let s = main_errors::native_crash_summary(rec.code, module.as_deref(), offset, thread.name());
+                if let Some(p) = CRASH_PATH.get() {
+                    let _ = std::fs::write(p, main_errors::encode_crash(&s, crate::state::now_ms()));
+                }
+                log::error!("[main] native crash: {} ({})", s.message, s.stack);
+                log::logger().flush();
+            }
+        }
+        0 // EXCEPTION_CONTINUE_SEARCH: Windows Error Reporting still gets the crash.
+    }
+
+    // SAFETY: plain Win32 call with a valid function pointer.
+    unsafe {
+        SetUnhandledExceptionFilter(Some(filter));
+    }
+}
+
+#[cfg(not(windows))]
+pub fn install_native_crash_filter() {}
+
 /// The page mounted (app-mounted): forward the previous run's crash and everything queued.
 pub fn attach() {
     if let Some(p) = CRASH_PATH.get() {

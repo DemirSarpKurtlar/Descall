@@ -97,6 +97,37 @@ pub fn summary(kind: &str, name: &str, message: &str) -> Summary {
     Summary { kind: cut(kind, 40), name: cut(name, 60), message: cut(&crate::secrets::redact(&scrub_paths(message)), MAX_MESSAGE), stack: String::new() }
 }
 
+/// Windows SEH codes worth a name in a crash summary.
+fn exception_name(code: u32) -> &'static str {
+    match code {
+        0xC000_0005 => "access violation",
+        0xC000_00FD => "stack overflow",
+        0xC000_0374 => "heap corruption",
+        0xC000_0409 => "stack buffer overrun / fail fast",
+        0xC000_001D => "illegal instruction",
+        0xC000_0094 => "integer divide by zero",
+        0x8000_0003 => "breakpoint",
+        0xE06D_7363 => "C++ exception",
+        _ => "native exception",
+    }
+}
+
+/// A native crash (an unhandled Windows exception: no Rust panic, so the panic hook never
+/// ran). `module`: file name or path of the module the faulting address is in (only the file
+/// name is kept), `offset`: the address relative to that module's base, which is enough to
+/// find the function in the release build's symbols.
+pub fn native_crash_summary(code: u32, module: Option<&str>, offset: Option<usize>, thread: Option<&str>) -> Summary {
+    let file = module.map(|m| m.rsplit(['\\', '/']).next().unwrap_or(m)).filter(|m| !m.is_empty());
+    let at = match (file, offset) {
+        (Some(f), Some(o)) => format!(" in {}+0x{o:x}", cut(f, 80)),
+        (Some(f), None) => format!(" in {}", cut(f, 80)),
+        _ => String::new(),
+    };
+    let message = format!("0x{code:08X} {}{at}", exception_name(code));
+    let stack = thread.filter(|t| !t.is_empty()).map(|t| format!("thread {}", cut(t, 60))).unwrap_or_default();
+    Summary { kind: "native-crash".into(), name: "NativeCrash".into(), message: cut(&message, MAX_MESSAGE), stack }
+}
+
 /// The page's text for the payload of `std::panic::PanicHookInfo`.
 pub fn payload_text(payload: &(dyn std::any::Any + Send)) -> String {
     if let Some(s) = payload.downcast_ref::<&str>() {
@@ -192,6 +223,21 @@ mod tests {
         assert_eq!(scrub_paths("index out of bounds: the len is 3 but the index is 5"), "index out of bounds: the len is 3 but the index is 5");
         // Not a drive path: a word ending in a letter before ':'.
         assert_eq!(scrub_paths("error: x"), "error: x");
+    }
+
+    #[test]
+    fn native_crashes_name_the_module_without_the_path() {
+        let s = native_crash_summary(0xC000_0005, Some(r"C:\Users\demir\AppData\Local\Descall\Descall.exe"), Some(0x1a2b3c), Some("main"));
+        assert_eq!(s.kind, "native-crash");
+        assert_eq!(s.message, "0xC0000005 access violation in Descall.exe+0x1a2b3c");
+        assert!(!s.message.contains("demir") && !s.stack.contains("demir"));
+        assert_eq!(s.stack, "thread main");
+        let s = native_crash_summary(0xC000_0409, None, None, None);
+        assert_eq!(s.message, "0xC0000409 stack buffer overrun / fail fast");
+        assert_eq!(native_crash_summary(0x1234, Some("EmbeddedBrowserWebView.dll"), None, None).message, "0x00001234 native exception in EmbeddedBrowserWebView.dll");
+        // Round trip through the crash file like a panic.
+        let back = decode_crash(&encode_crash(&native_crash_summary(0xC000_00FD, Some("x.dll"), Some(16), None), 1_000), 2_000).expect("decoded");
+        assert!(back.message.starts_with("0xC00000FD stack overflow in x.dll+0x10"), "{}", back.message);
     }
 
     #[test]
