@@ -222,6 +222,29 @@ export function setPhoneLandscapeAllowed(allowed) {
 }
 
 /**
+ * Phone call pill "Ada" (components/calls/AdaPill.jsx, lib/adaPill.js adaChrome):
+ *   statusBarHidden  the open quick panel / event bubble covers the status bar, so the
+ *                    clock and signal glyphs step aside like iOS does for the island
+ *   scrollsToTop     false while the pill is up: a tap on the island area must not also
+ *                    scroll the web view to the top
+ * iPhone app only; no-op on the web, Android and shells without the method.
+ */
+let lastIslandChrome = "";
+export function setCallIslandChrome({ statusBarHidden = false, scrollsToTop = true } = {}) {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "ios") return;
+    const key = `${Boolean(statusBarHidden)}:${Boolean(scrollsToTop)}`;
+    if (key === lastIslandChrome) return;
+    lastIslandChrome = key;
+    if (!plugin) plugin = registerPlugin("DescallDisplay");
+    plugin.setCallIsland?.({ statusBarHidden: Boolean(statusBarHidden), scrollsToTop: Boolean(scrollsToTop) })?.catch?.(() => {});
+  } catch {
+    /* older shell */
+  }
+}
+
+/**
  * keepStatusBar: the iPad app leaving the phone layout (Split View widened,
  * rotation) stays on glass-desktop, which still follows the theme for the
  * status-bar ink (watchNativeAccessibility). Only the glass-ui material goes.

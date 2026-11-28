@@ -69,3 +69,10 @@ if (IOS_NATIVE) {
     });
   }
 }
+
+// Dev-only visual QA (src/dev/glassQaBridge.js "native-call" scene); production drops it.
+if (import.meta.env?.DEV && typeof window !== "undefined") {
+  import("../dev/glassQaBridge.js")
+    .then((m) => m.bindNativeCallQa?.((raw) => store.set(raw)))
+    .catch(() => {});
+}

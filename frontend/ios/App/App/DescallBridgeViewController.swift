@@ -164,6 +164,27 @@ class DescallBridgeViewController: CAPBridgeViewController {
         statusBarDarkContent = dark
         setNeedsStatusBarAppearanceUpdate()
     }
+
+    /// Phone call pill "Ada" (DescallDisplay.setCallIsland): status bar hidden while
+    /// its panel / event bubble covers it; scroll-to-top off while the pill is up.
+    private var callIslandHidesStatusBar = false
+
+    override var prefersStatusBarHidden: Bool {
+        callIslandHidesStatusBar
+    }
+
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+        .fade
+    }
+
+    func setCallIsland(statusBarHidden: Bool, scrollsToTop: Bool) {
+        webView?.scrollView.scrollsToTop = scrollsToTop
+        guard callIslandHidesStatusBar != statusBarHidden else { return }
+        callIslandHidesStatusBar = statusBarHidden
+        UIView.animate(withDuration: 0.2) {
+            self.setNeedsStatusBarAppearanceUpdate()
+        }
+    }
 }
 
 // MARK: - Launch overlay (3.7.29: animated splash)

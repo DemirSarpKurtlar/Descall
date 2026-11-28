@@ -63,6 +63,8 @@ import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 import { World3DButton, World3DStage, useWorld3DAvailable } from "../world3d/World3DLauncher.jsx";
 import { SOCKET_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { getCallMinimized, setCallMinimized, subscribeCallMinimized } from "../lib/callMinimize";
+import { useAdaEnv } from "../hooks/useAdaEnv";
 
 /*
  * Google Meet-style call overlay
@@ -87,7 +89,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
   const callOverlayClass = callOverlayKey ? `cosmetic-call-overlay overlay-${callOverlayKey}` : "";
-  const [minimized, setMinimized] = useState(false);
+  // Shared with the phone pill (components/calls/AdaCallHost.jsx), which brings the
+  // full screen back from any screen.
+  const minimized = useSyncExternalStore(subscribeCallMinimized, getCallMinimized, getCallMinimized);
+  const setMinimized = setCallMinimized;
+  // Phone layout: the minimized call is the "Ada" pill (AdaCallHost), not the mini card.
+  const adaPhone = useAdaEnv().phone;
   // Descall+ mini mode = the draggable floating call card below. Without it (free plan, or
   // the member turned it off) a minimised call shows only a slim "Return to call" bar.
   const premium = usePremium();
@@ -241,6 +248,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   }
 
   const mode = isDm ? call.mode : "active";
+  // iOS call answered on CallKit / the lock screen (lib/nativeCallAdapter.js): audio only,
+  // runs in Swift. No camera, deafen, screen share or More menu; the second button is the
+  // audio output (native AVAudioSession routes: earpiece, loudspeaker, Bluetooth).
+  const nativeCall = Boolean(isDm && call?.native);
   const peer = isDm ? call.peer : null;
   const callType = isDm ? call.callType : groupCall.callType;
   const muted = isDm ? call.muted : groupCall.isMuted;
@@ -349,6 +360,15 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   }
 
   /* ---------- Minimized widget (2.11.1: draggable glass mini card) ---------- */
+  // Phones: AdaCallHost draws the pill in the status-bar strip; keep only the audio here.
+  if (minimized && adaPhone) {
+    return (
+      <>
+        {remoteAudio}
+        {durableScreenAudio}
+      </>
+    );
+  }
   if (minimized && !miniCard) {
     return (
       <>
@@ -879,6 +899,17 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               groups={outputMenuGroups(isDm ? call : groupCall, t)}
               controlRef={outputMenuRef}
             >
+              {nativeCall ? (
+              <CircleBtn
+                className={glass ? `g-cb${call?.iosAudioRoute?.selected === "speaker" ? " is-on" : ""}` : undefined}
+                size={narrowViewport ? 46 : 52}
+                color={call?.iosAudioRoute?.selected === "speaker" ? "#fff" : "rgba(118,118,128,0.32)"}
+                onClick={() => { hapticSelection(); outputMenuRef.current?.open(); }}
+                title={t("Audio output")}
+              >
+                <Volume2 size={narrowViewport ? 19 : 22} />
+              </CircleBtn>
+              ) : (
               <CircleBtn
                 className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
@@ -888,8 +919,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               >
                 {deafened ? <HeadphoneOff size={narrowViewport ? 19 : 22} /> : <Headphones size={narrowViewport ? 19 : 22} />}
               </CircleBtn>
+              )}
             </DockDeviceSlot>
 
+            {!nativeCall && (
             <DockDeviceSlot
               menuLabel={t("Camera")}
               sections={[
@@ -912,9 +945,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                 {cameraOn ? <Video size={narrowViewport ? 19 : 22} /> : <VideoOff size={narrowViewport ? 19 : 22} />}
               </CircleBtn>
             </DockDeviceSlot>
+            )}
 
             {/* iPhone (native app): no screen sharing, so the button is not shown. */}
-            {!screenShareUnavailableOnIos() && (
+            {!screenShareUnavailableOnIos() && !nativeCall && (
             <div
               ref={screenQualityAnchorRef}
               style={{
@@ -994,6 +1028,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             </div>
             )}
 
+            {!nativeCall && (
             <div ref={moreMenuRef} style={{ position: "relative", flexShrink: 0 }}>
               <CircleBtn
                 className={glass ? "g-cb" : undefined}
@@ -1135,6 +1170,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                 )}
               </AnimatePresence>
             </div>
+            )}
 
             </div>
 

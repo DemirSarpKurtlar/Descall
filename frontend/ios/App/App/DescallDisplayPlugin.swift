@@ -25,6 +25,7 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getAppInfo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLandscapeAllowed", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setCallIsland", returnType: CAPPluginReturnPromise),
     ]
 
     private var observers: [NSObjectProtocol] = []
@@ -98,6 +99,22 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// Installed app version for the admin panel (2.10.109):
+    /// `setCallIsland({ statusBarHidden, scrollsToTop })`: the phone call pill "Ada"
+    /// (src/components/calls/AdaPill.jsx). While its quick panel or an event bubble
+    /// covers the status bar, the clock and signal glyphs step aside (as iOS does when
+    /// the Dynamic Island expands). While the pill is up, a tap on the island area must
+    /// not also scroll the web view to the top, so the web view's scrollsToTop is off.
+    @objc func setCallIsland(_ call: CAPPluginCall) {
+        let hidden = call.getBool("statusBarHidden") ?? false
+        let scrollsToTop = call.getBool("scrollsToTop") ?? true
+        DispatchQueue.main.async {
+            if let vc = self.bridge?.viewController as? DescallBridgeViewController {
+                vc.setCallIsland(statusBarHidden: hidden, scrollsToTop: scrollsToTop)
+            }
+            call.resolve(["statusBarHidden": hidden, "scrollsToTop": scrollsToTop])
+        }
+    }
+
     /// `setLandscapeAllowed({ allowed })`: iPhone only (iPad always rotates). While a
     /// call is on screen the phone may turn sideways; otherwise it goes back to
     /// portrait. AppDelegate.application(_:supportedInterfaceOrientationsFor:) reads it.

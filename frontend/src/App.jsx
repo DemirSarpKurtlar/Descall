@@ -117,6 +117,7 @@ import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
 import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
 import { useNativeWidgets } from "./hooks/useNativeWidgets";
+import { useNativeCallAsCall } from "./hooks/useNativeCallAsCall";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -246,7 +247,8 @@ const PlusHost = lazy(() => import("./plus2/PlusHost.jsx"));
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
-const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
+// Phone in-call pill "Ada": the minimized form of every call on a phone.
+const AdaCallHost = lazy(() => import("./components/calls/AdaCallHost"));
 import CallTapCardView from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
@@ -5365,10 +5367,23 @@ export default function App() {
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
   // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
   useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
+  // iOS call answered on CallKit / the lock screen: it runs in Swift while useCall stays
+  // idle. As a useCall-shaped value it gets the full-screen call, the phone pill, the Live
+  // Activity and Siri like any DM call (lib/nativeCallAdapter.js). `call` stays the web
+  // hook everywhere else (URL sync, ringing, call back).
+  const nativeAsCall = useNativeCallAsCall(friends);
+  const uiCall = call?.mode ? call : nativeAsCall || call;
+  // The phone pill host stays mounted after the first call so the "ended" pill
+  // (duration + call back) can outlive the call it shows.
+  const anyVoiceLive = Boolean((uiCall?.mode && uiCall.mode !== "idle") || groupCall?.isInCall || serverVoice?.isInVoice || serverVoice?.connecting);
+  const [adaHostSeen, setAdaHostSeen] = useState(false);
+  useEffect(() => {
+    if (anyVoiceLive) setAdaHostSeen(true);
+  }, [anyVoiceLive]);
   // 4.2: Siri / Shortcuts / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows).
   useNativeIntents({
     me,
-    call,
+    call: uiCall,
     groupCall,
     serverVoice,
     socket: socketApi,
@@ -5397,7 +5412,7 @@ export default function App() {
   useNativeWidgets({
     me,
     friends,
-    call,
+    call: uiCall,
     groupCall,
     serverVoice,
     socket: socketApi,
@@ -6631,9 +6646,9 @@ export default function App() {
           />
         </AppLayout>
         </OnboardingProvider>
-        {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
+        {(callUiReady || (uiCall?.mode && uiCall.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
-            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />
+            <CallOverlay call={uiCall} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />
             <GroupCallIncomingModal
               incomingCall={groupCall?.incomingCall}
               onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
@@ -6684,9 +6699,24 @@ export default function App() {
             callRef.current?.startCall?.(friend, card.callType === "video" ? "video" : "voice");
           }}
         />
-        {IOS_NATIVE && me?.id ? (
+        {me?.id && (anyVoiceLive || adaHostSeen) ? (
           <Suspense fallback={null}>
-            <NativeCallCard />
+            <AdaCallHost
+              call={uiCall}
+              groupCall={groupCall}
+              serverVoice={serverVoice}
+              me={me}
+              groups={myGroups}
+              servers={myServers}
+              pathname={location.pathname}
+              navigate={navigate}
+              onReturnToCall={returnToCall}
+              onCallBack={(peer, callType) => {
+                if (!peer?.id) return;
+                const friend = friendsRef.current.find((f) => String(f.id) === String(peer.id)) || peer;
+                callRef.current?.startCall?.(friend, callType === "video" ? "video" : "voice");
+              }}
+            />
           </Suspense>
         ) : null}
         <GlassConfirmHost />

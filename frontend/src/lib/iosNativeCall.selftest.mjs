@@ -135,16 +135,27 @@ function harness(call) {
   const useCall = read("../hooks/useCall.js");
   assert.match(useCall, /if \(renegotiate === true\) return;/, "stray renegotiation offers are not rings");
   assert.match(useCall, /nativeOfferVerdict\(getNativeCallSnapshot\(\), fromUser\.id\)/);
+  // 28 Nov 2026: the fixed NativeCallCard (covered the header, no way to full screen) is
+  // gone. The native call reaches the UI as a DM-shaped call: full-screen CallOverlay,
+  // the phone "Ada" pill when minimized, Live Activity and Siri (lib/nativeCallAdapter.js).
   const app = read("../App.jsx");
-  assert.match(app, /<NativeCallCard \/>/);
-  const card = read("../components/calls/NativeCallCard.jsx");
-  for (const key of ["mute", "speaker", "end"]) assert.ok(card.includes(`t("callui.native.${key}")`), key);
+  assert.doesNotMatch(app, /NativeCallCard/);
+  assert.match(app, /const nativeAsCall = useNativeCallAsCall\(friends\)/);
+  assert.match(app, /const uiCall = call\?\.mode \? call : nativeAsCall \|\| call;/);
+  assert.match(app, /<CallOverlay call=\{uiCall\}/);
+  assert.match(app, /useNativeIntents\(\{\s*me,\s*call: uiCall,/);
+  assert.match(app, /useNativeWidgets\(\{\s*me,\s*friends,\s*call: uiCall,/);
+  assert.match(app, /<AdaCallHost[\s\S]*call=\{uiCall\}/);
+  const hook = read("../hooks/useNativeCallAsCall.js");
+  assert.match(hook, /subscribeNativeCall, getNativeCallSnapshot/);
+  assert.match(hook, /setMuted: nativeSetMuted/);
+  assert.match(hook, /hangup: nativeHangup/);
+  assert.match(hook, /useIosAudioRoute\(Boolean\(snap\.active\)\)/, "output menu = the native route that really plays");
+  const overlay = read("../components/CallOverlay.jsx");
+  assert.match(overlay, /const nativeCall = Boolean\(isDm && call\?\.native\)/);
+  assert.match(overlay, /!screenShareUnavailableOnIos\(\) && !nativeCall/);
   const { t: tr } = await import("../i18n/runtime.js");
-  assert.deepEqual(["mute", "speaker", "end"].map((k) => tr(`callui.native.${k}`)), ["Sessiz", "Hoparlör", "Kapat"]);
-  const css = read("../components/calls/NativeCallCard.css");
-  assert.match(css, /backdrop-filter: blur/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(css, /prefers-reduced-transparency: reduce/);
+  assert.deepEqual(["connecting", "reconnecting"].map((k) => tr(`callui.native.${k}`)), ["Bağlanıyor…", "Yeniden bağlanıyor…"]);
 
   const mgr = read("../../ios/App/App/DescallCallManager.swift");
   assert.match(mgr, /DescallNativeCall\.shared\.prepare\(/, "prepared on the VoIP push");
