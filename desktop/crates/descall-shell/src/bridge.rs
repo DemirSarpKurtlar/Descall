@@ -14,6 +14,15 @@ pub fn sets_ui_locale(label: &str) -> bool {
     matches!(label, "main" | "admin" | "signup-stats")
 }
 
+/// The `window.__DESCALL_BOOT__` initialization script (boot.rs, Descall+ app windows), top
+/// frame only. WebView2 runs initialization scripts in every subframe as well, and the shim
+/// (which takes the token off `window`) returns early in an iframe, so before this the session
+/// token stayed readable on `window.__DESCALL_BOOT__` of every iframe in an app window: the
+/// Cloudflare Turnstile frame, backend pages. Electron's preload never ran in subframes.
+pub fn boot_assignment(boot_json: &str) -> String {
+    format!("if (window.top === window) window.__DESCALL_BOOT__ = Object.freeze({boot_json});")
+}
+
 /// App command names a shim calls: every plain string literal in the first argument of
 /// `invoke(...)`, `fire(...)` and `winCmd(...)`, so `fire(v ? "token_set" : "token_clear")`
 /// counts both. Plugin commands (`"plugin:window|minimize"`) are left to the capability test
@@ -104,6 +113,41 @@ mod tests {
         }
         assert!(sets_ui_locale("main") && sets_ui_locale("admin") && sets_ui_locale("signup-stats"));
         assert!(!sets_ui_locale("popout-1") && !sets_ui_locale("acct-1") && !sets_ui_locale("notif-1"));
+    }
+
+    /// WebView2 runs every initialization script in subframes too (wry: "scripts are always
+    /// added to subframes"), so the boot object with the session token must only be set in the
+    /// top frame: a Turnstile or backend iframe never sees it. Run in node when it is there.
+    #[test]
+    fn boot_token_stays_out_of_iframes() {
+        let js = boot_assignment(r#"{"token":"SeCrEt","mode":"main"}"#);
+        assert!(js.starts_with("if (window.top === window) "), "{js}");
+        for (file, src) in [
+            ("boot.rs", include_str!("../../../app/src-tauri/src/boot.rs")),
+            ("multi_window.rs", include_str!("../../../app/src-tauri/src/premium/features/multi_window.rs")),
+        ] {
+            let shipped = &src[..src.find("#[cfg(test)]").unwrap_or(src.len())];
+            assert!(shipped.contains("descall_shell::bridge::boot_assignment("), "{file} builds the boot script with boot_assignment");
+            assert!(!shipped.contains("format!(\"window.__DESCALL_BOOT__"), "{file} has no unguarded boot assignment");
+        }
+        let Ok(out) = std::process::Command::new("node").arg("--version").output() else { return };
+        if !out.status.success() {
+            return;
+        }
+        let check = format!(
+            r#"
+const vm = require("vm");
+const top = {{}}; top.window = top; top.top = top;
+vm.createContext(top); vm.runInContext({js:?}, top);
+if (!top.__DESCALL_BOOT__ || top.__DESCALL_BOOT__.token !== "SeCrEt") throw new Error("top frame lost the boot object");
+const frame = {{}}; frame.window = frame; frame.top = top;
+vm.createContext(frame); vm.runInContext({js:?}, frame);
+if ("__DESCALL_BOOT__" in frame) throw new Error("iframe got the boot object");
+console.log("ok");
+"#
+        );
+        let out = std::process::Command::new("node").arg("-e").arg(check).output().unwrap();
+        assert!(out.status.success(), "{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
     }
 
     /// The token change event the shell sends is the one the shim listens for.

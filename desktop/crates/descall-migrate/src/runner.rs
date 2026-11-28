@@ -609,6 +609,15 @@ pub fn run_cleanup<S: Sys>(sys: &S, env: &Env, elevated: bool) -> CleanupResult 
     if rec.done_at_unix.is_some() {
         return CleanupResult::NothingToDo;
     }
+    // The elevated run is for the machine-wide install only, and the record (user-writable)
+    // must still be one the Commit step could have written (cleanup::record_is_consistent).
+    if elevated && !rec.needs_elevation() {
+        return CleanupResult::NothingToDo;
+    }
+    if !cleanup::record_is_consistent(&rec) {
+        sys.log("cleanup record refused: it names a folder or key that is not the old install's");
+        return CleanupResult::Failed("record_inconsistent".into());
+    }
     if !rec.should_try(now) {
         return CleanupResult::NotDue;
     }
