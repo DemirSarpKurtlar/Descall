@@ -4,8 +4,8 @@ import UIKit
 import WatchKit
 
 // SpriteKit plumbing for the action games (Raket, Prizma, Isilti): a scene that steps its
-// GameModel every frame at 60 fps, gradient textures, and a SwiftUI host with the
-// Digital Crown bound to a 0 ... 1 value.
+// GameModel every frame at 60 fps, gradient textures, and a SwiftUI host that hands the
+// Digital Crown on as relative paddle movement (CrownInput).
 
 class GameScene: SKScene {
     weak var gameModel: GameModel?
@@ -122,14 +122,21 @@ struct WatchSKSceneView: WKInterfaceObjectRepresentable {
     }
 }
 
-/// SpriteKit scene host with the Digital Crown bound to `crown` (0 ... 1) and a tap action.
+/// SpriteKit scene host with a tap action and, for the paddle games, the Digital Crown as
+/// relative input. The crown used to be bound to 0 ... 1 at high sensitivity, so a small turn
+/// crossed the whole range and the paddle jumped to an end. Now it is bound to a wide range
+/// in whole detents (CrownInput), and every change goes to `onCrown` as a share of a full
+/// sweep: `crownSpan` detents move the paddle from one end of the court to the other. The
+/// game keeps the paddle's target itself, so a restart or a resumed round never jumps.
 struct SpriteHost: View {
     let scene: SKScene
     var paused: Bool
-    @Binding var crown: Double
-    var crownEnabled = true
+    /// Detents for one full sweep across the court; nil leaves the crown unused.
+    var crownSpan: Double? = nil
+    var onCrown: (Double) -> Void = { _ in }
     var onTap: () -> Void
 
+    @State private var crown = 0.0
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -137,9 +144,19 @@ struct SpriteHost: View {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { onTap() }
-            .focusable(crownEnabled)
+            .focusable(crownSpan != nil)
             .focused($focused)
-            .digitalCrownRotation($crown, from: 0, through: 1, by: nil, sensitivity: .high, isContinuous: false, isHapticFeedbackEnabled: false)
+            .digitalCrownRotation($crown, from: -CrownInput.range, through: CrownInput.range, by: 1, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: false)
+            .onChange(of: crown) { old, new in
+                guard let span = crownSpan else { return }
+                // Far from the middle: start again at 0 (that jump moves nothing).
+                if abs(new) > CrownInput.recentreAt {
+                    crown = 0
+                    return
+                }
+                let sweep = CrownInput.sweep(delta: new - old, span: span)
+                if sweep != 0 { onCrown(sweep) }
+            }
             .onAppear { focused = true }
             .onChange(of: paused) { _, p in if !p { focused = true } }
     }

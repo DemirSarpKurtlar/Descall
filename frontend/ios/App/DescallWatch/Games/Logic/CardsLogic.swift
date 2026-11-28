@@ -101,6 +101,21 @@ struct CardsState: Codable, Equatable {
     var dealerTotal: Int { CardHand.value(dealer).total }
     var dealerUp: PlayingCard? { dealer.first }
 
+    /// Crown detents between the smallest and the largest bet (one detent = one chip of 10).
+    static let betSteps = (maxBet - minBet) / minBet
+
+    /// Bet for a crown value (0 ... 1, `betSteps` detents). The crown used to step by 0.05
+    /// over 190 points, so one detent did nothing and the steps did not land on chips.
+    static func bet(crown: Double) -> Int {
+        let v = crown.isFinite ? GameMath.clamp(crown, 0, 1) : 0
+        return minBet + Int((v * Double(betSteps)).rounded()) * minBet
+    }
+
+    /// Crown value that shows a bet.
+    static func crown(bet: Int) -> Double {
+        Double(GameMath.clamp(bet, minBet, maxBet) - minBet) / Double(maxBet - minBet)
+    }
+
     mutating func setBet(_ value: Int) {
         let step = (value / CardsState.minBet) * CardsState.minBet
         bet = GameMath.clamp(step, CardsState.minBet, min(CardsState.maxBet, max(CardsState.minBet, stack)))

@@ -479,7 +479,15 @@ struct ChessGame: Codable, Equatable {
     /// Takes back the last full move (the engine's reply and the player's move).
     mutating func takeBack() -> Bool {
         // The player's turn: take back the engine's reply too. The engine's turn: one move.
-        let count = moves.count >= 2 && !engineToMove ? 2 : (moves.isEmpty ? 0 : 1)
+        // Playing black with only the engine's opening move on the board there is nothing of
+        // the player's to take back (taking that move alone left the engine to move and
+        // nobody thinking, so the game stood still).
+        let count: Int
+        if engineToMove {
+            count = moves.isEmpty ? 0 : 1
+        } else {
+            count = moves.count >= 2 ? 2 : 0
+        }
         guard count > 0 else { return false }
         let keep = Array(moves.dropLast(count))
         var replay = ChessGame(playerWhite: playerWhite)

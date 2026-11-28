@@ -217,10 +217,12 @@ struct BlocksState: Codable, Equatable {
         return [.hardDrop(cells: rows)] + lock()
     }
 
-    /// Swap with the held piece, once per piece.
+    /// Swap with the held piece, once per piece. Empty when not allowed; `.gameOver` when the
+    /// piece that comes in has no room (it used to end the round without an event, so the
+    /// game froze with no result screen).
     @discardableResult
-    mutating func holdPiece() -> Bool {
-        guard !over, !holdUsed else { return false }
+    mutating func holdPiece() -> [BlocksEvent] {
+        guard !over, !holdUsed else { return [] }
         let current = piece.kind
         if let h = hold {
             piece = spawnPiece(h)
@@ -233,8 +235,11 @@ struct BlocksState: Codable, Equatable {
         fallTimer = 0
         lockTimer = 0
         lockResets = 0
-        if !fits(piece) { over = true }
-        return true
+        guard fits(piece) else {
+            over = true
+            return [.held, .gameOver]
+        }
+        return [.held]
     }
 
     // MARK: Time

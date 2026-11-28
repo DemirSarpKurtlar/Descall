@@ -84,7 +84,6 @@ final class RunnerModel: GameModel {
 
 struct RunnerGameView: View {
     @StateObject private var model: RunnerModel
-    @State private var crown = 0.5
 
     init(launch: GameLaunch) {
         _model = StateObject(wrappedValue: RunnerModel(launch: launch))
@@ -93,7 +92,7 @@ struct RunnerGameView: View {
     var body: some View {
         GameFrame(model: model) {
             ZStack {
-                SpriteHost(scene: model.scene, paused: !model.isRunning, crown: $crown, crownEnabled: false) { model.tap() }
+                SpriteHost(scene: model.scene, paused: !model.isRunning, onTap: { model.tap() })
                 VStack(spacing: 4) {
                     GameScoreCapsule {
                         Text("\(model.score)").font(GT.num(22))
