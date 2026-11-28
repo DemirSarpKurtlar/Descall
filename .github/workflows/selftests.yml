@@ -50,7 +50,10 @@ jobs:
   messaging-e2e:
     name: Messaging e2e (iPhone/iPad/desktop)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 20 e2e steps took 13.5-15 min after the member list and sign-up card e2e were added;
+    # 15 cut off a passing run at step 20 (2026-11-28). 25 leaves room without hiding a hang
+    # (each step still has its own script timeouts).
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: frontend
