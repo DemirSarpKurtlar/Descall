@@ -140,7 +140,8 @@ function validatePatch(patch) {
           if (typeof v[name] !== "boolean") bad(`${k}.${name}`);
           section[name] = v[name];
         }
-        out[k] = section;
+        if (k === "sales") out.sales = section;
+        else out.features = section;
         break;
       }
       case "pilotUserIds":
