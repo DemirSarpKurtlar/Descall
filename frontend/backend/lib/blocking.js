@@ -96,6 +96,15 @@ async function blockUser(userId, targetId) {
   } catch {
     /* best-effort cleanup */
   }
+  // Pending message requests go too, both ways: accepting one used to restore the
+  // friendship the block had just removed (security audit 28 Nov 2026).
+  try {
+    const { deleteMessageRequest } = require("./messageRequestStore");
+    await deleteMessageRequest(supabase, userId, targetId);
+    await deleteMessageRequest(supabase, targetId, userId);
+  } catch {
+    /* best-effort cleanup; the accept paths also check the block */
+  }
 
   return { ok: true, blockedUsers: next };
 }
