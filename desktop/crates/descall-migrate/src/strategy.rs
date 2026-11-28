@@ -129,7 +129,12 @@ pub fn choose(f: &Facts) -> Choice {
 
 /// `<dir>.legacy`, then `<dir>.legacy-2` ... (a NeedsHelp leftover must not be overwritten).
 pub fn pick_legacy(dir: &Path, exists: impl Fn(&Path) -> bool) -> Option<PathBuf> {
-    (1..=9).map(|n| if n == 1 { paths::with_suffix(dir, ".legacy") } else { paths::with_suffix(dir, &format!(".legacy-{n}")) }).find(|p| !exists(p))
+    legacy_candidates(dir).find(|p| !exists(p))
+}
+
+/// Every name [`pick_legacy`] can choose for `dir`, in order.
+pub fn legacy_candidates(dir: &Path) -> impl Iterator<Item = PathBuf> + '_ {
+    (1..=9).map(move |n| if n == 1 { paths::with_suffix(dir, ".legacy") } else { paths::with_suffix(dir, &format!(".legacy-{n}")) })
 }
 
 /// Side-by-side target: `%LOCALAPPDATA%\Programs\Descall` (the Tauri per-user default).

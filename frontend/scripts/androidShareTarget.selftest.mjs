@@ -25,6 +25,11 @@ const host = read(root, "src", "lib", "share", "shareHost.js");
 const used = new Set([...host.matchAll(/plugin\.(\w+)\(/g)].map((m) => m[1]).filter((m) => m !== "addListener"));
 for (const m of used) assert.ok(methods.has(m), `DescallShare.${m} is a @PluginMethod`);
 assert.match(java("DescallShareActivity.java"), /registerPlugin\(DescallSharePlugin\.class\)/);
+// Shared streams: never file: and never our own providers (the FileProvider serves the cache
+// dir); the rule itself is unit tested in src/test/.../share/ShareUrisTest.java.
+assert.match(plugin, /ShareUris\.accepted\(u\.getScheme\(\), u\.getAuthority\(\), ownPackage\)/, "streams() filters with ShareUris.accepted");
+assert.match(plugin, /streams\(in, ctx\.getPackageName\(\)\)/, "getPayload passes the app's own package");
+assert.doesNotMatch(plugin, /if \("content"\.equals\(s\)\) safe\.add\(u\)/, "no scheme-only filter left");
 assert.match(java("share/ShareShortcuts.java"), /CATEGORY = "com\.descall\.app\.category\.SHARE_TARGET"/);
 assert.match(java("DescallShortcutsPlugin.java"), /setCategories\(com\.descall\.app\.share\.ShareShortcuts\.categories\(\)\)/, "DM shortcuts double as Direct Share targets");
 

@@ -124,9 +124,8 @@ pub fn os_build() -> u32 {
 
 /// Find Electron's Uninstall entry (HKCU first, then HKLM; 64- and 32-bit views).
 pub fn find_electron() -> Option<crate::sys::ElectronInstall> {
-    use crate::regsnap::UNINSTALL;
-    let roots: [(Hive, &str, bool); 3] =
-        [(Hive::Hkcu, UNINSTALL, false), (Hive::Hklm, UNINSTALL, true), (Hive::Hklm, r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", true)];
+    use crate::regsnap::{UNINSTALL, UNINSTALL_WOW64};
+    let roots: [(Hive, &str, bool); 3] = [(Hive::Hkcu, UNINSTALL, false), (Hive::Hklm, UNINSTALL, true), (Hive::Hklm, UNINSTALL_WOW64, true)];
     for (hive, base, per_machine) in roots {
         for sub in subkeys(hive, base) {
             let key = format!(r"{base}\{sub}");
