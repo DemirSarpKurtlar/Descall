@@ -60,7 +60,10 @@ final class BlocksModel: GameModel {
 
     func hold() {
         guard isRunning else { return }
-        GameHaptics.play(state.holdPiece() ? .select : .wall)
+        let events = state.holdPiece()
+        GameHaptics.play(events.isEmpty ? .wall : .select)
+        // A hold into a full spawn ends the round (it used to freeze without a result).
+        handle(events)
     }
 
     private func handle(_ events: [BlocksEvent]) {

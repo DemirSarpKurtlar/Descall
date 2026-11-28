@@ -161,6 +161,8 @@ struct BrickState: Codable, Equatable {
     static let brickGap = 1.0
     static let powerSeconds = 12.0
     static let dropSpeed = 34.0
+    /// How quickly the paddle closes the gap to the crown's target (per second).
+    static let paddleFollow = 28.0
 
     var level = 0
     var bricks: [Brick]
@@ -211,6 +213,15 @@ struct BrickState: Codable, Equatable {
         paddleTarget = GameMath.clamp(half + (BrickState.width - 2 * half) * fraction, half, BrickState.width - half)
     }
 
+    /// A crown turn: `sweep` is the share of a full sweep across the court (CrownInput).
+    /// The target is clamped to the current paddle first, so a wide paddle that shrinks (or
+    /// a turn on past an end) never leaves a dead zone.
+    mutating func nudgePaddle(sweep: Double) {
+        let half = paddleWidth / 2
+        let lo = half, hi = BrickState.width - half
+        paddleTarget = GameMath.clamp(GameMath.clamp(paddleTarget, lo, hi) + sweep * (hi - lo), lo, hi)
+    }
+
     mutating func launch() -> Bool {
         guard stuck, !over else { return false }
         stuck = false
@@ -246,7 +257,10 @@ struct BrickState: Codable, Equatable {
     private mutating func stepOnce(_ dt: Double, _ events: inout [BrickEvent]) {
         let half = paddleWidth / 2
         let maxStep = 240 * dt
-        paddleX = GameMath.clamp(paddleX + GameMath.clamp(paddleTarget - paddleX, -maxStep, maxStep), half, BrickState.width - half)
+        let paddleFrom = paddleX
+        // Glides towards the crown's target (the crown moves in detents) at most 240 units/s.
+        let glide = (paddleTarget - paddleX) * min(1, BrickState.paddleFollow * dt)
+        paddleX = GameMath.clamp(paddleX + GameMath.clamp(glide, -maxStep, maxStep), half, BrickState.width - half)
         wideLeft = max(0, wideLeft - dt)
         slowLeft = max(0, slowLeft - dt)
         pierceLeft = max(0, pierceLeft - dt)
@@ -263,7 +277,7 @@ struct BrickState: Codable, Equatable {
         let speedScale = slowLeft > 0 ? 0.65 : 1
         var kept: [BrickBall] = []
         for var ball in balls {
-            moveBall(&ball, dt * speedScale, &events)
+            moveBall(&ball, dt * speedScale, paddleFrom: paddleFrom, &events)
             if ball.y < BrickState.ballRadius, ball.vy < 0, shield {
                 shield = false
                 ball.vy = abs(ball.vy)
@@ -305,23 +319,44 @@ struct BrickState: Codable, Equatable {
         }
     }
 
-    private mutating func moveBall(_ ball: inout BrickBall, _ dt: Double, _ events: inout [BrickEvent]) {
+    /// Ball against the paddle's whole rectangle (top face, thickness and both ends), swept
+    /// over one substep with the ball and the paddle both moving (Raket's contact).
+    func paddleContact(ball: (x0: Double, y0: Double, x1: Double, y1: Double), paddle: (x0: Double, x1: Double)) -> Double? {
+        let hw = paddleWidth / 2, hh = BrickState.paddleHeight / 2, r = BrickState.ballRadius
+        let py = BrickState.paddleY
+        for k in 1...8 {
+            let t = Double(k) / 8
+            let bx = ball.x0 + (ball.x1 - ball.x0) * t
+            let by = ball.y0 + (ball.y1 - ball.y0) * t
+            let px = paddle.x0 + (paddle.x1 - paddle.x0) * t
+            let dx = bx - GameMath.clamp(bx, px - hw, px + hw)
+            let dy = by - GameMath.clamp(by, py - hh, py + hh)
+            if dx * dx + dy * dy <= r * r { return t }
+        }
+        return nil
+    }
+
+    private mutating func moveBall(_ ball: inout BrickBall, _ dt: Double, paddleFrom: Double, _ events: inout [BrickEvent]) {
         let r = BrickState.ballRadius
-        let prevY = ball.y
+        let prevX = ball.x, prevY = ball.y
         ball.x += ball.vx * dt
         ball.y += ball.vy * dt
         if ball.x < r { ball.x = 2 * r - ball.x; ball.vx = abs(ball.vx); events.append(.wall) }
         if ball.x > BrickState.width - r { ball.x = 2 * (BrickState.width - r) - ball.x; ball.vx = -abs(ball.vx); events.append(.wall) }
         if ball.y > BrickState.height - r { ball.y = 2 * (BrickState.height - r) - ball.y; ball.vy = -abs(ball.vy); events.append(.wall) }
-        // Paddle: angle from where it hits, like the court's own physics.
+        // Paddle: angle from where it hits, like the court's own physics. A ball whose centre
+        // is already below the paddle's underside stays lost.
         let top = BrickState.paddleY + BrickState.paddleHeight / 2 + r
-        if ball.vy < 0, prevY >= top, ball.y < top, abs(ball.x - paddleX) <= paddleWidth / 2 + r {
+        if ball.vy < 0, let t = paddleContact(ball: (prevX, prevY, ball.x, ball.y), paddle: (paddleFrom, paddleX)),
+           prevY + (ball.y - prevY) * t >= BrickState.paddleY - BrickState.paddleHeight / 2 {
+            ball.x = GameMath.clamp(prevX + (ball.x - prevX) * t, r, BrickState.width - r)
             let offset = GameMath.clamp((ball.x - paddleX) / (paddleWidth / 2), -1, 1)
             let speed = max(baseSpeed, (ball.vx * ball.vx + ball.vy * ball.vy).squareRoot())
             let angle = offset * 1.05
             ball.vx = speed * sin(angle)
             ball.vy = speed * cos(angle)
-            ball.y = top + (top - ball.y)
+            // Leaves from the top face (mirrored when it crossed the face this step).
+            ball.y = prevY >= top ? top + (top - min(ball.y, top)) : top
             combo = 0
             events.append(.paddle)
             if stickyLeft > 0 {

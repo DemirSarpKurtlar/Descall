@@ -187,6 +187,11 @@ struct SudokuGameView: View {
             let d = Int(v.rounded())
             if d != model.digit { model.digit = max(0, min(9, d)) }
         }
+        // Selecting a filled cell picks its digit: move the crown there too, so the next
+        // turn steps from that digit instead of jumping back to the old crown position.
+        .onChange(of: model.digit) { _, d in
+            if Int(crown.rounded()) != d { crown = Double(d) }
+        }
     }
 
     private func picker(_ s: SudokuState) -> some View {

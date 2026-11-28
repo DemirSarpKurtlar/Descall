@@ -35,7 +35,11 @@ final class BricksModel: GameModel {
         publish()
     }
 
-    func setPaddle(_ f: Double) { state.setPaddle(fraction: f) }
+    /// A crown turn (share of a full sweep across the court).
+    func nudgePaddle(_ sweep: Double) {
+        guard isRunning else { return }
+        state.nudgePaddle(sweep: sweep)
+    }
 
     func tap() {
         guard isRunning else { return }
@@ -47,7 +51,11 @@ final class BricksModel: GameModel {
         let before = state.bricks.count
         for e in state.step(dt) {
             switch e {
-            case .hit, .steel: GameHaptics.play(.hit)
+            case .hit:
+                // A brick that took a hit fades: redraw (only a broken brick used to).
+                rebuild = true
+                GameHaptics.play(.hit)
+            case .steel: GameHaptics.play(.hit)
             case .broken: GameHaptics.play(.hit)
             case .paddle: GameHaptics.play(.hit)
             case .wall: break
@@ -96,7 +104,6 @@ final class BricksModel: GameModel {
 
 struct BricksGameView: View {
     @StateObject private var model: BricksModel
-    @State private var crown = 0.5
 
     init(launch: GameLaunch) {
         _model = StateObject(wrappedValue: BricksModel(launch: launch))
@@ -105,7 +112,7 @@ struct BricksGameView: View {
     var body: some View {
         GameFrame(model: model) {
             ZStack {
-                SpriteHost(scene: model.scene, paused: !model.isRunning, crown: $crown) { model.tap() }
+                SpriteHost(scene: model.scene, paused: !model.isRunning, crownSpan: CrownInput.bricksSpan, onCrown: { model.nudgePaddle($0) }) { model.tap() }
                 VStack(spacing: 4) {
                     GameScoreCapsule {
                         Text(GL.number(model.score)).font(GT.num(18))
@@ -129,7 +136,6 @@ struct BricksGameView: View {
                 ControlHint(text: GL.hint(.bricks))
             }
         }
-        .onChange(of: crown) { _, v in model.setPaddle(v) }
         .task(id: model.lastPower) {
             guard model.lastPower != nil else { return }
             try? await Task.sleep(nanoseconds: 1_800_000_000)

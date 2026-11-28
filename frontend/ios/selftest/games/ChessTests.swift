@@ -87,6 +87,17 @@ func testChess() {
     check(tb.takeBack(), "take back")
     eq(tb.moves.count, 0, "both moves taken back")
     check(tb.playerToMove, "player to move again")
+    // Playing black: after only the engine's first move there is nothing of the player's to
+    // take back. Taking the engine's move back left the engine to move with nobody thinking.
+    var black = ChessGame(playerWhite: false)
+    black.play(black.position.move(uci: "e2e4")!)
+    check(black.playerToMove, "black: player to move after the engine's first move")
+    check(!black.takeBack(), "black: the engine's opening move is not taken back alone")
+    check(black.playerToMove && black.moves.count == 1, "black: still the player's turn")
+    black.play(black.position.move(uci: "e7e5")!)
+    black.play(black.position.move(uci: "g1f3")!)
+    check(black.takeBack(), "black: take back the player's move and the reply")
+    check(black.playerToMove && black.moves.count == 1, "black: back to the player's turn")
     var resign = ChessGame()
     resign.resign()
     check(resign.playerLost && resign.result == .resigned, "resign")

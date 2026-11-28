@@ -90,4 +90,41 @@ func testBricks() {
     check(cleared.contains(.levelCleared), "level cleared (steel does not count)")
     eq(c.level, 1, "next level")
     check(c.stuck, "new level starts with the ball on the paddle")
+
+    // The paddle slides onto a ball that is already level with its thickness: a return, not
+    // a lost life (same whole-rectangle contact as Raket).
+    let half = BrickState.basePaddle / 2
+    var slide = BrickState(seed: 8)
+    _ = slide.launch()
+    slide.balls = [BrickBall(x: 50, y: BrickState.paddleY + 0.6, vx: 0, vy: -50)]
+    slide.paddleX = 50 + half + BrickState.ballRadius + 2; slide.paddleTarget = 50
+    var se: [BrickEvent] = []
+    for _ in 0..<20 { se += slide.step(1.0 / 60.0); if se.contains(.paddle) { break } }
+    check(se.contains(.paddle), "paddle sliding onto the ball returns it")
+    check(!se.contains(.lifeLost) && slide.balls.first.map { $0.vy > 0 } == true, "no life lost through the paddle")
+
+    // Crown: a full sweep of detents crosses the court; a wide paddle that shrinks back
+    // leaves no dead zone at the end.
+    var cr = BrickState(seed: 10)
+    cr.setPaddle(fraction: 0)
+    for _ in 0..<Int(CrownInput.bricksSpan) { cr.nudgePaddle(sweep: CrownInput.sweep(delta: 1, span: CrownInput.bricksSpan)) }
+    check(abs(cr.paddleTarget - (BrickState.width - half)) < 1e-9, "a full sweep reaches the far end")
+    cr.apply(.wide)
+    cr.nudgePaddle(sweep: 0.5)
+    let wideEnd = BrickState.width - cr.paddleWidth / 2
+    eq(cr.paddleTarget, wideEnd, "wide paddle stops at its own end")
+    cr.wideLeft = 0
+    cr.nudgePaddle(sweep: -1 / CrownInput.bricksSpan)
+    check(cr.paddleTarget < BrickState.width - half && cr.paddleTarget < wideEnd, "one detent back moves at once")
+
+    // Every front hit across the paddle at a 30 fps frame.
+    for offset in stride(from: -(half + BrickState.ballRadius) + 0.15, through: half + BrickState.ballRadius - 0.15, by: 0.5) {
+        var f = BrickState(seed: 9)
+        _ = f.launch()
+        f.balls = [BrickBall(x: 50 + offset, y: 40, vx: 0, vy: -f.baseSpeed)]
+        f.paddleX = 50; f.paddleTarget = 50
+        var fe: [BrickEvent] = []
+        for _ in 0..<40 { fe += f.step(1.0 / 30.0); if fe.contains(.paddle) || fe.contains(.lifeLost) { break } }
+        check(fe.contains(.paddle), "brick paddle front hit at offset \(offset)")
+    }
 }
