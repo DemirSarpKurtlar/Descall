@@ -6,7 +6,7 @@ import { createHash, webcrypto } from "node:crypto";
 import { WORDLISTS } from "./wordlists.js";
 import { makePassphrase, suggestPassphrase, secureIndex, passphraseEntropy, wordlistLocale, PASSPHRASE_WORDS } from "./passphrase.js";
 import { sha1Hex, sha1Fallback, countInRange, checkPasswordBreach, __clearBreachCache } from "./breach.js";
-import { domainChips, withDomain, emailTypoFix, identifierKind, ideasFromEmail, readiness, isEmail } from "./identity.js";
+import { domainChips, withDomain, emailTypoFix, identifierKind, loginName, ideasFromEmail, readiness, isEmail } from "./identity.js";
 import { loadCardDraft, saveCardDraft, clearCardDraft } from "./cardDraft.js";
 import { usernameIssue } from "../signupRules.js";
 
@@ -111,6 +111,16 @@ assert.equal(identifierKind("demir@gmail"), "partial");
 assert.equal(identifierKind("demir@gmail.com"), "email");
 assert.equal(identifierKind("demirkaya"), "username");
 assert.equal(identifierKind("bad name!"), "invalid");
+// Not an email -> a username lookup; reserved and older names still count (they sign in).
+assert.equal(identifierKind("admin"), "username");
+assert.equal(identifierKind("@demirkaya"), "username");
+assert.equal(identifierKind("a"), "invalid");
+assert.equal(identifierKind("abc@"), "partial", "has @ but is not an address: the email error");
+assert.equal(identifierKind("@"), "partial");
+assert.equal(identifierKind("@demir@x"), "partial");
+assert.equal(loginName("  @Demirkaya "), "Demirkaya");
+assert.equal(loginName("demir kaya"), null);
+assert.equal(loginName("x".repeat(33)), null);
 assert.equal(isEmail(" ece@outlook.com "), true);
 {
   const ideas = ideasFromEmail("demir.kaya@gmail.com", { digits: "07" });

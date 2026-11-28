@@ -73,12 +73,29 @@ export function isEmail(value) {
   return v.length <= 254 && EMAIL_RE.test(v);
 }
 
-/** The first step accepts an email or a username (existing accounts sign in by name). */
+/**
+ * The username in the first field ("@demirkaya" -> "demirkaya"), or null. Only the shape
+ * (2..32 characters, no spaces, no "@" inside), the same as the server's identify
+ * (lib/adaptiveSignup.js cleanLoginName): reserved names ("admin") and names from before
+ * today's sign-up rules still sign in.
+ */
+export function loginName(value) {
+  const v = String(value || "").trim().replace(/^@/, "");
+  if (v.length < 2 || v.length > 32 || /[\s@]/.test(v)) return null;
+  return v;
+}
+
+/**
+ * The first step accepts an email or a username (existing accounts sign in by name).
+ * email | username | partial (has "@" but is not an address yet: the email error) |
+ * invalid (cannot be anyone's username) | empty.
+ */
 export function identifierKind(value) {
   const v = String(value || "").trim();
   if (!v) return "empty";
-  if (v.includes("@")) return isEmail(v) ? "email" : "partial";
-  return usernameIssue(v) ? "invalid" : "username";
+  const atName = v.length > 1 && v.startsWith("@") && !v.includes("@", 1);
+  if (v.includes("@") && !atName) return isEmail(v) ? "email" : "partial";
+  return loginName(v) ? "username" : "invalid";
 }
 
 const TR_FOLD = { ç: "c", ğ: "g", ı: "i", İ: "i", ö: "o", ş: "s", ü: "u", â: "a", î: "i", û: "u" };

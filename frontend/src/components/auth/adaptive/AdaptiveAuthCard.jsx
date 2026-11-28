@@ -31,10 +31,10 @@ import { signInStyle } from "../../../lib/passkeys/visual.js";
 import { prepareRegister, register as registerPasskey, normalizePasskeyError, passkeyErrorKey, isSilentPasskeyError } from "../../../lib/passkeys/index.js";
 import { prewarmHumanCheck } from "../../../lib/humanCheck/turnstileClient.js";
 import { requestPasswordReset, confirmPasswordReset } from "../../../api/auth";
-import { identifyEmail, freeUsernameIdeas } from "../../../api/adaptiveSignup.js";
+import { identifyEmail, identifyUsername, freeUsernameIdeas } from "../../../api/adaptiveSignup.js";
 import { serverMessage } from "../../../i18n/serverText.js";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../../../lib/age";
-import { domainChips, withDomain, emailTypoFix, identifierKind, ideasFromEmail, readiness } from "../../../lib/adaptiveSignup/identity.js";
+import { domainChips, withDomain, emailTypoFix, identifierKind, loginName, ideasFromEmail, readiness } from "../../../lib/adaptiveSignup/identity.js";
 import { trackCardEvent } from "../../../lib/adaptiveSignup/cardEvents.js";
 import { suggestPassphrase } from "../../../lib/adaptiveSignup/passphrase.js";
 import { loadCardDraft, saveCardDraft, clearCardDraft } from "../../../lib/adaptiveSignup/cardDraft.js";
@@ -233,14 +233,47 @@ export default function AdaptiveAuthCard({
     setStartError("");
     onDismissError?.();
     const value = identifier.trim();
+    const focusField = () => document.getElementById("asu-identifier")?.focus();
+    const noAccount = t("No account has this username. To open an account, type your email.");
+    if (kind === "invalid") {
+      // No account can have this name (a space, one character): sign-up needs an email.
+      setStartError(noAccount);
+      focusField();
+      return;
+    }
     if (kind === "username") {
-      setAccount({ kind: "username", value });
-      setStep("login");
+      const name = loginName(value);
+      setIdentifying(true);
+      try {
+        const r = await identifyUsername(name, { surface });
+        if (r?.status === "registered") {
+          setAccount({ kind: "username", value: name });
+          setStep("login");
+        } else {
+          setStartError(noAccount);
+          focusField();
+        }
+      } catch (err) {
+        if (err?.status === 400) {
+          setStartError(noAccount);
+        } else if (err?.status === 403) {
+          setStartError(errText(err, t, "Something went wrong"));
+        } else if (isOfflineError(err)) {
+          setStartError(t("No connection. Try again when you are back online."));
+        } else {
+          // The lookup failed or is rate limited: the sign-in card still works (the login
+          // answers the same generic error for an unknown name).
+          setAccount({ kind: "username", value: name });
+          setStep("login");
+        }
+      } finally {
+        setIdentifying(false);
+      }
       return;
     }
     if (kind !== "email") {
-      setStartError(t("Type a valid email address."));
-      document.getElementById("asu-identifier")?.focus();
+      setStartError(kind === "empty" ? t("Type your email or username.") : t("Type a valid email address."));
+      focusField();
       return;
     }
     const email = value.toLowerCase();
@@ -610,11 +643,11 @@ export default function AdaptiveAuthCard({
             {rest.length ? <div className="asu-row2">{rest.map((p) => renderProvider(p, false))}</div> : null}
           </div>
         ) : null}
-        {providers.length ? <div className="asu-dv">{t("or with your email")}</div> : null}
+        {providers.length ? <div className="asu-dv">{t("or with your email or username")}</div> : null}
         <Field
           id="asu-identifier"
-          label={t("Email")}
-          icon={Mail}
+          label={t("Email or username")}
+          icon={kind === "username" ? User : Mail}
           state={startError ? "err" : null}
           hint={
             <>
@@ -652,7 +685,7 @@ export default function AdaptiveAuthCard({
             autoCorrect="off"
             spellCheck={false}
             maxLength={254}
-            placeholder={t("name@example.com")}
+            placeholder={t("name@example.com or username")}
             value={identifier}
             onChange={(e) => {
               setIdentifier(e.target.value);
