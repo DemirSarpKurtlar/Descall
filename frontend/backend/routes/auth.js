@@ -2123,9 +2123,14 @@ router.post("/identify", identifyBurst, async (req, res) => {
       securityEvents.note("ip_blocked", { req, reason: "identify", detail: { scope: "identify" } });
       return;
     }
+    // Both fields are parsed unconditionally (each helper returns null for a missing value);
+    // byName only picks which parsed value answers. Both paths pass the same limit, human
+    // check and access gate below.
     const byName = req.body?.email == null && req.body?.username != null;
-    const email = byName ? null : adaptive.normalizeEmail(req.body?.email);
-    const name = byName ? adaptive.cleanLoginName(req.body?.username) : null;
+    const parsedEmail = adaptive.normalizeEmail(req.body?.email);
+    const parsedName = adaptive.cleanLoginName(req.body?.username);
+    const email = byName ? null : parsedEmail;
+    const name = byName ? parsedName : null;
     if (byName && !name) return res.status(400).json({ error: CARD_ERR.badInput, code: "USERNAME_INVALID" });
     if (!byName && !email) return res.status(400).json({ error: CARD_ERR.email, code: "EMAIL_INVALID" });
     if (recentCount(key, { windowMs: adaptive.IDENTIFY_WINDOW_MS }) >= adaptive.IDENTIFY_STEPUP) {
