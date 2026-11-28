@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { serverDisplayDescription, serverDisplayName } from "../../lib/serverL10n.js";
 import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
@@ -168,7 +169,7 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
       try {
         const invite = await getDirectoryInvite(card.id);
         const data = await joinServerByInvite(invite.code);
-        toast(t("dir.discover.joined", { name: card.name }), "success");
+        toast(t("dir.discover.joined", { name: serverDisplayName(card) }), "success");
         onJoined?.(data?.server || { id: card.id, name: card.name, iconUrl: card.iconUrl });
         onClose?.();
       } catch (err) {
@@ -316,8 +317,8 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
                     <div className="dir-card-body">
                       <ServerIcon server={s} className="dir-card-icon" fallbackClassName="dir-card-icon-fallback" />
                       <div className="dir-card-row">
-                        <strong className="dir-card-name" title={s.name}>
-                          {s.name}
+                        <strong className="dir-card-name" title={serverDisplayName(s)}>
+                          {serverDisplayName(s)}
                         </strong>
                         <button
                           type="button"
@@ -337,7 +338,7 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
                         {s.onlineCount ? <span className="dir-meta-online">{t("dir.discover.online", { count: s.onlineCount })}</span> : null}
                         {s.language ? <span>{t(`dir.lang.${s.language}`)}</span> : null}
                       </span>
-                      {s.description ? <p className="dir-card-desc">{s.description}</p> : null}
+                      {s.description ? <p className="dir-card-desc">{serverDisplayDescription(s)}</p> : null}
                       {s.tags?.length ? (
                         <span className="dir-tags">
                           {s.tags.map((tag) => (

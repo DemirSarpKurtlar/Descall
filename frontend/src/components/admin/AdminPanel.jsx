@@ -63,6 +63,7 @@ import AdminNodes from "./nodes/AdminNodes.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
 import { initialTabFromQuery, sectionOfTab, withOwnerTabs } from "./adminNav.js";
 import { KeyRound } from "../ui/Icon.jsx";
+import { Globe } from "../ui/Icon.jsx";
 import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
@@ -75,6 +76,7 @@ import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
 // Duyurular (remake, Drafts C + A): board, list + inspector, composer, templates, languages.
 import AnnouncementsPage from "./announcements/AnnouncementsPage.jsx";
+import ServerTranslationsPage from "./serverL10n/ServerTranslationsPage.jsx";
 import {
   parseAppDate,
   formatAppDateTime,
@@ -116,6 +118,8 @@ const TABS = [
   { id: "promo", label: "admin.promoCodes", icon: Ticket },
   { id: "specialBadges", label: "badges.adminTab", icon: Award },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },
+  // Topluluk çevirileri (draft C): localized server content, follows the announcements permission.
+  { id: "serverTranslations", label: "srvLoc.nav", icon: Globe },
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
   { id: "moderation", label: "admin.moderation", icon: Shield },
@@ -926,6 +930,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
         {/* Duyurular (remake, owner-approved Drafts C + A): announcements/AnnouncementsPage.jsx */}
         {tab === "announcements" && <AnnouncementsPage socket={socket} onLiveCount={setAnnouncementsLive} />}
+        {/* Topluluk çevirileri (draft C): serverL10n/ServerTranslationsPage.jsx */}
+        {tab === "serverTranslations" && <ServerTranslationsPage />}
 
         {/* Oyunlar / Kredi (owner pick Draft B "Oyuncu çalışma alanı"): games/AdminGames.jsx */}
         {tab === "casino" && <AdminGames socket={socket} />}

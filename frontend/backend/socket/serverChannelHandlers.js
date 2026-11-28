@@ -474,11 +474,16 @@ async function pushChannelMessageToIos({ serverId, channelId, viewerIds, payload
     const targets = ids.filter((uid) => allLevel.has(uid) && !muted.has(uid) && !mentioned.has(uid));
     if (!targets.length) return;
     const { sendServerMessagePush } = require("../lib/webPush");
+    // Opted-in servers (draft C): the server and channel name in each device's language.
+    const namesByLang = await require("../lib/serverL10n/decorate")
+      .namesByLocale(serverId, channelId, require("../lib/locales").liveLocaleIds(), { serverName: payload.serverName })
+      .catch(() => null);
     await sendServerMessagePush(targets, {
       serverId,
       serverName: payload.serverName,
       channelId,
       channelName: payload.channelName,
+      ...(namesByLang ? { namesByLang } : {}),
       fromId: payload.senderId,
       from: payload.from,
       text: payload.text,
@@ -1014,6 +1019,8 @@ function registerServerChannelHandlers(io, socket) {
         newText: trimmed,
         editedAt,
       };
+      // An official message of a localized server: its translations are re-checked (stale).
+      require("../lib/serverL10n/store").invalidateIfLocalized(channel.server_id);
       io.to(`server-channel:${channelId}`).emit("server:channel:message:edited", payload);
       socket.emit("server:channel:message:edited", payload);
     } catch (err) {

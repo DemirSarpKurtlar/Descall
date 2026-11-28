@@ -1,0 +1,54 @@
+/* Localized server content (draft C): language marker + "Show original" toggle. Type sizes from the --fs-* scale. */
+.sl10n-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 17px;
+  padding: 0 6px 0 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(88, 122, 245, 0.42);
+  background: rgba(88, 122, 245, 0.14);
+  color: #b9c6ff;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+  flex: none;
+  user-select: none;
+}
+.sl10n-mark svg { flex: none; opacity: 0.9; }
+.sl10n-mark.is-subtle { background: transparent; border-color: rgba(185, 198, 255, 0.28); color: rgba(220, 228, 255, 0.72); }
+
+.sl10n-toggle {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  margin: 0;
+  color: #8fa7ff;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.sl10n-toggle:hover { color: #b9c6ff; text-decoration: underline; text-underline-offset: 2px; }
+.sl10n-toggle:focus-visible { outline: 2px solid rgba(88, 122, 245, 0.85); outline-offset: 2px; }
+
+.sl10n-msg { min-width: 0; }
+.sl10n-msg-foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; min-height: 18px; }
+
+.sl10n-topic { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.sl10n-topic > .sl10n-topic-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-subtitle > .sl10n-topic { display: flex; width: 100%; }
+.sl10n-topic .sl10n-mark-btn { margin-left: 0; }
+.sl10n-topic-block { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+
+.sl10n-server-chip { margin-left: 6px; }
+
+.sl10n-mark-btn { cursor: pointer; margin-left: 6px; font: inherit; font-size: var(--fs-11); font-weight: 700; }
+.sl10n-mark-btn:hover { background: rgba(88, 122, 245, 0.24); color: #dce4ff; }
+.sl10n-mark-btn:focus-visible { outline: 2px solid rgba(88, 122, 245, 0.85); outline-offset: 2px; }

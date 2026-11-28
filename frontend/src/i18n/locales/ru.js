@@ -43,6 +43,7 @@ import { AUDIT_LOG_RU } from "./auditLog.ru.js";
 import { PERF_ADMIN_RU } from "./perfAdmin.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
+import { SRV_LOC_RU } from "./srvLoc.ru.js";
 import { COINPOP_RU } from "./coinpop.ru.js";
 import { SHOP2_RU } from "./shop2.ru.js";
 import { ADMIN_SHOP2_RU } from "./adminShop2.ru.js";
@@ -108,6 +109,7 @@ export const nested = {
   "perfAdmin": PERF_ADMIN_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
+  "srvLoc": SRV_LOC_RU,
   "coinpop": COINPOP_RU,
   "shop2": SHOP2_RU,
   "adminShop2": ADMIN_SHOP2_RU,

@@ -9,6 +9,7 @@ import { isChannelMuted } from "../lib/serverChannelMutes";
 import { parseAppDate } from "../lib/datetime";
 import { parseVoiceMeta } from "../lib/voiceMessage";
 import notificationService from "../lib/notificationService";
+import { notificationNames } from "../lib/serverL10n.js";
 import { isBlockedByMe } from "../lib/blockedUsers";
 import { hapticError, hapticWarning } from "../lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailedForScope } from "../lib/messageDeleteFeedback";
@@ -408,12 +409,14 @@ export function bindServerSocketHandlers(socket, ctx) {
     // Silent send: no desktop notification either.
     if (payload.silent) return;
     // notificationService skips it while the window is focused and visible.
+    // Localized servers (draft C): the reader's language names from their server list.
+    const shownNames = notificationNames(null, payload);
     notificationService
       .serverMessage({
         serverId,
         channelId,
-        serverName: payload.serverName || null,
-        channelName: payload.channelName || null,
+        serverName: shownNames.serverName || null,
+        channelName: shownNames.channelName || null,
         from: payload.from || payload.fromUsername || null,
         text: payload.text || "",
         kind: payload.kind || "text",

@@ -90,6 +90,8 @@ const RULES = [
   [/^\/promo-codes(\/|$)/, "promo"],
   [/^\/special-badges(\/|$)/, "specialBadges"],
   [/^\/announcements(\/|$)/, "announcements"],
+  // Topluluk çevirileri (localized server content) follows the announcement languages.
+  [/^\/server-translations(\/|$)/, "announcements"],
   [/^\/(popup|broadcast)(\/|$)/, "livepopup"],
   [/^\/antibot(\/|$)/, "suspicious"],
   [/^\/access-bans(\/|$)/, "accessBans"],

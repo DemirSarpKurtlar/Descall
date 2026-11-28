@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { serverDisplayDescription, serverDisplayName } from "../../lib/serverL10n.js";
 import { motion } from "framer-motion";
 import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, RefreshCw, Ban } from "../ui/Icon.jsx";
 import { previewServerInvite, joinServerByInvite } from "../../api/servers";
@@ -162,7 +163,7 @@ export default function ServerInviteLanding({ code, me, autoJoin = false, onJoin
                 }
               />
               <div>
-                <strong data-testid="server-invite-name">{server?.name || t("Server")}</strong>
+                <strong data-testid="server-invite-name">{serverDisplayName(server) || t("Server")}</strong>
                 <span>
                   {server?.onlineCount != null
                     ? `${t("{count} online", { count: server.onlineCount })} · `
@@ -172,7 +173,7 @@ export default function ServerInviteLanding({ code, me, autoJoin = false, onJoin
                 </span>
               </div>
             </div>
-            {server?.description ? <p className="invite-landing-desc">{server.description}</p> : null}
+            {server?.description ? <p className="invite-landing-desc">{serverDisplayDescription(server)}</p> : null}
             {banned ? (
               <p className="invite-landing-error" role="alert" data-testid="server-invite-banned">
                 <Ban size={16} aria-hidden="true" />
