@@ -1,4 +1,4 @@
-const { setPendingDisplaySource, takePendingDisplaySource, buildDisplayMediaGrant } = require('./displayMediaGrant.cjs');
+const { setPendingDisplaySource, takePendingDisplaySource, buildDisplayMediaGrant, systemAudioPolicy } = require('./displayMediaGrant.cjs');
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
@@ -1637,11 +1637,13 @@ function createMainWindow() {
 
   // Make navigator.mediaDevices.getDisplayMedia work in Electron (DM/group/server).
   // Without this handler Chromium reports screen share as unsupported.
-  // 3.7.33 echo fix: the in-app picker pre-selects its source over IPC and the
-  // renderer asks getDisplayMedia for `restrictOwnAudio`, so Electron (43.4+)
-  // grants `loopbackWithoutChrome`: system audio WITHOUT Descall's own call
-  // playback. The system picker is off, it would bypass this handler and show
-  // a second picker after ours.
+  // Echo fix (3.7.33, reworked 4.2.1): the in-app picker pre-selects its source
+  // over IPC and the grant names Chromium's `loopbackWithoutChrome` device
+  // itself: system audio WITHOUT Descall's own call playback. Relying on the
+  // renderer's `restrictOwnAudio` was not enough: Chromium honours it only on
+  // Windows 11, so Windows 10 got the whole mix and friends heard themselves.
+  // The system picker is off, it would bypass this handler and show a second
+  // picker after ours.
   try {
     mainWindow.webContents.session.setDisplayMediaRequestHandler(
       async (request, callback) => {
@@ -1659,7 +1661,15 @@ function createMainWindow() {
             (pending && sources.find((s) => s.id === pending)) ||
             sources.find((s) => String(s.id || '').startsWith('screen:')) ||
             sources[0];
-          callback(buildDisplayMediaGrant(chosen, request));
+          const policy = systemAudioPolicy({ platform: process.platform, release: require('os').release() });
+          try {
+            callback(buildDisplayMediaGrant(chosen, request, policy));
+          } catch (err) {
+            // An Electron that refuses the explicit device: share video only,
+            // never the whole-system loopback.
+            log.warn('display media audio grant refused, sharing video only:', err?.message || err);
+            try { callback(buildDisplayMediaGrant(chosen, request, 'off')); } catch { /* already answered */ }
+          }
         } catch (err) {
           log.error('setDisplayMediaRequestHandler error:', err);
           callback({});
@@ -2824,10 +2834,12 @@ trustedHandle('get-screen-sources', async () => {
   }
 });
 
+// Returns { ok, audio } (truthy, like the old `true`): `audio` is the system
+// audio policy ('exclude-self' | 'off') so the renderer can say "video only".
 trustedHandle('screen-share:select-source', (_e, sourceId) => {
   if (typeof sourceId !== 'string' || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return false;
   setPendingDisplaySource(sourceId);
-  return true;
+  return { ok: true, audio: systemAudioPolicy({ platform: process.platform, release: require('os').release() }) };
 });
 
 // Security: Handle downloads

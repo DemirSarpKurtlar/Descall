@@ -23,6 +23,7 @@ use std::sync::{Arc, Mutex};
 use crate::bridge::{Lane, SourceId, StartInfo, StartRequest, UpdateRequest};
 use crate::helper::{HelperShare, HelperSpawn};
 use crate::pipeline::{self, Share, ShareRequest};
+use crate::proctree::{share_system_audio, ECHO_RISK_AUDIO_ERROR};
 use crate::presets::Quality;
 use crate::ring::{Layout, RingWriter};
 use crate::stats::StatsSnapshot;
@@ -243,10 +244,13 @@ impl ShareHost {
         let echo = if plan.audio { crate::echo_guard::audit().ok() } else { None };
         let echo_risk = echo.as_ref().map(|a| !a.safe()).unwrap_or(false);
         if echo_risk {
-            log::warn!("echo guard: WebView2 audio outside our process tree: {:?}", echo.as_ref().map(|a| &a.webview_outside_tree));
+            log::warn!("echo guard: WebView2 audio outside our process tree, sharing video only: {:?}", echo.as_ref().map(|a| &a.webview_outside_tree));
         }
         let psink = Arc::new(PipelineSink { id: plan.id, sink: sink.clone(), slot: self.active.clone() });
-        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio: plan.audio, exclude_pid: None, fixed_output: false };
+        // The guard only logged before 4.2.1 and the loopback still started, so a call played
+        // outside our tree went out in the share. Untrusted loopback = video only (lane L2).
+        let system_audio = share_system_audio(plan.audio, echo_risk);
+        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio, exclude_pid: None, fixed_output: false };
         let started = match &self.mode {
             CaptureMode::InProcess => pipeline::start(req, ring.clone(), psink).map(Running::InProcess),
             CaptureMode::Helper(spawn) => HelperShare::start(spawn.clone(), &req, plan.layout, ring.clone(), psink).map(Running::Helper),
@@ -265,6 +269,7 @@ impl ShareHost {
             Running::InProcess(s) => (s.hdr, s.has_audio(), s.audio_error.clone()),
             Running::Helper(h) => (h.ready.hdr, h.ready.audio, h.ready.audio_error.clone()),
         };
+        let audio_error = if echo_risk && plan.audio { Some(ECHO_RISK_AUDIO_ERROR.to_string()) } else { audio_error };
         let info = StartInfo {
             id: plan.id,
             bytes: plan.layout.total,

@@ -517,7 +517,8 @@
       const audioLane = s.audio ? lane : lane === "L1" ? "L2" : lane;
       announce(audioLane, { audio: Boolean(s.audio), hdr: Boolean(info.hdr), audioError: info.audioError || null, echoRisk: Boolean(info.echoRisk) });
       if (req.audio && !s.audio) {
-        notice("noAudio");
+        // echoRisk: the host turned system audio off itself (call audio outside our tree).
+        notice(info.echoRisk ? "echoOff" : "noAudio");
         if (info.audioError) console.warn("[ScreenShare] system audio unavailable:", info.audioError);
       }
       if (info.echoRisk) console.warn("[ScreenShare] echo guard: WebView2 audio outside the Descall process tree");
