@@ -29,6 +29,7 @@
 //! | `deep_link`         | (new: descall:// from argv)             | (new)                                 |
 //! | `secrets`           | (new) tokens out of main.log / reports  | (new)                                 |
 //! | `durable`           | (new) token file replace / remove       | locked target never leaves a stale token |
+//! | `taskbar_badge`     | taskbarBadge.cjs (unread overlay raster)| taskbarBadge.selftest.mjs (checksums) |
 
 pub mod bridge;
 pub mod clipboard;
@@ -51,6 +52,7 @@ pub mod pages;
 pub mod processes;
 pub mod secrets;
 pub mod snap;
+pub mod taskbar_badge;
 pub mod tray_panel;
 pub mod trust;
 pub mod watchdog;

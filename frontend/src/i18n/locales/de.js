@@ -1163,7 +1163,7 @@ export const nested = {
       },
       "taskbar_plus": {
         "name": "Taskleisten-Extras",
-        "desc": "Ungelesen-Badge und Anruftasten in der Taskleiste."
+        "desc": "Anruftasten in der Taskleisten-Vorschau."
       },
       "global_mute": {
         "name": "Globales Stummschalten",
@@ -6650,6 +6650,10 @@ export const nested = {
     "settings_downloading": "Descall {version} wird im Hintergrund heruntergeladen",
     "settings_unavailable": "Automatische Updates sind in diesem Build aus",
     "settings_lastChecked": "Zuletzt geprüft {time}",
+    "settings_badgeSection": "App-Symbol",
+    "settings_badge": "Ungelesen-Zähler am App-Symbol",
+    "settings_badgeHint": "Eine rote Zahl auf der Taskleistenschaltfläche bei ungelesenen Nachrichten, z. B. 3 oder 9+.",
+    "settings_badgeHintMac": "Eine rote Zahl am Dock-Symbol bei ungelesenen Nachrichten.",
     "confirmBody": "Du bist in einem Sprachchat. Ein Neustart beendet ihn. Descall {version} kann sich auch selbst installieren, nachdem du ihn verlassen hast.",
     "confirmLater": "Nicht jetzt",
     "confirmRestart": "Anruf beenden und neu starten",

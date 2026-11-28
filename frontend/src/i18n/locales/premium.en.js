@@ -256,7 +256,7 @@ export const PREMIUM_EN = {
     },
     "taskbar_plus": {
       "name": "Taskbar extras",
-      "desc": "Unread badge and call buttons on the taskbar."
+      "desc": "Call buttons in the taskbar preview."
     },
     "global_mute": {
       "name": "Global mute",

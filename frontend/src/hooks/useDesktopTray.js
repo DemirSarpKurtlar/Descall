@@ -1,6 +1,6 @@
 /**
  * App.jsx -> desktop tray panel (draft B). Publishes the profile / status / badge part of
- * the tray state, the voice fallback (call state from desktopBus while the bottom-left
+ * the tray state (with badgeCount, the taskbar / dock unread badge), the voice fallback (call state from desktopBus while the bottom-left
  * panel is not mounted), the mute shortcut hints and the theme, and registers the app
  * actions the panel can ask for, each through the app's existing code:
  *   status -> setStatus (App.handleStatusChange: status:set to the server, other clients
@@ -16,6 +16,7 @@ import { callSlot, runCallAction } from "../premium/desktop/desktopBus.js";
 import { getFeatureSettings, onFeatureSettings } from "../premium/featureSettings.js";
 import { getPremiumState, subscribePremium } from "../premium/premiumStore.js";
 import { overlayAvatarUrl } from "./useElectronOverlay.js";
+import { badgeCountFor, readTaskbarBadge, subscribeTaskbarBadge } from "../lib/taskbarBadgePref.js";
 
 const enabled = typeof window !== "undefined" && typeof window.electronAPI?.setTrayState === "function";
 const noopSubscribe = () => () => {};
@@ -68,10 +69,13 @@ export function useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequ
   const unreadMessages = useMemo(() => total(dmUnread) + total(groupUnread), [dmUnread, groupUnread]);
   const requests = Array.isArray(friendRequests) ? friendRequests.length : 0;
   const signedIn = Boolean(me?.id);
+  // Discord-like unread badge on the taskbar button / dock: every plan, unless turned off.
+  const badgeOn = useSyncExternalStore(enabled ? subscribeTaskbarBadge : noopSubscribe, readTaskbarBadge, readTaskbarBadge);
+  const badgeCount = badgeCountFor({ signedIn, unread: unreadMessages, enabled: badgeOn });
   useEffect(() => {
     if (!enabled) return;
-    publishTray("app", { signedIn, name, avatarUrl, status: myStatus, statusText, unreadMessages, friendRequests: requests });
-  }, [signedIn, name, avatarUrl, myStatus, statusText, unreadMessages, requests]);
+    publishTray("app", { signedIn, name, avatarUrl, status: myStatus, statusText, unreadMessages, friendRequests: requests, badgeCount });
+  }, [signedIn, name, avatarUrl, myStatus, statusText, unreadMessages, requests, badgeCount]);
 
   // Voice fallback: the active call as useElectronOverlay publishes it.
   const call = useSyncExternalStore(enabled ? callSlot.subscribe : noopSubscribe, callSlot.get, callSlot.get);

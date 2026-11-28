@@ -256,7 +256,7 @@ export const PREMIUM_TR = {
     },
     "taskbar_plus": {
       "name": "Görev çubuğu eklentileri",
-      "desc": "Görev çubuğunda okunmamış rozeti ve arama düğmeleri."
+      "desc": "Görev çubuğu önizlemesinde arama düğmeleri."
     },
     "global_mute": {
       "name": "Genel sessize alma",

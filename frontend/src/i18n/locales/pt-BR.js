@@ -1163,7 +1163,7 @@ export const nested = {
       },
       "taskbar_plus": {
         "name": "Extras da barra de tarefas",
-        "desc": "Selo de não lidas e botões de chamada na barra de tarefas."
+        "desc": "Botões de chamada na prévia da barra de tarefas."
       },
       "global_mute": {
         "name": "Silenciar global",
@@ -6650,6 +6650,10 @@ export const nested = {
     "settings_downloading": "O Descall {version} está sendo baixado em segundo plano",
     "settings_unavailable": "As atualizações automáticas estão desativadas nesta versão",
     "settings_lastChecked": "Última verificação {time}",
+    "settings_badgeSection": "Ícone do app",
+    "settings_badge": "Contador de não lidas no ícone",
+    "settings_badgeHint": "Um número vermelho no botão da barra de tarefas quando há mensagens não lidas, como 3 ou 9+.",
+    "settings_badgeHintMac": "Um número vermelho no ícone do Dock quando há mensagens não lidas.",
     "confirmBody": "Você está em um chat de voz. Reiniciar agora vai encerrá-lo. O Descall {version} também pode ser instalado sozinho depois que você sair.",
     "confirmLater": "Agora não",
     "confirmRestart": "Encerrar chamada e reiniciar",

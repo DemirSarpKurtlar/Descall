@@ -22,6 +22,7 @@ mod screenshare;
 mod secure_store;
 mod snap;
 mod state;
+mod taskbar;
 mod tray;
 mod tray_menu;
 mod webview;

@@ -21,7 +21,7 @@ export const SETTINGS_CHECKLIST = Object.freeze({
   window_opacity: ["enabled", "lead", "call", "sidebar", "popout"],
   session_restore: ["enabled", "popouts", "mini", "bounds"],
   tray_controls_plus: ["enabled", "lead"],
-  taskbar_plus: ["enabled", "badge", "buttons"],
+  taskbar_plus: ["enabled", "buttons"],
   window_layouts: ["enabled", "list", "?apply", "?delete", "name", "save"],
   advanced_window_mgmt: ["enabled", "snap", "keepVisible", "mainMonitor"],
   screen_edge_actions: ["enabled", "lead", "edge", "?needsSidebar", "delay"],

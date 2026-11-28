@@ -1163,7 +1163,7 @@ export const nested = {
       },
       "taskbar_plus": {
         "name": "Extras de la barre des tâches",
-        "desc": "Badge non lus et boutons d'appel dans la barre des tâches."
+        "desc": "Boutons d'appel dans l'aperçu de la barre des tâches."
       },
       "global_mute": {
         "name": "Sourdine globale",
@@ -6650,6 +6650,10 @@ export const nested = {
     "settings_downloading": "Descall {version} se télécharge en arrière-plan",
     "settings_unavailable": "Les mises à jour automatiques sont désactivées dans cette version",
     "settings_lastChecked": "Dernière vérification {time}",
+    "settings_badgeSection": "Icône de l'app",
+    "settings_badge": "Compteur de non-lus sur l'icône",
+    "settings_badgeHint": "Un nombre rouge sur le bouton de la barre des tâches quand tu as des messages non lus, comme 3 ou 9+.",
+    "settings_badgeHintMac": "Un nombre rouge sur l'icône du Dock quand tu as des messages non lus.",
     "confirmBody": "Tu es dans un chat vocal. Redémarrer maintenant y mettra fin. Descall {version} peut aussi s'installer tout seul une fois que tu l'auras quitté.",
     "confirmLater": "Pas maintenant",
     "confirmRestart": "Raccrocher et redémarrer",

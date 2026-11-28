@@ -181,7 +181,6 @@ function TrayControls({ t }) {
 }
 
 function TaskbarPlus({ s }) {
-  const badge = s.badge !== false;
   const buttons = s.buttons !== false;
   return (
     <Scr cls="pv-taskbar" dock={false}>
@@ -190,7 +189,7 @@ function TaskbarPlus({ s }) {
         <DsWin style={{ position: "relative", left: 0, top: 0, width: "100%", height: "62%" }} />
         <div className={`tb-btns${buttons ? "" : " is-off"}`}>{buttons ? <><span><Ico n="mic" size={10} /></span><span><Ico n="head" size={10} /></span><span className="red"><Ico n="phone" size={10} /></span></> : null}</div>
       </div>
-      <div className="pv-taskbar-bar"><i /><i /><i className="ds">{badge ? <b className="tnum">3</b> : null}</i><i /></div>
+      <div className="pv-taskbar-bar"><i /><i /><i className="ds" /><i /></div>
     </Scr>
   );
 }
@@ -867,7 +866,7 @@ export function summarize(key, raw, t) {
       case "always_on_top": return [t("premiumStory.sum.onTop", { n: ["main", "call", "sidebar", "popout"].filter((k) => (typeof s[k] === "boolean" ? s[k] : TOP_DEF[k])).length })];
       case "window_opacity": return [["call", "sidebar", "popout"].map((k) => pctT(t, (typeof s[k] === "number" ? s[k] : 1) * 100)).join(" · ")];
       case "session_restore": return [onCount(t, [s.popouts !== false, s.mini !== false, s.bounds !== false])];
-      case "taskbar_plus": return [onCount(t, [s.badge !== false, s.buttons !== false])];
+      case "taskbar_plus": return [onCount(t, [s.buttons !== false])];
       case "advanced_window_mgmt": return [onCount(t, [s.snap !== false, s.keepVisible !== false, s.mainMonitor !== false])];
       case "screen_edge_actions": return [s.edge === "left" ? t("premium.panel.edgeLeft") : t("premium.panel.edgeRight"), t("premium.panel.edgeDelayValue", { ms: [0, 250, 500, 1000].includes(s.delay) ? s.delay : 250 })];
       case "noise_gate": { const g = { ...AUDIO_DEFAULTS.noise_gate, ...s }; return [t("premiumAudio.common.db", { n: g.thresholdDb }), t("premiumAudio.common.ms", { n: g.holdMs })]; }
