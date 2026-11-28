@@ -20,9 +20,8 @@ function matches(row, filters) {
     if (type === "neq") return rowVal !== val;
     if (type === "ilike") {
       const pat = String(val);
-      // Plain value = case-insensitive equality; with an unescaped % it is a LIKE
-      // pattern (\\% / \\_ literal, _ = one character), like Postgres.
-      if (!/(^|[^\\])%/.test(pat)) return String(rowVal ?? "").toLowerCase() === pat.toLowerCase();
+      // Always a LIKE pattern, like Postgres: % = any run, _ = one character (also
+      // without a %), \\% / \\_ literal. An unescaped "a_b" matches "a.b" in production.
       let re = "";
       for (let i = 0; i < pat.length; i += 1) {
         const c = pat[i];
