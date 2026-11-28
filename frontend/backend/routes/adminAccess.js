@@ -14,6 +14,7 @@
 
 const { apiError } = require("../lib/apiError");
 const express = require("express");
+const { escapeLike } = require("../lib/usernamePolicy");
 const supabase = require("../db/supabase");
 const accessBans = require("../lib/accessBans");
 const { appendAudit } = require("../runtime/sharedState");
@@ -120,7 +121,7 @@ router.post("/access-bans", async (req, res) => {
     if (body.mode === "account") {
       let userId = String(body.userId || "");
       if (!UUID_RE.test(userId) && typeof body.username === "string" && body.username.trim()) {
-        const { data } = await supabase.from("users").select("id").ilike("username", body.username.trim().replace(/[%_]/g, "")).maybeSingle();
+        const { data } = await supabase.from("users").select("id").ilike("username", escapeLike(body.username.trim())).maybeSingle();
         userId = data?.id || "";
       }
       if (!UUID_RE.test(userId)) return res.status(400).json(apiError("User not found.", null, { code: "NOT_FOUND" }));

@@ -2,6 +2,7 @@
 
 const express = require("express");
 const supabase = require("../db/supabase");
+const { escapeLike } = require("../lib/usernamePolicy");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin, requireSuperAdmin, userIsSuperAdmin } = require("../middleware/requireAdmin");
 const state = require("../runtime/sharedState");
@@ -430,7 +431,7 @@ router.get("/users", async (req, res) => {
       .from("users")
       .select("id, username, display_name, created_at, avatar_url, is_admin, last_seen", { count: "exact" });
     if (q) {
-      query = query.ilike("username", `%${q}%`);
+      query = query.ilike("username", `%${escapeLike(q)}%`);
     }
     const { data, error, count } = await query.order("username", { ascending: true }).range(from, to);
     if (error) return res.status(500).json({ error: error.message });

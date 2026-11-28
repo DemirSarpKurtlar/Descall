@@ -507,9 +507,9 @@ function userNotFound(ctx, query, suggestions) {
 
 /** Up to 3 users whose name starts like the failed lookup (members only in a server). */
 async function suggestUsers(ctx, rawArg) {
-  const q = String(rawArg || "").trim().split(/\s+/)[0].replace(/^@/, "").replace(/[%_,()]/g, "").slice(0, 32);
+  const q = String(rawArg || "").trim().split(/\s+/)[0].replace(/^@/, "").slice(0, 32);
   if (q.length < 2) return [];
-  const { data } = await supabase.from("users").select("id, username, display_name, avatar_url").ilike("username", `${q.slice(0, Math.max(2, q.length - 1))}%`).limit(8);
+  const { data } = await supabase.from("users").select("id, username, display_name, avatar_url").ilike("username", `${escapeLike(q.slice(0, Math.max(2, q.length - 1)))}%`).limit(8);
   let rows = data || [];
   if (ctx.context === "server" && rows.length) {
     const { data: members } = await supabase.from("server_members").select("user_id").eq("server_id", ctx.serverId).in("user_id", rows.map((r) => r.id));
