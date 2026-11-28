@@ -46,7 +46,7 @@ public final class ShareStore {
     return d;
   }
 
-  static String safe(String s) {
+  public static String safe(String s) {
     String v = String.valueOf(s).replaceAll("[^A-Za-z0-9_-]", "");
     return v.isEmpty() ? "x" : (v.length() > 80 ? v.substring(0, 80) : v);
   }
