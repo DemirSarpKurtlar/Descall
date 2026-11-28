@@ -1,19 +1,19 @@
 import { useMemo, useState } from "react";
-import { Check, Coins, Copy, Gift, Share2 } from "../ui/Icon.jsx";
+import { Check, Copy, Gift, Share2 } from "../ui/Icon.jsx";
 import { inviteShortUrl } from "../../lib/inviteShare.js";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { copyText } from "../../lib/copyText.js";
+import InviteBoard from "./InviteBoard.jsx";
 
 /**
- * Shareable personal invite card with DesCoin reward copy. UI audit #12: every
- * variant (Arkadaşlar web/iPhone, Mağaza web/iPhone) shares one look: a 32px
- * brand tile with the gift icon, the title, one reward line, the link and
- * a primary "copy" plus a secondary "share".
+ * Shareable personal invite card. The friends sidebar shows InviteBoard (draft B
+ * "Kazanç panosu": live invite numbers, the link with copy and share, pending friends,
+ * the next milestone and Davet Merkezi); the store keeps its own link row.
  */
-export default function InviteCard({ username, compact = false, onCopied, onShared, variant = "friends" }) {
+export default function InviteCard({ username, onCopied, onShared, variant = "friends" }) {
   const t = useT();
   const { toast } = useToast();
   const glassShell = useGlassShell();
@@ -127,66 +127,15 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
     );
   }
 
-  if (glassShell) {
-    return (
-      <div className={`invite-card g-invite${compact ? " compact" : ""}`}>
-        <div className="g-invite-head">
-          <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
-          <div className="g-invite-copy">
-            <strong>{t("Invite friends")}</strong>
-            <span>{t("dvt.cardReward", { a: 100, b: 50 })}</span>
-          </div>
-        </div>
-        <div className="g-invite-actions">
-          <button type="button" className="g-invite-btn is-primary" onClick={copy}>
-            {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-            {copied ? t("Copied") : t("Copy link")}
-          </button>
-          <button type="button" className="g-invite-btn" onClick={share} disabled={shareBusy}>
-            <Share2 size={14} aria-hidden />
-            {t("Share")}
-          </button>
-          {centerBtn("g-invite-btn")}
-        </div>
-      </div>
-    );
-  }
-
+  // Friends sidebar (glass and classic shells): draft B "Kazanç panosu" (owner, 28 Nov 2026).
   return (
-    <div className={`invite-card${compact ? " compact" : ""}`}>
-      <div className="invite-card-header">
-        <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
-        <div>
-          <strong>{t("Invite friends")}</strong>
-          <span>{t("dvt.cardReward", { a: 100, b: 50 })}</span>
-        </div>
-      </div>
-      <div className="invite-card-link" title={url}>
-        {url.replace(/^https?:\/\//, "")}
-      </div>
-      <div className="invite-card-actions">
-        <button type="button" className="invite-card-btn primary" onClick={copy} aria-label={t("Copy link")}>
-          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-          {copied ? t("Copied") : t("Copy")}
-        </button>
-        <button
-          type="button"
-          className="invite-card-btn"
-          onClick={share}
-          disabled={shareBusy}
-          aria-busy={shareBusy || undefined}
-        >
-          <Share2 size={14} aria-hidden />
-          {t("Share")}
-        </button>
-        {centerBtn("invite-card-btn")}
-      </div>
-      {!compact && (
-        <p className="invite-card-footnote">
-          <Coins size={13} aria-hidden />
-          {t("dvt.cardRule")}
-        </p>
-      )}
-    </div>
+    <InviteBoard
+      url={url}
+      copied={copied}
+      shareBusy={shareBusy}
+      onCopy={copy}
+      onShare={share}
+      onOpenCenter={openCenter}
+    />
   );
 }
