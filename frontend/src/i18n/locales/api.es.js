@@ -20,6 +20,7 @@ export const API_ES = {
   "The security check could not be verified. Please try again.": "No se pudo confirmar la verificación de seguridad. Inténtalo de nuevo.",
   "Appeals are not available yet. Try again later.": "Las apelaciones aún no están disponibles. Inténtalo más tarde.",
   "Owner and admin accounts cannot be banned.": "Las cuentas de propietario y de administrador no se pueden banear.",
+  "This action cannot be used on an owner or admin account.": "Esta acción no se puede usar en cuentas de propietario o de administrador.",
   "Could not load appeals.": "No se pudieron cargar las apelaciones.",
   "Invalid appeal.": "Apelación no válida.",
   "Choose accept or reject.": "Elige aceptar o rechazar.",

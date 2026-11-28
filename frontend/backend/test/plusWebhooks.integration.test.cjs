@@ -205,6 +205,8 @@ async function main() {
       assert(r.status === 503, "apple not configured -> 503");
       env.APPLE_IAP_ENABLED = "1";
       env.APPLE_BUNDLE_ID = "com.descall.app";
+      // The fixtures are Sandbox transactions: a test server opts in (production is the default).
+      env.APPLE_ENVIRONMENT = "Sandbox";
       const txInfo = jws({ transactionId: "2000001", originalTransactionId: "2000001", productId: "com.descall.app.plus.monthly", bundleId: "com.descall.app", appAccountToken: CK_APPLE, price: 74990, currency: "TRY", expiresDate: Date.now() + 30 * 86400000, environment: "Sandbox", type: "Auto-Renewable Subscription" }, chain);
       const note = { notificationType: "SUBSCRIBED", subtype: "INITIAL_BUY", notificationUUID: "n-uuid-1", data: { bundleId: "com.descall.app", environment: "Sandbox", signedTransactionInfo: txInfo } };
       const body = JSON.stringify({ signedPayload: jws(note, chain) });

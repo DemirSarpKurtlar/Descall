@@ -86,10 +86,20 @@ router.post("/paddle", raw, async (req, res) => {
 async function confirmIyzico({ token, checkoutId, cfg }) {
   const { data: checkout } = await require("../db/supabase").from("premium_checkouts").select("*").eq("id", checkoutId).maybeSingle();
   if (!checkout) return null;
-  const res = checkout.kind === "self" ? await providers.iyzico.retrieveSubscription(token) : await providers.iyzico.retrievePayment(token);
-  const ok = checkout.kind === "self" ? (res?.data?.subscriptionStatus === "ACTIVE" || res?.status === "success") : res?.paymentStatus === "SUCCESS";
-  if (!ok) return { provider: "iyzico", eventId: `cb:${token}`, type: "payment_failed", checkoutId: checkout.id };
+  // While the checkout waits for payment, provider_ref is the token its initialize call returned.
+  if (checkout.status !== "paid" && checkout.provider_ref && checkout.provider_ref !== token) return { mismatch: true };
   const key = checkout.kind === "self" ? `${checkout.plan}_${checkout.period}` : `gift_${checkout.plan}_${checkout.months}`;
+  const res = checkout.kind === "self" ? await providers.iyzico.retrieveSubscription(token) : await providers.iyzico.retrievePayment(token);
+  // The callback is unsigned (checkout id from the URL, token from the form): the token must be
+  // one iyzico issued for THIS checkout, or a cheap paid token would pay a dear checkout. A
+  // one-time payment carries our basketId (= checkout id); a subscription carries the pricing
+  // plan, which must be this checkout's. "status: success" alone only means the call worked.
+  const bound = checkout.kind === "self"
+    ? Boolean(res?.data?.pricingPlanReferenceCode) && res.data.pricingPlanReferenceCode === cfg?.products?.iyzico?.[key]
+    : String(res?.basketId || "") === String(checkout.id);
+  if (!bound) return { mismatch: true };
+  const ok = checkout.kind === "self" ? res?.data?.subscriptionStatus === "ACTIVE" : res?.paymentStatus === "SUCCESS";
+  if (!ok) return { provider: "iyzico", eventId: `cb:${token}`, type: "payment_failed", checkoutId: checkout.id };
   return {
     provider: "iyzico",
     eventId: `cb:${token}`,
@@ -119,6 +129,7 @@ router.post("/iyzico", raw, async (req, res) => {
   if (ev.token && ev.checkoutId && ev.type === "purchase") {
     const confirmed = await confirmIyzico({ token: ev.token, checkoutId: ev.checkoutId, cfg }).catch(() => null);
     if (!confirmed) return res.status(500).json({ ok: false, error: "retry" });
+    if (confirmed.mismatch) return res.json({ ok: false, error: "token_mismatch" });
     return run(res, confirmed, cfg);
   }
   return run(res, ev, cfg);
@@ -158,8 +169,9 @@ router.post("/iyzico/callback", express.urlencoded({ extended: false, limit: "16
   try {
     const cfg = await config.load();
     const ev = await confirmIyzico({ token, checkoutId, cfg });
-    if (ev) await fulfil(ev, { cfg });
-    return res.send(donePage(Boolean(ev && ev.type !== "payment_failed"), pageLang(req)));
+    if (!ev || ev.mismatch) return res.status(400).send(donePage(false, pageLang(req)));
+    await fulfil(ev, { cfg });
+    return res.send(donePage(ev.type !== "payment_failed", pageLang(req)));
   } catch (err) {
     console.warn("[plus/webhook] iyzico callback:", err?.code || "error");
     return res.status(500).send(donePage(false, pageLang(req)));
