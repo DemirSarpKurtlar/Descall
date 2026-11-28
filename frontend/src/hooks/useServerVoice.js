@@ -70,7 +70,7 @@ import {
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
-import { isVoiceMicError, voiceMicErrorCopy } from "../lib/voiceMicError";
+import { isVoiceMicError, voiceMicErrorCopy, voiceMicErrorToast } from "../lib/voiceMicError";
 import {
   adoptLateScreenShare,
   classifyLiveKitTrack,
@@ -1617,7 +1617,15 @@ export function useServerVoice(socket) {
           : err?.message
             || (joinStep === "mic" ? "Could not access the microphone." : "Could not connect to the voice server.");
         setError(msg);
-        if (isVoiceMicError(err)) toast(tRuntime(msg), "error");
+        // A refused microphone: "Allow" asks again and rejoins (iOS: Open Settings).
+        if (isVoiceMicError(err)) {
+          voiceMicErrorToast(err, {
+            toast,
+            t: tRuntime,
+            askMessage: "Microphone permission required",
+            retry: () => joinRef.current?.(serverId, channel),
+          });
+        }
       } finally {
         if (joinedTokenWaiterRef.current?.channelId === channel.id) joinedTokenWaiterRef.current = null;
         if (stillJoining()) setConnecting(false);
@@ -2009,6 +2017,8 @@ export function useServerVoice(socket) {
         // Full OS picker on desktop (window / screen / tab), DES-10.
         preferTab: false,
         pickSource: showElectronScreenPicker,
+        // "Video only": this PC cannot leave the call out of system audio.
+        notify: (msg) => toastRef.current?.(msg, "info"),
       });
       const screenTrack = stream.getVideoTracks()[0];
       await optimizeScreenShareTrack(screenTrack, {

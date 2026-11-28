@@ -1819,12 +1819,15 @@ export function useCall(socket, callOccupancyRef = null) {
       if (crossedOfferRef.current) await takeCrossedOfferRef.current?.();
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
-      voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff });
+      // "Allow" asks for the microphone again and, once allowed, places this call.
+      voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff, retry: () => startCallRef.current?.(friend, type) });
       cleanup();
     } finally {
       dialingRef.current = false;
     }
   }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
+  const startCallRef = useRef(startCall);
+  startCallRef.current = startCall;
 
   const acceptIncoming = useCallback(async (opts) => {
     // iOS: an in-app Accept while CallKit owns the ring is answered on CallKit
@@ -2175,6 +2178,8 @@ export function useCall(socket, callOccupancyRef = null) {
         // Full OS picker on desktop (window / screen / tab), DES-10.
         preferTab: false,
         pickSource: showElectronScreenPicker,
+        // "Video only": this PC cannot leave the call out of system audio.
+        notify: (msg) => toastRef.current?.(msg, "info"),
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];

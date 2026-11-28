@@ -77,7 +77,7 @@ import {
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
-import { voiceMicErrorCopy } from "../lib/voiceMicError";
+import { voiceMicErrorToast } from "../lib/voiceMicError";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
 import { createGroupRingback } from "../lib/groupRingback";
@@ -1056,7 +1056,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     } catch (err) {
       groupTelemetryRef.current?.finish("failed");
-      toast(tRuntime(voiceMicErrorCopy(err)), "error");
+      voiceMicErrorToast(err, { toast, t: tRuntime, askMessage: "Microphone permission required" });
       cleanup();
     }
   }, [cleanup, setupPeerConnection, toast]);
@@ -1133,7 +1133,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     } catch (err) {
       groupTelemetryRef.current?.finish("failed");
-      toast(tRuntime(voiceMicErrorCopy(err)), "error");
+      voiceMicErrorToast(err, { toast, t: tRuntime, askMessage: "Microphone permission required" });
       cleanup();
     }
   }, [cleanup, isInCall, toast]);
@@ -1405,6 +1405,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         // Full OS picker on desktop (window / screen / tab), DES-10.
         preferTab: false,
         pickSource: showElectronScreenPicker,
+        // "Video only": this PC cannot leave the call out of system audio.
+        notify: (msg) => toastRef.current?.(msg, "info"),
       });
       
       const screenTrack = stream.getVideoTracks()[0];
@@ -2364,7 +2366,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
       } catch (err) {
         cleanup();
-        toast(tRuntime(voiceMicErrorCopy(err)), "error");
+        voiceMicErrorToast(err, { toast, t: tRuntime, askMessage: "Microphone permission required" });
       }
     };
 
@@ -2809,7 +2811,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       socketRef.current.emit("group:call:join", { groupId, callType: type });
     } catch (err) {
       cleanup();
-      toast(tRuntime(voiceMicErrorCopy(err)), "error");
+      voiceMicErrorToast(err, { toast, t: tRuntime, askMessage: "Microphone permission required" });
     }
   }, [cleanup, setupPeerConnection, toast]);
 
