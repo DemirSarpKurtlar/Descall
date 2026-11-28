@@ -3097,6 +3097,7 @@ export const nested = {
       "timeoutTitle": "Du wurdest stummgeschaltet"
     },
     "onb": {
+      "joinWelcome": "Willkommen {user} bei **{server}**!",
       "rehberWelcome": "Willkommen {user}! Sag hallo in #{channel}: schreib deinen Namen und wofür du dich interessierst, das Willkommensteam antwortet in wenigen Minuten."
     },
     "opt": {
