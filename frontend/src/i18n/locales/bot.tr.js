@@ -284,6 +284,7 @@ export const BOT_TR = {
     countDesc: "Silinecek mesaj sayısı (1–100).",
   },
   onb: {
+    joinWelcome: "**{server}** sunucusuna hoş geldin {user}!",
     rehberWelcome: "Hoş geldin {user}! #{channel} kanalında kendini tanıt: adını ve nelerle ilgilendiğini yaz, karşılama ekibi birkaç dakikada yanıt verir.",
   },
 };

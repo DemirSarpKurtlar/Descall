@@ -34,9 +34,8 @@ async function postWelcomeMessage(io, server, userId) {
     console.warn("[ServerJoin] welcome user lookup failed:", error.message);
   }
 
-  const label = user?.display_name || user?.username || "there";
-  void label;
-  const content = `Welcome <@${userId}> to **${server.name}**!`;
+  const { mentionText } = require("./mentionText");
+  const { put } = require("./botText");
   const now = new Date().toISOString();
   const message = {
     id: `welcome-${Date.now()}-${userId}`,
@@ -44,14 +43,16 @@ async function postWelcomeMessage(io, server, userId) {
     channel_id: channelId,
     sender_id: APP_BOT.id,
     sender: { ...APP_BOT },
-    content,
-    text: content,
     type: "system",
     isBot: true,
     isAppMessage: true,
     created_at: now,
     timestamp: now,
   };
+  // "@username" renders as a mention chip; the reader sees it in their own language
+  // (English fallback for old clients), like the Rehber greeting.
+  put(message, "content", "bot.onb.joinWelcome", { user: mentionText(user || {}), server: String(server.name || "") });
+  message.text = message.content;
 
   const payload = { serverId: server.id, channelId, message };
   io.to(`server-channel:${channelId}`).emit("server:channel:message", payload);
