@@ -14,6 +14,8 @@ const NUMBER_FIELDS = Object.freeze([
   "tokenMs", "lkConnectMs", "lkFirstAudioMs", "published", "urlProbeMs",
   // Server voice link health (voice-drops-05): counts per session, length in seconds.
   "sockDrops", "pcFailed", "iceRestarts", "rebuilds", "sessionS",
+  // 27 Nov 2026: own ICE re-sent to a peer that came online late / remote candidates received.
+  "iceReplay", "remoteIce",
 ]);
 const STRING_FIELDS = Object.freeze([
   "kind", "direction", "callType", "result", "platform", "pair", "path", "push", "entry", "media", "tokenError", "dropReason",

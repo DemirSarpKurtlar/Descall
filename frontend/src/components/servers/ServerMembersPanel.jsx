@@ -10,6 +10,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
+import { BoostMark, useBoosterIds } from "../../plus2/PlusBits.jsx";
 import { CountryBadge } from "../shop/CountryFlag";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -329,6 +330,23 @@ export default function ServerMembersPanel({
     return { sections, offline: offlineList };
   }, [decorated, hoistRoles, t]);
 
+  // Descall+ 2.0 (moment 7): a "Takviye edenler" group on top (the owner can turn it off) and the
+  // boost mark next to boosters' names. Empty while boosts are off.
+  const { ids: boosterIds, showGroup: showBoosters } = useBoosterIds(server?.id);
+  const boostSections = useMemo(() => {
+    if (!showBoosters || !boosterIds.size) return memberSections;
+    const isB = (m) => boosterIds.has(String(m.userId));
+    const boosters = [...memberSections.sections.flatMap((sec) => sec.members), ...memberSections.offline].filter(isB);
+    if (!boosters.length) return memberSections;
+    const sections = memberSections.sections
+      .map((sec) => ({ ...sec, members: sec.members.filter((m) => !isB(m)) }))
+      .filter((sec) => sec.members.length);
+    return {
+      sections: [{ key: "plus-boosters", label: t("plus2.members.boosters", { n: boosters.length }), members: boosters, boosters: true }, ...sections],
+      offline: memberSections.offline.filter((m) => !isB(m)),
+    };
+  }, [memberSections, boosterIds, showBoosters, t]);
+
   const openMenu = (e, member) => {
     e.preventDefault();
     e.stopPropagation();
@@ -534,6 +552,7 @@ export default function ServerMembersPanel({
           <CountryBadge user={m.user || m} item={m.user?.equippedCountry || m.equippedCountry} compact />
           <AdminBadge user={m.user} variant="inline" />
           <PremiumBadge user={m.user} variant="inline" />
+          {boosterIds.has(String(m.userId)) ? <BoostMark title={t("plus2.members.boosting")} /> : null}
           {m.isOwner && (
             <span className="member-owner-badge" title={t("Owner")}>
               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />
@@ -599,7 +618,7 @@ export default function ServerMembersPanel({
           />
         ) : (
           <>
-            {memberSections.sections.map((section) => (
+            {boostSections.sections.map((section) => (
               <section key={section.key} className="members-section">
                 <h5
                   className="members-section-label"
@@ -611,12 +630,12 @@ export default function ServerMembersPanel({
                 <div className="members-section-list">{section.members.map(renderRow)}</div>
               </section>
             ))}
-            {memberSections.offline.length > 0 && (
+            {boostSections.offline.length > 0 && (
               <section className="members-section">
                 <h5 className="members-section-label">
-                  {t("Offline, {count}", { count: memberSections.offline.length })}
+                  {t("Offline, {count}", { count: boostSections.offline.length })}
                 </h5>
-                <div className="members-section-list">{memberSections.offline.map(renderRow)}</div>
+                <div className="members-section-list">{boostSections.offline.map(renderRow)}</div>
               </section>
             )}
             {decorated.length === 0 && <p className="members-empty">{t("No members")}</p>}

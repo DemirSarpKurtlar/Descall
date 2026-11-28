@@ -458,6 +458,7 @@ export const AUDIT_LOG_PT_BR = {
     "unknown": "?"
   },
   "sec": {
+    "invites": "Recompensas de convite",
     "adminToken": "Admin Token",
     "nodes": "Rede de servidores",
     "overview": "Visão geral",
@@ -500,6 +501,7 @@ export const AUDIT_LOG_PT_BR = {
     "moddesk": "Configuração de moderação",
     "flagged": "Decisão sobre conteúdo sinalizado",
     "popup": "Ação de popup ao vivo",
+    "reengage": "Ação de reengajamento",
     "announcement": "Ação de anúncio",
     "server": "Ação de servidor",
     "dm": "Ação de DM",
@@ -515,6 +517,16 @@ export const AUDIT_LOG_PT_BR = {
     "system": "Ação do sistema"
   },
   "act": {
+    "invite_auto_hold": "Reteve recompensas automaticamente",
+    "invite_hold": "Reteve recompensas de convite",
+    "invite_release": "Liberou uma retenção de convite",
+    "invite_revoke": "Retirou recompensas de convite",
+    "invite_pause_link": "Pausou um link de convite",
+    "invite_resume_link": "Reabriu um link de convite",
+    "invite_rules": "Alterou as regras de convite",
+    "invite_undo": "Desfez uma ação de convite",
+    "invite_alert_ignore": "Ignorou um alerta de convite",
+    "invite_export": "Exportou recompensas de convite",
     "ban": "Baniu",
     "unban": "Removeu o banimento",
     "timeout": "Silenciou",
@@ -580,6 +592,9 @@ export const AUDIT_LOG_PT_BR = {
     "feedback_reply": "Respondeu a um feedback",
     "feedback_note": "Adicionou nota interna a um feedback",
     "feedback_delete": "Excluiu um feedback",
+    "feedback_bug_confirm": "Confirmou um bug real",
+    "feedback_bug_undo": "Desfez a confirmação de um bug",
+    "feedback_bug_fixed": "Enviou o aviso de bug corrigido",
     "2fa_totp_enabled": "Ativou 2FA",
     "2fa_recovery_regenerated": "Renovou códigos de recuperação",
     "passkey_added": "Adicionou uma chave de acesso",

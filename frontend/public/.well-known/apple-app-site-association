@@ -15,6 +15,7 @@
           { "/": "/invite/*", "comment": "Group invite (/invite/<code>)" },
           { "/": "/i/*", "comment": "Group invite short form (/i/<code>)" },
           { "/": "/s/*", "comment": "Server vanity URL (/s/<slug>)" },
+          { "/": "/r/*", "comment": "Personal friend invite (/r/<username>, Davet Merkezi)" },
           { "/": "/friends" },
           { "/": "/calls" },
           { "/": "/activity" },

@@ -23,6 +23,9 @@ import "../../styles/gif-masonry.css";
 
 // Same public GIPHY key/endpoint as the chat GIF picker (single source: components/chat/GiphyPicker.jsx).
 import { GIPHY_API_KEY } from "../chat/GiphyPicker.jsx";
+// Descall+ 2.0: a new animated avatar / banner on a free account gets the live preview + offer.
+import GifOffer, { GifTabNote, useGifGate } from "../../plus2/GifOffer.jsx";
+import { pendingToStill } from "../../plus2/firstFrame.js";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
 
 /** Media frame that shows exactly the crop (live preview card + final preview). */
@@ -78,6 +81,7 @@ function ProfileCardPreview({ user, displayName, avatar, banner, highlight, t })
 export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile = false, user, displayName, avatarUrl, bannerUrl, onClose, onSave }) {
   const t = useT();
   const reduceMotion = useReducedMotion();
+  const { gated: gifGated } = useGifGate();
   const [target, setTarget] = useState(initialTarget === "banner" ? "banner" : "avatar");
   const [step, setStep] = useState("source");
   const [tab, setTab] = useState("upload");
@@ -214,8 +218,12 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
     }
   };
 
-  const save = async () => {
-    if (busy) return;
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  const saveRef = useRef(null);
+  const save = async ({ force = false } = {}) => {
+    if (busy && !force) return;
+    const pending = pendingRef.current;
     const order = ["avatar", "banner"].filter((k) => pending[k]);
     if (!order.length) { close(); return; }
     setBusy(true); setError("");
@@ -245,11 +253,35 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
       onClose?.();
     } catch (e) {
       console.warn("[profile-media-picker] save failed", e);
-      setError(t("amp.saveError"));
+      setError(e?.code === "ANIMATED_PROFILE_PLUS" || /ANIMATED_PROFILE_PLUS/.test(String(e?.message || "")) ? t("plus2.gif.serverRefused") : t("amp.saveError"));
     } finally {
       setBusy(false);
     }
   };
+
+  // "İlk kareyi sabit olarak kullan": every pending GIF becomes its first frame (same crop), then save.
+  const gifPending = gifGated ? ["avatar", "banner"].filter((k) => pending[k]?.isGif) : [];
+  const useStill = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const next = { ...pending };
+      for (const k of gifPending) {
+        // eslint-disable-next-line no-await-in-loop
+        next[k] = await pendingToStill(pending[k]);
+        urlsRef.current.push(next[k].src);
+      }
+      setPending(next);
+      pendingRef.current = next;
+    } catch {
+      setError(t("plus2.gif.stillError"));
+      setBusy(false);
+      return;
+    }
+    await saveRef.current?.({ force: true });
+  };
+
+  saveRef.current = save;
 
   const back = () => {
     if (step === "edit") { setStep(pending[target] ? "final" : "source"); return; }
@@ -355,6 +387,7 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
         </>
       ) : (
         <>
+          <GifTabNote />
           <label className="amp-search">
             <Search size={16} aria-hidden />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("amp.searchPlaceholder")} aria-label={t("amp.searchPlaceholder")} />
@@ -457,6 +490,15 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
         <ProfileCardPreview user={user} displayName={displayName} avatar={{ pending: pending.avatar, url: avatarUrl }} banner={{ pending: pending.banner, url: bannerUrl }} t={t} />
       </div>
       <div className="amp-rows">{rowFor("avatar")}{rowFor("banner")}</div>
+      {gifPending.length ? (
+        <GifOffer
+          kind={gifPending[0]}
+          user={user ? { ...user, displayName: displayName || user.displayName } : user}
+          renderMedia={(k) => <CroppedMedia pending={pending[k]} fallbackUrl={k === "avatar" ? avatarUrl : bannerUrl} />}
+          onFirstFrame={useStill}
+          busy={busy}
+        />
+      ) : null}
     </div>
   );
 
@@ -468,9 +510,15 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
   ) : step === "final" ? (
     <div className="amp-foot">
       {!isMobile ? <button type="button" className="amp-btn is-ghost" onClick={close} disabled={busy}>{t("amp.cancel")}</button> : null}
-      <button type="button" className="amp-btn is-primary" onClick={save} disabled={busy}>
-        {busy ? <Loader2 size={16} className="amp-spin" /> : null}{busy ? t("amp.saving") : t("amp.save")}
-      </button>
+      {gifPending.length ? (
+        <button type="button" className="amp-btn is-primary" onClick={useStill} disabled={busy}>
+          {busy ? <Loader2 size={16} className="amp-spin" /> : null}{busy ? t("amp.saving") : t("plus2.gif.stillSave")}
+        </button>
+      ) : (
+        <button type="button" className="amp-btn is-primary" onClick={save} disabled={busy}>
+          {busy ? <Loader2 size={16} className="amp-spin" /> : null}{busy ? t("amp.saving") : t("amp.save")}
+        </button>
+      )}
     </div>
   ) : null;
 

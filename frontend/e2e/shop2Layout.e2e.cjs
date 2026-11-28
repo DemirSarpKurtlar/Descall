@@ -133,6 +133,8 @@ function boot() {
       if (/\/auth\/me$/.test(url.pathname)) return res.json({ user: me });
       if (/\/friends(\/list)?$/.test(url.pathname)) return res.json({ friends });
       if (/\/promo\//.test(url.pathname)) return res.json({ popup: null, codes: [], items: [], unseen: 0, count: 0 });
+      // Objects, not the generic empty list (a [] "suggestion" crashed the win-back card).
+      if (/\/winback\/suggestion$/.test(url.pathname)) return res.json({ suggestion: null });
       // Classic catalogue ("Tum urunler"): two items in every category, so the chip strip overflows.
       if (/^\/api\/shop\/catalog$/.test(url.pathname)) return res.json({ items: CLASSIC_CATS.flatMap((c, i) => [0, 1].map((k) => ({ id: `c-${c}-${k}`, name: `${c} ${k + 1}`, category: c, price_descoin: 300 + i * 50 + k * 10, rarity: 'common' }))) });
       const last = url.pathname.split('/').filter(Boolean).pop() || 'items';
@@ -811,7 +813,9 @@ async function run(browser, base, boot0, r, problems) {
   await ctx.close();
 }
 
-(async () => {
+// The set strip e2e (shop2SetStrip.e2e.cjs) reuses the mock backend.
+module.exports = { boot };
+if (require.main === module) (async () => {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) {
     log(`FAIL no build at ${DIST}`);
     process.exit(1);

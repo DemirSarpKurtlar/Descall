@@ -22,7 +22,7 @@ export const PC_NODE_WS_ORIGIN = "wss://pc.descall.com";
 export const INLINE_SCRIPT_HASHES = [
   // @csp-hashes-start
   "sha256-hW6e7vZQr0DeTAluM4bI22reVfsLuMGI8T/B5r6aEGY=",
-  "sha256-8DfRHI8tBT7aebwoSE1O7M5Eyi53vXPaVkKg6Ts+tXs=",
+  "sha256-UyceTnsM/vydDNIbzHC01J8sc4AbqopRyDBIyt8XrQw=",
   "sha256-KaoFSX3TCKiHgad1CVsr8xoDclCAffaQrQtErU7iRqc=",
   "sha256-55Lg65UfHgpMWGmpdWaAw1ij+9uyiGVYnh+XvLULkP0=",
   "sha256-yBF1MUju54iRuL/fti/cWyhku2cnv6Ff2scoFZLOa3c=",
@@ -47,7 +47,8 @@ export const SITE_CSP = [
   `media-src 'self' blob: data: https://descall.com https://des-call.onrender.com ${PC_NODE_ORIGIN} https://api.descall.com https://*.supabase.co https://*.giphy.com https://*.tenor.com`,
   `connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com ${PC_NODE_ORIGIN} ${PC_NODE_WS_ORIGIN} https://api.descall.com wss://rt.descall.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://eu.posthog.com https://*.posthog.com https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://accounts.google.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud https://*.clarity.ms https://cloudflareinsights.com`,
   // Cloudflare Turnstile (src/lib/humanCheck/turnstileClient.js): api.js + its challenge iframe.
-  "frame-src 'self' https://www.googletagmanager.com https://accounts.google.com https://challenges.cloudflare.com",
+  // Descall+ 2.0: iyzico's hosted payment page is framed in the Descall+ checkout window (web).
+  "frame-src 'self' https://www.googletagmanager.com https://accounts.google.com https://challenges.cloudflare.com https://cpp.iyzipay.com https://sandbox-cpp.iyzipay.com",
   "worker-src 'self' blob:",
 ].join("; ");
 

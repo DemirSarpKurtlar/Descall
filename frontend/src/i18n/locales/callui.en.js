@@ -38,7 +38,7 @@ export const CALLUI_EN = {
     group: "Group",
     dialog: "Call",
   },
-  // components/calls/NativeCallCard.jsx + lib/iosNativeCallState.js
+  // lib/iosNativeCallState.js (status line of the native CallKit call)
   native: {
     callWith: "Call with {name}",
     mute: "Mute",

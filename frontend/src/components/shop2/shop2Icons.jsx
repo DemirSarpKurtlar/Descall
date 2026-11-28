@@ -11,6 +11,16 @@ import {
   Tag as PTag,
   Shuffle as PShuffle,
   ArrowsDownUp as PArrowsDownUp,
+  Image as PImage,
+  UserCircle as PUserCircle,
+  SealCheck as PSealCheck,
+  TextAa as PTextAa,
+  Flag as PFlag,
+  Sparkle as PSparkle,
+  ChatCircleDots as PChatDots,
+  Waveform as PWaveform,
+  Palette as PPalette,
+  Monitor as PMonitor,
 } from "@phosphor-icons/react/dist/ssr";
 
 function make(Glyph, name) {
@@ -41,6 +51,28 @@ export const Split = make(PSplit, "Split");
 export const PriceTag = make(PTag, "PriceTag");
 export const Shuffle = make(PShuffle, "Shuffle");
 export const SortArrows = make(PArrowsDownUp, "SortArrows");
+
+// One glyph per cosmetic type: the "art missing" tile of a set piece shows it with the name.
+const CAT_GLYPHS = {
+  avatar_frame: make(PUserCircle, "CatFrame"),
+  banner: make(PImage, "CatBanner"),
+  profile_background: make(PImage, "CatBackground"),
+  profile_aura: make(PSparkle, "CatAura"),
+  profile_color: make(PPalette, "CatColor"),
+  theme: make(PPalette, "CatTheme"),
+  profile_badge: make(PSealCheck, "CatBadge"),
+  avatar_effect: make(PSparkle, "CatEffect"),
+  name_effect: make(PTextAa, "CatName"),
+  chat_bubble: make(PChatDots, "CatBubble"),
+  voice_tile: make(PMonitor, "CatVoiceTile"),
+  join_sound: make(PWaveform, "CatJoinSound"),
+  sound_pack: make(PWaveform, "CatSound"),
+  countries: make(PFlag, "CatFlag"),
+};
+/** The icon component for an item category (a generic one for unknown categories). */
+export function categoryIcon(category) {
+  return CAT_GLYPHS[category] || CAT_GLYPHS.avatar_effect;
+}
 
 export {
   Archive,

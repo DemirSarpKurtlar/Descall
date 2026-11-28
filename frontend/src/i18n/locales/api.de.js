@@ -3,6 +3,18 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into de.js phrases.
  */
 export const API_DE = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Dieses Feedback ist nicht als Bug bestätigt.",
+  "The bug hunter tables are not installed yet.": "Die Bugjäger-Tabellen sind noch nicht eingerichtet.",
+  "Pick a severity.": "Wähle einen Schweregrad.",
+  "Pick a confirmed bug to link to.": "Wähle einen bestätigten Bug zum Verknüpfen.",
+  "The bug you linked to is not confirmed.": "Der verknüpfte Bug ist nicht bestätigt.",
+  "The same person reported the first bug; nothing to credit twice.": "Dieselbe Person hat den ersten Bug gemeldet; er zählt nicht doppelt.",
+  "You can't confirm your own feedback.": "Du kannst dein eigenes Feedback nicht bestätigen.",
+  "This feedback has no sender.": "Dieses Feedback hat keinen Absender.",
+  "This confirmation was already undone.": "Diese Bestätigung wurde bereits zurückgenommen.",
+  "Undo the linked duplicate reports first.": "Nimm zuerst die verknüpften Duplikate zurück.",
+  "Something went wrong.": "Etwas ist schiefgelaufen.",
   "Could not check right now.": "Gerade konnte nicht geprüft werden.",
   "Complete the security check to continue.": "Schließe die Sicherheitsprüfung ab, um fortzufahren.",
   "The security check could not be verified. Please try again.": "Die Sicherheitsprüfung konnte nicht bestätigt werden. Bitte versuche es erneut.",
@@ -322,4 +334,20 @@ export const API_DE = {
   "Could not load replies.": "Antworten konnten nicht geladen werden.",
   "Unknown event.": "Unbekanntes Ereignis.",
   "Onboarding settings could not be saved.": "Die Start-Einstellungen konnten nicht gespeichert werden.",
+  // Davet Merkezi / Davet ödülleri (growth phase 4).
+  "Inviter not found.": "Einladende Person nicht gefunden.",
+  "Write a note for the reason \"other\".": "Schreib eine Notiz für den Grund „Anderes“.",
+  "Invite rules are not migrated yet.": "Die Einladungsregeln sind noch nicht eingerichtet.",
+  "Action not found.": "Aktion nicht gefunden.",
+  "This action was already undone.": "Diese Aktion wurde bereits rückgängig gemacht.",
+  "The 10 minute undo window has passed.": "Die 10-Minuten-Frist zum Rückgängigmachen ist vorbei.",
+  "Could not load invite rewards.": "Einladungsbelohnungen konnten nicht geladen werden.",
+  "Choose a reason.": "Wähle einen Grund.",
+  "Invalid action.": "Ungültige Aktion.",
+  "Invalid alert.": "Ungültige Warnung.",
+  "Could not load invites.": "Einladungen konnten nicht geladen werden.",
+  "This invite link is not valid.": "Dieser Einladungslink ist nicht gültig.",
+  "Invalid invite.": "Ungültige Einladung.",
+  "Your friend already wrote.": "Dein Freund hat schon geschrieben.",
+  "You can nudge once a day.": "Du kannst einmal am Tag anstupsen.",
 };

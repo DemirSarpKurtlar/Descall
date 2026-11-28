@@ -78,5 +78,6 @@ export const S3_EXTRA_ICON_PATHS = Object.freeze({
  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
  external: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+ flame: '<path d="M12 22c3.9 0 7-2.7 7-6.6 0-3.3-2.2-5.4-3.6-7.4-.6 2-1.6 3-2.9 3.4.5-3.6-1-6.9-4.5-9.4.2 3.6-1.7 5.8-3.3 7.9C3.6 11.3 5 14 5 15.4 5 19.3 8.1 22 12 22z"/>',
  note: '<path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h4"/>',
 });

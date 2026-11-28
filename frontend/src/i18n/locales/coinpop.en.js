@@ -119,6 +119,8 @@ export const COINPOP_EN = {
       "referral_invite": "Invite reward",
       "referral_welcome": "Welcome reward",
       "onboarding_reward": "Start reward",
+      "bug_bounty": "Bug bounty",
+      "bug_bounty_revoke": "Bug bounty taken back",
       "promo": "Promo code",
       "premium_gift": "Descall+ gift",
       "other": "Other"

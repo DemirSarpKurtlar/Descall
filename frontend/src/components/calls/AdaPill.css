@@ -1,0 +1,834 @@
+/* Phone in-call pill "Ada" (draft A, 27 Nov 2026). The pill is always black: it
+   continues the hardware Dynamic Island, so it stays black in the light theme too.
+   Status colours are the app's one palette, fixed to their dark-surface values. */
+.ada-root {
+  --ada-green: var(--success, #23a55a);
+  --ada-red: var(--danger, #da373c);
+  --ada-amber: var(--warning, #f0b232);
+  --ada-brand: var(--brand, #587af5);
+  --ada-blue: color-mix(in srgb, var(--brand, #587af5) 55%, #fff);
+  --ada-spring: cubic-bezier(0.2, 0.9, 0.25, 1);
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 0;
+  z-index: 100400; /* over sheets (status-bar level, like the island), under alerts / toasts */
+  color: #fff;
+  font-family: var(--font-sans, -apple-system, system-ui, sans-serif);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- closed pill ---------- */
+.ada-hit {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+  outline: none;
+  border-radius: 24px;
+}
+.ada-hit:focus-visible .ada-pill {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 0 3px var(--ada-brand);
+}
+.ada-pill {
+  position: absolute;
+  left: 50%;
+  width: var(--ada-w);
+  height: var(--ada-h);
+  margin-left: calc(var(--ada-w) / -2);
+  border-radius: calc(var(--ada-h) / 2 + 1px);
+  background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px 0 6px;
+  box-sizing: border-box;
+  transition: transform 260ms var(--ada-spring), box-shadow 200ms ease, width 360ms var(--ada-spring);
+  animation: ada-in 420ms var(--ada-spring) both;
+}
+.ada-hit.is-pressed .ada-pill {
+  transform: scale(0.96);
+}
+.ada-pill.is-ended {
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--ada-red) 65%, transparent);
+}
+.ada-pill.is-recon {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ada-amber) 35%, transparent);
+}
+.ada-root.is-island .ada-hit.has-bubble .ada-pill {
+  opacity: 0;
+}
+@keyframes ada-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ada-l {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ada-mid {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font: 600 var(--fs-13)/1 var(--font-sans, system-ui);
+  color: var(--ada-green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 6px;
+}
+.ada-pill.is-recon .ada-mid,
+.ada-pill.is-connecting .ada-mid {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 550;
+}
+.ada-mid-text {
+  font-size: var(--fs-12);
+}
+.ada-r {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 var(--fs-13)/1 var(--font-sans, system-ui);
+  color: #fff;
+}
+.ada-r b {
+  font-size: var(--fs-13);
+  font-weight: 650;
+}
+.ada-r.is-red {
+  color: var(--ada-red);
+}
+.ada-r.is-red b {
+  color: #fff;
+}
+.ada-r.is-blue {
+  color: var(--ada-blue);
+}
+.ada-r.is-amber {
+  color: var(--ada-amber);
+}
+
+/* faces */
+.ada-face {
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  position: relative;
+  transition: box-shadow 200ms ease;
+}
+.ada-face > * {
+  width: var(--s) !important;
+  height: var(--s) !important;
+}
+.ada-face.is-speaking {
+  box-shadow: 0 0 0 2.5px var(--ada-green);
+}
+.ada-face.is-dim {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.ada-stack {
+  display: flex;
+}
+.ada-stack .ada-face:first-child {
+  z-index: 1;
+}
+.ada-stack .ada-face:first-child:not(.is-speaking) {
+  box-shadow: 0 0 0 2px #000;
+}
+.ada-stack .ada-face.is-second {
+  margin-left: -11px;
+  z-index: 0;
+}
+.ada-srv {
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ada-srv.is-big {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+}
+.ada-srv .ada-srv-img,
+.ada-srv .ada-srv-fb {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  font: 700 var(--fs-11)/1 var(--font-sans, system-ui);
+}
+.ada-srv.is-big .ada-srv-fb {
+  font-size: var(--fs-20);
+}
+.ada-end-dot {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ada-red);
+  color: #fff;
+}
+.ada-spin {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--ada-amber) 25%, transparent);
+  border-top-color: var(--ada-amber);
+  border-right-color: var(--ada-amber);
+  box-sizing: border-box;
+  animation: ada-spin 900ms linear infinite;
+}
+.ada-spin.is-big {
+  width: 28px;
+  height: 28px;
+}
+@keyframes ada-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* voice bars */
+.ada-wave {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  height: 16px;
+}
+.ada-wave i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ada-green);
+  height: 6px;
+  transform-origin: 50% 50%;
+}
+.ada-wave i:nth-child(2) {
+  height: 12px;
+}
+.ada-wave i:nth-child(3) {
+  height: 16px;
+}
+.ada-wave i:nth-child(4) {
+  height: 10px;
+}
+.ada-wave.is-blue i {
+  background: var(--ada-blue);
+}
+.ada-wave:not(.is-active) i {
+  opacity: 0.6;
+  transition: opacity 260ms ease;
+}
+.ada-wave.is-active i {
+  animation: ada-wave 900ms ease-in-out infinite;
+}
+.ada-wave.is-active i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.ada-wave.is-active i:nth-child(3) {
+  animation-delay: -0.55s;
+}
+.ada-wave.is-active i:nth-child(4) {
+  animation-delay: -0.15s;
+}
+.ada-wave.is-active i:nth-child(5) {
+  animation-delay: -0.7s;
+}
+.ada-wave.is-big {
+  transform: scale(1.35);
+  margin: 0 6px 0 4px;
+}
+@keyframes ada-wave {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.ada-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 13px;
+}
+.ada-bars i {
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.28;
+}
+.ada-bars i:nth-child(1) {
+  height: 4px;
+}
+.ada-bars i:nth-child(2) {
+  height: 7px;
+}
+.ada-bars i:nth-child(3) {
+  height: 10px;
+}
+.ada-bars i:nth-child(4) {
+  height: 13px;
+}
+.ada-bars[data-level="1"] i:nth-child(-n + 1),
+.ada-bars[data-level="2"] i:nth-child(-n + 2),
+.ada-bars[data-level="3"] i:nth-child(-n + 3),
+.ada-bars[data-level="4"] i {
+  opacity: 1;
+}
+.ada-bars.is-amber {
+  color: var(--ada-amber);
+}
+.ada-bars.is-green {
+  color: var(--ada-green);
+}
+.ada-bars.is-dim {
+  color: rgba(255, 255, 255, 0.7);
+}
+.ada-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.ada-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ada-dot 1.2s ease-in-out infinite;
+}
+.ada-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ada-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes ada-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* ---------- event bubble ---------- */
+.ada-bubble {
+  position: fixed;
+  border-radius: 34px;
+  background: #000;
+  padding: 56px 14px 14px;
+  box-sizing: border-box;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform-origin: 50% 0;
+  animation: ada-grow 380ms var(--ada-spring) both;
+}
+.ada-root:not(.is-island) .ada-bubble {
+  padding-bottom: 12px;
+}
+@keyframes ada-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.55, 0.3);
+    border-radius: 20px;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ada-bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.ada-bubble.is-screen .ada-bubble-row {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+.ada-bubble.is-screen .ada-bubble-text {
+  flex: 1 1 150px;
+}
+.ada-bubble.is-screen .ada-chip {
+  margin-left: auto;
+}
+.ada-bubble-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: rgba(255, 255, 255, 0.12);
+}
+.ada-bubble-ic.is-end {
+  background: var(--ada-red);
+}
+.ada-bubble-ic.is-mic-off {
+  background: var(--ada-red);
+}
+.ada-bubble-ic.is-video,
+.ada-bubble-ic.is-screen {
+  color: var(--ada-blue);
+}
+.ada-bubble-ic.is-spinner,
+.ada-bubble-ic.is-signal-ok {
+  background: transparent;
+}
+.ada-bubble-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ada-bubble-text b {
+  font-size: var(--fs-15);
+  font-weight: 650;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.ada-bubble-text span {
+  font-size: var(--fs-13);
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.3;
+}
+.ada-chip {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 650 var(--fs-13)/1 var(--font-sans, system-ui);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+}
+.ada-chip.is-accent {
+  background: var(--ada-brand);
+}
+.ada-chip.is-green {
+  background: var(--ada-green);
+}
+.ada-chip:focus-visible,
+.ada-btn:focus-visible,
+.ada-route:focus-visible,
+.ada-share:focus-visible {
+  outline: 2px solid var(--ada-brand);
+  outline-offset: 2px;
+}
+.ada-thumb {
+  width: 104px;
+  height: 62px;
+  border-radius: 12px;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #25345f, #3d2d6e);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.ada-thumb video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ada-thumb em {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  right: 6px;
+  font-style: normal;
+  font-size: var(--fs-11);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- quick panel ---------- */
+.ada-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 10, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: ada-fade 240ms ease both;
+}
+@keyframes ada-fade {
+  from {
+    opacity: 0;
+  }
+}
+.ada-panel {
+  position: fixed;
+  border-radius: 46px;
+  background: #000; /* opaque: menus and sheets are never see-through */
+  padding: 56px 14px 16px;
+  box-sizing: border-box;
+  color: #fff;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform-origin: 50% 0;
+  animation: ada-grow 380ms var(--ada-spring) both;
+  touch-action: pan-x;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ada-root:not(.is-island) .ada-panel {
+  border-radius: 32px;
+}
+.ada-ph {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 6px;
+}
+.ada-pn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ada-pn b {
+  font-size: var(--fs-17);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ada-pn span {
+  font-size: var(--fs-13);
+  color: rgba(255, 255, 255, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ada-r.is-big {
+  margin-right: 6px;
+}
+.ada-ppl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 6px 2px;
+}
+.ada-more {
+  font-size: var(--fs-12);
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 4px;
+}
+.ada-q {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-13);
+  color: rgba(255, 255, 255, 0.6);
+  margin: 12px 6px 4px;
+  min-height: 18px;
+}
+.ada-q.is-amber {
+  color: var(--ada-amber);
+}
+.ada-sp {
+  flex: 1;
+}
+.ada-q-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 50%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ada-share {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 6px 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: var(--fs-13);
+  text-align: left;
+  cursor: pointer;
+  width: calc(100% - 12px);
+}
+.ada-share b {
+  display: block;
+  color: #fff;
+  font-size: var(--fs-15);
+  margin-bottom: 2px;
+}
+.ada-routes {
+  margin: 10px 2px 2px;
+  border-radius: 22px;
+  background: #1c1c1f;
+  padding: 6px;
+  animation: ada-fade 180ms ease both;
+}
+.ada-routes-h {
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 6px 10px 4px;
+}
+.ada-route {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: #fff;
+  font: 550 var(--fs-15)/1.2 var(--font-sans, system-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.ada-route span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ada-route em {
+  font-style: normal;
+  font-size: var(--fs-11);
+  color: rgba(255, 255, 255, 0.5);
+}
+.ada-route.is-on {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ada-blue);
+}
+.ada-btns {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 2px;
+}
+.ada-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 56px;
+  flex: 1 1 0;
+  max-width: 72px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  font: inherit;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ada-btn i {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  font-style: normal;
+  position: relative;
+  transition: transform 160ms var(--ada-spring), background-color 160ms ease;
+}
+.ada-btn:active i {
+  transform: scale(0.94);
+}
+.ada-btn em {
+  font-style: normal;
+  font-size: var(--fs-11);
+  font-weight: 600;
+  opacity: 0.9;
+  white-space: nowrap;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ada-btn.is-on i {
+  background: #fff;
+  color: #111;
+}
+.ada-btn.is-alert i {
+  background: var(--ada-red);
+}
+.ada-btn.is-open i {
+  background: rgba(255, 255, 255, 0.28);
+}
+.ada-btn.is-accent i {
+  background: var(--ada-brand);
+}
+.ada-btn.is-end i {
+  background: var(--ada-red);
+}
+.ada-hold-ring {
+  position: absolute;
+  inset: -4px;
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.ada-hold-ring circle {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  opacity: 0;
+}
+.ada-btn.is-holding .ada-hold-ring circle {
+  opacity: 1;
+  animation: ada-hold var(--hold, 900ms) linear forwards;
+}
+.ada-btn.is-holding i {
+  transform: scale(1.08);
+}
+@keyframes ada-hold {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.ada-end-hint {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: -6px;
+  white-space: nowrap;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  background: #2a2a2e;
+  color: #fff;
+  padding: 7px 10px;
+  border-radius: 10px;
+  pointer-events: none;
+  animation: ada-fade 180ms ease both;
+}
+
+/* ---------- pill -> full screen ---------- */
+.ada-morph {
+  position: fixed;
+  z-index: 100450;
+  left: var(--mx);
+  top: var(--my);
+  width: var(--mw);
+  height: var(--mh);
+  border-radius: calc(var(--mh) / 2);
+  background: #000;
+  pointer-events: none;
+  transition:
+    left var(--mdur) var(--ada-spring, cubic-bezier(0.2, 0.9, 0.25, 1)),
+    top var(--mdur) var(--ada-spring, cubic-bezier(0.2, 0.9, 0.25, 1)),
+    width var(--mdur) var(--ada-spring, cubic-bezier(0.2, 0.9, 0.25, 1)),
+    height var(--mdur) var(--ada-spring, cubic-bezier(0.2, 0.9, 0.25, 1)),
+    border-radius var(--mdur) ease,
+    background-color var(--mdur) ease,
+    opacity 200ms ease;
+}
+.ada-morph.is-open {
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100dvh;
+  border-radius: 48px;
+  background: #0f1115;
+}
+.ada-morph.is-reduced {
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100dvh;
+  border-radius: 0;
+  background: #0f1115;
+  opacity: 0;
+  transition: opacity var(--mdur) ease;
+}
+.ada-morph.is-reduced.is-open {
+  opacity: 1;
+}
+.ada-morph.is-fading {
+  opacity: 0;
+}
+
+/* The app moves down while the pill needs a strip of its own (no island): the pill
+   never sits over the header. Set by AdaPill (html.ada-reserve, --ada-reserve).
+   A transform (not a margin): the phone shell is position: fixed, and a transformed
+   #root is the containing block of its fixed children, so all of them move down
+   together and end at the bottom of the screen. */
+html.ada-reserve #root {
+  transform: translateY(var(--ada-reserve, 0px));
+  transition: transform 280ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+/* Same cascade rank as mobile.css (keyboard lock, --vv-height = visual viewport) and later,
+   so the shell ends at the bottom of the screen, above the keyboard too. */
+html.ada-reserve #root,
+html.ada-reserve .app-root,
+html.ada-reserve .app-root.is-mobile {
+  height: calc(var(--vv-height, 100dvh) - var(--ada-reserve, 0px)) !important;
+  max-height: calc(var(--vv-height, 100dvh) - var(--ada-reserve, 0px)) !important;
+  min-height: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ada-pill,
+  .ada-bubble,
+  .ada-panel {
+    animation: ada-fade 160ms ease both;
+  }
+  .ada-wave.is-active i,
+  .ada-dots i,
+  .ada-spin {
+    animation: none;
+  }
+  html.ada-reserve #root {
+    transition: none;
+  }
+}

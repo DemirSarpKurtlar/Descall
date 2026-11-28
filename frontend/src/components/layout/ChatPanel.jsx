@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, useSyncExternalStore, cloneElement, isValidElement } from "react";
+import { Suspense, lazy, useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, useSyncExternalStore, cloneElement, isValidElement } from "react";
 import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -48,6 +48,7 @@ import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 import { HELLO_STICKER_TOKEN } from "../../lib/descallStickers";
 import { typingFlareKey } from "../../lib/typingFlare.js";
+const DmGiftStrip = lazy(() => import("../../plus2/PlusBits.jsx").then((m) => ({ default: m.DmGiftStrip })));
 
 function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -407,6 +408,13 @@ export default function ChatPanel({
   const glassServerChannel = Boolean(glass && activeView === "servers" && activeChannel);
   const glassConv = Boolean(glass && (headerDm || headerGroup || glassServerChannel));
   const glassHash = glassServerChannel && activeChannel?.type !== "voice" && activeChannel?.type !== "stage";
+  // Desktop layout with nothing open (Electron, Tauri, web, iPad landscape):
+  // the list column right next to this pane already carries the same title
+  // ("Sohbetler" twice side by side on the owner's iPad, 27 Nov). The pane
+  // keeps its actions and a screen-reader heading, not a second visible title.
+  const emptyPaneTitle =
+    !isMobile && !headerDm && !headerGroup && !(activeView === "servers" && activeChannel) &&
+    (activeView === "chat" || activeView === "dms" || activeView === "groups" || activeView === "servers");
   // 2.11.14: DM, group and server text channels float the header pills over
   // the message list (spec splash-header-2026-10-18 §2). The panel frost moves
   // to .chat-panel-bg so the pills' own blur sees the messages under them.
@@ -651,6 +659,9 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
+          {emptyPaneTitle ? (
+            <h1 className="a11y-sr">{getTitle()}</h1>
+          ) : (
           <div className={`header-identity${glassConv ? " g-peer" : ""}${headerDm || headerGroup || glassHash ? " has-lead" : ""}`}>
             {headerDm ? (
               <button
@@ -718,6 +729,7 @@ export default function ChatPanel({
               )}
             </div>
           </div>
+          )}
         </div>
 
         <div className="header-right">
@@ -976,6 +988,8 @@ export default function ChatPanel({
       {/* Typing + composer only on real chat surfaces, never under Activity */}
       {activeView !== "activity" && showComposer && (
         <>
+          {/* Descall+ 2.0 (moment 11): gift cards between you two (open / live status), above the composer. */}
+          {activeDmUser?.id && !dmBlockedByMe ? <Suspense fallback={null}><DmGiftStrip otherUserId={activeDmUser.id} /></Suspense> : null}
 
           {dmBlockedByMe && (
             <div className="dm-blocked-banner" role="status">

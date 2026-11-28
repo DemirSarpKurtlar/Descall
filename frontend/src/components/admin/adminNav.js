@@ -8,11 +8,11 @@ import { isDesktopShell, isTauriShell } from "../../lib/desktopShell.js";
 
 /** Group key → section ids, in menu order. Unknown ids fall into "system". */
 export const ADMIN_NAV_GROUPS = [
-  ["general", ["overview", "maintenance", "agent", "analytics", "signupStats", "retention", "economy", "topUsers"]],
+  ["general", ["overview", "maintenance", "agent", "analytics", "signupStats", "retention", "reengage", "economy", "invites", "topUsers"]],
   ["people", ["directory", "people", "reports", "feedback", "moderation", "appeals", "dmReview", "serverReview", "suspicious", "accessBans"]],
   // Premium Yönetimi (Descall+ / Ultra, phase 1): nine pages, one grantable section "premium".
   ["premium", [
-    "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
+    "premiumWorkspace", "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
     "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
   ]],
   ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
@@ -37,8 +37,11 @@ const GROUP_LABEL = {
 export const TAB_SECTION = Object.freeze({
   // İtirazlar (ban experience): read and decided by whoever holds "moderation".
   appeals: "moderation",
+  // Yeniden kazanma (growth 3B) follows Elde tutma, like /admin/growth/reengage on the server.
+  reengage: "retention",
   // Vitrin ve Setler (Market 2.0) follows the shop permission, like /admin/shop2 on the server.
   shop2: "shop",
+  premiumWorkspace: "premium",
   premiumDashboard: "premium",
   premiumUsers: "premium",
   premiumBulk: "premium",

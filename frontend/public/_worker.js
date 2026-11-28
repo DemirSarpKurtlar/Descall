@@ -56,6 +56,8 @@ const SPA_PREFIXES = [
   "/tr/register",
   "/i",
   "/s",
+  // Davet Merkezi: personal invite landing /r/<username>.
+  "/r",
   // Desktop passkey handoff page (components/passkeys/PasskeyDesktopPage.jsx).
   "/passkey/desktop",
   // "Ben degildim" link of passkey security e-mails (components/passkeys/PasskeyReportPage.jsx).

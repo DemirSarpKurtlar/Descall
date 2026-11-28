@@ -29,7 +29,9 @@ final class NotificationService: UNNotificationServiceExtension {
             return
         }
 
-        content.categoryIdentifier = DescallNotify.messageCategory
+        // Growth 3B: people pushes (friend in voice, a friend calling you back, a nudge) get
+        // their own buttons; every other rich push stays a MESSAGE.
+        content.categoryIdentifier = DescallNotify.category(for: payload.type)
         if content.threadIdentifier.isEmpty { content.threadIdentifier = payload.conversation }
         content.summaryArgument = payload.conversationTitle
         if DescallNotifyDefaults.isMuted(payload.conversation) {

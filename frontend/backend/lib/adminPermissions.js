@@ -20,6 +20,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "signupStats",
   "retention",
   "economy",
+  // Davet ödülleri (growth phase 4): invite rewards board, holds, revokes, rules.
+  "invites",
   "topUsers",
   "people",
   "reports",
@@ -79,6 +81,8 @@ const RULES = [
   [/^\/agent(\/|$)/, "agent"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
   [/^\/signup-stats(\/|$)/, "signupStats"],
+  // Growth 3B "Yeniden kazanma" console: the Elde tutma permission.
+  [/^\/growth\/reengage(\/|$)/, "retention"],
   [/^\/premium(\/|$)/, "premium"],
   [/^\/maintenance\/windows(\/|$)/, "maintenance"],
   [/^\/people\//, "people"],
@@ -93,6 +97,7 @@ const RULES = [
   [/^\/growth\/retention$/, "retention"],
   [/^\/growth\/onboarding(\/|$)/, "retention"],
   [/^\/growth\/economy$/, "economy"],
+  [/^\/invites(\/|$)/, "invites"],
   [/^\/feedback(\/|$)/, "feedback"],
   [/^\/perf(\/|$)/, "perf"],
   [/^\/(audit)(\/|$)/, "audit"],

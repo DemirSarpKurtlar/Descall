@@ -3,11 +3,13 @@ import { isDesktopShell } from "../../lib/desktopShell.js";
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins, Gift, Flame } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import DesktopUpdatePane from "../settings/DesktopUpdatePane";
 import VoiceShortcutsPane from "../settings/VoiceShortcutsPane";
+import IosCallOutputField from "../settings/IosCallOutputField";
+import { IOS_NATIVE } from "../../lib/iosCallKit";
 import { nativePlatform } from "../../lib/nativeIntents.js";
 import { hasDesktopUpdater } from "../../lib/desktopUpdateState.js";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -93,6 +95,9 @@ import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const WalletSettingsTab = lazy(() => import("../settings/WalletSettingsTab"));
+// Growth 3B "Önce insanlar": notification center (people + servers) and Seri ve görevler.
+const NotifyCenter = lazy(() => import("../reengage/NotifyCenter.jsx"));
+const StreaksPane = lazy(() => import("../reengage/StreaksPane.jsx"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 // Ayarlar > Descall+ (status, coupon, features, plan comparison; iOS: status only).
 const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
@@ -108,6 +113,8 @@ import {
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 import RangeSlider from "../../premium/ui/RangeSlider.jsx";
 import { useRumView } from "../../lib/perf/useRumTiming.js";
+import { platformHeaders } from "../../plus2/platform.js";
+const ProfileGifNote = lazy(() => import("../../plus2/ProfileGifNote.jsx"));
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -370,8 +377,11 @@ const NAV_GROUPS_DEF = [
       { id: "premium", labelKey: "premium.nav", icon: Sparkles, hintKey: "premium.navHint" },
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
       { id: "wallet", labelKey: "coinpop.settings.nav", icon: Coins, hintKey: "coinpop.settings.navHint" },
+      { id: "streaks", labelKey: "rg3.streaks.navTitle", icon: Flame, hintKey: "rg3.streaks.navHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
+      // Davet Merkezi (growth phase 4): opens the invite dashboard window / sheet, not a tab.
+      { id: "invites", labelKey: "dvt.entry.nav", icon: Gift, hintKey: "dvt.entry.hint", action: "invites" },
     ],
   },
 ];
@@ -395,8 +405,10 @@ const S3_NAV_TILES = {
   premium: ["sparkle", "purple"],
   shop: ["bag", "purple"],
   wallet: ["coin", "yellow"],
+  streaks: ["flame", "orange"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
+  invites: ["users", "teal"],
 };
 
 /* Same tokens as .s3 .c-* in settings-v3.css (--tile-* in design-tokens.css), for lists
@@ -431,6 +443,7 @@ const TAB_TITLE_KEYS = {
   sound: "settings.soundEffects",
   shop: "settings.shop",
   wallet: "coinpop.settings.nav",
+  streaks: "rg3.streaks.navTitle",
   badges: "badges.navTitle",
   promo: "settings.promo",
   premium: "premium.nav",
@@ -1064,9 +1077,9 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   // Re-engagement switches, stored on the account (backend routes/reengage.js).
-  const [friendVoiceNotify, setFriendVoiceNotify] = useState(true);
+  const [, setFriendVoiceNotify] = useState(true);
   const [emailNotify, setEmailNotify] = useState(true);
-  const [reengageError, setReengageError] = useState("");
+  const [, setReengageError] = useState("");
   // The two switches stay disabled until the account's real values arrive (they used to show
   // ON first and flip, or stay ON when the request failed).
   const [reengageLoad, setReengageLoad] = useState("loading");
@@ -1419,11 +1432,15 @@ const UserPanel = forwardRef(function UserPanel({
     };
     const res = await fetch(`${apiBase()}/api/user/profile`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...platformHeaders() },
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || t("Failed to save profile"));
+    if (!res.ok) {
+      // Descall+ 2.0: a new animated photo / banner on a free account (where it is on sale) is refused.
+      if (data.code === "ANIMATED_PROFILE_PLUS") throw Object.assign(new Error(t("plus2.gif.serverRefused")), { code: data.code });
+      throw new Error(data.error || t("Failed to save profile"));
+    }
     keepTextDrafts();
     return applyProfileLocally(
       data.user || {
@@ -1716,6 +1733,10 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   const openTab = (id) => {
+    if (id === "invites") {
+      void import("../invites/InviteCenterHost.jsx").then((m) => m.openInviteCenter()).catch(() => {});
+      return;
+    }
     setActiveTab(id);
     onTabChange?.(id);
     if (isMobile) setMobileDetail(true);
@@ -1937,6 +1958,8 @@ const UserPanel = forwardRef(function UserPanel({
                 <span className="us-hint">
                   {t("JPG, PNG, WebP or GIF, up to 8 MB. GIFs stay animated.")}
                 </span>
+                {/* Descall+ 2.0 moment 4: an animated avatar / banner from before stays (shown once). */}
+                <Suspense fallback={null}><ProfileGifNote avatarUrl={avatarUrl} bannerUrl={bannerUrl} /></Suspense>
               </div>
             </div>
             <input
@@ -2639,6 +2662,15 @@ const UserPanel = forwardRef(function UserPanel({
           </Suspense>
         );
 
+      case "streaks":
+        return (
+          <div className="us-tab">
+            <Suspense fallback={null}>
+              <StreaksPane me={me ? { id: me.id, name: me.display_name || me.displayName || me.username, username: me.username, avatarUrl: me.avatarUrl || me.avatar_url } : null} />
+            </Suspense>
+          </div>
+        );
+
       case "wallet":
         return (
           <div className="us-tab">
@@ -2677,8 +2709,12 @@ const UserPanel = forwardRef(function UserPanel({
       case "notifications":
         return (
           <div className="us-tab g-notif">
-            <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
+            <Suspense fallback={null}>
+              <NotifyCenter
+                deviceSection={
             <section className="us-section">
+              <h4 className="us-section-label">{t("rg3.center.deviceTitle")}</h4>
+              <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
               <div className="us-card stack">
                 <SettingRow
                   icon={Bell}
@@ -2742,18 +2778,6 @@ const UserPanel = forwardRef(function UserPanel({
                   />
                 </SettingRow>
                 <SettingRow
-                  icon={Headphones}
-                  title={t("msg5.reengage.friendVoice")}
-                  description={reengageError || t("msg5.reengage.friendVoiceDesc")}
-                >
-                  <Toggle
-                    value={friendVoiceNotify}
-                    onChange={(next) => changeReengagePref("friendVoice", next)}
-                    label={t("msg5.reengage.friendVoice")}
-                    disabled={reengageLoad !== "ready"}
-                  />
-                </SettingRow>
-                <SettingRow
                   icon={Mail}
                   title={t("msg5.reengage.email")}
                   description={t("msg5.reengage.emailDesc")}
@@ -2776,7 +2800,9 @@ const UserPanel = forwardRef(function UserPanel({
               ) : null}
               <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
-
+                }
+              />
+            </Suspense>
           </div>
         );
 
@@ -2870,17 +2896,22 @@ const UserPanel = forwardRef(function UserPanel({
                     ))}
                   </select>
                 </label>
-                <label className="us-field">
-                  <span><Headphones size={13} /> {t("Speaker")}</span>
-                  <select value={selectedAudioOut} onChange={(e) => setSelectedAudioOut(e.target.value)}>
-                    <option value="">{t("System default")}</option>
-                    {audioOutputs.map((d) => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Speaker ${d.deviceId.slice(0, 6)}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {IOS_NATIVE ? (
+                  // iPhone app: WKWebView lists no outputs; the native router does (earpiece / speaker / Bluetooth).
+                  <IosCallOutputField />
+                ) : (
+                  <label className="us-field">
+                    <span><Headphones size={13} /> {t("Speaker")}</span>
+                    <select value={selectedAudioOut} onChange={(e) => setSelectedAudioOut(e.target.value)}>
+                      <option value="">{t("System default")}</option>
+                      {audioOutputs.map((d) => (
+                        <option key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Speaker ${d.deviceId.slice(0, 6)}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label className="us-field">
                   <span><Camera size={13} /> {t("Camera")}</span>
                   <select value={selectedVideoIn} onChange={(e) => setSelectedVideoIn(e.target.value)}>

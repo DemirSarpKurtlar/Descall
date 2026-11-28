@@ -74,6 +74,11 @@ function onScene(scene, handler) {
 
 export function bindDmCallQa(api) {
   return onScene("dm-call", (detail) => {
+    if (detail.end) {
+      api.modeRef.current = null;
+      api.setMode(null);
+      return;
+    }
     const mode = detail.mode || "active";
     api.modeRef.current = mode;
     api.peerRef.current = detail.peer || null;
@@ -90,7 +95,7 @@ export function bindDmCallQa(api) {
       bitrateKbps: 2400,
     };
     api.setConnectionQuality(detail.quality || "excellent");
-    api.setPeerConnectionState("connected");
+    api.setPeerConnectionState(detail.pcState || "connected");
     api.setRemoteMediaReady(true);
     api.setMuted(Boolean(detail.muted));
     api.setCameraOn(detail.cameraOn !== false);
@@ -171,5 +176,25 @@ export function bindServerVoiceQa(api) {
         screenStream: screen,
       };
     }));
+  });
+}
+
+/** Phone pill QA: a native CallKit call (lib/iosNativeCall.js store), `active: false` ends it. */
+export function bindNativeCallQa(setState) {
+  return onScene("native-call", (detail) => {
+    if (detail.active === false) {
+      setState(null);
+      return;
+    }
+    setState({
+      active: true,
+      uuid: detail.uuid || "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      callerId: detail.callerId || "u-peer",
+      callerName: detail.callerName || "Ece",
+      phase: detail.phase || "connected",
+      muted: Boolean(detail.muted),
+      connectedAt: Date.now() - (detail.durationSeconds ?? 252) * 1000,
+      mediaVerified: true,
+    });
   });
 }

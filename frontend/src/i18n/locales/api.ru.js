@@ -3,6 +3,18 @@
  * Keys are the exact English server texts (see api.tr.js). Spread into ru.js phrases.
  */
 export const API_RU = {
+  // Bug Avcısı (routes/adminBugHunter.js)
+  "This feedback is not confirmed as a bug.": "Этот отзыв не подтверждён как баг.",
+  "The bug hunter tables are not installed yet.": "Таблицы «Охотника за багами» ещё не установлены.",
+  "Pick a severity.": "Выбери серьёзность.",
+  "Pick a confirmed bug to link to.": "Выбери подтверждённый баг для связи.",
+  "The bug you linked to is not confirmed.": "Связанный баг не подтверждён.",
+  "The same person reported the first bug; nothing to credit twice.": "Первый баг сообщил тот же человек; дважды не засчитывается.",
+  "You can't confirm your own feedback.": "Нельзя подтвердить собственный отзыв.",
+  "This feedback has no sender.": "У этого отзыва нет отправителя.",
+  "This confirmation was already undone.": "Это подтверждение уже отменено.",
+  "Undo the linked duplicate reports first.": "Сначала отмени связанные дубликаты.",
+  "Something went wrong.": "Что-то пошло не так.",
   "Could not check right now.": "Сейчас проверить не удалось.",
   "Complete the security check to continue.": "Пройдите проверку безопасности, чтобы продолжить.",
   "The security check could not be verified. Please try again.": "Не удалось подтвердить проверку безопасности. Повторите попытку.",
@@ -322,4 +334,20 @@ export const API_RU = {
   "Could not load replies.": "Не удалось загрузить ответы.",
   "Unknown event.": "Неизвестное событие.",
   "Onboarding settings could not be saved.": "Не удалось сохранить настройки старта.",
+  // Davet Merkezi / Davet ödülleri (growth phase 4).
+  "Inviter not found.": "Пригласивший не найден.",
+  "Write a note for the reason \"other\".": "Напиши заметку для причины «Другое».",
+  "Invite rules are not migrated yet.": "Правила приглашений ещё не созданы.",
+  "Action not found.": "Действие не найдено.",
+  "This action was already undone.": "Это действие уже отменено.",
+  "The 10 minute undo window has passed.": "10-минутное окно отмены прошло.",
+  "Could not load invite rewards.": "Не удалось загрузить награды за приглашения.",
+  "Choose a reason.": "Выбери причину.",
+  "Invalid action.": "Недопустимое действие.",
+  "Invalid alert.": "Недопустимый сигнал.",
+  "Could not load invites.": "Не удалось загрузить приглашения.",
+  "This invite link is not valid.": "Эта ссылка-приглашение недействительна.",
+  "Invalid invite.": "Недопустимое приглашение.",
+  "Your friend already wrote.": "Друг уже написал.",
+  "You can nudge once a day.": "Подталкивать можно раз в день.",
 };

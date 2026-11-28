@@ -2,6 +2,7 @@ import { apiBase, primaryApiBase } from "../lib/nodeRouting";
 import { t } from "../i18n/runtime.js";
 import { serverErrorText } from "./httpError";
 import { getToken } from "../lib/storage";
+import { platformHeaders } from "../plus2/platform.js";
 
 export async function uploadFile(file) {
   const token = getToken();
@@ -52,11 +53,12 @@ export async function uploadAvatarWithCrop(file, crop = null) {
   formData.append("avatar", file);
   const response = await fetch(`${apiBase()}/api/media/avatar`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    // X-Descall-Platform: Descall+ 2.0 decides the animated avatar / banner rule per platform.
+    headers: { Authorization: `Bearer ${token}`, ...platformHeaders() },
     body: formData,
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
+  if (!response.ok) throw Object.assign(new Error(serverErrorText(body) || t("Upload failed")), { code: body?.code || null });
   return body;
 }
 
@@ -68,11 +70,12 @@ export async function uploadBannerImage(file, crop = null) {
   formData.append("banner", file);
   const response = await fetch(`${apiBase()}/api/media/banner-image`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    // X-Descall-Platform: Descall+ 2.0 decides the animated avatar / banner rule per platform.
+    headers: { Authorization: `Bearer ${token}`, ...platformHeaders() },
     body: formData,
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
+  if (!response.ok) throw Object.assign(new Error(serverErrorText(body) || t("Upload failed")), { code: body?.code || null });
   return body;
 }
 

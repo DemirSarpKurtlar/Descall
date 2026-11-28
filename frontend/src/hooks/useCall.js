@@ -92,6 +92,7 @@ import {
 } from "../lib/callAudioDevices";
 import { createRemoteAudioKeeper, inboundAudioVerdict, pickInboundAudio } from "../lib/remoteAudioKeeper";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
+import { createLocalIceLog } from "../lib/localIceReplay";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { notifyCallAudioSession } from "../lib/voiceActivity";
@@ -374,6 +375,23 @@ export function useCall(socket, callOccupancyRef = null) {
   const setupTimelineRef = useRef(null);
   // 3.0.0 (A0): summaries wait in a small sessionStorage queue while offline.
   const telemetrySenderRef = useRef(null);
+  // Own ICE of the current pc, re-sent when a late peer comes online (lib/localIceReplay.js).
+  const localIceLogRef = useRef(null);
+  if (!localIceLogRef.current) localIceLogRef.current = createLocalIceLog();
+  const replayLocalIce = useCallback((reason) => {
+    const pc = pcRef.current;
+    const toUserId = peerRef.current?.id;
+    const sock = socketRef.current;
+    if (!pc || !toUserId || !sock?.connected) return 0;
+    const list = localIceLogRef.current.takeReplay(pc);
+    if (!list.length) return 0;
+    for (const candidate of list) sock.emit("call:ice-candidate", { toUserId, candidate });
+    setupTimelineRef.current?.count("iceReplay");
+    console.info("[Call] re-sent local ICE", { reason, count: list.length });
+    return list.length;
+  }, []);
+  const replayLocalIceRef = useRef(replayLocalIce);
+  replayLocalIceRef.current = replayLocalIce;
   if (!telemetrySenderRef.current) {
     telemetrySenderRef.current = createCallTelemetrySender({ getSocket: () => socketRef.current });
   }
@@ -876,8 +894,11 @@ export function useCall(socket, callOccupancyRef = null) {
       };
     };
 
+    localIceLogRef.current.bind(pc);
     pc.onicecandidate = (e) => {
       const sock = socketRef.current;
+      // Logged even when the socket is down: replayed once the peer is reachable.
+      if (e.candidate) localIceLogRef.current.add(pc, e.candidate);
       if (e.candidate && peerRef.current?.id && sock?.connected) {
         sock.emit("call:ice-candidate", { toUserId: peerRef.current.id, candidate: e.candidate });
       }
@@ -1436,6 +1457,9 @@ export function useCall(socket, callOccupancyRef = null) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setupTimelineRef.current?.watch(pcRef.current);
         await flushIce(pcRef.current);
+        // The callee is online now (it just sent this). If it was woken from a
+        // closed app, what it got from the server may lack our candidates.
+        replayLocalIceRef.current?.("answer");
         hapticCallConnected();
         setMode("active");
         modeRef.current = "active";
@@ -1492,6 +1516,10 @@ export function useCall(socket, callOccupancyRef = null) {
       // The peer just connected / reconnected and has no idea about our
       // mute / deafen / camera state yet, answer once (never with a request).
       if (requestState) emitLocalMediaStateRef.current?.();
+      // Same moment for ICE: a peer that came online late (native iOS engine
+      // after its CallKit answer, a reconnected socket) gets our candidates
+      // again while the link is not up yet.
+      if (requestState) replayLocalIceRef.current?.("peer-ready");
     };
 
     const onCancelled = ({ fromUserId } = {}) => {

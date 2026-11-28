@@ -58,4 +58,9 @@ regexes = [
   # anonymous visitor key used against a mock backend.
   '''Kayik-Bulut-Defne-28x?''',
   '''visitor_abcdef12''',
+  # Translation keys, not secrets: fields named key / hintKey hold dotted i18n paths of the
+  # app's own catalogs (e.g. "plus2.toast.giftReceived" in plus2/PlusHost.jsx, commit 14064ab8,
+  # and "rg3.streaks.navHint" in UserPanel.jsx, commit d4c94321). Only whole values made of a
+  # known namespace plus dotted identifiers match, so a real key in such a field still fails.
+  '''^(plus2|rg3|dvt|bhunt|onb|asu|premium|admin)\.[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$''',
 ]

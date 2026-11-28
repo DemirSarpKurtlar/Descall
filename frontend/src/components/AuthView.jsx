@@ -37,6 +37,7 @@ import { SPRINGS } from "../lib/fluid/springs";
 import { isNativeAndroid } from "../lib/platform";
 import AdaptiveAuthShell from "./auth/adaptive/AdaptiveAuthShell.jsx";
 import AdaptiveAuthCard from "./auth/adaptive/AdaptiveAuthCard.jsx";
+import { peekInviteEmail } from "../lib/inviteShare.js";
 
 /** Phone layout of the sign-up card: the native apps and narrow windows. */
 function usePhoneLayout(native) {
@@ -83,7 +84,8 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     if (!username && !password) typingStartRef.current = 0;
   }, [username, password]);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  // Davet Merkezi: the email typed on the invite page prefills the classic form too.
+  const [email, setEmail] = useState(() => peekInviteEmail());
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [birthDate, setBirthDate] = useState("");
   const [legalModal, setLegalModal] = useState(null); // "terms" | "privacy" | null

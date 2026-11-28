@@ -22,6 +22,8 @@ export const CALL_TELEMETRY_NUMBER_FIELDS = Object.freeze([
   "tokenMs", "lkConnectMs", "lkFirstAudioMs", "published", "urlProbeMs",
   // Server voice link health (voice-drops-05): counts per session, length in seconds.
   "sockDrops", "pcFailed", "iceRestarts", "rebuilds", "sessionS",
+  // 27 Nov 2026: own ICE re-sent to a peer that came online late / remote candidates received.
+  "iceReplay", "remoteIce",
 ]);
 
 export const CALL_TELEMETRY_STRING_FIELDS = Object.freeze([

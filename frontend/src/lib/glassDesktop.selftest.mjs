@@ -199,10 +199,17 @@ const ios = fakeWindow({ platform: "ios", width: 440, height: 956, search: "?gla
 assert.equal(initGlassDesktop(ios), false);
 assert.ok(!ios._classes.has(GLASS_DESKTOP_CLASS), "iPhone app never gets the desktop class");
 
-for (const [w, h] of [[820, 1180], [1180, 820], [744, 1133], [1366, 1024]]) {
+for (const [w, h] of [[820, 1180], [1180, 820], [1133, 744], [1366, 1024]]) {
   const ipad = fakeWindow({ platform: "ios", width: w, height: h });
   assert.equal(initGlassDesktop(ipad), true, `iPad app ${w}x${h} gets Liquid Glass`);
   assert.ok(ipad._classes.has(GLASS_DESKTOP_CLASS));
+}
+// iPad mini portrait (744) is the phone layout (html.glass-ui), never the
+// desktop class on top of the phone tree (lib/deviceLayout.js).
+{
+  const mini = fakeWindow({ platform: "ios", width: 744, height: 1133 });
+  assert.equal(initGlassDesktop(mini), false, "iPad mini portrait takes the phone layout");
+  assert.ok(!mini._classes.has(GLASS_DESKTOP_CLASS));
 }
 
 // Native iPad with WebKit's bucketed core count: full glass, not gd-lite.

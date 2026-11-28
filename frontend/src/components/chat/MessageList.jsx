@@ -1101,6 +1101,7 @@ function MessageList({
       <UserProfileModal
         open={!!profileTarget}
         onClose={() => setProfileTarget(null)}
+        plusServer={serverId ? { id: serverId, name: activeServer?.name || "" } : null}
         userId={profileTarget?.id}
         username={profileTarget?.username}
         displayName={profileTarget ? resolveDisplayName(profileTarget) : undefined}

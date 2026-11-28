@@ -247,8 +247,11 @@ enum DescallNativeCallLogic {
 
     /// Aggregate `call:telemetry` payload for a natively answered call: the
     /// timeline marks plus fixed tags. No ids, names or uuids.
-    static func telemetry(_ t: Timeline, video: Bool, result: String, turn: Bool) -> [String: Any] {
+    static func telemetry(_ t: Timeline, video: Bool, result: String, turn: Bool, remoteIce: Int? = nil, iceReplay: Int? = nil) -> [String: Any] {
         var d = t.dictionary
+        // 27 Nov 2026: caller candidates this phone received (0 = ICE could never connect).
+        if let n = remoteIce { d["remoteIce"] = max(0, n) }
+        if let n = iceReplay, n > 0 { d["iceReplay"] = n }
         d["kind"] = "dm"
         d["direction"] = "incoming"
         d["path"] = "native"
@@ -274,6 +277,85 @@ enum DescallNativeCallLogic {
     static func mediaVerified(sent: Int, received: Int, baseSent: Int, baseReceived: Int) -> Bool {
         sent > baseSent && received > baseReceived
     }
+
+    // MARK: - Audio output route plan (27 Nov 2026: "ahizeye geçmiyor")
+
+    /// AVAudioSession.CategoryOptions.defaultToSpeaker.rawValue (kept as a raw
+    /// bit so this file stays Foundation-only for the Linux selftest).
+    static let defaultToSpeakerOption: UInt = 0x8
+
+    /// What DescallAudioRouter must do for a choice.
+    struct RoutePlan: Equatable {
+        /// "speaker" (overrideOutputAudioPort(.speaker)), "none" (drop the
+        /// override) or "keep".
+        var override: String
+        /// Set / clear .defaultToSpeaker on the session, nil = leave it.
+        var defaultToSpeaker: Bool?
+    }
+
+    /// Root cause of the earpiece bug: every call session was configured with
+    /// .defaultToSpeaker (CallKit answer, the native WebRTC engine, the keep-
+    /// alive plugin; WebKit may set it too). With that option the session's
+    /// default built-in route IS the loudspeaker, so the router's "receiver"
+    /// (overrideOutputAudioPort(.none)) only removed an override and the audio
+    /// stayed on the speaker. The receiver needs the option cleared.
+    ///
+    /// - choice: "receiver" | "speaker" | "system" | "input"
+    /// - outputs: current route output kinds ("speaker", "receiver", "bluetooth", ...)
+    /// - nativeEngine: the in-process WebRTC engine owns the session (its
+    ///   configuration is re-applied by WebRTC, so speaker restores the option
+    ///   there; the WebKit path never re-adds it, it only overrides the port).
+    static func routePlan(choice: String, outputs: [String], categoryOptions: UInt, nativeEngine: Bool) -> RoutePlan {
+        let hasDefaultToSpeaker = categoryOptions & defaultToSpeakerOption != 0
+        let onSpeaker = outputs.contains("speaker")
+        switch choice {
+        case "speaker":
+            return RoutePlan(
+                override: onSpeaker ? "keep" : "speaker",
+                defaultToSpeaker: nativeEngine && !hasDefaultToSpeaker ? true : nil
+            )
+        case "receiver":
+            return RoutePlan(
+                override: onSpeaker || hasDefaultToSpeaker ? "none" : "keep",
+                defaultToSpeaker: hasDefaultToSpeaker ? false : nil
+            )
+        default: // "system", "input": a headset / Bluetooth / car route
+            return RoutePlan(override: onSpeaker ? "none" : "keep", defaultToSpeaker: nil)
+        }
+    }
+
+    static func categoryOptions(_ options: UInt, defaultToSpeaker on: Bool) -> UInt {
+        on ? options | defaultToSpeakerOption : options & ~defaultToSpeakerOption
+    }
+
+    /// The route the user is actually hearing, for the UI ("selected").
+    static func selectedRoute(outputs: [String], currentInputUid: String?) -> String {
+        if outputs.contains("speaker") { return "speaker" }
+        if outputs.contains("receiver") { return "receiver" }
+        if let uid = currentInputUid, !uid.isEmpty { return "input:\(uid)" }
+        if outputs.contains(where: { $0 != "speaker" && $0 != "receiver" }) { return "system" }
+        return ""
+    }
+
+    /// A user choice made in the last `window` seconds before the call audio
+    /// ended survives a quick begin again (LiveKit / socket reconnect,
+    /// CallKit re-activation, a JS reload). Only built-in choices are kept.
+    static func restoredChoice(remembered: String?, endedAt: TimeInterval?, now: TimeInterval, window: TimeInterval = 120) -> String? {
+        guard let r = remembered, r == "receiver" || r == "speaker", let at = endedAt else { return nil }
+        return now - at <= window && now >= at ? r : nil
+    }
+
+    // MARK: - Late-peer ICE (27 Nov 2026)
+
+    /// Re-send our gathered candidates now? Only after our answer went out,
+    /// while ICE is not up, within a small budget.
+    static func shouldReplayLocalIce(answerSent: Bool, iceConnected: Bool, gathered: Int, replays: Int, maxReplays: Int = 3) -> Bool {
+        answerSent && !iceConnected && gathered > 0 && replays < maxReplays
+    }
+
+    /// Seconds after the answer at which a still-unconnected engine asks the
+    /// caller for its state again (the caller then re-sends its candidates).
+    static let iceNudgeDelays: [TimeInterval] = [5, 12]
 
     /// Offline queue for summaries the native socket could not send (max 10).
     static func appendPending(_ list: [[String: Any]], _ item: [String: Any], max: Int = 10) -> [[String: Any]] {

@@ -16,9 +16,11 @@ import { AMP_FR } from "./profileMediaPicker.fr.js";
 import { MSG4_FR } from "./msg4.fr.js";
 import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
+import { PLUS2_FR } from "./plus2.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { PUBPAGE_FR } from "./pubpage.fr.js";
 import { ONB_FR } from "./onb.fr.js";
+import { BHUNT_FR } from "./bhunt.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { SHARE_SHEET_FR } from "./shareSheet.fr.js";
@@ -26,6 +28,7 @@ import { VSC_FR } from "./vsc.fr.js";
 import { LX_FR } from "./lx.fr.js";
 import { USET_FR } from "./uset.fr.js";
 import { SVOICE_FR } from "./svoice.fr.js";
+import { ADA_FR } from "./ada.fr.js";
 import { BAN_ADMIN_FR } from "./banAdmin.fr.js";
 import { SERVER_REVIEW_FR } from "./serverReview.fr.js";
 import { DOSSIER_FR } from "./dossier.fr.js";
@@ -50,6 +53,9 @@ import { AGENTX_FR } from "./agentx.fr.js";
 import { AGENT_OPS_FR } from "./agentOps.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { ADAPTIVE_SIGNUP } from "./adaptiveSignup.i18n.js";
 export const nested = {
   authx: AUTHX_FR,
@@ -75,9 +81,11 @@ export const nested = {
   },
   "msg5": MSG5_FR,
   "act": ACT_FR,
+  "plus2": PLUS2_FR,
   "dir": DIR_FR,
   "pubpage": PUBPAGE_FR,
   "onb": ONB_FR,
+  "bhunt": BHUNT_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
   "shareSheet": SHARE_SHEET_FR,
@@ -85,6 +93,7 @@ export const nested = {
   "lx": LX_FR,
   "uset": USET_FR,
   "svoice": SVOICE_FR,
+  "ada": ADA_FR,
   "banAdmin": BAN_ADMIN_FR,
   "serverReview": SERVER_REVIEW_FR,
   "dossier": DOSSIER_FR,
@@ -109,6 +118,8 @@ export const nested = {
   "agentOps": AGENT_OPS_FR,
   "invl": INVL_FR,
   "sgx": SIGNUP_GROWTH.fr.nested,
+  "dvt": INVITES_I18N.fr,
+  rg3: RG3.fr,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -454,6 +465,7 @@ export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Gestion premium",
+    "navWorkspace": "Espace de travail Descall+",
     "navDashboard": "Tableau de bord premium",
     "navUsers": "Abonnements des membres",
     "navBulk": "Actions groupées",
@@ -2306,6 +2318,7 @@ export const nested = {
     "reportsSubtitle": "Qui a signalé qui, avec l'extrait du message et l'heure. Rejette, exclus temporairement ou bannis en un clic. Trois signalements ouverts sur la même personne ouvrent son dossier.",
     "reportsTitle": "Boîte des signalements",
     "retention": "Rétention",
+    "reengage": "Réengagement",
     "risk": {
       "critical": "Critique",
       "high": "Élevé",
@@ -2775,6 +2788,7 @@ export const nested = {
     "countOther": "{n, plural, one {Cette personne a # badge sur {total}} other {Cette personne a # badges sur {total}}}",
     "countSelf": "{n, plural, one {Tu as # badge sur {total}} other {Tu as # badges sur {total}}}",
     "desc": {
+      "ilkselam": "Celles et ceux qui ont partagé leur premier message Descall avec une vraie personne.",
       "alfa": "Membres de l'alpha fermée.",
       "beta": "Membres de la bêta ouverte.",
       "bughunter": "Personnes dont les signalements de bug ont été confirmés.",
@@ -2854,6 +2868,7 @@ export const nested = {
     "modeCountry": "Badge de pays uniquement",
     "modeSpecial": "Pays + badge spécial",
     "names": {
+      "ilkselam": "Premier salut",
       "alfa": "Alpha",
       "beta": "Bêta",
       "bughunter": "Chasseur de bugs",
@@ -2962,6 +2977,18 @@ export const nested = {
     "wearingOther": "Porté"
   },
   "bot": {
+    "bughunt": {
+      "confirmed": "Le problème que tu as signalé était un vrai bug. Notre équipe le corrige.",
+      "confirmedFixed": "Le problème que tu as signalé était un vrai bug, et nous l'avons corrigé.",
+      "also": "Le problème que tu as signalé était un vrai bug. Quelqu'un l'a signalé un peu avant toi, mais ton signalement compte aussi. Merci !",
+      "fixed": "Corrigé : le bug que tu as signalé a disparu dans la dernière version. Merci !",
+      "badgeNew": "Tu as gagné le badge Chasseur de bugs.",
+      "badgeUp": "Ton badge est passé à Chasseur de bugs {level}.",
+      "badgeMore": "Un vrai bug de plus sur ton badge Chasseur de bugs : {count} au total.",
+      "badgeGlitch": "Tu as aussi gagné le badge Glitch.",
+      "reward": "+{amount} DesCoin",
+      "undone": "{who} a annulé la confirmation du bug : {reason}",
+    },
     "cmd": {
       "avatar": "Afficher un avatar en grand, le télécharger ou l'ouvrir en plein écran.",
       "ban": "Bannir un membre du serveur.",
@@ -3044,6 +3071,14 @@ export const nested = {
       "slotUsage": "**Machine à sous**\n\nUtilisation : `/slot <montant>`\nMin **{min}** · Max **{max}** · {lines} lignes de paiement"
     },
     "notify": {
+      "bugConfirmedTitle": "Tu as trouvé un vrai bug",
+      "bugNewBadgeBody": "Tu as gagné le badge Chasseur de bugs",
+      "bugLevelUpBody": "Ton badge est maintenant Chasseur de bugs {level}",
+      "bugMoreBody": "Vrais bugs trouvés : {count}",
+      "bugAlsoTitle": "Ton signalement de bug est confirmé",
+      "bugAlsoBody": "Merci pour le signalement, +{amount} DesCoin",
+      "bugFixedTitle": "Corrigé",
+      "bugFixedBody": "Le bug que tu as signalé est corrigé",
       "feedbackClosed": "Ton retour a été clôturé",
       "feedbackInProgress": "Ton retour est en cours d'examen",
       "feedbackReplyTitle": "L'équipe Descall a répondu",

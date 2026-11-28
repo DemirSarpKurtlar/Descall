@@ -90,7 +90,12 @@ const {
   listRingingForCallee,
   callStateByUuid,
   listActiveDmCalls,
+  noteOfferStarted,
+  hasOfferInFlight,
+  dropEarlyIce,
+  bufferedCallerIceCount,
 } = require("../lib/dmCallLog");
+const callDiag = require("../lib/callDiag");
 const { createRingFanout } = require("../lib/callRingFanout");
 const { buildDmCallSummary, callSummaryMessageFields } = require("../lib/callSummary");
 const { isBlockedEitherWay } = require("../lib/blocking");
@@ -743,6 +748,8 @@ function registerSocketHandlers(io) {
 
     // Durable activity timestamp for admin "recently active" boards.
     touchLastSeen(myId).catch(() => {});
+    // Davet ödülleri: a visit the day after sign-up is the invitee's return; unread notices toast.
+    void require("../lib/referrals/engine").noteSeen({ io, userId: myId }).catch(() => {});
 
     setupAdminSocket(io, socket);
     // Sunucu Ağı live push (admin:nodes:watch, owner room only): lib/nodeKeys/monitor.js.
@@ -1508,6 +1515,8 @@ function registerSocketHandlers(io) {
       void recordFirstMessage(myId);
       // "İlk Selam" (Başla panosu): the first real DM to another person, after the undo window.
       void require("../lib/onboarding/firstHello").noteMessage({ io, userId: myId, kind: "dm", text: storedText, messageId, peerId: toUserId });
+      // Davet ödülleri: the invitee's first message (lib/referrals/engine.js; cached, cheap for everyone else).
+      void require("../lib/referrals/engine").noteFirstMessage({ io, userId: myId, peerId: toUserId });
 
       // DesCoin: a small, capped reward per genuine message. Fully
       // server-driven (no client heartbeat) since it fires only after the
@@ -1600,6 +1609,9 @@ function registerSocketHandlers(io) {
           });
         }
       }
+
+      // Growth 3B: shared streak, today's tasks, return tracking (lib/reengage/hooks.js).
+      require("../lib/reengage/hooks").onDm(myId, toUserId);
 
       // Wake backgrounded clients (web push + FCM) when the recipient isn't
       // looking at this DM. Mentions get a distinct payload for notification UX.
@@ -1775,7 +1787,15 @@ function registerSocketHandlers(io) {
       if (typeof toUserId !== "string" || !offer) return;
       const targetId = toUserId.trim();
       if (!targetId) return;
+      const offerReceivedAt = Date.now();
+      // The checks below await the database (cold block-list cache after a
+      // deploy, slow Supabase). The caller trickles its ICE meanwhile; keep
+      // it for this offer so a callee woken by VoIP still gets it (27 Nov 2026).
+      if (renegotiate !== true && /^[A-Za-z0-9_-]{1,64}$/.test(targetId) && targetId !== myId) {
+        noteOfferStarted(myId, targetId);
+      }
       if (await isBlockedEitherWay(myId, targetId)) {
+        dropEarlyIce(myId, targetId);
         return socket.emit("call:error", { message: "You can't call this user.", toUserId: targetId });
       }
 
@@ -1793,19 +1813,30 @@ function registerSocketHandlers(io) {
         renegotiate === true || (renegotiate === undefined && activeRenegotiation);
       const friendsOk = await isAcceptedFriend(myId, targetId);
       if (planCallOffer({ friends: friendsOk, activeRenegotiation }) === "deny") {
+        dropEarlyIce(myId, targetId);
         return socket.emit("call:error", {
           message: "You can call this person after they accept your message request.",
           code: "not_friends",
           toUserId: targetId,
         });
       }
-      const { callUuid } = trackOffer({
+      const tracked = trackOffer({
         callerId: myId,
         calleeId: targetId,
         callType: callType || "voice",
         offer,
         renegotiation,
       });
+      const { callUuid } = tracked;
+      if (!tracked.renegotiation) {
+        callDiag.logRing("offer", {
+          ref: callDiag.ringRef(callUuid),
+          setupMs: Date.now() - offerReceivedAt,
+          earlyIce: tracked.earlyIce || 0,
+          keptIce: tracked.keptIce || 0,
+          online: delivered,
+        });
+      }
 
       // Full public user (frame / name effect / badge) so the callee call
       // tile can render shop cosmetics — bare id+username stripped them.
@@ -1842,15 +1873,34 @@ function registerSocketHandlers(io) {
       if (!renegotiation && callUuid) {
         try {
           const { sendIncomingCallVoip } = require("../lib/voipPush");
-          void sendIncomingCallVoip(targetId, {
-            callUuid,
-            callerId: myId,
-            callerName:
-              fromUser.displayName || fromUser.display_name || fromUser.username || me.username,
-            callerAvatar: fromUser.avatarUrl || fromUser.avatar_url || "",
-            video: (callType || "voice") === "video",
-            conversationId: myId,
-          });
+          const voipStartedAt = Date.now();
+          Promise.resolve(
+            sendIncomingCallVoip(targetId, {
+              callUuid,
+              callerId: myId,
+              callerName:
+                fromUser.displayName || fromUser.display_name || fromUser.username || me.username,
+              callerAvatar: fromUser.avatarUrl || fromUser.avatar_url || "",
+              video: (callType || "voice") === "video",
+              conversationId: myId,
+            })
+          )
+            .then((r) => {
+              if (!r || (!r.tokens && !r.sent && !r.failed && !r.dropped && !r.skipped)) return;
+              callDiag.logRing("voip", {
+                ref: callDiag.ringRef(callUuid),
+                tokens: r.tokens || 0,
+                sent: r.sent || 0,
+                failed: r.failed || 0,
+                dropped: r.dropped || 0,
+                skipped: Boolean(r.skipped),
+                reason: Array.isArray(r.reasons) && r.reasons[0] ? String(r.reasons[0]) : undefined,
+                ms: Date.now() - voipStartedAt,
+                // ICE the woken phone will get with the offer (0 = it can't connect).
+                callerIce: bufferedCallerIceCount(myId, targetId),
+              });
+            })
+            .catch(() => {});
         } catch (err) {
           console.warn("[Call] VoIP ring failed:", err?.message || err);
         }
@@ -1922,6 +1972,14 @@ function registerSocketHandlers(io) {
       if (!mayCallSignal(toUserId) || signalSize(answer) > MAX_SIGNAL_JSON) return;
       const ringing = getPendingCall(toUserId, myId);
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
+      if (wasRinging) {
+        callDiag.logRing("answer", {
+          ref: callDiag.ringRef(ringing.callUuid),
+          ringMs: require("../lib/callClock").now() - (Date.parse(ringing.offeredAt || "") || require("../lib/callClock").now()),
+          callerIce: Array.isArray(ringing.callerIce) ? ringing.callerIce.length : 0,
+          resumed: Boolean(ringing.answeringAt),
+        });
+      }
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId, answer });
       if (isActiveDmCall(myId, toUserId)) {
@@ -1964,7 +2022,14 @@ function registerSocketHandlers(io) {
 
     socket.on("call:ice-candidate", ({ toUserId, candidate } = {}) => {
       if (typeof toUserId !== "string" || !candidate) return;
-      if (!mayCallSignal(toUserId) || signalSize(candidate) > MAX_ICE_JSON) return;
+      if (signalSize(candidate) > MAX_ICE_JSON) return;
+      if (!mayCallSignal(toUserId)) {
+        // Our own offer to this user is still being checked (no ring record
+        // yet, friend list maybe not loaded): keep the candidate for it, but
+        // relay nothing until the offer has passed the checks.
+        if (hasOfferInFlight(myId, toUserId)) bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
+        return;
+      }
       bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
       bufferCalleeIce({ fromId: myId, toId: toUserId, candidate });
       emitToUser(io, toUserId, "call:ice-candidate", {
@@ -2067,6 +2132,8 @@ function registerSocketHandlers(io) {
       const pick = sanitizeCallTelemetry(summary);
       if (!pick) return;
       console.log("[CallTelemetry]", JSON.stringify(pick));
+      // A DM whose media never connected → one grouped warning in Hata Kayıtları.
+      if (callDiag.isSetupFailure(pick)) void callDiag.recordCallSetupFailure(pick);
     });
 
     // Native iOS after a VoIP wake / CallKit answer: replay still-ringing offers
@@ -2078,6 +2145,11 @@ function registerSocketHandlers(io) {
         : [];
       const ringing = listRingingForCallee(myId);
       for (const call of ringing) {
+        callDiag.logRing("resume", {
+          ref: callDiag.ringRef(call.callUuid),
+          callerIce: Array.isArray(call.callerIce) ? call.callerIce.length : 0,
+          ringMs: require("../lib/callClock").now() - (Date.parse(call.offeredAt || "") || require("../lib/callClock").now()),
+        });
         const fromUser =
           enrichFriendEntry(call.callerId) ||
           getCachedPublicUser(call.callerId) || { id: call.callerId };

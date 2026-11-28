@@ -55,6 +55,13 @@ final class DescallNativeCall: NSObject {
         var localAnswer: RTCSessionDescription?
         var remoteCandidates: [DescallNativeCallLogic.RemoteCandidate] = []
         var localCandidates: [[String: Any]] = []
+        /// Every local candidate of the current ICE session (also the sent
+        /// ones): re-sent when the caller asks for our state while ICE is down.
+        var gatheredCandidates: [[String: Any]] = []
+        var iceReplays = 0
+        /// Caller candidates received (offer replay + live trickle).
+        var remoteIceCount = 0
+        var nudgeTimers: [DispatchWorkItem] = []
         var socket: DescallSignalSocket?
         var timeline: DescallNativeCallLogic.Timeline
         var connectedAt: Date?
@@ -239,6 +246,7 @@ final class DescallNativeCall: NSObject {
         case "call:ice-candidate":
             guard (payload["fromUserId"] as? String) == s.callerId,
                   let c = DescallNativeCallLogic.remoteCandidate(payload["candidate"]) else { return }
+            s.remoteIceCount += 1
             if let pc = s.pc, pc.remoteDescription != nil {
                 addRemote(pc, c)
             } else {
@@ -261,7 +269,11 @@ final class DescallNativeCall: NSObject {
             }
         case "call:media-state":
             guard (payload["fromUserId"] as? String) == s.callerId else { return }
-            if (payload["requestState"] as? Bool) == true { sendMediaState(s, requestState: false) }
+            if (payload["requestState"] as? Bool) == true {
+                sendMediaState(s, requestState: false)
+                // The caller just (re)connected: it may have missed our candidates.
+                replayLocalCandidates(s, reason: "caller-ready")
+            }
         default:
             break
         }
@@ -374,6 +386,9 @@ final class DescallNativeCall: NSObject {
             return
         }
         s.negotiating = true
+        // An ICE restart regathers: replays must not carry the old session's candidates.
+        s.gatheredCandidates.removeAll()
+        s.iceReplays = 0
         pc.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp)) { [weak self, weak s] error in
             DispatchQueue.main.async {
                 guard let self = self, let s = s, self.session === s else { return }
@@ -487,7 +502,35 @@ final class DescallNativeCall: NSObject {
             s.socket?.emit("call:ice-candidate", ["toUserId": s.callerId, "candidate": c])
         }
         sendMediaState(s, requestState: true)
+        scheduleIceNudges(s)
         emitState()
+    }
+
+    /// Still not connected a few seconds after the answer: ask the caller for
+    /// its state again. Current Descall clients answer by re-sending their ICE
+    /// candidates (localIceReplay.js), which a cold-started engine may never
+    /// have received; we re-send ours as well.
+    private func scheduleIceNudges(_ s: Session) {
+        s.nudgeTimers.forEach { $0.cancel() }
+        s.nudgeTimers = DescallNativeCallLogic.iceNudgeDelays.map { (delay: TimeInterval) -> DispatchWorkItem in
+            let work = DispatchWorkItem { [weak self, weak s] in
+                guard let self = self, let s = s, self.session === s, s.phase != .ended, !s.iceConnected else { return }
+                NSLog("[DescallNativeCall] ICE not connected \(Int(delay)) s after answer · remoteIce=\(s.remoteIceCount) · \(s.timeline.summary)")
+                self.sendMediaState(s, requestState: true)
+                self.replayLocalCandidates(s, reason: "nudge")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+            return work
+        }
+    }
+
+    private func replayLocalCandidates(_ s: Session, reason: String) {
+        guard DescallNativeCallLogic.shouldReplayLocalIce(answerSent: s.answerSent, iceConnected: s.iceConnected, gathered: s.gatheredCandidates.count, replays: s.iceReplays) else { return }
+        s.iceReplays += 1
+        for c in s.gatheredCandidates {
+            s.socket?.emit("call:ice-candidate", ["toUserId": s.callerId, "candidate": c])
+        }
+        NSLog("[DescallNativeCall] re-sent \(s.gatheredCandidates.count) local candidates (\(reason))")
     }
 
     // MARK: - 3. Audio (CallKit owns activation)
@@ -505,6 +548,38 @@ final class DescallNativeCall: NSObject {
         config.sampleRate = 48000
         config.ioBufferDuration = 0.01
         RTCAudioSessionConfiguration.setWebRTC(config)
+    }
+
+    /// Earpiece / loudspeaker as the session's default built-in route
+    /// (27 Nov 2026). With .defaultToSpeaker set, overrideOutputAudioPort(.none)
+    /// lands on the loudspeaker, so the earpiece needs the option cleared.
+    /// The native engine's WebRTC configuration is updated too: WebRTC
+    /// re-applies it when its audio unit (re)starts, which would otherwise put
+    /// the option back. Category and mode stay the same. Returns true when the
+    /// live session changed.
+    @discardableResult
+    static func setDefaultToSpeaker(_ on: Bool, nativeEngine: Bool) -> Bool {
+        let session = AVAudioSession.sharedInstance()
+        if nativeEngine {
+            let config = RTCAudioSessionConfiguration.webRTC()
+            let raw = DescallNativeCallLogic.categoryOptions(config.categoryOptions.rawValue, defaultToSpeaker: on)
+            config.categoryOptions = AVAudioSession.CategoryOptions(rawValue: raw)
+            RTCAudioSessionConfiguration.setWebRTC(config)
+        }
+        guard session.category == .playAndRecord,
+              session.categoryOptions.contains(.defaultToSpeaker) != on else { return false }
+        let options = AVAudioSession.CategoryOptions(rawValue: DescallNativeCallLogic.categoryOptions(session.categoryOptions.rawValue, defaultToSpeaker: on))
+        let rtc = RTCAudioSession.sharedInstance()
+        if nativeEngine { rtc.lockForConfiguration() }
+        defer { if nativeEngine { rtc.unlockForConfiguration() } }
+        do {
+            try session.setCategory(.playAndRecord, mode: session.mode, options: options)
+            NSLog("[DescallAudioRoute] defaultToSpeaker=\(on) native=\(nativeEngine)")
+            return true
+        } catch {
+            NSLog("[DescallAudioRoute] defaultToSpeaker=\(on) failed: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// Category/mode only (no activation): CXAnswerCallAction, before fulfill.
@@ -622,6 +697,8 @@ final class DescallNativeCall: NSObject {
         s.phase = .ended
         s.failTimer?.cancel()
         s.offerTimer?.cancel()
+        s.nudgeTimers.forEach { $0.cancel() }
+        s.nudgeTimers.removeAll()
         s.statsTimer?.invalidate()
         s.statsTimer = nil
         s.audioTrack?.isEnabled = false
@@ -745,7 +822,9 @@ final class DescallNativeCall: NSObject {
             s.timeline,
             video: s.video,
             result: DescallNativeCallLogic.telemetryResult(s.timeline, failure: s.failure),
-            turn: DescallNativeCallLogic.hasTurn(s.iceServers ?? [])
+            turn: DescallNativeCallLogic.hasTurn(s.iceServers ?? []),
+            remoteIce: s.remoteIceCount,
+            iceReplay: s.iceReplays
         )
         if let socket = socket, socket.connected {
             socket.emit("call:telemetry", payload)
@@ -817,6 +896,7 @@ extension DescallNativeCall: RTCPeerConnectionDelegate {
         let payload = DescallNativeCallLogic.candidatePayload(sdp: candidate.sdp, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex)
         DispatchQueue.main.async {
             guard let s = self.current(peerConnection) else { return }
+            if s.gatheredCandidates.count < 48 { s.gatheredCandidates.append(payload) }
             if s.answerSent {
                 s.socket?.emit("call:ice-candidate", ["toUserId": s.callerId, "candidate": payload])
             } else {

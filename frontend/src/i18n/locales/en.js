@@ -12,9 +12,11 @@ import { MSG4_EN } from "./msg4.en.js";
 import { A11Y_EN } from "./a11y.en.js";
 import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
+import { PLUS2_EN } from "./plus2.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { PUBPAGE_EN } from "./pubpage.en.js";
 import { ONB_EN } from "./onb.en.js";
+import { BHUNT_EN } from "./bhunt.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { SHARE_SHEET_EN } from "./shareSheet.en.js";
@@ -22,6 +24,7 @@ import { VSC_EN } from "./vsc.en.js";
 import { LX_EN } from "./lx.en.js";
 import { USET_EN } from "./uset.en.js";
 import { SVOICE_EN } from "./svoice.en.js";
+import { ADA_EN } from "./ada.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
 import { DOSSIER_EN } from "./dossier.en.js";
@@ -46,6 +49,9 @@ import { AGENTX_EN } from "./agentx.en.js";
 import { AGENT_OPS_EN } from "./agentOps.en.js";
 import { INVL_EN } from "./invl.en.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
+// Davet Merkezi (growth phase 4, 4A): "dvt.*".
+import { INVITES_I18N } from "./invites.i18n.js";
+import { RG3 } from "./rg3.i18n.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -93,9 +99,11 @@ export const nested = {
   a11y: A11Y_EN,
   msg5: MSG5_EN,
   act: ACT_EN,
+  plus2: PLUS2_EN,
   dir: DIR_EN,
   pubpage: PUBPAGE_EN,
   onb: ONB_EN,
+  bhunt: BHUNT_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
   shareSheet: SHARE_SHEET_EN,
@@ -103,6 +111,7 @@ export const nested = {
   lx: LX_EN,
   uset: USET_EN,
   svoice: SVOICE_EN,
+  ada: ADA_EN,
   banAdmin: BAN_ADMIN_EN,
   serverReview: SERVER_REVIEW_EN,
   dossier: DOSSIER_EN,
@@ -127,6 +136,8 @@ export const nested = {
   agentOps: AGENT_OPS_EN,
   invl: INVL_EN,
   sgx: SIGNUP_GROWTH.en.nested,
+  dvt: INVITES_I18N.en,
+  rg3: RG3.en,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {
@@ -913,6 +924,7 @@ export const nested = {
     "read": "Read",
     "vs": "{a} ↔ {b}",
     "retention": "Retention",
+    "reengage": "Re-engagement",
     "economy": "DesCoin economy",
     "grRange": "Time range",
     "grDays": "{n} days",

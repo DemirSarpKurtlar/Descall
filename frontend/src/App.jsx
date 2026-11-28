@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ReengageBridge from "./components/reengage/ReengageBridge.jsx";
 import { isDesktopShell } from "./lib/desktopShell.js";
 import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
@@ -80,7 +81,7 @@ import {
   setServerFolder,
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
-import { applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
+import { applySignedOutAppearance, applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
 import {
   hydrateChatCache,
@@ -116,6 +117,7 @@ import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { useNativeIntents } from "./hooks/useNativeIntents";
 import { useAndroidWidgets } from "./hooks/useAndroidWidgets.js";
 import { useNativeWidgets } from "./hooks/useNativeWidgets";
+import { useNativeCallAsCall } from "./hooks/useNativeCallAsCall";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { useVoiceSessionGuard } from "./hooks/useVoiceSessionGuard";
@@ -174,6 +176,7 @@ import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { OnboardingProvider } from "./components/onboarding/OnboardingContext";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
+import { landingUsernameFromPath } from "./lib/inviteShare.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -234,12 +237,18 @@ const AppLayout = memoStableProps(AppLayoutView, "AppLayout");
 const CallTapCard = memoStableProps(CallTapCardView, "CallTapCard");
 const SpecialBadgeHost = memoStableProps(SpecialBadgeHostView, "SpecialBadgeHost");
 const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
+// Davet Merkezi (growth phase 4, 4A): dashboard host + the /r/<username> invite landing.
+const InviteCenterHost = lazy(() => import("./components/invites/InviteCenterHost.jsx"));
+const FriendInviteLanding = lazy(() => import("./components/invites/FriendInviteLanding.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
+// Descall+ 2.0 (owner pick 5B): hub, server boosts, checkout, gifts; nothing sells until the admin turns it on.
+const PlusHost = lazy(() => import("./plus2/PlusHost.jsx"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
-const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
+// Phone in-call pill "Ada": the minimized form of every call on a phone.
+const AdaCallHost = lazy(() => import("./components/calls/AdaCallHost"));
 import CallTapCardView from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
@@ -1374,6 +1383,18 @@ export default function App() {
       if (themeKey) document.documentElement.setAttribute("data-theme", themeKey);
     }
   }, [me, me?.equippedTheme?.theme_key]);
+
+  // Signed out (sign-in / sign-up, session expired, maintenance kick): Descall's own
+  // look. The effect above only runs with a user, so without this the last account's
+  // colourful theme stayed on the sign-in screen.
+  useEffect(() => {
+    if (me || !sessionChecked) return;
+    try {
+      applySignedOutAppearance();
+    } catch {
+      /* best effort */
+    }
+  }, [me, sessionChecked]);
 
   // Settings › Görünüm lives on the account: pull on sign-in and when the
   // window comes back, so a change on another device shows up here.
@@ -3534,6 +3555,13 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
+    // The sign-in page uses Descall's own look, not this account's shop theme or
+    // accent; the cache drops them too so a cold start paints the same.
+    try {
+      applySignedOutAppearance({ forget: true });
+    } catch {
+      /* best effort */
+    }
     const isElectronDesktop = isDesktopShell();
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
@@ -4528,8 +4556,11 @@ export default function App() {
         return;
       }
 
+      // Growth 3B: a friend calling you back / a streak nudge opens the DM with them ("Yanıtla");
+      // "Gel" on a call opens the server where your friends are.
+      const rgPerson = (type === "friend-call" && data.action !== "rg_come") || type === "streak-nudge";
       // "friend-wave": a friend waved from a widget; the tap opens the DM with them.
-      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave") {
+      if (type === "dm" || type === "missed-call" || type === "call" || type === "friend-wave" || rgPerson) {
         const peerId = data.conversationId || data.fromId;
         if (!peerId) return;
         const friend =
@@ -4578,6 +4609,11 @@ export default function App() {
         return;
       }
 
+      // Growth 3B: "Gel" on a friend's call / a console message with a server opens that server.
+      if ((type === "friend-call" || type === "rg-campaign") && data.serverId && !data.channelId) {
+        onNotifClick({ detail: { ...data, type: "server-owner" } });
+        return;
+      }
       if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
@@ -4638,6 +4674,11 @@ export default function App() {
 
       if (type === "friend-request" || type === "message-request") {
         setActiveView("friends");
+        return;
+      }
+      // Growth 3B console messages without a server: their own in-app link.
+      if (type === "rg-campaign" && typeof data.deepLink === "string" && data.deepLink.startsWith("/") && !data.deepLink.startsWith("//")) {
+        navigate(data.deepLink);
         return;
       }
     };
@@ -5276,6 +5317,20 @@ export default function App() {
   // 3.7.32: vanity and group landings use the same flow as server invites:
   // the value waits in its pending slot and the web opens /login or /register
   // instead of falling through to the marketing home page.
+  // Davet Merkezi: descall.com/r/<username> (personal invite landing). The sign-up buttons
+  // hand off to the normal auth flow with the invite ref already stored (lib/inviteShare.js).
+  const friendInviteUser = landingUsernameFromPath(location.pathname);
+  const [friendInviteAuth, setFriendInviteAuth] = useState(false);
+  const openFriendInviteAuth = useCallback(
+    (mode) => {
+      setFriendInviteAuth(true);
+      if (!Capacitor.isNativePlatform() && !isDesktopShell()) {
+        const ref = friendInviteUser ? `?ref=${encodeURIComponent(friendInviteUser)}` : "";
+        navigate(mode === "login" ? "/login" : `/register${ref}`);
+      }
+    },
+    [navigate, friendInviteUser]
+  );
   const openLandingAuth = useCallback(
     (kind, mode) => {
       if (kind === "vanity") setServerVanityAuthOpen(true);
@@ -5312,10 +5367,23 @@ export default function App() {
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
   // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
   useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
+  // iOS call answered on CallKit / the lock screen: it runs in Swift while useCall stays
+  // idle. As a useCall-shaped value it gets the full-screen call, the phone pill, the Live
+  // Activity and Siri like any DM call (lib/nativeCallAdapter.js). `call` stays the web
+  // hook everywhere else (URL sync, ringing, call back).
+  const nativeAsCall = useNativeCallAsCall(friends);
+  const uiCall = call?.mode ? call : nativeAsCall || call;
+  // The phone pill host stays mounted after the first call so the "ended" pill
+  // (duration + call back) can outlive the call it shows.
+  const anyVoiceLive = Boolean((uiCall?.mode && uiCall.mode !== "idle") || groupCall?.isInCall || serverVoice?.isInVoice || serverVoice?.connecting);
+  const [adaHostSeen, setAdaHostSeen] = useState(false);
+  useEffect(() => {
+    if (anyVoiceLive) setAdaHostSeen(true);
+  }, [anyVoiceLive]);
   // 4.2: Siri / Shortcuts / Spotlight (iOS), launcher shortcuts (Android), jump list (Windows).
   useNativeIntents({
     me,
-    call,
+    call: uiCall,
     groupCall,
     serverVoice,
     socket: socketApi,
@@ -5344,7 +5412,7 @@ export default function App() {
   useNativeWidgets({
     me,
     friends,
-    call,
+    call: uiCall,
     groupCall,
     serverVoice,
     socket: socketApi,
@@ -5415,6 +5483,28 @@ export default function App() {
             onJoined={handleServerVanityJoined}
             onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
             onDismiss={dismissServerVanity}
+          />
+        </Suspense>
+      </>
+    );
+  }
+
+  // Personal friend invite landing (/r/<username>): logged out shows the invite and sign-up,
+  // logged in a short "you are already here" card.
+  if (friendInviteUser && !(friendInviteAuth && !me)) {
+    return (
+      <>
+        <SeoHead forceNoindex title={t("dvt.land.personal")} description={t("dvt.land.tagline")} />
+        <TitleBar />
+        <Suspense fallback={<AppBootSkeleton />}>
+          <FriendInviteLanding
+            username={friendInviteUser}
+            search={location.search}
+            me={me}
+            appleAvailable={!Capacitor.isNativePlatform() || Capacitor.getPlatform() === "ios"}
+            onSignup={() => openFriendInviteAuth("register")}
+            onLogin={() => openFriendInviteAuth("login")}
+            onDismiss={() => navigate("/", { replace: true })}
           />
         </Suspense>
       </>
@@ -5867,6 +5957,13 @@ export default function App() {
         {me?.id && afterBoot ? (
           <Suspense fallback={null}>
             <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+          </Suspense>
+        ) : null}
+
+        {me?.id && afterBoot ? (
+          <Suspense fallback={null}>
+            <InviteCenterHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+            <PlusHost socket={socketApi} me={me} />
           </Suspense>
         ) : null}
 
@@ -6549,9 +6646,9 @@ export default function App() {
           />
         </AppLayout>
         </OnboardingProvider>
-        {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
+        {(callUiReady || (uiCall?.mode && uiCall.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
-            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />
+            <CallOverlay call={uiCall} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />
             <GroupCallIncomingModal
               incomingCall={groupCall?.incomingCall}
               onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
@@ -6602,9 +6699,24 @@ export default function App() {
             callRef.current?.startCall?.(friend, card.callType === "video" ? "video" : "voice");
           }}
         />
-        {IOS_NATIVE && me?.id ? (
+        {me?.id && (anyVoiceLive || adaHostSeen) ? (
           <Suspense fallback={null}>
-            <NativeCallCard />
+            <AdaCallHost
+              call={uiCall}
+              groupCall={groupCall}
+              serverVoice={serverVoice}
+              me={me}
+              groups={myGroups}
+              servers={myServers}
+              pathname={location.pathname}
+              navigate={navigate}
+              onReturnToCall={returnToCall}
+              onCallBack={(peer, callType) => {
+                if (!peer?.id) return;
+                const friend = friendsRef.current.find((f) => String(f.id) === String(peer.id)) || peer;
+                callRef.current?.startCall?.(friend, callType === "video" ? "video" : "voice");
+              }}
+            />
           </Suspense>
         ) : null}
         <GlassConfirmHost />
@@ -6621,6 +6733,7 @@ export default function App() {
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
           </Suspense>
         ) : null}
+        {me?.id ? <ReengageBridge socket={socketApi} serverVoice={serverVoice} /> : null}
         {me?.id && heardAboutAsk ? (
           <Suspense fallback={null}>
             <HeardAboutPrompt userId={me.id} />

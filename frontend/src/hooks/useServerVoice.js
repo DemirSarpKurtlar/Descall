@@ -79,6 +79,8 @@ import {
 } from "../lib/screenShareTracks";
 import { useToast } from "../context/ToastContext";
 import { IOS_NATIVE } from "../lib/iosCallKit";
+import { beginIosCallAudio, endIosCallAudio } from "../lib/iosAudioRoute";
+import { useIosAudioRoute } from "./useIosAudioRoute";
 import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
@@ -101,6 +103,8 @@ import {
   unmuteDeniedKey,
 } from "../lib/serverVoiceRecovery";
 import { cleanServerScreenQuality, readServerScreenQuality, writeServerScreenQuality } from "../lib/serverScreenQuality";
+import { setScreenCeiling } from "../plus2/screenCeiling.js";
+import { platformHeaders } from "../plus2/platform.js";
 import {
   isScreenCompanionIdentity,
   parseLiveKitIdentity,
@@ -537,7 +541,7 @@ export function useServerVoice(socket) {
     const res = await fetch(
       `${apiBase()}/api/webrtc/livekit-token?channelId=${encodeURIComponent(channelId)}`,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, ...platformHeaders() },
         cache: "no-store",
       }
     );
@@ -560,7 +564,7 @@ export function useServerVoice(socket) {
     }
     const res = await fetch(
       `${apiBase()}/api/webrtc/livekit-screen-token?channelId=${encodeURIComponent(channelId)}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
+      { headers: { Authorization: `Bearer ${token}`, ...platformHeaders() }, cache: "no-store" }
     );
     const body = await res.json().catch(() => ({}));
     if (!res.ok || !body?.enabled || !body?.token) {
@@ -621,7 +625,9 @@ export function useServerVoice(socket) {
           return;
         }
         const url = liveKitUrlRef.current || data.livekitUrl;
-        await startNativeBroadcast({ url, token: data.token, anchor, showPicker });
+        // Descall+ 2.0: the broadcast never encodes above the plan's ceiling (iOS already tops out at 1080p / 15).
+        const ceil = data.screenCeiling && data.screenCeiling.locked ? data.screenCeiling : null;
+        await startNativeBroadcast({ url, token: data.token, anchor, showPicker, ...(ceil ? { maxHeight: Math.min(1080, ceil.height), fps: Math.min(15, ceil.fps) } : {}) });
       } catch (err) {
         console.warn("[ServerVoice] iOS screen broadcast failed:", err?.code || "", err?.message || err);
         applyNativeShare({ type: "fail", error: tokenErrorKey(err?.code) });
@@ -1564,6 +1570,8 @@ export function useServerVoice(socket) {
               const speakPerm = tokenData.canSpeak !== undefined ? tokenData.canSpeak : tokenData.canPublish;
               canSpeakRef.current = Boolean(speakPerm);
               setCanSpeak(Boolean(speakPerm));
+              // Descall+ 2.0: the server's screen ceiling for this person here (null = no limit).
+              if (tokenData.screenCeiling !== undefined) setScreenCeiling(tokenData.screenCeiling, activeServerIdRef.current || "");
               if (tokenData.canStream !== undefined) {
                 canStreamRef.current = Boolean(tokenData.canStream);
                 setCanStream(Boolean(tokenData.canStream));
@@ -1986,6 +1994,7 @@ export function useServerVoice(socket) {
       // SFU: one upload whatever the room size; mesh: one encode per peer, so the mesh cap.
       const { width, height, fps: frameRate } = resolveScreenCaptureSize(quality, {
         peerCount: sfuModeRef.current ? 1 : peerCount + 1,
+        serverId: activeServerIdRef.current || "",
       });
       const maxBitrate = screenBitrateForPeerCount(
         sfuModeRef.current ? 1 : peerCount,
@@ -3231,7 +3240,23 @@ export function useServerVoice(socket) {
     };
   }, []);
 
+  // Native iOS: voice channels get the same output router as calls, so the
+  // output menu (Ahize / Hoparlör / Bluetooth) really switches (27 Nov 2026:
+  // "sesteyken ahizeye geçmiyor": the menu listed WKWebView devices, none).
+  const inVoiceForRoute = Boolean(activeChannelId);
+  useEffect(() => {
+    if (!IOS_NATIVE) return undefined;
+    if (!inVoiceForRoute) return undefined;
+    void beginIosCallAudio({ video: false, owner: "server" });
+    return () => {
+      void endIosCallAudio("server");
+    };
+  }, [inVoiceForRoute]);
+  const iosRouteHook = useIosAudioRoute(inVoiceForRoute);
+
   return {
+    iosAudioRoute: iosRouteHook.iosAudioRoute,
+    selectIosRoute: iosRouteHook.selectIosRoute,
     isInVoice: Boolean(activeChannelId),
     activeChannelId,
     activeServerId,

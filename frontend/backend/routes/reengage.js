@@ -7,6 +7,11 @@
  *   GET  /api/reengage/unsubscribe?u=&s=&t=        -> HTML page (one click, no sign-in)
  *   POST /api/reengage/unsubscribe?u=&s=&t=        -> RFC 8058 List-Unsubscribe-Post
  * The caller's other devices get reengage:prefs so their switches follow.
+ *
+ * Growth 3B tracking (lib/reengage/tracking.js; signed tokens, no personal data in URLs):
+ *   POST /api/reengage/t/d/:token        push delivered (the web service worker)
+ *   GET  /api/reengage/t/c/:token?to=/x  e-mail link: marks opened, redirects into the app
+ *   POST /api/reengage/t/open { kind }   the signed-in app tapped a re-engagement push
  */
 
 const express = require("express");
@@ -49,6 +54,33 @@ async function handleUnsubscribe(req, res) {
   res.set("Cache-Control", "no-store");
   return res.status(result.ok ? 200 : 404).type("html").send(pageHtml(title, body, lang));
 }
+
+/* ---- growth 3B tracking ------------------------------------------------- */
+
+const tracking = () => require("../lib/reengage/tracking");
+
+router.post("/t/d/:token", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  await tracking().markByToken(String(req.params.token || ""), "delivered").catch(() => null);
+  res.status(204).end();
+});
+
+router.get("/t/c/:token", async (req, res) => {
+  const { publicOrigin } = require("../lib/reengagePolicy");
+  const raw = String(req.query.to || "/app");
+  // Only paths inside the app: no open redirect.
+  const path = /^\/(?!\/)[A-Za-z0-9/_.?=&%-]{0,300}$/.test(raw) ? raw : "/app";
+  await tracking().markByToken(String(req.params.token || ""), "opened").catch(() => null);
+  res.set("Cache-Control", "no-store");
+  res.redirect(302, `${publicOrigin()}${path}`);
+});
+
+router.post("/t/open", requireAuth, async (req, res) => {
+  const kind = String(req.body?.kind || "").slice(0, 64);
+  if (!kind) return res.status(400).json({ ok: false });
+  const ok = await tracking().markOpened(req.user.id, kind).catch(() => false);
+  res.json({ ok });
+});
 
 router.get("/unsubscribe", handleUnsubscribe);
 router.post("/unsubscribe", handleUnsubscribe);

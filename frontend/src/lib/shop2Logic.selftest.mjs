@@ -478,3 +478,34 @@ console.log(`shop2Logic.selftest ok (${enKeys.length} strings x ${LOCALES.length
   assert.deepEqual(V.ageOf(NOW - 14 * D, NOW), { unit: "week", n: 2 });
   console.log("shop2Inventory ok");
 }
+
+// ---------- set piece strip: one explicit tile size for every width ----------
+{
+  const { slotStripFit, SLOT_STAGE_PX } = await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), "shop2Logic.js")).href);
+  const fits = (r, w, gap = 8) => r.scroll || r.cols * r.tile + (r.cols - 1) * gap <= w + 0.001;
+  // Desktop banner: a fixed 3 x 3 square of 58 px tiles.
+  assert.deepEqual(slotStripFit({ width: 190, cols: 3, fixed: 58 }), { tile: 58, k: 0.9063, cols: 3, rows: 3, scroll: false });
+  // Stacked (iPad, narrow window): one row of 9, capped at the max size.
+  const wide = slotStripFit({ width: 1300, cols: 9, fixed: 0, min: 44, max: 84, gap: 8 });
+  assert.deepEqual([wide.tile, wide.cols, wide.rows, wide.scroll], [84, 9, 1, false]);
+  for (const w of [1300, 1000, 760, 700, 640, 520, 470]) {
+    const r = slotStripFit({ width: w, cols: 9, fixed: NaN, min: 44, max: 84, gap: 8 });
+    assert.ok(r.tile >= 44 && r.tile <= 84 && fits(r, w), `9 columns at ${w}px: ${JSON.stringify(r)}`);
+    assert.equal(r.k, Math.round((r.tile / SLOT_STAGE_PX) * 1e4) / 1e4);
+  }
+  // Too narrow for 9: two even rows (5 + 4), never 7 + 2.
+  const two = slotStripFit({ width: 400, cols: 9, fixed: 0, min: 44, max: 84, gap: 8 });
+  assert.deepEqual([two.cols, two.rows, two.scroll], [5, 2, false]);
+  assert.ok(fits(two, 400));
+  // Phone (5 columns): fits down to 5 x 44 + 4 x 8 = 252 px, then one row that scrolls (snap).
+  const phone = slotStripFit({ width: 330, cols: 5, fixed: 0, min: 44, max: 72, gap: 8 });
+  assert.deepEqual([phone.tile, phone.cols, phone.rows, phone.scroll], [59, 5, 2, false]);
+  const tiny = slotStripFit({ width: 240, cols: 5, fixed: 0, min: 44, max: 72, gap: 8 });
+  assert.deepEqual([tiny.tile, tiny.cols, tiny.rows, tiny.scroll], [44, 9, 1, true]);
+  // Unmeasured (0 / NaN width) or junk settings: a safe minimum, never NaN.
+  for (const bad of [{}, { width: 0 }, { width: NaN, cols: "x", min: -1, max: 0, gap: NaN }]) {
+    const r = slotStripFit(bad);
+    assert.ok(Number.isFinite(r.tile) && r.tile >= 44 && Number.isFinite(r.k) && r.cols >= 1, `safe default ${JSON.stringify(bad)}`);
+  }
+  console.log("slotStripFit ok");
+}

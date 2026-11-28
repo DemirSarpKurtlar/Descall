@@ -5,6 +5,7 @@
  */
 export const PREMIUM_ADMIN_EN = {
   navGroup: "Premium management",
+  navWorkspace: "Descall+ workspace",
   navDashboard: "Premium dashboard",
   navUsers: "Member subscriptions",
   navBulk: "Bulk membership actions",

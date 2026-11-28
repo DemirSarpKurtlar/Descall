@@ -3,6 +3,9 @@
    wins when it is newer, so every device ends up the same. */
 import {
   APPEARANCE_EVENT,
+  DEFAULT_ACCENT,
+  LEGACY_SETTINGS_KEY,
+  SETTINGS_KEY,
   SOLID_KEY,
   FONT_STEPS,
   SYNC_KEYS,
@@ -101,6 +104,46 @@ export function setPremiumThemeKey(key) {
 export function applyStoredAppearance({ premium } = {}) {
   if (premium !== undefined) setPremiumThemeKey(premium);
   return applyNow(readAppearance());
+}
+
+/* The account's look (shop theme, accent, light/dark) belongs to the account, not
+   the device. Text size and the reduce motion / transparency choices stay: they are
+   about the person at this screen and the sign-in page should honour them too. */
+const ACCOUNT_LOOK_KEYS = ["premiumThemeKey", "accentColor", "themeMode", "darkMode", "appearanceUpdatedAt"];
+
+/**
+ * Pure: the cached settings blob without the signed-out account's look. Dropping
+ * appearanceUpdatedAt matters: the next sign-in then pulls the account copy instead
+ * of pushing these blanks over it (pullAccountAppearance compares the two times).
+ */
+export function withoutAccountLook(settings) {
+  const next = { ...(settings && typeof settings === "object" ? settings : {}) };
+  for (const key of ACCOUNT_LOOK_KEYS) delete next[key];
+  return next;
+}
+
+/** Removes the account's look from this device's cache (both settings keys). */
+export function forgetAccountLook(storage = typeof localStorage !== "undefined" ? localStorage : null) {
+  if (!storage) return;
+  try {
+    const json = JSON.stringify(withoutAccountLook(readStoredSettings(storage)));
+    storage.setItem(SETTINGS_KEY, json);
+    storage.setItem(LEGACY_SETTINGS_KEY, json);
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+/**
+ * Signed out (sign-in and sign-up screens): Descall's own look, dark with the logo
+ * blue, never the last account's colourful shop theme. With forget, the device cache
+ * also drops it so a cold start paints the same. The account's look comes back from
+ * the server on the next sign-in (App.jsx: equipped theme + pullAccountAppearance).
+ */
+export function applySignedOutAppearance({ forget = false } = {}) {
+  setPremiumThemeKey(null);
+  if (forget) forgetAccountLook();
+  return applyNow({ ...readAppearance(), themeMode: "dark", accentColor: DEFAULT_ACCENT });
 }
 
 function emit(prefs) {

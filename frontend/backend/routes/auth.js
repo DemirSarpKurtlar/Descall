@@ -503,58 +503,12 @@ async function validatePassword(password) {
 /**
  * Personal invite loop: when a new user registers with invitedBy=<username>,
  * auto-accept friendship so both land with a real connection (not a pending ask).
- * First successful link also pays DesCoin to inviter + invitee (once per invitee).
+ * Davet Merkezi (growth phase 4): the DesCoin reward is no longer paid at sign-up. The
+ * sign-up writes a pending referral (lib/referrals/engine.js recordSignup, with the same
+ * device / network / throwaway email signals) that pays 100 + 50 only after the invitee's
+ * first message and a return visit the next day. Rewards paid before stay paid.
  */
-async function grantReferralDesCoin(inviterId, inviteeId, io) {
-  const descoin = require("../lib/descoin");
-  const inviterAmount = descoin.REFERRAL_INVITER_REWARD;
-  const inviteeAmount = descoin.REFERRAL_INVITEE_REWARD;
-
-  const { error: insertError } = await supabase.from("referral_rewards").insert({
-    inviter_id: inviterId,
-    invitee_id: inviteeId,
-    inviter_amount: inviterAmount,
-    invitee_amount: inviteeAmount,
-  });
-  // Unique(invitee_id) — already rewarded this user.
-  if (insertError) {
-    if (insertError.code === "23505") return { rewarded: false };
-    console.warn("[AUTH] referral_rewards insert failed:", insertError.message);
-    return { rewarded: false };
-  }
-
-  await supabase.from("users").update({ referred_by: inviterId }).eq("id", inviteeId).is("referred_by", null);
-
-  const [inviterCredit, inviteeCredit] = await Promise.all([
-    descoin.credit(inviterId, inviterAmount, "referral_invite", { inviteeId }),
-    descoin.credit(inviteeId, inviteeAmount, "referral_welcome", { inviterId }),
-  ]);
-
-  if (io) {
-    try {
-      io.to(`user:${inviterId}`).emit("descoin:balance", {
-        balance: inviterCredit.balance,
-        delta: inviterCredit.credited,
-        reason: "referral_invite",
-      });
-      io.to(`user:${inviteeId}`).emit("descoin:balance", {
-        balance: inviteeCredit.balance,
-        delta: inviteeCredit.credited,
-        reason: "referral_welcome",
-      });
-    } catch {
-      /* ignore */
-    }
-  }
-
-  return {
-    rewarded: true,
-    inviterAmount,
-    inviteeAmount,
-  };
-}
-
-async function applyFriendInvite(newUserId, invitedByRaw, io) {
+async function applyFriendInvite(newUserId, invitedByRaw, io, ctx = {}) {
   const invitedBy = String(invitedByRaw || "")
     .trim()
     .replace(/^@/, "");
@@ -625,18 +579,17 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
     }
   }
 
-  let reward = { rewarded: false };
-  try {
-    reward = await grantReferralDesCoin(inviter.id, newUserId, io);
-  } catch (err) {
-    console.warn("[AUTH] referral DesCoin reward failed:", err?.message || err);
-  }
+  const reward = await require("../lib/referrals/engine")
+    .recordSignup({ inviterId: inviter.id, inviteeId: newUserId, email: ctx.email || null, req: ctx.req || null, io })
+    .catch(() => ({ recorded: false }));
 
   return {
     linked: true,
     inviterUsername: inviter.username,
     inviterId: inviter.id,
-    referralRewarded: Boolean(reward.rewarded),
+    // Nothing is paid at sign-up any more; the amounts are what unlocks later.
+    referralRewarded: false,
+    referralPending: Boolean(reward.recorded) && ["pending", "held"].includes(reward.status),
     referralInviterAmount: reward.inviterAmount || 0,
     referralInviteeAmount: reward.inviteeAmount || 0,
   };
@@ -816,7 +769,7 @@ router.post("/register", async (req, res) => {
       emailSent = Boolean(result?.sent);
     }
 
-    const invite = await applyFriendInvite(newUser.id, invitedBy, req.app.get("io")).catch((err) => {
+    const invite = await applyFriendInvite(newUser.id, invitedBy, req.app.get("io"), { req, email }).catch((err) => {
       console.warn("[AUTH] invite apply failed:", err?.message);
       return { linked: false };
     });
@@ -1348,7 +1301,7 @@ router.post("/google", async (req, res) => {
 
     let invite = { linked: false };
     if (isNewUser) {
-      invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io")).catch((err) => {
+      invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io"), { req, email: user.email }).catch((err) => {
         console.warn("[AUTH] Google invite apply failed:", err?.message);
         return { linked: false };
       });
@@ -1603,7 +1556,7 @@ router.post("/apple", async (req, res) => {
 
     let invite = { linked: false };
     if (isNewUser) {
-      invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io")).catch(() => ({ linked: false }));
+      invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io"), { req, email: user.email }).catch(() => ({ linked: false }));
       await applySignupInvite(supabase, user.id, signupInvite);
       noteSignupInvite(user.id, req.body, invite);
       void recordSignupAnalytics(user, attributionColumns);

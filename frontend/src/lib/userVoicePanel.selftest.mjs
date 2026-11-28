@@ -87,7 +87,9 @@ assert.equal(readDeafenPref(s), true);
 assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: false, view: "chat" }), true);
 assert.equal(shouldShowUserVoicePanel({ isMobile: true, glassShell: false, native: false, view: "chat" }), false);
 assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: true, native: false, view: "chat" }), false);
-assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: true, view: "chat" }), false, "iPad app");
+assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: true, view: "chat" }), false, "phone app");
+assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: true, nativeTablet: true, view: "chat" }), true, "iPad / Android tablet app in the desktop layout matches Electron");
+assert.equal(shouldShowUserVoicePanel({ isMobile: true, glassShell: true, native: true, nativeTablet: true, view: "chat" }), false, "tablet app in the phone layout (Split View)");
 
 // Source contracts.
 const here = new URL(".", import.meta.url);

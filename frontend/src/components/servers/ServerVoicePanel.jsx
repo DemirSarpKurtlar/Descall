@@ -1301,6 +1301,8 @@ export default function ServerVoicePanel({
                     await serverVoice.startScreenShare?.({ quality });
                   }}
                   onRestartWithQuality={serverVoice.restartScreenShareWithQuality}
+                  serverId={server?.id || null}
+                  serverName={server?.name || ""}
                 />
               ) : null}
               </span>

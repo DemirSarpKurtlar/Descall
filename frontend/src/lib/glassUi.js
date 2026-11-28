@@ -1,10 +1,14 @@
 import { isDesktopShell } from "./desktopShell.js";
+import { readDeviceLayout } from "./deviceLayout.js";
 /**
  * Liquid Glass UI gate.
  *
  * Native: the Capacitor iOS and Android apps on a phone (short side < 600).
- * iPad / Android tablets use the wide layout (glassDesktop.js); Electron never
- * gets `html.glass-ui`.
+ * iPad / Android tablets use the wide layout (glassDesktop.js) while their
+ * window is wider than 768 px; at 768 px or less (iPad mini portrait, Split
+ * View, Slide Over, a small Stage Manager window) they get this phone shell,
+ * exactly like an iPhone (lib/deviceLayout.js). Electron never gets
+ * `html.glass-ui`.
  *
  * Mobile web: a phone-like browser under the desktop glass width (960px)
  * gets the same class, so iPhone Safari matches the iOS app. It follows the
@@ -98,6 +102,8 @@ export function shouldEnableGlass({
   isElectron = false,
   isNativeAndroid = false,
   shortSide = 0,
+  isTablet = false,
+  tabletPhoneLayout = false,
   viewportWidth = 0,
   viewportShortSide = 0,
   buildFlag = true,
@@ -110,7 +116,8 @@ export function shouldEnableGlass({
   if (isElectron) return false;
 
   if (isNativeIos || isNativeAndroid) {
-    if (!(shortSide > 0 && shortSide < PHONE_MAX_SHORT_SIDE)) return false;
+    // A tablet in a phone-width window takes the phone shell; wider it is glass-desktop.
+    if (!(shortSide > 0 && shortSide < PHONE_MAX_SHORT_SIDE) && !tabletPhoneLayout) return false;
     if (override === "0") return false;
     if (override === "1") return true;
     if (buildFlag === false) return false;
@@ -123,7 +130,10 @@ export function shouldEnableGlass({
   // Same split as glassDesktop's webGlassMode, so every web width gets one layer.
   const width = Number(viewportWidth) || 0;
   const short = Number(viewportShortSide) || 0;
-  if (webGlassMode({ width, height: short > 0 && short < width ? short : width }) !== "ui") return false;
+  if (isTablet) {
+    // Touch tablet browser: window width only (keyboard-proof), same as the app.
+    if (!tabletPhoneLayout) return false;
+  } else if (webGlassMode({ width, height: short > 0 && short < width ? short : width }) !== "ui") return false;
   if (webOverride === "0" || override === "0") return false;
   if (webBuildFlag === false || buildFlag === false) return false;
   if (webOverride === "1" || override === "1") return true;
@@ -138,11 +148,15 @@ function snapshotInputs(w, remoteOverride) {
   const viewportHeight = Number(w?.innerHeight) || 0;
   const cachedRemote = readStorage(w, GLASS_REMOTE_KEY);
   const platform = nativeShellPlatform(w);
+  const isElectron = Boolean(w) && isDesktopShell(w);
+  const device = readDeviceLayout(w);
   return {
     isNativeIos: platform === "ios" || isNativeIosShell(w),
     isNativeAndroid: platform === "android",
-    isElectron: Boolean(w) && isDesktopShell(w),
+    isElectron,
     shortSide,
+    isTablet: !isElectron && device.tablet,
+    tabletPhoneLayout: !isElectron && device.tablet && device.phoneLayout,
     viewportWidth,
     viewportShortSide: viewportWidth > 0 && viewportHeight > 0 ? Math.min(viewportWidth, viewportHeight) : 0,
     buildFlag: readFlag("VITE_GLASS_UI"),
@@ -342,7 +356,10 @@ function setEnabled(next, w) {
     // Accessibility / power / device-tier classes come from the native bridge.
     import("./glassDisplay.js").then((m) => m.startGlassDisplay?.()).catch(() => {});
   } else if (!next && isNativeIosShell(w)) {
-    import("./glassDisplay.js").then((m) => m.stopGlassDisplay?.()).catch(() => {});
+    // iPad leaving the phone layout: glass-desktop still uses the status-bar
+    // ink and the accessibility listener (glassDesktop watchNativeAccessibility).
+    const keepStatusBar = isNativeIosTablet(w);
+    import("./glassDisplay.js").then((m) => m.stopGlassDisplay?.({ keepStatusBar })).catch(() => {});
   }
   if (next) {
     // Long-press must not start WebKit text selection on chrome or bubbles.
@@ -350,8 +367,15 @@ function setEnabled(next, w) {
   }
 }
 
+/** Native iPad: the window can change between the phone and desktop layout. */
+function isNativeIosTablet(w) {
+  return isNativeIosShell(w) && readDeviceLayout(w).tablet;
+}
+
 function startWatchers(w) {
-  if (watching || !w || isNativeIosShell(w)) return;
+  // iPhone app: nothing to watch (its screen is always a phone). The iPad app
+  // rotates and resizes (Split View, Stage Manager), so it re-reads on resize.
+  if (watching || !w || (isNativeIosShell(w) && !isNativeIosTablet(w))) return;
   watching = true;
   const onEnv = () => {
     inputs = snapshotInputs(w);
