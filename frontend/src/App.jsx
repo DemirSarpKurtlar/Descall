@@ -5435,6 +5435,20 @@ export default function App() {
     t,
   });
 
+  // Draft C: localized servers answer in the UI language, so a language switch refetches
+  // the list (and merges it into the open server and channel). These hooks must stay above
+  // the early returns below (boot error, session check, invites, sign-in): hooks after them
+  // run only once signed in, and React then throws "rendered more hooks" (#310) on sign-in.
+  const refreshServersRef = useRef(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onLocale = () => {
+      if (getToken()) void refreshServersRef.current?.();
+    };
+    window.addEventListener("descall:locale", onLocale);
+    return () => window.removeEventListener("descall:locale", onLocale);
+  }, []);
+
   if (bootError && !me) {
     return (
       <>
@@ -5670,18 +5684,9 @@ export default function App() {
     }
   };
 
-  // Draft C: localized servers answer in the UI language, so a language switch refetches
-  // the list (and merges it into the open server and channel).
-  const refreshServersRef = useRef(null);
+  // Draft C: the language-switch refetch is wired up above the early returns (hooks there);
+  // this keeps its ref pointing at the current handler.
   refreshServersRef.current = handleRefreshServers;
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const onLocale = () => {
-      if (getToken()) void refreshServersRef.current?.();
-    };
-    window.addEventListener("descall:locale", onLocale);
-    return () => window.removeEventListener("descall:locale", onLocale);
-  }, []);
 
   const handleCreateServer = async ({ name, iconUrl, templateId, starterLocale }) => {
     const { server, ownedCount, maxOwned } = await createServer({ name, iconUrl, templateId, starterLocale });
