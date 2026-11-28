@@ -20,7 +20,7 @@ pub struct F;
 pub(crate) fn app_window_script(h: &Host, label: &str, token: &str) -> String {
     let boot = h.boot_script_for(label).unwrap_or_else(|| {
         let boot = json!({ "version": h.app.package_info().version.to_string(), "platform": "win32", "token": if token.is_empty() { Value::Null } else { json!(token) }, "reducedTransparency": false });
-        format!("window.__DESCALL_BOOT__ = {boot};")
+        descall_shell::bridge::boot_assignment(&boot.to_string())
     });
     format!("{boot}\n{SHIM}\n{NATIVE_SHARE}")
 }

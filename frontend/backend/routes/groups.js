@@ -36,6 +36,46 @@ async function readdBlocked(groupId, userId) {
   };
 }
 
+/**
+ * Take one use of a group invite link (compare-and-swap on `uses`, like server invites).
+ * Returns the updated row, or null when the link is gone, expired or used up.
+ */
+async function claimGroupInviteUse(code) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { data: row, error } = await supabase
+      .from("group_invite_links")
+      .select("code, uses, max_uses, expires_at")
+      .eq("code", code)
+      .maybeSingle();
+    if (error) throw error;
+    if (!row || (row.expires_at && new Date(row.expires_at) < new Date())) return null;
+    const cur = Number(row.uses) || 0;
+    if (row.max_uses != null && cur >= row.max_uses) return null;
+    let q = supabase.from("group_invite_links").update({ uses: cur + 1 }).eq("code", code);
+    q = row.uses == null ? q.is("uses", null) : q.eq("uses", cur);
+    const { data: updated, error: upErr } = await q.select("code, uses, max_uses");
+    if (upErr) throw upErr;
+    const hit = Array.isArray(updated) ? updated[0] : updated;
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** Give a claimed use back (member insert failed). Best effort, same compare-and-swap. */
+async function releaseGroupInviteUse(code) {
+  try {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const { data: row } = await supabase.from("group_invite_links").select("uses").eq("code", code).maybeSingle();
+      const cur = Number(row?.uses) || 0;
+      if (!row || cur <= 0) return;
+      const { data: updated } = await supabase.from("group_invite_links").update({ uses: cur - 1 }).eq("code", code).eq("uses", cur).select("code");
+      if (Array.isArray(updated) ? updated.length : updated) return;
+    }
+  } catch {
+    /* best effort */
+  }
+}
+
 /** Insert a member_removed / member_left row; returns the stored row or null. */
 async function insertMemberEvent({ groupId, type, actorId, actorName, targetId, targetName }) {
   const content = JSON.stringify({
@@ -235,22 +275,25 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
       return res.status(400).json(apiError("Group is full (max {max})", { max: MAX_GROUP_SIZE }));
     }
 
+    // Claim a use first (compare-and-swap on `uses`): parallel joins on a one-time link
+    // all passed the check above and all got in (security audit 28 Nov 2026).
+    const claimed = await claimGroupInviteUse(code);
+    if (!claimed) return res.status(410).json({ error: "Invite has reached max uses" });
+
     const { error: joinError } = await supabase
       .from("group_members")
       .insert({ group_id: invite.group_id, user_id: userId });
     if (joinError) {
       console.error("[Groups] invite join insert:", joinError);
+      await releaseGroupInviteUse(code);
       return res.status(500).json({ error: "Failed to join group" });
     }
     await removals.markReadded(invite.group_id, userId).catch(() => {});
     // A fresh account that came in through this link (Kayıt İstatistikleri).
     void recordJoinedViaInvite(userId, `group:${code}`);
 
-    const nextUses = (invite.uses || 0) + 1;
-    if (invite.max_uses != null && nextUses >= invite.max_uses) {
+    if (claimed.max_uses != null && Number(claimed.uses) >= claimed.max_uses) {
       await supabase.from("group_invite_links").delete().eq("code", code);
-    } else {
-      await supabase.from("group_invite_links").update({ uses: nextUses }).eq("code", code);
     }
 
     const groups = await getUserGroups(userId);
@@ -853,6 +896,18 @@ router.post("/invites/:inviteId/respond", requireAuth, async (req, res) => {
     // Accept - add to group
     const cooldown = await readdBlocked(invite.group_id, userId);
     if (cooldown) return res.status(429).json(cooldown);
+    // Checked at accept time too (security audit 28 Nov 2026): pending invites let a group
+    // grow past MAX_GROUP_SIZE, and one from a member who was removed meanwhile still worked.
+    if (!(await isGroupMember(invite.group_id, invite.invited_by))) {
+      return res.status(404).json({ error: "Invite not found" });
+    }
+    const { count: size } = await supabase
+      .from("group_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("group_id", invite.group_id);
+    if ((size || 0) >= MAX_GROUP_SIZE) {
+      return res.status(400).json(apiError("Group is full (max {max})", { max: MAX_GROUP_SIZE }));
+    }
     await supabase.from("group_members").insert({
       group_id: invite.group_id,
       user_id: userId,

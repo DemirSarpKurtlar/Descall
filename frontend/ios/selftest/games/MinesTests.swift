@@ -25,6 +25,19 @@ func testMines() {
     eq(f.minesLeft, f.mineCount - 1, "counter")
     eq(f.toggleFlag(hidden), .unflagged, "unflag")
 
+    // A flag planted before the first tap, then tapped: nothing happens and the mines are not
+    // laid yet, so the real first tap is still safe and opens an area.
+    for seed in UInt64(1)...150 {
+        var pre = MinesState(level: .easy, seed: seed)
+        eq(pre.toggleFlag(0), .flagged, "flag before the first tap")
+        eq(pre.reveal(0), .nothing, "tapping that flag does nothing")
+        check(!pre.placed, "mines wait for the first real tap (seed \(seed))")
+        let first = pre.cols * pre.rows - 1
+        let ev = pre.reveal(first)
+        check(ev != .boom, "the first real tap is never a mine (seed \(seed))")
+        check(pre.count(first) == 0, "the first real tap opens an area (seed \(seed))")
+    }
+
     // Chord: flag every mine around an opened number, then tap it.
     var c = MinesState(level: .easy, seed: 7)
     _ = c.reveal(c.cols * c.rows / 2)

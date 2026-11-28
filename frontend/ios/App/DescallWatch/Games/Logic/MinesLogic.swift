@@ -78,7 +78,9 @@ struct MinesState: Codable, Equatable {
     /// Tap. Opens a hidden cell (flood fill on zeros) or chords an opened number.
     mutating func reveal(_ i: Int) -> MinesEvent {
         guard !over, i >= 0, i < cells.count else { return .nothing }
-        if !placed { place(avoiding: i) }
+        // Lay the mines on the first tap that really opens a cell (a tap on a flag planted
+        // before that used to lay them, so the real first tap could hit a mine).
+        if !placed, cells[i] == .hidden { place(avoiding: i) }
         switch cells[i] {
         case .flagged: return .nothing
         case .open: return chord(i)

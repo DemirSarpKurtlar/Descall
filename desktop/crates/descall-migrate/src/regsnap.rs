@@ -9,6 +9,8 @@ use std::path::Path;
 use crate::paths;
 
 pub const UNINSTALL: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall";
+/// The 32-bit view of [`UNINSTALL`] under HKLM (a machine-wide 32-bit Electron).
+pub const UNINSTALL_WOW64: &str = r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
 pub const RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 pub const RUN_ONCE: &str = r"Software\Microsoft\Windows\CurrentVersion\RunOnce";
 pub const STARTUP_APPROVED_RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";

@@ -149,6 +149,13 @@ async function applyEvent(ev, cfg) {
   const currency = ev.currency || checkout?.currency || null;
   const kind = checkout?.kind || (product.kind === "gift" ? "gift" : "self");
 
+  // A gift / group share delivers what the checkout says, so the product the provider charged
+  // must be that one: Paddle.js and StoreKit let the buyer pick the price id and put any checkout
+  // id in custom_data / appAccountToken (the 1-month price must not pay a 12-month gift).
+  if ((kind === "gift" || kind === "group_share") && ev.product && checkout && ev.product.key !== `gift_${checkout.plan}_${checkout.months}`) {
+    return { status: "failed", userId, error: "product_mismatch" };
+  }
+
   if (kind === "gift") {
     if (!checkout?.gift_id) return { status: "failed", userId, error: "gift_missing" };
     const { data: gift } = await db().from("premium_gifts").update({

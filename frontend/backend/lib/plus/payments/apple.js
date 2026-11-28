@@ -7,7 +7,7 @@
  * Apple Root CA - G3. We verify: each certificate is signed by the next and valid now, the root is
  * the pinned Apple Root CA - G3 (SHA-256 fingerprint, overridable with APPLE_ROOT_CA_SHA256 for
  * tests / a future root), and the JWS signature with the leaf key. Then the bundle id must match
- * APPLE_BUNDLE_ID (default com.descall.app) and, when APPLE_ENVIRONMENT is set, the environment.
+ * APPLE_BUNDLE_ID (default com.descall.app) and the environment must be APPLE_ENVIRONMENT (default Production).
  *
  * Nothing secret lives here: verifying needs no key. Configured = the owner set APPLE_IAP_ENABLED=1
  * (after accepting the Paid Apps agreement) and product ids exist in the offer config.
@@ -80,9 +80,12 @@ function bundleOk(bundleId, env = process.env) {
   return String(bundleId || "") === String(env.APPLE_BUNDLE_ID || "com.descall.app");
 }
 
+// Production unless the owner sets APPLE_ENVIRONMENT=Sandbox (a test server): Sandbox purchases
+// (TestFlight, sandbox testers) are free and signed by the same Apple chain, so accepting them by
+// default would grant real memberships without payment.
 function envOk(environment, env = process.env) {
-  const want = String(env.APPLE_ENVIRONMENT || "").trim();
-  return !want || String(environment || "") === want;
+  const want = String(env.APPLE_ENVIRONMENT || "").trim() || "Production";
+  return String(environment || "") === want;
 }
 
 function status(env = process.env) {

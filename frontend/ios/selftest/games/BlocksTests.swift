@@ -63,12 +63,20 @@ func testBlocks() {
     // Hold once per piece.
     var h = BlocksState(seed: 7)
     let first = h.piece.kind
-    check(h.holdPiece(), "hold")
+    check(h.holdPiece() == [.held], "hold")
     eq(h.hold, first, "held the current piece")
-    check(!h.holdPiece(), "only once until the next lock")
+    check(h.holdPiece().isEmpty, "only once until the next lock")
     _ = h.hardDrop()
-    check(h.holdPiece(), "hold is back after a lock")
+    check(!h.holdPiece().isEmpty, "hold is back after a lock")
     eq(h.piece.kind, first, "swapped back")
+
+    // A hold into a blocked spawn tops out: the round must report game over (it used to set
+    // `over` without an event, so the round froze without a result screen).
+    var topOut = BlocksState(seed: 9)
+    for y in 0..<4 { topOut.fill(row: y) }
+    let held = topOut.holdPiece()
+    check(topOut.over, "hold into a full spawn tops out")
+    check(held.contains(.gameOver), "hold top-out reports game over")
 
     // Gravity, lock delay and levels.
     var t = BlocksState(seed: 8)

@@ -240,7 +240,8 @@ fn boot_script_token<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>
         import_local_storage: imported.map(|i| &i.local_storage),
         import_id: imported.map(|i| i.id.as_str()),
     };
-    format!("window.__DESCALL_BOOT__ = Object.freeze({});", serde_json::to_string(&boot).unwrap_or_else(|_| "{}".into()))
+    // Top frame only: WebView2 also runs initialization scripts in iframes.
+    descall_shell::bridge::boot_assignment(&serde_json::to_string(&boot).unwrap_or_else(|_| "{}".into()))
 }
 
 // ---- window state (Electron window-state.json, DIP = Tauri logical units) -------------------

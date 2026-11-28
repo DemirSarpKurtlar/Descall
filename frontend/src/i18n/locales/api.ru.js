@@ -20,6 +20,7 @@ export const API_RU = {
   "The security check could not be verified. Please try again.": "Не удалось подтвердить проверку безопасности. Повторите попытку.",
   "Appeals are not available yet. Try again later.": "Апелляции пока недоступны. Попробуй позже.",
   "Owner and admin accounts cannot be banned.": "Аккаунты владельца и администраторов нельзя забанить.",
+  "This action cannot be used on an owner or admin account.": "Это действие нельзя применить к аккаунту владельца или администратора.",
   "Could not load appeals.": "Не удалось загрузить апелляции.",
   "Invalid appeal.": "Недействительная апелляция.",
   "Choose accept or reject.": "Выбери: принять или отклонить.",

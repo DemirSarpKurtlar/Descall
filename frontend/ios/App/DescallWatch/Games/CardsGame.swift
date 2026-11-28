@@ -146,15 +146,18 @@ struct CardsGameView: View {
             }
             .focusable()
             .focused($focused)
-            .digitalCrownRotation($crown, from: 0, through: 1, by: 0.05, sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true)
+            .digitalCrownRotation($crown, from: 0, through: 1, by: 1 / Double(CardsState.betSteps), sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true)
             .onAppear {
                 focused = true
-                crown = Double(model.state.bet - CardsState.minBet) / Double(CardsState.maxBet - CardsState.minBet)
+                crown = CardsState.crown(bet: model.state.bet)
             }
         }
         .onChange(of: crown) { _, v in
             guard betting else { return }
-            model.setBet(CardsState.minBet + Int((v * Double(CardsState.maxBet - CardsState.minBet)).rounded()))
+            model.setBet(CardsState.bet(crown: v))
+            // The stack can cap the bet: keep the crown on the bet it shows (no dead turn).
+            let shown = CardsState.crown(bet: model.state.bet)
+            if abs(shown - v) > 0.5 / Double(CardsState.betSteps) { crown = shown }
         }
     }
 

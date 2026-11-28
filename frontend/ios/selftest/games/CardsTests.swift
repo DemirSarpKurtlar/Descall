@@ -97,4 +97,19 @@ func testCards() {
     _ = streak.stand()
     eq(streak.streak, 3, "third win in a row")
     eq(streak.lastBonus, 10, "10 % streak bonus")
+
+    // Bet on the crown: every detent is one chip, from the smallest to the largest bet, and
+    // the crown shows the bet it set (the old 0.05 step skipped and doubled bets).
+    var seen = Set<Int>()
+    for k in 0...CardsState.betSteps {
+        let v = Double(k) / Double(CardsState.betSteps)
+        let b = CardsState.bet(crown: v)
+        eq(b, CardsState.minBet + k * CardsState.minBet, "detent \(k) is bet \(CardsState.minBet + k * CardsState.minBet)")
+        seen.insert(b)
+        check(abs(CardsState.crown(bet: b) - v) < 1e-9, "crown shows bet \(b)")
+    }
+    eq(seen.count, CardsState.betSteps + 1, "no dead detent")
+    eq(CardsState.bet(crown: -3), CardsState.minBet, "crown below the range")
+    eq(CardsState.bet(crown: 7), CardsState.maxBet, "crown above the range")
+    eq(CardsState.bet(crown: .nan), CardsState.minBet, "broken crown value")
 }

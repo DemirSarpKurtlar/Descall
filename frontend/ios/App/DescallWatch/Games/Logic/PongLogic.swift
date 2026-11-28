@@ -27,6 +27,17 @@ enum PongLevel: String, Codable, CaseIterable {
         }
     }
 
+    /// How much a fast ball adds to the aim error (share of `aimError` at the top speed).
+    /// Without it the normal and hard AI never missed a fast ball, so a good rally only
+    /// ended with the player's own mistake and points could run to hundreds of hits.
+    var pressure: Double {
+        switch self {
+        case .easy: return 0.6
+        case .normal: return 1.25
+        case .hard: return 3.6
+        }
+    }
+
     /// Paddle top speed (court units per second).
     var maxSpeed: Double {
         switch self {
@@ -67,12 +78,20 @@ struct PongState: Codable, Equatable {
     static let ballRadius = 2.6
     static let startSpeed = 56.0
     static let maxBallSpeed = 135.0
-    static let playerMaxSpeed = 300.0
+    /// Paddle top speed: the paddle crosses the court in about 0.45 s at most.
+    static let playerMaxSpeed = 210.0
+    /// How quickly the paddle closes the gap to the crown's target (per second): the crown
+    /// moves in detents, the paddle glides between them instead of jumping.
+    static let playerFollow = 28.0
     static let winScore = 11
     /// Seconds a smash tap stays armed.
     static let smashWindow = 0.3
+    /// Extra AI aim error after a smash (court units).
+    static let smashPressure = 6.0
     /// Share of the speed that always goes up or down after a hit.
     static let minVertical = 0.42
+    /// Slowest pace between the paddles (court units per second): the ball never crawls.
+    static let minVerticalSpeed = 26.0
 
     var level: PongLevel
     var ballX = PongState.width / 2
@@ -119,6 +138,13 @@ struct PongState: Codable, Equatable {
         playerTarget = GameMath.clamp(PongState.minX + (PongState.maxX - PongState.minX) * fraction, PongState.minX, PongState.maxX)
     }
 
+    /// A crown turn: `sweep` is the share of a full sweep across the court (CrownInput).
+    /// Turning on past an end never builds up a dead zone: one detent back moves again.
+    mutating func nudgePlayer(sweep: Double) {
+        let lo = PongState.minX, hi = PongState.maxX
+        playerTarget = GameMath.clamp(GameMath.clamp(playerTarget, lo, hi) + sweep * (hi - lo), lo, hi)
+    }
+
     /// A tap: the next return within `smashWindow` goes back a third faster.
     mutating func smash() { smashArmed = PongState.smashWindow }
 
@@ -131,6 +157,8 @@ struct PongState: Codable, Equatable {
     private mutating func stepOnce(_ dt: Double, _ events: inout [PongEvent]) {
         guard !over else { return }
         smashArmed = max(0, smashArmed - dt)
+        // Paddle positions at the start of the substep, for the swept contact below.
+        let playerFrom = playerX, aiFrom = aiX
         movePlayer(dt)
         moveAI(dt)
         if serveIn > 0 {
@@ -138,15 +166,11 @@ struct PongState: Codable, Equatable {
             if serveIn <= 0 { serve(); events.append(.serve) }
             return
         }
-        let prevY = ballY
+        let prevX = ballX, prevY = ballY
         // Spin bends the flight sideways and wears off.
         vx += spin * dt
         spin *= exp(-0.9 * dt)
-        let sp = ballSpeed
-        if sp > PongState.maxBallSpeed {
-            vx *= PongState.maxBallSpeed / sp
-            vy *= PongState.maxBallSpeed / sp
-        }
+        capSpeed()
         ballX += vx * dt
         ballY += vy * dt
         let r = PongState.ballRadius
@@ -161,19 +185,33 @@ struct PongState: Codable, Equatable {
             spin *= -0.5
             events.append(.wall)
         }
-        let top = PongState.playerY + PongState.paddleHeight / 2 + r
-        if vy < 0, prevY >= top, ballY < top, abs(ballX - playerX) <= PongState.paddleWidth / 2 + r {
-            ballY = top + (top - ballY)
-            let smashed = smashArmed > 0
-            bounce(fromPlayer: true, smash: smashed)
-            events.append(.playerHit(strength: smashed ? 1 : min(1, abs(playerVX) / 140)))
-            if smashed { events.append(.smash) }
+        let thick = PongState.paddleHeight / 2
+        let ballPath = (x0: prevX, y0: prevY, x1: ballX, y1: ballY)
+        // Player: the ball comes down and its centre is not yet behind the paddle's back face
+        // (a ball that is already behind stays a miss).
+        if vy < 0, let t = PongState.contact(ball: ballPath, paddle: (playerFrom, playerX), paddleY: PongState.playerY) {
+            let cy = prevY + (ballY - prevY) * t
+            if cy >= PongState.playerY - thick {
+                let face = PongState.playerY + thick + r
+                ballX = GameMath.clamp(prevX + (ballX - prevX) * t, r, PongState.width - r)
+                // Leaves from the front face (mirrored when it crossed the face this step,
+                // set on the face when the paddle came at it from the side).
+                ballY = prevY >= face ? face + (face - min(ballY, face)) : face
+                let smashed = smashArmed > 0
+                bounce(fromPlayer: true, smash: smashed)
+                events.append(.playerHit(strength: smashed ? 1 : min(1, abs(playerVX) / 140)))
+                if smashed { events.append(.smash) }
+            }
         }
-        let bottom = PongState.aiY - PongState.paddleHeight / 2 - r
-        if vy > 0, prevY <= bottom, ballY > bottom, abs(ballX - aiX) <= PongState.paddleWidth / 2 + r {
-            ballY = bottom - (ballY - bottom)
-            bounce(fromPlayer: false, smash: false)
-            events.append(.aiHit)
+        if vy > 0, let t = PongState.contact(ball: ballPath, paddle: (aiFrom, aiX), paddleY: PongState.aiY) {
+            let cy = prevY + (ballY - prevY) * t
+            if cy <= PongState.aiY + thick {
+                let face = PongState.aiY - thick - r
+                ballX = GameMath.clamp(prevX + (ballX - prevX) * t, r, PongState.width - r)
+                ballY = prevY <= face ? face - (max(ballY, face) - face) : face
+                bounce(fromPlayer: false, smash: false)
+                events.append(.aiHit)
+            }
         }
         if ballY < -r * 2 {
             aiScore += 1
@@ -184,10 +222,39 @@ struct PongState: Codable, Equatable {
         }
     }
 
+    /// Ball against a paddle's whole rectangle (front face, thickness and both ends), swept
+    /// over one substep with the ball and the paddle both moving. Returns the first sampled
+    /// moment of contact (0 ... 1 of the step), nil for none. A substep moves the ball about
+    /// one unit and the paddle under two, so eight samples sit far closer than the radius.
+    static func contact(ball: (x0: Double, y0: Double, x1: Double, y1: Double), paddle: (x0: Double, x1: Double), paddleY: Double) -> Double? {
+        let hw = paddleWidth / 2, hh = paddleHeight / 2, r = ballRadius
+        for k in 1...8 {
+            let t = Double(k) / 8
+            let bx = ball.x0 + (ball.x1 - ball.x0) * t
+            let by = ball.y0 + (ball.y1 - ball.y0) * t
+            let px = paddle.x0 + (paddle.x1 - paddle.x0) * t
+            let dx = bx - GameMath.clamp(bx, px - hw, px + hw)
+            let dy = by - GameMath.clamp(by, paddleY - hh, paddleY + hh)
+            if dx * dx + dy * dy <= r * r { return t }
+        }
+        return nil
+    }
+
+    /// Top speed. Spin only bends the ball sideways, so the sideways part gives way and the
+    /// pace between the paddles stays (scaling both let a curved ball crawl).
+    private mutating func capSpeed() {
+        let top = PongState.maxBallSpeed
+        guard ballSpeed > top else { return }
+        let along = min(abs(vy), top * 0.95)
+        vy = vy < 0 ? -along : along
+        vx = (vx < 0 ? -1 : 1) * (top * top - along * along).squareRoot()
+    }
+
     private mutating func movePlayer(_ dt: Double) {
         let before = playerX
         let maxStep = PongState.playerMaxSpeed * dt
-        playerX = GameMath.clamp(playerX + GameMath.clamp(playerTarget - playerX, -maxStep, maxStep), PongState.minX, PongState.maxX)
+        let glide = (playerTarget - playerX) * min(1, PongState.playerFollow * dt)
+        playerX = GameMath.clamp(playerX + GameMath.clamp(glide, -maxStep, maxStep), PongState.minX, PongState.maxX)
         // Smoothed paddle speed: the spin a hit gets.
         let instant = dt > 0 ? (playerX - before) / dt : 0
         playerVX = playerVX * 0.6 + instant * 0.4
@@ -251,8 +318,8 @@ struct PongState: Codable, Equatable {
         let n = (nvx * nvx + nvy * nvy).squareRoot()
         nvx *= speed / n
         nvy *= speed / n
-        // Keep the rally moving up and down (never a near-flat ball).
-        let minVy = speed * PongState.minVertical
+        // Keep the rally moving up and down (never a near-flat ball, never a crawl).
+        let minVy = min(speed * 0.95, max(speed * PongState.minVertical, PongState.minVerticalSpeed))
         if nvy < minVy {
             nvy = minVy
             nvx = (nvx < 0 ? -1 : 1) * (speed * speed - minVy * minVy).squareRoot()
@@ -263,8 +330,10 @@ struct PongState: Codable, Equatable {
         rally += 1
         longestRally = max(longestRally, rally)
         if !fromPlayer { return }
-        // A fresh aim error for the AI's next return.
-        aiError = rng.range(-level.aimError, level.aimError)
+        // A fresh aim error for the AI's next return: wider for a fast ball and a smash.
+        let pace = GameMath.clamp((speed - PongState.startSpeed) / (PongState.maxBallSpeed - PongState.startSpeed), 0, 1)
+        let reach = level.aimError * (1 + level.pressure * pace) + (smash ? PongState.smashPressure : 0)
+        aiError = rng.range(-reach, reach)
         aiLookIn = min(aiLookIn, level.reaction)
     }
 
@@ -293,4 +362,34 @@ struct PongState: Codable, Equatable {
     }
 
     var playerWon: Bool { over && playerScore > aiScore }
+}
+
+/// Where PongScene draws the court (draft A, portrait): court y (between the paddles) runs
+/// from the right edge (player) to the left (AI), court x (along the paddles) from the bottom
+/// up. The paddles and the ball are drawn at the logic's own size and place, so a hit on
+/// the watch looks like a hit (they used to be drawn 2 units behind the logic's paddle face).
+struct PongLayout: Equatable {
+    var width: Double
+    var height: Double
+
+    static let marginX = 16.0
+    static let marginY = 12.0
+
+    /// Points per court unit between the paddles (screen x) and along them (screen y).
+    var depthScale: Double { (width - 2 * PongLayout.marginX) / PongState.height }
+    var sideScale: Double { (height - 2 * PongLayout.marginY) / PongState.width }
+
+    func point(x: Double, y: Double) -> (x: Double, y: Double) {
+        (width - PongLayout.marginX - y * depthScale, PongLayout.marginY + x * sideScale)
+    }
+
+    /// Paddle size on screen: thickness across (screen x), length along (screen y).
+    var paddleThickness: Double { PongState.paddleHeight * depthScale }
+    var paddleLength: Double { PongState.paddleWidth * sideScale }
+    /// Ball radius on screen, at the scale of the flight between the paddles.
+    var ballRadius: Double { PongState.ballRadius * depthScale }
+
+    /// Centres of the two paddles for their court x.
+    func player(x: Double) -> (x: Double, y: Double) { point(x: x, y: PongState.playerY) }
+    func ai(x: Double) -> (x: Double, y: Double) { point(x: x, y: PongState.aiY) }
 }

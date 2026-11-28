@@ -84,6 +84,38 @@ pub struct ProfileFacts {
     pub migrated: bool,
 }
 
+/// cleanup.json sits in the user's own work folder, so anything running as the user can rewrite
+/// it, and the elevated `--cleanup-machine` run must not delete whatever folder or HKLM key it
+/// names. Only the shapes the Commit step writes pass: in place (per user) a `<dir>.legacy[-n]`
+/// sibling of the old folder; side by side no legacy folder; the Uninstall key one direct child
+/// of Electron's Uninstall root, in HKLM exactly when the install is machine wide.
+pub fn record_is_consistent(rec: &CleanupRecord) -> bool {
+    let dirs_ok = match rec.strategy {
+        Strategy::InPlace => {
+            !rec.per_machine
+                && rec.legacy_dir.as_deref().is_some_and(|l| crate::strategy::legacy_candidates(&rec.old_dir).any(|c| crate::paths::same_path(&c, l)))
+        }
+        Strategy::SideBySide => rec.legacy_dir.is_none(),
+    };
+    dirs_ok && rec.electron_uninstall_key.as_deref().is_none_or(|k| is_electron_uninstall_key(k, rec.per_machine))
+}
+
+fn is_electron_uninstall_key(key: &str, per_machine: bool) -> bool {
+    use crate::regsnap::{UNINSTALL, UNINSTALL_WOW64};
+    let (machine, rest) = match key.strip_prefix("HKLM\\") {
+        Some(r) => (true, r),
+        None => (false, key),
+    };
+    if machine != per_machine {
+        return false;
+    }
+    let roots: &[&str] = if machine { &[UNINSTALL, UNINSTALL_WOW64] } else { &[UNINSTALL] };
+    roots.iter().any(|root| {
+        let (Some(head), Some(sub)) = (rest.get(..root.len()), rest.get(root.len()..).and_then(|t| t.strip_prefix('\\'))) else { return false };
+        head.eq_ignore_ascii_case(root) && !sub.is_empty() && sub.len() <= 128 && !sub.contains(['\\', '/']) && sub != "." && sub != ".."
+    })
+}
+
 /// The machine-wide Electron may go only when every profile that used it has moved.
 pub fn machine_cleanup_allowed(profiles: &[ProfileFacts]) -> bool {
     profiles.iter().all(|p| !p.has_electron_user_data || p.migrated)
@@ -129,6 +161,44 @@ mod tests {
         m.per_machine = true;
         m.strategy = Strategy::SideBySide;
         assert!(m.needs_elevation());
+    }
+
+    #[test]
+    fn only_records_the_commit_step_writes_are_accepted() {
+        let uninstall = |k: &str| Some(format!(r"{}\{k}", crate::regsnap::UNINSTALL));
+        let mut r = rec();
+        r.electron_uninstall_key = uninstall("{2a1b-guid}");
+        assert!(record_is_consistent(&r));
+        r.legacy_dir = Some(PathBuf::from(r"C:\P\Descall.legacy-3"));
+        assert!(record_is_consistent(&r));
+        for bad in [r"C:\Windows\System32", r"C:\P\Other.legacy", r"C:\P\Descall"] {
+            r.legacy_dir = Some(PathBuf::from(bad));
+            assert!(!record_is_consistent(&r), "{bad}");
+        }
+        let mut m = rec();
+        m.strategy = Strategy::SideBySide;
+        m.legacy_dir = None;
+        m.per_machine = true;
+        m.electron_uninstall_key = Some(format!(r"HKLM\{}\{{2a1b-guid}}", crate::regsnap::UNINSTALL));
+        assert!(record_is_consistent(&m));
+        m.electron_uninstall_key = Some(format!(r"HKLM\{}\Descall", crate::regsnap::UNINSTALL_WOW64));
+        assert!(record_is_consistent(&m));
+        for bad in [
+            r"HKLM\SYSTEM\CurrentControlSet\Services\WinDefend".to_string(),
+            format!(r"HKLM\{}", crate::regsnap::UNINSTALL),
+            format!(r"HKLM\{}\a\b", crate::regsnap::UNINSTALL),
+            format!(r"HKLM\{}\..", crate::regsnap::UNINSTALL),
+            format!(r"{}\x", crate::regsnap::UNINSTALL),
+        ] {
+            m.electron_uninstall_key = Some(bad.clone());
+            assert!(!record_is_consistent(&m), "{bad}");
+        }
+        m.electron_uninstall_key = None;
+        m.legacy_dir = Some(PathBuf::from(r"C:\P\Descall.legacy"));
+        assert!(!record_is_consistent(&m), "machine wide is never in place");
+        let mut in_place_machine = rec();
+        in_place_machine.per_machine = true;
+        assert!(!record_is_consistent(&in_place_machine));
     }
 
     #[test]

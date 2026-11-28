@@ -25,8 +25,18 @@ assert.equal(isPermissionAllowed("clipboard-sanitized-write", "descall://app/", 
 for (const p of ["clipboard-read", "notifications", "geolocation", "midi", "openExternal"]) {
   assert.equal(isPermissionAllowed(p, "descall://app/friends", opts), false, p);
 }
-// The media list is unchanged (any origin, as before).
-for (const p of MEDIA) assert.equal(isPermissionAllowed(p, "", opts), true, p);
+// Media (camera, microphone, screen, speaker choice): the app origin only, like the Tauri shell
+// (descall_shell::clipboard::permission_allowed) and iOS (DescallMediaCaptureLogic). Before,
+// any requesting frame got them without a prompt: a Turnstile or backend iframe in the main
+// window could open the camera and microphone.
+for (const p of MEDIA) {
+  assert.equal(isPermissionAllowed(p, "descall://app/direct/1", opts), true, p);
+  assert.equal(isPermissionAllowed(p, "descall://app", opts), true, `${p} (origin form of the check handler)`);
+  assert.equal(isPermissionAllowed(p, "http://localhost:5173/", { ...opts, isDev: true }), true, `${p} dev`);
+  for (const other of ["https://challenges.cloudflare.com/cdn-cgi/challenge-platform/x", "https://api.descall.com/", "https://evil.example/", "", "file:///C:/x.html"]) {
+    assert.equal(isPermissionAllowed(p, other, opts), false, `${p} from ${other || "(no url)"}`);
+  }
+}
 
 // The URL to judge by: requesting URL/origin first, else the page.
 const wc = { getURL: () => "descall://app/direct" };

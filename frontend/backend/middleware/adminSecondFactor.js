@@ -96,6 +96,11 @@ function requireStepUp(req, res, next) {
   const method = String(req.method || "GET").toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return next();
   if (STEP_UP_EXEMPT.some((re) => re.test(req.path || ""))) return next();
+  return requireStepUpAlways(req, res, next);
+}
+
+/** The step-up check for one route whatever its method (a GET that hands out private data). */
+function requireStepUpAlways(req, res, next) {
   if (req.apiToken) return next();
   if (req.adminTotpCheckFailed) {
     return res.status(503).json(apiError("Could not check your verification code status. Try again.", null, { code: "ADMIN_2FA_CHECK_FAILED" }));
@@ -129,4 +134,4 @@ async function stepUpHandler(req, res) {
   return res.json({ ok: true, token: signStepUpToken({ id: req.user.id, sid: req.user.sid }), expiresInSec: 15 * 60, via: v.via, recoveryLeft: v.recoveryLeft });
 }
 
-module.exports = { requireAdmin2fa, requireStepUp, stepUpHandler, stepUpValid, STEP_UP_HEADER, STEP_UP_EXEMPT };
+module.exports = { requireAdmin2fa, requireStepUp, requireStepUpAlways, stepUpHandler, stepUpValid, STEP_UP_HEADER, STEP_UP_EXEMPT };

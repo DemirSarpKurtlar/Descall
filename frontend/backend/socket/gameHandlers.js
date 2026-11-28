@@ -16,6 +16,7 @@ function sideRef(side) {
   return "";
 }
 const supabase = require("../db/supabase");
+const { escapeLike } = require("../lib/usernamePolicy");
 const { casinoAccess } = require("../lib/ageGate");
 const {
   IOS_DENY_TEXT,
@@ -1126,7 +1127,8 @@ async function findRecipient(token) {
   const { data, error } = await supabase
     .from("users")
     .select("id, username")
-    .ilike("username", username)
+    // Escaped: an unescaped "_" matched any character, so "/pay a_b" could pay "a.b" (audit 28 Nov 2026).
+    .ilike("username", escapeLike(username))
     .limit(1);
   if (error) throw error;
   return data?.[0] || null;

@@ -15,7 +15,16 @@ const reports = require("../lib/userReports");
 const workflow = require("../lib/reportWorkflow");
 const { errorFields, apiError } = require("../lib/apiError");
 
+const { requireStepUpAlways } = require("../middleware/adminSecondFactor");
+const { requireSection } = require("../lib/adminPermissions");
+const { userIsSuperAdmin } = require("../middleware/requireAdmin");
+
 const router = express.Router();
+
+/** Signing out / freezing an admin or the owner is the owner's call (lib/banExperience). */
+async function adminTargetRefused(req, userId) {
+  return banExperience.targetProtected(userId, { ownerMay: true, actorIsOwner: await userIsSuperAdmin(req) });
+}
 
 function getIo(req) {
   return req.app.get("io");
@@ -141,6 +150,7 @@ router.post("/people/:id/sessions/:sessionId/revoke", async (req, res) => {
   if (!workflow.isUuid(id) || !sessionId) return res.status(400).json(apiError("Invalid session."));
   if (id === req.user.id) return res.status(400).json(apiError("Cannot sign out your own sessions from here."));
   try {
+    if (await adminTargetRefused(req, id)) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
     const before = await listSessions(id);
     const found = before.find((s) => s?.id === sessionId);
     if (!found) return res.status(404).json(apiError("Session not found.", null, { code: "NOT_FOUND" }));
@@ -185,6 +195,7 @@ router.get("/people/:id/lens", async (req, res) => {
 router.post("/people/:id/wallet-freeze", async (req, res) => {
   try {
     const frozen = req.body?.frozen !== false;
+    if (frozen && (await adminTargetRefused(req, req.params.id))) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
     const result = await descoin.setWalletFrozen(req.params.id, frozen);
     const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) || null : null;
     audit(req.user, frozen ? "wallet_freeze" : "wallet_unfreeze", req.params.id, { reason });
@@ -201,6 +212,7 @@ router.post("/people/:id/revoke-sessions", async (req, res) => {
   try {
     const id = req.params.id;
     if (id === req.user.id) return res.status(400).json({ error: "Cannot sign out your own sessions from here." });
+    if (await adminTargetRefused(req, id)) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
     const sessions = await listSessions(id);
     for (const s of sessions) {
       if (s?.id) state.revokedSessionIds.add(s.id);
@@ -221,7 +233,9 @@ router.post("/people/:id/revoke-sessions", async (req, res) => {
 });
 
 // KVKK veri dışa aktarma, admin side (3.6.0): the same file the account owner gets.
-router.get("/people/:id/export", async (req, res) => {
+// The file carries the private messages the person sent: the same bar as reading a DM
+// (the DM inceleme section, explicitly granted, and a fresh 2FA step-up code).
+router.get("/people/:id/export", requireSection("dmReview"), requireStepUpAlways, async (req, res) => {
   const id = String(req.params.id || "");
   if (!workflow.isUuid(id)) return res.status(400).json({ error: "Invalid user." });
   try {
@@ -287,6 +301,7 @@ async function applyFromReport(req, res, kind) {
     const targetId = row.target_id;
 
     if (kind === "timeout") {
+      if (await banExperience.targetProtected(targetId)) return res.status(403).json({ ...banExperience.ADMIN_TARGET_PROTECTED });
       const result = await moderation.applyTimeout({
         targetUserId: targetId,
         actorUserId: req.user.id,

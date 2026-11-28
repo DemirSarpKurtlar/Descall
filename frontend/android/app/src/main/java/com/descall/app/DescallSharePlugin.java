@@ -108,7 +108,7 @@ public class DescallSharePlugin extends Plugin {
     }
   }
 
-  static List<Uri> streams(Intent in) {
+  static List<Uri> streams(Intent in, String ownPackage) {
     List<Uri> out = new ArrayList<>();
     if (in == null) return out;
     if (Intent.ACTION_SEND_MULTIPLE.equals(in.getAction())) {
@@ -125,11 +125,11 @@ public class DescallSharePlugin extends Plugin {
         if (u != null && !out.contains(u)) out.add(u);
       }
     }
-    // Never our own private files (a crafted intent could point at the session).
+    // Never our own private files (a crafted intent could point at the session): no file:
+    // URIs and no content URI of our own providers (the FileProvider serves the cache dir).
     List<Uri> safe = new ArrayList<>();
     for (Uri u : out) {
-      String s = u.getScheme();
-      if ("content".equals(s)) safe.add(u);
+      if (com.descall.app.share.ShareUris.accepted(u.getScheme(), u.getAuthority(), ownPackage)) safe.add(u);
     }
     return safe;
   }
@@ -148,7 +148,7 @@ public class DescallSharePlugin extends Plugin {
       JSArray items = new JSArray();
       payloadId = "p" + Long.toString(System.currentTimeMillis(), 36) + UUID.randomUUID().toString().substring(0, 6);
       ContentResolver cr = ctx.getContentResolver();
-      List<Uri> uris = streams(in);
+      List<Uri> uris = streams(in, ctx.getPackageName());
       int n = 0;
       for (Uri u : uris) {
         if (n >= MAX_ITEMS + 2) break;

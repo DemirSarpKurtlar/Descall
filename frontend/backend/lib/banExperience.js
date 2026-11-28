@@ -30,6 +30,9 @@ const APPEAL_MIN = 20;
 const APPEAL_MAX = 2000;
 const APPEALS_UNAVAILABLE = Object.freeze(apiError("Appeals are not available yet. Try again later.", null, { code: "APPEALS_UNAVAILABLE" }));
 const ADMIN_PROTECTED = Object.freeze(apiError("Owner and admin accounts cannot be banned.", null, { code: "ADMIN_PROTECTED" }));
+// Timeouts, kicks, signing out and wallet freezes against admin accounts (same code, so the
+// panel shows the same notice as for a ban).
+const ADMIN_TARGET_PROTECTED = Object.freeze(apiError("This action cannot be used on an owner or admin account.", null, { code: "ADMIN_PROTECTED" }));
 
 function moderation() {
   return require("./moderation");
@@ -146,6 +149,17 @@ async function banTarget(userId) {
   perms.invalidate(userId);
   const row = await perms.loadRow(userId);
   return { row, found: Boolean(row), protected: isProtectedRow(row) };
+}
+
+/**
+ * True when `userId` is an admin / owner account that this action may not touch. Timeouts and
+ * kicks never reach one (like bans and the Moderasyon masası bulk tool); with ownerMay, the
+ * owner may still act (signing out a compromised admin, freezing a wallet).
+ */
+async function targetProtected(userId, { actorIsOwner = false, ownerMay = false } = {}) {
+  const t = await banTarget(userId);
+  if (!t.found || !t.protected) return false;
+  return !(ownerMay && actorIsOwner);
 }
 
 /* ---------------- email ---------------- */
@@ -486,6 +500,8 @@ module.exports = {
   APPEAL_MAX,
   APPEALS_UNAVAILABLE,
   ADMIN_PROTECTED,
+  ADMIN_TARGET_PROTECTED,
+  targetProtected,
   isMissingTable,
   appealsUnavailableError,
   categoryIdOf,

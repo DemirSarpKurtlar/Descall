@@ -231,6 +231,8 @@ final class ChessModel: GameModel {
         hintMove = nil
         aiLast = nil
         GameHaptics.play(.select)
+        // Whoever is to move now moves (the engine thinks again if it is its turn).
+        afterChange()
     }
 
     func resign() {

@@ -741,3 +741,43 @@ fn machine_wide_cleanup_waits_for_elevation_then_keeps_foreign_files() {
     assert!(!dir.join("Descall.exe").exists() && !dir.join("resources").exists());
     assert!(dir.join("user-notes.docx").exists(), "only Electron's own files are deleted");
 }
+
+/// cleanup.json lives in the user's own (medium integrity) work folder, yet the elevated
+/// `--cleanup-machine` run acted on whatever it named: any program running as the user could
+/// point it at another folder or registry key before the user accepted Descall's UAC prompt.
+#[test]
+fn elevated_cleanup_ignores_a_tampered_record() {
+    let s = FakeSys::new();
+    let dir = s.path("ProgramFiles/Descall");
+    let job = s.electron_at(&dir, true);
+    assert_eq!(s.start(job), Step::Done);
+    s.clock_ms.set(s.clock_ms.get() + 15 * 24 * 3600 * 1000);
+    let victim = s.path("ProgramData/Victim");
+    std::fs::create_dir_all(&victim).unwrap();
+    std::fs::write(victim.join("policy.dat"), b"x").unwrap();
+    let victim_key = r"SYSTEM\CurrentControlSet\Services\Victim";
+    s.set_reg(Hive::Hklm, victim_key, "Start", RegData::Dword(2));
+    let path = cleanup::record_path(&s.env.work_dir);
+    let good: CleanupRecord = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+
+    // A foreign HKLM key, and a per-user in-place record whose "legacy" folder is not
+    // <old>.legacy, both handed to the elevated run.
+    let mut bad_key = good.clone();
+    bad_key.electron_uninstall_key = Some(format!(r"HKLM\{victim_key}"));
+    let mut bad_dir = good.clone();
+    bad_dir.strategy = Strategy::InPlace;
+    bad_dir.per_machine = false;
+    bad_dir.legacy_dir = Some(victim.clone());
+    bad_dir.electron_uninstall_key = None;
+    for rec in [bad_key, bad_dir] {
+        std::fs::write(&path, serde_json::to_vec(&rec).unwrap()).unwrap();
+        assert!(matches!(run_cleanup(&s, &s.env, true), CleanupResult::Failed(_) | CleanupResult::NothingToDo));
+        assert!(victim.join("policy.dat").exists(), "a folder outside the old install is never deleted");
+        assert_eq!(s.get_reg(Hive::Hklm, victim_key, "Start"), RegData::Dword(2), "a foreign key is never deleted");
+        assert!(dir.join("Descall.exe").exists(), "nothing of the old install went either");
+    }
+    // The record the migrator wrote still works.
+    std::fs::write(&path, serde_json::to_vec(&good).unwrap()).unwrap();
+    assert_eq!(run_cleanup(&s, &s.env, true), CleanupResult::Done);
+    assert!(!dir.join("Descall.exe").exists());
+}

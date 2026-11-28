@@ -10,9 +10,9 @@
  * handlers in main.cjs (and the multi_account partitions) answered true only for the media
  * list, so every copy in the app was refused, whatever the user gesture.
  *
- * isPermissionAllowed keeps the media list as it was and adds clipboard-sanitized-write for
- * the app's own origin only (descall://app, plus the Vite origin in a dev run). Nothing else
- * is widened: no clipboard-read, no other origin.
+ * isPermissionAllowed grants the media list and clipboard-sanitized-write to the app's own
+ * origin only (descall://app, plus the Vite origin in a dev run): no clipboard-read, and no
+ * other origin (an iframe in the main window gets no camera or microphone).
  *
  * writeClipboardText backs the `clipboard:write-text` IPC (preload electronAPI.writeClipboardText),
  * the renderer's fallback when the web API still refuses (src/lib/copyText.js). Strings only,
@@ -28,8 +28,10 @@ const APP_CLIPBOARD_PERMISSIONS = ['clipboard-sanitized-write'];
  */
 function isPermissionAllowed(permission, url, { mediaPermissions = [], isAppUrl, isDev = false } = {}) {
   const p = String(permission || '');
-  if (mediaPermissions.includes(p)) return true;
-  if (!APP_CLIPBOARD_PERMISSIONS.includes(p)) return false;
+  // Media and clipboard write: the app origin only. Media used to go to any requesting frame
+  // (a cross-origin iframe in the main window got camera and microphone without a prompt);
+  // the Tauri shell and iOS already checked the origin.
+  if (!mediaPermissions.includes(p) && !APP_CLIPBOARD_PERMISSIONS.includes(p)) return false;
   if (typeof isAppUrl !== 'function') return false;
   try { return Boolean(isAppUrl(url, { isDev })); } catch (_) { return false; }
 }

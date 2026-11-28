@@ -36,7 +36,11 @@ final class PongModel: GameModel {
         publish()
     }
 
-    func setPaddle(_ fraction: Double) { state.setPlayer(fraction: fraction) }
+    /// A crown turn (share of a full sweep across the court).
+    func nudgePaddle(_ sweep: Double) {
+        guard isRunning else { return }
+        state.nudgePlayer(sweep: sweep)
+    }
 
     func smash() {
         guard isRunning else { return }
@@ -109,7 +113,6 @@ final class PongModel: GameModel {
 
 struct PongGameView: View {
     @StateObject private var model: PongModel
-    @State private var crown = 0.5
 
     init(launch: GameLaunch) {
         _model = StateObject(wrappedValue: PongModel(launch: launch))
@@ -118,7 +121,7 @@ struct PongGameView: View {
     var body: some View {
         GameFrame(model: model) {
             ZStack {
-                SpriteHost(scene: model.scene, paused: !model.isRunning, crown: $crown) { model.smash() }
+                SpriteHost(scene: model.scene, paused: !model.isRunning, crownSpan: CrownInput.pongSpan, onCrown: { model.nudgePaddle($0) }) { model.smash() }
                 VStack(spacing: 4) {
                     GameScoreCapsule {
                         Text(GL.t("ai")).font(.system(size: 11, weight: .bold)).foregroundStyle(GT.ink2)
@@ -139,7 +142,6 @@ struct PongGameView: View {
                 ControlHint(text: GL.hint(.pong))
             }
         }
-        .onChange(of: crown) { _, v in model.setPaddle(v) }
     }
 }
 
@@ -153,7 +155,7 @@ final class PongScene: GameScene {
     private let ai = SKShapeNode()
     private let player = SKShapeNode()
     private let playerGlow = SKShapeNode()
-    private let ball = SKShapeNode(circleOfRadius: 4.6)
+    private let ball = SKShapeNode()
     private let halo = SKSpriteNode()
     private var trail: [SKShapeNode] = []
     private var trailPoints: [CGPoint] = []
@@ -199,24 +201,28 @@ final class PongScene: GameScene {
         centre.addChild(mid)
         centre.zPosition = 1
         addChild(centre)
-        let ph = paddleLength
-        ai.path = CGPath(roundedRect: CGRect(x: -3, y: -ph / 2, width: 6, height: ph), cornerWidth: 3, cornerHeight: 3, transform: nil)
+        // Paddles and ball at the logic's own size and place (PongLayout): the paddle face on
+        // screen is the face the ball bounces off.
+        let ph = CGFloat(table.paddleLength), pt = CGFloat(table.paddleThickness)
+        let br = CGFloat(table.ballRadius)
+        ai.path = CGPath(roundedRect: CGRect(x: -pt / 2, y: -ph / 2, width: pt, height: ph), cornerWidth: pt / 2, cornerHeight: pt / 2, transform: nil)
         ai.fillColor = SKColor(GT.aiPaddle)
         ai.strokeColor = .clear
         ai.zPosition = 3
         addChild(ai)
-        playerGlow.path = CGPath(roundedRect: CGRect(x: -5, y: -ph / 2 - 2, width: 10, height: ph + 4), cornerWidth: 5, cornerHeight: 5, transform: nil)
+        playerGlow.path = CGPath(roundedRect: CGRect(x: -pt / 2 - 2, y: -ph / 2 - 2, width: pt + 4, height: ph + 4), cornerWidth: pt / 2 + 2, cornerHeight: pt / 2 + 2, transform: nil)
         playerGlow.fillColor = SKColor(GT.playerPaddle, alpha: 0.22)
         playerGlow.strokeColor = .clear
         playerGlow.zPosition = 2
         addChild(playerGlow)
-        player.path = CGPath(roundedRect: CGRect(x: -3, y: -ph / 2, width: 6, height: ph), cornerWidth: 3, cornerHeight: 3, transform: nil)
+        player.path = CGPath(roundedRect: CGRect(x: -pt / 2, y: -ph / 2, width: pt, height: ph), cornerWidth: pt / 2, cornerHeight: pt / 2, transform: nil)
         player.fillColor = SKColor(GT.playerPaddle)
         player.strokeColor = .clear
         player.zPosition = 3
         addChild(player)
+        ball.path = CGPath(ellipseIn: CGRect(x: -br, y: -br, width: br * 2, height: br * 2), transform: nil)
         for i in 0..<6 {
-            let t = SKShapeNode(circleOfRadius: 3.6 - CGFloat(i) * 0.45)
+            let t = SKShapeNode(circleOfRadius: br * (0.78 - CGFloat(i) * 0.1))
             t.fillColor = SKColor(.white, alpha: 0.32 - CGFloat(i) * 0.05)
             t.strokeColor = .clear
             t.zPosition = 4
@@ -224,7 +230,7 @@ final class PongScene: GameScene {
             trail.append(t)
         }
         halo.texture = GameTextures.glow(.white, diameter: 36)
-        halo.size = CGSize(width: 18, height: 18)
+        halo.size = CGSize(width: br * 4, height: br * 4)
         halo.alpha = 0.5
         halo.zPosition = 5
         addChild(halo)
@@ -234,23 +240,17 @@ final class PongScene: GameScene {
         addChild(ball)
     }
 
-    private var paddleLength: CGFloat { (size.height - 24) * CGFloat(PongState.paddleWidth / PongState.width) }
+    private var table: PongLayout { PongLayout(width: Double(size.width), height: Double(size.height)) }
 
-    /// Court point to screen point.
-    private func map(x: Double, y: Double) -> CGPoint {
-        let left: CGFloat = 16, right = size.width - 16
-        let bottom: CGFloat = 12, top = size.height - 12
-        let sx = right - CGFloat(y / PongState.height) * (right - left)
-        let sy = bottom + CGFloat(x / PongState.width) * (top - bottom)
-        return CGPoint(x: sx, y: sy)
-    }
+    private func cg(_ p: (x: Double, y: Double)) -> CGPoint { CGPoint(x: CGFloat(p.x), y: CGFloat(p.y)) }
 
     override func render() {
         let s = pong.state
-        player.position = map(x: s.playerX, y: PongState.playerY - 2)
+        let t = table
+        player.position = cg(t.player(x: s.playerX))
         playerGlow.position = player.position
-        ai.position = map(x: s.aiX, y: PongState.aiY + 2)
-        let b = map(x: s.ballX, y: s.ballY)
+        ai.position = cg(t.ai(x: s.aiX))
+        let b = cg(t.point(x: s.ballX, y: s.ballY))
         ball.position = b
         halo.position = b
         let visible = s.serveIn <= 0 || Int(s.serveIn * 6) % 2 == 0

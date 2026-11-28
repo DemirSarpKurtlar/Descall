@@ -231,6 +231,26 @@ enum GameMath {
     }
 }
 
+/// The Digital Crown for the paddle games (Raket, Prizma). It used to be bound to 0 ... 1
+/// at high sensitivity, so a small turn crossed the whole range and the paddle jumped to an
+/// end. Now the host binds a wide range in whole detents and hands each change on as a share
+/// of one sweep across the court, `span` detents for a full sweep.
+enum CrownInput {
+    /// Half of the bound range (detents); the host recentres before it runs out.
+    static let range = 10_000.0
+    static let recentreAt = 9_000.0
+    /// Detents for one sweep from one end of the court to the other.
+    static let pongSpan = 22.0
+    static let bricksSpan = 18.0
+
+    /// Share of a full sweep for a crown change of `delta` detents. A jump larger than any
+    /// real turn (the host recentring the bound value) moves nothing.
+    static func sweep(delta: Double, span: Double) -> Double {
+        guard span > 0, delta.isFinite, abs(delta) < recentreAt / 2 else { return 0 }
+        return delta / span
+    }
+}
+
 /// Draft A: a critical admin signal pauses the game and offers the admin section.
 enum GameAlertKind: String, Codable, Equatable {
     /// Overview health "critical".
