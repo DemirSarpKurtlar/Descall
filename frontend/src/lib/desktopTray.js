@@ -51,6 +51,7 @@ export function buildTrayState({ app = {}, voice = null, call = null, clip = nul
     statusText: String(app.statusText || ""),
     unreadMessages: num(app.unreadMessages),
     friendRequests: num(app.friendRequests),
+    badgeCount: num(app.badgeCount), // taskbar / dock badge, 0 = none (lib/taskbarBadgePref.js)
     micMuted: Boolean(v.micMuted),
     deafened: Boolean(v.deafened),
     inCall: Boolean(v.inCall),

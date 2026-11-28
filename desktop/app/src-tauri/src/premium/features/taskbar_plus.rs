@@ -1,28 +1,19 @@
-//! taskbar_plus (Plus): unread badge on the taskbar button (overlay icon, generated raster)
-//! and, during a call, mute / deafen / leave buttons in the taskbar thumbnail
-//! (ITaskbarList3::ThumbBarAddButtons). Settings: badge, buttons (both default on). Updates
-//! only when the unread count or the call state changes.
+//! taskbar_plus (Plus): during a call, mute / deafen / leave buttons in the taskbar thumbnail
+//! (ITaskbarList3::ThumbBarAddButtons). Setting: buttons (default on). Updates only when the
+//! call state changes. The unread badge on the taskbar button is free for every user now and
+//! has one owner, crate::taskbar (descall_shell::taskbar_badge); this feature no longer sets it.
 
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use tauri::image::Image;
 use tauri::Manager;
 
-use crate::premium::logic::badge;
 use crate::premium::platform::ThumbButton;
 use crate::premium::{host, lock, platform, wins, Bus, Caller, Feature, From, Host};
 
+#[derive(Default)]
 pub struct F {
-    last_badge: AtomicI64,
     last_buttons: Mutex<Option<String>>,
-}
-
-impl Default for F {
-    fn default() -> Self {
-        Self { last_badge: AtomicI64::new(-1), last_buttons: Mutex::new(None) }
-    }
 }
 
 fn opt(h: &Host, name: &str) -> bool {
@@ -41,10 +32,11 @@ fn on_click(id: u32) {
 }
 
 /// A new taskbar button (shown again from the tray without the focus, Explorer restarted) has
-/// no overlay icon: the badge goes on again (the thumbnail buttons come back in platform.rs).
+/// no overlay icon: the free unread badge goes on again (the thumbnail buttons come back in
+/// platform.rs).
 fn on_button_created() {
     if let Some(h) = host() {
-        h.bus(Bus::Settings("taskbar_plus".into()));
+        crate::taskbar::refresh(&h.app, true);
     }
 }
 
@@ -56,25 +48,6 @@ fn apply_buttons(h: &Host, buttons: Vec<ThumbButton>) {
 }
 
 impl F {
-    fn set_badge(&self, h: &Host) {
-        let unread = lock(&h.app_state).get("unread").and_then(Value::as_f64).unwrap_or(0.0) as i64;
-        let n = if opt(h, "badge") { unread.max(0) } else { 0 };
-        if self.last_badge.swap(n, Ordering::Relaxed) == n {
-            return;
-        }
-        let Some(w) = h.app.get_webview_window("main") else { return };
-        let icon = badge::unread_badge(n, 16).map(|b| {
-            let mut rgba = b.data;
-            for px in rgba.chunks_exact_mut(4) {
-                px.swap(0, 2); // BGRA -> RGBA
-            }
-            Image::new_owned(rgba, b.width, b.height)
-        });
-        if let Err(e) = w.set_overlay_icon(icon) {
-            log::warn!("[premium] taskbar badge failed: {e}");
-        }
-    }
-
     fn set_buttons(&self, h: &Host, force: bool) {
         let c = lock(&h.call_state).clone();
         let flag = |k: &str| c.get(k).and_then(Value::as_bool).unwrap_or(false);
@@ -111,16 +84,10 @@ impl Feature for F {
     }
     fn start(&self, h: &Host) {
         platform::on_taskbar_button_created(on_button_created);
-        self.last_badge.store(-1, Ordering::Relaxed);
-        self.set_badge(h);
         self.set_buttons(h, true);
     }
     fn stop(&self, h: &Host) {
-        self.last_badge.store(-1, Ordering::Relaxed);
         *lock(&self.last_buttons) = None;
-        if let Some(w) = h.app.get_webview_window("main") {
-            let _ = w.set_overlay_icon(None);
-        }
         apply_buttons(h, Vec::new());
     }
     fn call(&self, _h: &Host, _ch: &str, _a: &[Value], _c: &Caller) -> Result<Value, String> {
@@ -128,23 +95,9 @@ impl Feature for F {
     }
     fn on_bus(&self, h: &Host, ev: &Bus) {
         match ev {
-            Bus::App => {
-                self.set_badge(h);
-                self.set_buttons(h, false);
-            }
-            Bus::Call => self.set_buttons(h, false),
-            // Shown again from the tray: the window has a new taskbar button without the
-            // overlay icon (the thumbnail buttons come back through TaskbarButtonCreated,
-            // premium/platform.rs).
-            Bus::Focus(l, true) if l == "main" => {
-                self.last_badge.store(-1, Ordering::Relaxed);
-                self.set_badge(h);
-            }
-            Bus::Settings(k) if k == "taskbar_plus" => {
-                self.last_badge.store(-1, Ordering::Relaxed);
-                self.set_badge(h);
-                self.set_buttons(h, true);
-            }
+            // App: the tooltips follow a language change (the locale is part of the key).
+            Bus::App | Bus::Call => self.set_buttons(h, false),
+            Bus::Settings(k) if k == "taskbar_plus" => self.set_buttons(h, true),
             _ => {}
         }
     }

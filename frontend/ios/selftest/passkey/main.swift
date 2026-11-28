@@ -52,6 +52,16 @@ case .failure:
     check(false, "valid request options parse")
 }
 eq(L.parseRequestOptions("{\"rpId\":\"descall.com.evil\",\"challenge\":\"\(challenge)\"}"), .failure(.wrongRelyingParty), "suffix trick refused")
+// Re-auth (/reauth/options): the account's passkeys come as allowCredentials.
+let reauthRequest = "{\"rpId\":\"descall.com\",\"challenge\":\"\(challenge)\",\"allowCredentials\":[{\"id\":\"q83vEjRWeJA\",\"type\":\"public-key\"},{\"id\":\"not base64!\",\"type\":\"public-key\"}]}"
+switch L.parseRequestOptions(reauthRequest) {
+case let .success(o):
+    eq(o.allowCredentialIds, [Data([0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x90])], "allow list, broken ids skipped")
+case .failure:
+    check(false, "re-auth request options parse")
+}
+eq(L.parseRequestOptions("{\"rpId\":\"descall.com\"}"), .failure(.missingChallenge), "no challenge")
+eq(L.parseCreationOptions(creation.replacingOccurrences(of: "\"name\":\"alice\",", with: "")), .failure(.missingUser), "user without a name")
 
 // Response JSON
 func object(_ s: String) -> [String: Any] {
@@ -82,6 +92,9 @@ eq(L.errorCode(domain: domain, code: 1001, message: "The operation couldn't be c
 eq(L.errorCode(domain: domain, code: 1006, message: ""), "already_registered", "excluded credential")
 eq(L.errorCode(domain: domain, code: 1004, message: "Application with identifier Q9R78TPNXS.com.descall.app is not associated with domain descall.com"), "domain", "association missing")
 eq(L.errorCode(domain: "NSURLErrorDomain", code: -1, message: "x"), "failed", "other domains")
+eq(L.errorCode(domain: domain, code: 1005, message: ""), "canceled", "AutoFill closed without a pick (not interactive)")
+eq(L.errorCode(domain: domain, code: 1003, message: ""), "unsupported", "not handled")
+eq(L.errorCode(domain: domain, code: 1004, message: "webcredentials entitlement missing"), "domain", "entitlement missing")
 
 if failures > 0 {
     print("passkey logic selftest: \(failures) failure(s)")

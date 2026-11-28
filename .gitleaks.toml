@@ -58,6 +58,10 @@ regexes = [
   # anonymous visitor key used against a mock backend.
   '''Kayik-Bulut-Defne-28x?''',
   '''visitor_abcdef12''',
+  # Fake WebAuthn assertion in the Capacitor passkey bridge selftest
+  # (frontend/src/lib/passkeys/capacitorBridge.selftest.mjs, commit eebf24bd): a made-up
+  # base64url authenticatorData string fed to a mocked plugin, not a key or credential.
+  '''SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2M''',
   # Translation keys, not secrets: fields named key / hintKey hold dotted i18n paths of the
   # app's own catalogs (e.g. "plus2.toast.giftReceived" in plus2/PlusHost.jsx, commit 14064ab8,
   # and "rg3.streaks.navHint" in UserPanel.jsx, commit d4c94321). Only whole values made of a

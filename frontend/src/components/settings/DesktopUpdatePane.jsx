@@ -1,13 +1,42 @@
 /*
  * Settings > Desktop app (desktop shells only: Electron preload or the Tauri shim). The
- * version, the live update status and a "Check for updates" action. Downloads run in the
+ * version, the live update status and a "Check for updates" action, and the switch for the
+ * Discord-like unread badge on the taskbar button / dock (every plan, lib/taskbarBadgePref.js). Downloads run in the
  * shell; a staged update installs on restart (restartApp asks first during a call: the shell
  * sends update:confirm-restart and ElectronUpdateToast shows the confirmation).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { mergeCheck, startCheck, statusFromCheck, statusFromEvent, statusFromStatus } from "../../lib/desktopUpdateState.js";
+import { isMacPlatform } from "../../lib/shortcuts.js";
+import { readTaskbarBadge, setTaskbarBadge, subscribeTaskbarBadge } from "../../lib/taskbarBadgePref.js";
 import { S3Foot, S3Group, S3Row, S3Sec } from "./SettingsV3";
+
+/** What the badge looks like on the taskbar (same red and white as the shells draw). */
+function BadgePreview() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-grid",
+        placeItems: "center",
+        minWidth: 18,
+        height: 18,
+        padding: "0 5px",
+        borderRadius: 9,
+        background: "#f23f43",
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: 700,
+        lineHeight: 1,
+        fontVariantNumeric: "tabular-nums",
+        marginInlineEnd: 10,
+      }}
+    >
+      9+
+    </span>
+  );
+}
 
 export default function DesktopUpdatePane() {
   const { t } = useLocale();
@@ -16,6 +45,7 @@ export default function DesktopUpdatePane() {
   const [state, setState] = useState({ status: "idle", version: null });
   const [checkedAt, setCheckedAt] = useState(null);
   const alive = useRef(true);
+  const badgeOn = useSyncExternalStore(subscribeTaskbarBadge, readTaskbarBadge, readTaskbarBadge);
 
   useEffect(() => {
     alive.current = true;
@@ -98,6 +128,18 @@ export default function DesktopUpdatePane() {
         )}
       </S3Group>
       {timeText ? <S3Foot>{t("updateToast.settings_lastChecked", { time: timeText })}</S3Foot> : null}
+      <S3Sec>{t("updateToast.settings_badgeSection")}</S3Sec>
+      <S3Group>
+        <S3Row
+          icon="bell"
+          color="red"
+          title={t("updateToast.settings_badge")}
+          sub={t(isMacPlatform() ? "updateToast.settings_badgeHintMac" : "updateToast.settings_badgeHint")}
+          badge={badgeOn ? <BadgePreview /> : null}
+          toggle={badgeOn}
+          onToggle={setTaskbarBadge}
+        />
+      </S3Group>
     </div>
   );
 }

@@ -211,7 +211,8 @@ async function main() {
       assert.ok(greetings().some((e) => e.room === `server-channel:${CH.commTan}`), "greeting in #tanışma");
       const g = greetings()[0].payload.message;
       assert.equal(g.i18n.content.key, "bot.onb.rehberWelcome");
-      assert.equal(g.i18n.content.vars.user, `<@${ME}>`);
+      assert.equal(g.i18n.content.vars.user, "@ece", "a real @mention, not a raw <@id>");
+      assert.ok(!String(g.content).includes("<@"), "no raw id in the fallback text");
       assert.ok(g.isBot);
     }
 

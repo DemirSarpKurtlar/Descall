@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import StoreKit
+import AVFoundation
 import Capacitor
 
 /// Display / accessibility / power state for the Liquid Glass UI (2.9.151),
@@ -15,6 +16,8 @@ import Capacitor
 /// `getState()` resolves with that object; a `change` event carries the same
 /// object whenever one of them flips. `setStatusBarStyle({ style: "light" | "dark" })`
 /// picks white or black status-bar content for the active theme.
+/// `getMicrophonePermission()` / `openAppSettings()`: the system microphone permission
+/// and Descall's Settings page, for a refused microphone (4.2.1).
 @objc(DescallDisplayPlugin)
 public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "DescallDisplayPlugin"
@@ -26,6 +29,8 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLandscapeAllowed", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setCallIsland", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getMicrophonePermission", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openAppSettings", returnType: CAPPluginReturnPromise),
     ]
 
     private var observers: [NSObjectProtocol] = []
@@ -136,6 +141,35 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
                 UIViewController.attemptRotationToDeviceOrientation()
             }
             call.resolve(["allowed": allowed])
+        }
+    }
+
+    /// { state: "granted" | "denied" | "restricted" | "prompt" }: the system microphone
+    /// permission WebKit's getUserMedia depends on. Read only, never asks. Once it is
+    /// "denied", getUserMedia fails at once and iOS never asks again; only the Settings
+    /// app can turn it back on (src/lib/voiceMicError.js shows "Open Settings" then).
+    @objc func getMicrophonePermission(_ call: CAPPluginCall) {
+        let state: String
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: state = "granted"
+        case .denied: state = "denied"
+        case .restricted: state = "restricted"
+        case .notDetermined: state = "prompt"
+        @unknown default: state = "prompt"
+        }
+        call.resolve(["state": state])
+    }
+
+    /// Opens Descall's page in the Settings app (Microphone, Camera, Notifications).
+    @objc func openAppSettings(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else {
+                call.resolve(["opened": false])
+                return
+            }
+            UIApplication.shared.open(url, options: [:]) { opened in
+                call.resolve(["opened": opened])
+            }
         }
     }
 

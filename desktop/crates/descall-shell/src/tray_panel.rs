@@ -130,6 +130,8 @@ pub fn normalize_app_state(raw: &Value) -> Value {
         "statusText": clean_str(get("statusText"), 80),
         "unreadMessages": count(get("unreadMessages")),
         "friendRequests": count(get("friendRequests")),
+        // Taskbar / dock badge (0 when the user turned it off or is signed out).
+        "badgeCount": count(get("badgeCount")),
         "micMuted": truthy(get("micMuted")),
         "deafened": truthy(get("deafened")),
         "inCall": truthy(get("inCall")),
@@ -491,6 +493,9 @@ mod tests {
         assert_eq!(normalize_app_state(&json!({ "avatarUrl": "http://x/a.png" }))["avatarUrl"], "");
         assert_eq!(normalize_app_state(&json!({ "avatarUrl": "data:image/png;base64,iVBOR=" }))["avatarUrl"], "data:image/png;base64,iVBOR=");
         assert_eq!(normalize_app_state(&json!({ "unreadMessages": 1e9 }))["unreadMessages"], 9999);
+        assert_eq!(normalize_app_state(&json!({ "badgeCount": 12 }))["badgeCount"], 12);
+        assert_eq!(normalize_app_state(&json!({ "badgeCount": -2 }))["badgeCount"], 0);
+        assert_eq!(normalize_app_state(&json!({}))["badgeCount"], 0);
         assert_eq!(normalize_app_state(&json!({ "accent": "300,1,1" }))["accent"], "");
         assert_eq!(normalize_app_state(&Value::Null)["status"], "online");
     }

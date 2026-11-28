@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { signupEmailError, SIGNUP_EMAIL_HINT } from "../lib/signupEmail";
 import { createPortal } from "react-dom";
-import { useT } from "../context/localeContextInstance";
+import { useLocale, useT } from "../context/localeContextInstance";
+import { preloadNested } from "./siteNestedText.js";
 import { peekInviteRef } from "../lib/referral";
 import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
@@ -98,7 +99,12 @@ function AuthModal({
   inviteRef = "",
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const narrowModal = useNarrowModal();
+  // The passkey button's words (passkey.* keys, siteNestedText.js) before it appears.
+  useEffect(() => {
+    if (open) void preloadNested("passkey", locale);
+  }, [open, locale]);
   const [isRegistering, setIsRegistering] = useState(initialMode === "register");
   const [forgotMode, setForgotMode] = useState(false);
   const [username, setUsername] = useState("");

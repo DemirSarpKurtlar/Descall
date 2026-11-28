@@ -115,6 +115,8 @@ pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
         // main.cjs mainWindow.on('show', publishBox).
         to_main(app, "window:content-box", crate::commands::window::content_box(&w));
         crate::webview::update_main_memory(app);
+        // set_skip_taskbar(false) gave the window a new taskbar button: badge on it again.
+        crate::taskbar::refresh(app, true);
     }
 }
 

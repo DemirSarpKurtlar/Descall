@@ -58,8 +58,12 @@ export function EmailCard({ passkey, emailOn }) {
   const t = useT();
   const { locale } = useLocale();
   const name = passkey?.name || t("passkey.center.names.home");
-  const when = passkey?.createdAt ? `${fullDate(passkey.createdAt, locale)} ${timeText(passkey.createdAt, locale)}` : "";
-  const place = placeName(passkey?.createdCity, passkey?.createdCountry, locale) || t("passkey.center.email.somewhere");
+  // The sample (no passkey yet) is dated now, like the "now" in its header: an empty date
+  // used to read as "\"Ev bilgisayari\" tarihinde ...".
+  const at = passkey?.createdAt || new Date().toISOString();
+  const when = `${fullDate(at, locale)} ${timeText(at, locale)}`;
+  const place = placeName(passkey?.createdCity, passkey?.createdCountry, locale);
+  const from = place ? t("passkey.center.email.fromPlace", { place }) : t("passkey.center.email.fromSomewhere");
   return (
     <div className="pkc-pcard">
       <div className="pkc-cap">
@@ -72,7 +76,7 @@ export function EmailCard({ passkey, emailOn }) {
           <span className="push pkc-mail-time">{t("passkey.time.now")}</span>
         </div>
         <b className="pkc-mail-title">{t("passkey.center.email.title")}</b>
-        <p>{t("passkey.center.email.body", { name, provider: passkey?.provider ? ` (${passkey.provider})` : "", when, place })}</p>
+        <p>{t("passkey.center.email.body", { name, provider: passkey?.provider ? ` (${passkey.provider})` : "", when, from })}</p>
         <div className="pkc-row">
           <span className="pkc-mail-btn danger">{t("passkey.center.email.notMe")}</span>
           <span className="pkc-mail-btn">{t("passkey.center.email.itWasMe")}</span>

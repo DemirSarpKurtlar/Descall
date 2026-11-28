@@ -42,6 +42,12 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Boşta kalanlar için ses kanalı",
     "Move idle members after": "Boşta kalanları şu süreden sonra taşı",
     "{count} min": "{count} dk",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "Descall için mikrofon kapalı. Ayarlar'dan aç.",
+    "Open Settings": "Ayarları aç",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "Mikrofon hâlâ engelli. Tarayıcı ya da sistem ayarlarından izin ver.",
+    "Microphone allowed. Try again.": "Mikrofona izin verildi. Tekrar dene.",
+    "System audio cannot be shared on this PC; sharing video only.": "Sistem sesi bu bilgisayarda paylaşılamıyor; yalnızca görüntü paylaşılıyor.",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -79,6 +85,12 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Sprachkanal für inaktive Mitglieder",
     "Move idle members after": "Inaktive Mitglieder verschieben nach",
     "{count} min": "{count} Min.",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "Das Mikrofon ist für Descall aus. Schalte es in den Einstellungen ein.",
+    "Open Settings": "Einstellungen öffnen",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "Das Mikrofon ist weiterhin blockiert. Erlaube es in den Browser- oder Systemeinstellungen.",
+    "Microphone allowed. Try again.": "Mikrofon erlaubt. Versuch es noch einmal.",
+    "System audio cannot be shared on this PC; sharing video only.": "Der Systemton kann auf diesem PC nicht geteilt werden; nur das Bild wird geteilt.",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -116,6 +128,12 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Canal de voz para miembros inactivos",
     "Move idle members after": "Mover a los miembros inactivos tras",
     "{count} min": "{count} min",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "El micrófono está desactivado para Descall. Actívalo en Ajustes.",
+    "Open Settings": "Abrir Ajustes",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "El micrófono sigue bloqueado. Permítelo en los ajustes del navegador o del sistema.",
+    "Microphone allowed. Try again.": "Micrófono permitido. Inténtalo de nuevo.",
+    "System audio cannot be shared on this PC; sharing video only.": "El audio del sistema no se puede compartir en este PC; solo se comparte la imagen.",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -153,6 +171,12 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Salon vocal pour les membres inactifs",
     "Move idle members after": "Déplacer les membres inactifs après",
     "{count} min": "{count} min",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "Le micro est désactivé pour Descall. Active-le dans Réglages.",
+    "Open Settings": "Ouvrir Réglages",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "Le micro est toujours bloqué. Autorise-le dans les réglages du navigateur ou du système.",
+    "Microphone allowed. Try again.": "Micro autorisé. Réessaie.",
+    "System audio cannot be shared on this PC; sharing video only.": "Le son du système ne peut pas être partagé sur ce PC ; seule l'image est partagée.",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -190,6 +214,12 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Canal de voz para membros ausentes",
     "Move idle members after": "Mover membros ausentes após",
     "{count} min": "{count} min",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "O microfone está desligado para o Descall. Ative-o em Ajustes.",
+    "Open Settings": "Abrir Ajustes",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "O microfone continua bloqueado. Permita nas configurações do navegador ou do sistema.",
+    "Microphone allowed. Try again.": "Microfone permitido. Tente de novo.",
+    "System audio cannot be shared on this PC; sharing video only.": "O áudio do sistema não pode ser compartilhado neste PC; só a imagem está sendo compartilhada.",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -227,5 +257,11 @@ export const MID_APP_I18N = {
     "Voice channel for idle members": "Голосовой канал для неактивных",
     "Move idle members after": "Переносить неактивных через",
     "{count} min": "{count} мин",
+    // 4.2.1: refused microphone (iOS Settings) and video-only screen share.
+    "Microphone is off for Descall. Turn it on in Settings.": "Микрофон для Descall выключен. Включи его в Настройках.",
+    "Open Settings": "Открыть Настройки",
+    "Microphone is still blocked. Allow it in your browser or system settings.": "Микрофон всё ещё заблокирован. Разреши его в настройках браузера или системы.",
+    "Microphone allowed. Try again.": "Микрофон разрешён. Попробуй ещё раз.",
+    "System audio cannot be shared on this PC; sharing video only.": "Системный звук нельзя транслировать на этом компьютере; транслируется только изображение.",
   },
 };

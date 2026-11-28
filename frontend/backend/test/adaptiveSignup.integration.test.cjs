@@ -108,6 +108,24 @@ async function run() {
     assert(r.status === 200 && r.body.status === "new" && !r.body.emailHint, "new email: " + JSON.stringify(r.body));
     r = await req(base, "POST", "/identify", { body: { email: "not-an-email" } });
     assert(r.status === 400 && r.body.code === "EMAIL_INVALID", "invalid email refused");
+    r = await req(base, "POST", "/identify", { body: { email: "abc@" } });
+    assert(r.status === 400 && r.body.code === "EMAIL_INVALID", "a malformed email stays an email error");
+
+    // 2b. Identify by username: same shape, no email hint, no sign-in methods; unknown -> new.
+    r = await req(base, "POST", "/identify", { body: { username: "DemirKaya", surface: "site", visitorKey: "visitor_abcdef12" } });
+    assert(r.status === 200 && r.body.status === "registered", "registered username identified: " + JSON.stringify(r.body));
+    assert(JSON.stringify(Object.keys(r.body)) === JSON.stringify(["status"]), "username lookup carries nothing else (no emailHint): " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/identify", { body: { username: "@demirkaya" } });
+    assert(r.status === 200 && r.body.status === "registered", "a leading @ is ignored");
+    r = await req(base, "POST", "/identify", { body: { username: "kimseyok42" } });
+    assert(r.status === 200 && r.body.status === "new" && JSON.stringify(Object.keys(r.body)) === JSON.stringify(["status"]), "unknown username is new, nothing else: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/identify", { body: { username: "demir kaya" } });
+    assert(r.status === 400 && r.body.code === "USERNAME_INVALID", "a name with a space is refused");
+    r = await req(base, "POST", "/identify", { body: { username: { $ne: "" } } });
+    assert(r.status === 400, "a non-string username is refused: " + r.status);
+    await wait(30);
+    const routedByName = fake._tables.analytics_events.rows.filter((e) => e.event === "identifier_routed" && e.props.source === "site");
+    assert(routedByName.length === 1, "identifier_routed recorded for the username route: " + JSON.stringify(routedByName));
 
     // 3. Sign in with the email (any case) or the username; wrong password stays generic.
     r = await req(base, "POST", "/login", { body: { username: "DEMIR.kaya@example.com", password: "Vapur-Simit-Kanat-Lodos-47" } });

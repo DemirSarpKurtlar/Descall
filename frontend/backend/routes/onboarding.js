@@ -223,7 +223,7 @@ async function greetFromRehber(req, { userId, account, serverId }) {
     timestamp: now,
   };
   // English fallback for old clients, the reader's language through bot.onb.* keys.
-  put(message, "content", "bot.onb.rehberWelcome", { name, user: `<@${userId}>`, channel: intro.name });
+  put(message, "content", "bot.onb.rehberWelcome", { name, user: require("../lib/mentionText").mentionText(account), channel: intro.name });
   message.text = message.content;
   const payload = { serverId: server.id, channelId: intro.id, message };
   ioRef.to(`server-channel:${intro.id}`).emit("server:channel:message", payload);
@@ -546,11 +546,16 @@ router.get("/track", requireAuth, async (req, res) => {
         .limit(60),
       supabase.from("reactions").select("message_id", { count: "exact", head: true }).eq("message_id", messageId),
     ]);
+    // Replies mention the sender as "@username" (the "<@id>" form is kept for old rows).
+    const { data: meRow } = await supabase.from("users").select("username").eq("id", userId).maybeSingle();
+    const { MENTIONABLE } = require("../lib/mentionText");
+    const meMention = MENTIONABLE.test(String(meRow?.username || "")) ? `@${meRow.username}` : null;
     const replies = (after || []).filter((m) => {
       if (String(m.sender_id) === userId) return false;
       const rt = m.reply_to && typeof m.reply_to === "object" ? m.reply_to : null;
       if (rt && String(rt.id || rt.messageId || "") === String(messageId)) return true;
-      return String(m.content || "").includes(`<@${userId}>`);
+      const text = String(m.content || "");
+      return text.includes(`<@${userId}>`) || (meMention ? new RegExp(`${meMention}(?![A-Za-z0-9_])`).test(text) : false);
     });
     const ids = [...new Set(replies.map((r) => String(r.sender_id)))].slice(0, 3);
     let repliers = [];

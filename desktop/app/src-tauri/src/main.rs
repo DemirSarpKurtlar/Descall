@@ -22,6 +22,7 @@ mod screenshare;
 mod secure_store;
 mod snap;
 mod state;
+mod taskbar;
 mod tray;
 mod tray_menu;
 mod webview;
@@ -75,9 +76,12 @@ fn guarded(inner: impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static) -
 /// log; a fatal panic (release builds abort) is forwarded on the next start (crate::errors).
 fn install_panic_hook() {
     let default = std::panic::take_hook();
+    // Crash file first: it is what reaches admin > Error logs and Sentry on the next start, and
+    // the log line cannot be written when the panic came from inside the logger.
     std::panic::set_hook(Box::new(move |info| {
-        log::error!("[main] panic: {info}");
         errors::on_panic(info);
+        log::error!("[main] panic: {info}");
+        log::logger().flush();
         // A migrated first start that dies tells the migrator now (it rolls back at once).
         migration::fail(descall_migrate::app::codes::START_FAILED);
         default(info);
@@ -91,6 +95,8 @@ fn main() {
     // One taskbar button however Descall was started (before any window exists).
     platform::set_app_user_model_id();
     install_panic_hook();
+    // Native crashes (no panic) leave the same crash file and a main.log line (errors.rs).
+    errors::install_native_crash_filter();
     let argv: Vec<String> = std::env::args().collect();
     // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
     migration::begin(&argv);
@@ -189,8 +195,8 @@ fn main() {
                     // Admin routes get their own window; web and mail links open in the default
                     // browser; nothing else opens (setWindowOpenHandler: no in-app popups).
                     if admin::is_admin_url(&url) {
-                        let h = nav_app.clone();
-                        let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
+                        // Built after this handler returns, off the event loop (admin.rs).
+                        admin::request_open(&nav_app, url);
                         return NewWindowResponse::Deny;
                     }
                     boot::open_external_window(&nav_app, &url);

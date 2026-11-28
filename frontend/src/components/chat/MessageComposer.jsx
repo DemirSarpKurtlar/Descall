@@ -17,6 +17,8 @@ import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
 import { apiBase } from "../../lib/nodeRouting";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
+import { isVoiceMicError, voiceMicErrorCopy, voiceMicErrorToast } from "../../lib/voiceMicError";
+import { useToast } from "../../context/ToastContext";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format";
 import {
@@ -116,6 +118,7 @@ function MessageComposer({
   recentMessages = [],
 }) {
   const { t, locale } = useLocale();
+  const { toast } = useToast();
   const glass = useGlassUi();
   const reduceMotion = useReducedMotion();
   // Critically damped spring (ζ = 1, response 0.35s). Reduced motion is a fade.
@@ -1339,14 +1342,31 @@ function MessageComposer({
 
   const startRecording = useCallback(async () => {
     discardRecordingRef.current = false;
+    let stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           channelCount: 1,
         },
       });
+    } catch (err) {
+      console.error("Recording failed:", err?.name || err);
+      // A refused microphone: "Allow" asks again and starts recording (iOS: Open
+      // Settings). Other capture errors say what is wrong with the device.
+      if (isVoiceMicError(err) || err?.name === "OverconstrainedError") {
+        if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+          voiceMicErrorToast(err, { toast, t, askMessage: "Microphone permission required", retry: () => startRecordingRef.current?.() });
+        } else {
+          showUploadError(t(voiceMicErrorCopy(err)));
+        }
+      } else {
+        showUploadError(t("Could not access the microphone."));
+      }
+      return;
+    }
+    try {
       const mimeType = pickRecorderMime();
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
@@ -1446,11 +1466,18 @@ function MessageComposer({
         });
       }, 1000);
     } catch (err) {
+      // The microphone was granted: this is the recorder, not a permission problem.
+      // Every failure used to be reported as a denied microphone, so people who
+      // had just allowed it kept allowing it. The capture is released too.
       console.error("Recording failed:", err);
-      showUploadError(t("Microphone access denied."));
+      try { stream.getTracks().forEach((tr) => tr.stop()); } catch { /* ignore */ }
+      stopWaveform();
+      showUploadError(t("Recording failed."));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSend, replyTo, onClearReply]);
+  const startRecordingRef = useRef(startRecording);
+  startRecordingRef.current = startRecording;
 
   const stopRecording = useCallback(() => {
     if (timerRef.current) {

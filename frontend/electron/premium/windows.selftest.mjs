@@ -1,5 +1,5 @@
 // Descall+ desktop windows, pure parts: window geometry (multi-monitor fitting, snapping,
-// docking, display mapping), taskbar badge raster, screen-edge detection, pop-out route
+// docking, display mapping), thumbnail glyphs, screen-edge detection, pop-out route
 // rules, and the feature module contract.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -59,14 +59,8 @@ test("windowKit: behaviour defaults without always_on_top / window_opacity", () 
   assert.equal(kit.opacityFor(on, "main"), 1, "the main window never fades");
 });
 
-test("badgeIcon: unread badge pixels and glyphs", () => {
-  assert.equal(icons.unreadBadge(0), null);
-  const one = icons.unreadBadge(3, 16);
-  assert.equal(one.data.length, 16 * 16 * 4);
-  assert.equal(one.text, "3");
-  assert.equal(icons.unreadBadge(42).text, "9+");
-  assert.equal(one.data[(8 * 16 + 8) * 4 + 3], 255, "centre is opaque");
-  assert.equal(one.data[3], 0, "corner is transparent");
+test("badgeIcon: thumbnail glyphs (the unread badge is free now: taskbarBadge.selftest.mjs)", () => {
+  assert.equal(icons.unreadBadge, undefined, "no second badge renderer next to electron/taskbarBadge.cjs");
   for (const name of Object.keys(icons.GLYPHS)) {
     assert.equal(icons.GLYPHS[name].length, 16, name);
     assert.ok(icons.GLYPHS[name].every((row) => row.length === 16), name);

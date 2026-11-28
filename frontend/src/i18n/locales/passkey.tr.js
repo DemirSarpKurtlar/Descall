@@ -421,8 +421,9 @@ export const PASSKEY_TR = {
     "email": {
       "cap": "Güvenlik e-postası",
       "title": "Hesabına yeni bir passkey eklendi",
-      "body": "\"{name}\"{provider} {when} tarihinde {place} konumundan eklendi. Sen değilsen hemen kaldır ve şifreni değiştir.",
-      "somewhere": "bilinmeyen bir konum",
+      "body": "\"{name}\" adlı passkey{provider} {when} tarihinde {from} eklendi. Sen değilsen hemen kaldır ve şifreni değiştir.",
+      "fromPlace": "{place} konumundan",
+      "fromSomewhere": "bilinmeyen bir konumdan",
       "notMe": "Ben değildim",
       "itWasMe": "Bendim",
       "lead": "Yeni passkey eklendiğinde ya da biri yeni bir yerden kullanıldığında bu e-posta gelir. \"Ben değildim\" passkey'i kaldırır ve tüm oturumları kapatır.",

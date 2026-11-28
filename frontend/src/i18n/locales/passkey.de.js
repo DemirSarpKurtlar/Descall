@@ -421,8 +421,9 @@ export const PASSKEY_DE = {
     "email": {
       "cap": "Sicherheits-E-Mail",
       "title": "Deinem Konto wurde ein neuer Passkey hinzugefügt",
-      "body": "\"{name}\"{provider} wurde am {when} von {place} aus hinzugefügt. Wenn du das nicht warst, entferne ihn sofort und ändere dein Passwort.",
-      "somewhere": "einem unbekannten Ort",
+      "body": "\"{name}\"{provider} wurde am {when} {from} hinzugefügt. Wenn du das nicht warst, entferne ihn sofort und ändere dein Passwort.",
+      "fromPlace": "von {place} aus",
+      "fromSomewhere": "von einem unbekannten Ort aus",
       "notMe": "Das war ich nicht",
       "itWasMe": "Das war ich",
       "lead": "Diese E-Mail kommt, wenn ein Passkey hinzugefügt oder an einem neuen Ort benutzt wird. \"Das war ich nicht\" entfernt den Passkey und beendet alle Sitzungen.",

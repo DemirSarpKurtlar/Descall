@@ -111,6 +111,12 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/server-invite
         run: node e2e/serverInvite.e2e.cjs --dist=dist-e2e
+      - name: Server member list stays open e2e (channel, tab, server switch, reload; desktop + iPhone)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+          DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/server-members-panel
+        run: node e2e/serverMembersPanel.e2e.cjs --dist=dist-e2e
       - name: Public server page + Google'da göster desk e2e (desktop + iPhone, dark + light)
         env:
           PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core

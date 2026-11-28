@@ -1163,7 +1163,7 @@ export const nested = {
       },
       "taskbar_plus": {
         "name": "Extras de la barra de tareas",
-        "desc": "Contador de no leídos y botones de llamada en la barra de tareas."
+        "desc": "Botones de llamada en la vista previa de la barra de tareas."
       },
       "global_mute": {
         "name": "Silencio global",
@@ -3097,6 +3097,7 @@ export const nested = {
       "timeoutTitle": "Te han silenciado"
     },
     "onb": {
+      "joinWelcome": "¡Te damos la bienvenida a **{server}**, {user}!",
       "rehberWelcome": "¡Te damos la bienvenida, {user}! Saluda en #{channel}: cuéntanos tu nombre y qué te gusta, y el equipo de bienvenida te responde en pocos minutos."
     },
     "opt": {
@@ -6650,6 +6651,10 @@ export const nested = {
     "settings_downloading": "Descall {version} se está descargando en segundo plano",
     "settings_unavailable": "Las actualizaciones automáticas están desactivadas en esta compilación",
     "settings_lastChecked": "Última comprobación {time}",
+    "settings_badgeSection": "Icono de la app",
+    "settings_badge": "Contador de no leídos en el icono",
+    "settings_badgeHint": "Un número rojo en el botón de la barra de tareas cuando tienes mensajes sin leer, como 3 o 9+.",
+    "settings_badgeHintMac": "Un número rojo en el icono del Dock cuando tienes mensajes sin leer.",
     "confirmBody": "Estás en un chat de voz. Si reinicias ahora, terminará. Descall {version} también puede instalarse solo cuando salgas.",
     "confirmLater": "Ahora no",
     "confirmRestart": "Finalizar llamada y reiniciar",

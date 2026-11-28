@@ -69,7 +69,9 @@ if (existsSync(draftPath)) {
   // Removed by the product before this page (#378: mini mode became the in-app floating call
   // card, so its "open" button, its "open on minimise" switch and the mini window kind of
   // always on top / opacity are gone; its panel now picks the dock spot instead).
-  const DROPPED = new Set(["mini_mode.open", "mini_mode.autoOnMinimize", "always_on_top.mini", "window_opacity.mini"]);
+  // The taskbar unread badge became free for every user (Settings > Desktop app), so the
+  // Descall+ taskbar_plus panel keeps only the thumbnail buttons.
+  const DROPPED = new Set(["mini_mode.open", "mini_mode.autoOnMinimize", "always_on_top.mini", "window_opacity.mini", "taskbar_plus.badge"]);
   for (const cat of ["windows", "audio"]) {
     for (const [key, list] of Object.entries(draft[cat])) {
       for (const item of list) {

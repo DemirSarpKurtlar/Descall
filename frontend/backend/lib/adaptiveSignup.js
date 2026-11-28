@@ -4,8 +4,9 @@
  * Uyarlanan kart (growth draft 1B): the email-first sign-in / sign-up card.
  *
  * Pure helpers (no database, no network) behind the routes in routes/auth.js:
- *   POST /auth/identify                 email -> "new" | "registered" (the card turns into the
- *                                        sign-up or the sign-in card)
+ *   POST /auth/identify                 email or username -> "new" | "registered" (the card
+ *                                        turns into the sign-up or the sign-in card; an unknown
+ *                                        username stays on the first step: sign-up needs an email)
  *   GET  /auth/password/range/:prefix    breach list range (k-anonymity proxy: only the first
  *                                        5 hex characters of the SHA-1 reach the server)
  *   POST /auth/username/ideas            which of the card's username ideas are free
@@ -17,7 +18,10 @@
  * Enumeration: /identify answers whether an email has an account. POST /auth/register already
  * answered that (409 email_taken) behind the same human check, so the card adds no new kind of
  * disclosure; it is rate limited per address and asks for the human check after a few lookups,
- * like the sign-in step-up. The sign-in methods of the account are never disclosed.
+ * like the sign-in step-up. The sign-in methods of the account are never disclosed. A username
+ * lookup answers no more than GET /auth/username/check and the public profiles already do
+ * (whether the name is taken), under the same limit and human check, and never carries the
+ * account's email hint.
  *
  * Tests: adaptiveSignup.selftest.cjs, test/adaptiveSignup.integration.test.cjs.
  */
@@ -48,6 +52,17 @@ function normalizeEmail(raw) {
 
 function looksLikeEmail(raw) {
   return String(raw ?? "").includes("@");
+}
+
+/**
+ * The username a person typed in the card's first field ("Demirkaya", "@demirkaya"), or
+ * null. Only the shape is checked (no spaces, no "@" inside, 2..32 characters): reserved
+ * names and names from before today's rules still sign in, and the lookup is exact.
+ */
+function cleanLoginName(raw) {
+  const v = String(raw ?? "").trim().replace(/^@/, "");
+  if (v.length < 2 || v.length > 32 || /[\s@]/.test(v)) return null;
+  return v;
 }
 
 /** "ece.yilmaz@outlook.com" -> "e***@outlook.com" (shown on the reset panel). */
@@ -263,6 +278,7 @@ module.exports = {
   CARD_EVENTS,
   normalizeEmail,
   looksLikeEmail,
+  cleanLoginName,
   maskEmail,
   cleanPrefix,
   compactRange,

@@ -36,7 +36,8 @@ for (const file of ["components/AuthView.jsx", "components/download/DownloadPage
   const card = readFileSync(join(src, "components/auth/adaptive/AdaptiveAuthCard.jsx"), "utf8");
   assert.match(card, /identifierKind\(identifier\)/, "card: classifies the first field");
   assert.match(card, /if \(kind !== "email"\) \{/, "card: sign-up only after a valid email");
-  assert.match(card, /setAccount\(\{ kind: "username", value \}\);\s*setStep\("login"\)/, "card: a username only signs in");
+  assert.match(card, /setAccount\(\{ kind: "username", value: name \}\);\s*setStep\("login"\)/, "card: a username only signs in");
+  assert.doesNotMatch(card, /kind: "username"[^;]*\);\s*setStep\("register"\)|goRegister\(name/, "card: a username never opens the sign-up");
   assert.match(card, /termsAccepted: true,\s*birthDate,\s*email,/, "card: register sends the email");
   for (const file of ["site/MarketingAuthModal.jsx", "components/AuthView.jsx"]) {
     assert.match(readFileSync(join(src, file), "utf8"), /<AdaptiveAuthCard/, `${file}: uses the card`);

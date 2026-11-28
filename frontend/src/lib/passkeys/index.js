@@ -29,15 +29,26 @@ const env = {
   win: () => (typeof window !== "undefined" ? window : undefined),
   // Loaded on first use, so importing this module stays cheap (login screen, tests).
   api: null,
-  plugin: async () => {
+  // How long the native isAvailable() may take before the entry shows as unavailable.
+  nativeStatusTimeoutMs: 5000,
+  /*
+   * Resolves `{ plugin }`, never the plugin itself. A Capacitor plugin proxy answers every
+   * property, `then` included, so a promise resolved with it adopts it as a thenable: it
+   * calls a native "then" that DescallPasskey does not have and the promise never settles
+   * (lib/storage.js had the same bug). Until now this loader returned the proxy, so in the
+   * iOS and Android apps isAvailable() never resolved: Settings > Security > Passkeys kept
+   * its "this device does not support passkeys" default and the sign-in button stayed hidden.
+   */
+  loadPlugin: async () => {
     const { registerPlugin } = await import("@capacitor/core");
-    return registerPlugin("DescallPasskey");
+    return { plugin: registerPlugin("DescallPasskey") };
   },
 };
 export function __setPasskeyEnvForTests(patch) {
   Object.assign(env, patch);
   configCache = null;
   nativeAvailability = null;
+  if ("loadPlugin" in patch) pluginBox = null;
 }
 
 async function api() {
@@ -47,6 +58,7 @@ async function api() {
 
 let configCache = null; // { at, value }
 let nativeAvailability = null; // Promise<{ available, reason, apiVersion }>
+let pluginBox = null; // Promise<{ plugin }>: registerPlugin once (a second call only warns)
 let inFlight = null; // the running modal ceremony
 let conditionalCtl = null; // AbortController of the web autofill request
 const conditionalResumers = new Set(); // autofill loops to restart after a modal ceremony
@@ -64,12 +76,45 @@ async function serverConfig() {
   }
 }
 
+/**
+ * The DescallPasskey plugin, boxed: `const { plugin } = await loadPlugin()`. Never return
+ * `plugin` from an async function or resolve a promise with it (see env.loadPlugin).
+ * A failed load is not kept, so the next call tries again.
+ */
+function loadPlugin() {
+  if (!pluginBox) {
+    pluginBox = Promise.resolve()
+      .then(() => env.loadPlugin())
+      .then((box) => ({ plugin: box?.plugin || null }))
+      .catch(() => {
+        pluginBox = null;
+        return { plugin: null };
+      });
+  }
+  return pluginBox;
+}
+
+async function requirePlugin() {
+  const { plugin } = await loadPlugin();
+  if (!plugin) throw new PasskeyClientError("unsupported", "the passkey plugin is missing in this build");
+  return { plugin };
+}
+
+function withTimeout(promise, ms, fallback) {
+  let timer = null;
+  return Promise.race([promise, new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); })]).finally(() => clearTimeout(timer));
+}
+
+/** Answers that may change on the next try (not a real "no" from the device). */
+const TRANSIENT_NATIVE_REASONS = new Set(["plugin_missing", "plugin_timeout"]);
+
 async function nativeStatus(path) {
   if (!nativeAvailability) {
-    nativeAvailability = (async () => {
+    const probe = (async () => {
       try {
         if (path === "ios" || path === "android") {
-          const plugin = await env.plugin();
+          const { plugin } = await loadPlugin();
+          if (!plugin || typeof plugin.isAvailable !== "function") return { available: false, reason: "plugin_missing" };
           const r = await plugin.isAvailable();
           return { available: Boolean(r?.available), reason: r?.reason || null };
         }
@@ -83,6 +128,12 @@ async function nativeStatus(path) {
       }
       return { available: false, reason: "plugin_missing" };
     })();
+    // A native call that never answers must not leave the screens waiting forever.
+    const p = withTimeout(probe, env.nativeStatusTimeoutMs, { available: false, reason: "plugin_timeout" }).then((s) => {
+      if (TRANSIENT_NATIVE_REASONS.has(s.reason) && nativeAvailability === p) nativeAvailability = null;
+      return s;
+    });
+    nativeAvailability = p;
   }
   return nativeAvailability;
 }
@@ -176,7 +227,7 @@ async function nativeCeremony(path, kind, optionsJSON) {
       const raw = kind === "create" ? await api.passkeyCreate(JSON.stringify(optionsJSON)) : await api.passkeyGet(JSON.stringify(optionsJSON));
       return parseJSON(raw);
     }
-    const plugin = await env.plugin();
+    const { plugin } = await requirePlugin();
     const r = kind === "create" ? await plugin.create({ options: JSON.stringify(optionsJSON) }) : await plugin.get({ options: JSON.stringify(optionsJSON) });
     return parseJSON(r?.response);
   } catch (err) {
@@ -313,7 +364,7 @@ export function forgetLocalPasskey() {
  */
 /** iOS keyboard suggestion: resolves with the assertion JSON once the person picks it. */
 async function nativeAutofill(options, signal) {
-  const plugin = await env.plugin();
+  const { plugin } = await loadPlugin();
   if (typeof plugin?.autofill !== "function") throw new PasskeyClientError("unsupported", "no keyboard passkeys in this build");
   const onAbort = () => {
     Promise.resolve(plugin.autofillCancel?.()).catch(() => {});

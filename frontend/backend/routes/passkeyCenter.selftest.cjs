@@ -87,6 +87,23 @@ const jwt = require("../config/jwt");
   assert.ok(m.html.includes(`/passkey/report#t=${token}&amp;a=revoke`), "the button opens the confirm page, the token in the fragment");
   assert.match(m.text, /21:12/, "time in the request's zone");
   assert.match(m.text, /İstanbul/);
+  assert.match(m.text, /"Ev bilgisayarı" adlı passkey \(Windows Hello\) .+ tarihinde İstanbul, Türkiye konumundan eklendi\./, "tr: name, date, place in their places");
+  // No place: one whole phrase, not "bilinmeyen bir konum konumundan" (the reported line).
+  const u = buildPasskeySecurityEmail({ kind: "added", lang: "tr", name: "Ev bilgisayarı", at: "2026-11-28T14:58:00Z", timeZone: "Europe/Istanbul", token });
+  assert.match(u.text, /"Ev bilgisayarı" adlı passkey 28 Kasım 2026 17:58 tarihinde bilinmeyen bir konumdan eklendi\./);
+  assert.ok(!/konum konumundan/.test(u.text + u.html));
+  const un = buildPasskeySecurityEmail({ kind: "newPlace", lang: "tr", name: "iPhone", at: "2026-11-28T14:58:00Z", token });
+  assert.match(un.text, /bilinmeyen bir konumdan giriş yapıldı/);
+  for (const lang of ["tr", "en", "de", "es", "fr", "pt-BR", "ru"]) {
+    for (const kind of ["added", "newPlace"]) {
+      for (const place of [undefined, { country: "DE", city: "Berlin" }]) {
+        const mm = buildPasskeySecurityEmail({ kind, lang, name: "Key", at: "2026-11-28T14:58:00Z", place, token });
+        assert.ok(!/[{}]/.test(mm.text), `${lang} ${kind}: every placeholder filled: ${mm.text}`);
+        assert.ok(place ? mm.text.includes("Berlin") : !mm.text.includes("Berlin"), `${lang} ${kind}: the place`);
+        assert.match(mm.text, /2026/, `${lang} ${kind}: the date`);
+      }
+    }
+  }
   const x = buildPasskeySecurityEmail({ kind: "added", lang: "en", name: '<img src=x onerror=alert(1)>', token });
   assert.ok(!x.html.includes("<img src=x"), "the name is escaped");
   const r = buildPasskeySecurityEmail({ kind: "revoked", lang: "de", name: "Pixel", sessions: 3 });
