@@ -317,6 +317,26 @@ async function signIn(auth, o = {}) {
     assert.equal(s.body.token.split(":")[1], UID.b);
   }
 
+  // iPhone app (DescallPasskey plugin, ASAuthorization with rp id descall.com): the WKWebView
+  // runs on capacitor://localhost, but clientDataJSON carries https://descall.com, so the
+  // same web origin is accepted and the WebView origin is not.
+  const authIos = createSoftAuthenticator({ aaguid: "fbfc3007-154e-4ecc-8c0b-6e020557d7bd" });
+  {
+    for (const origin of ["capacitor://localhost", "https://localhost", "descall://localhost"]) {
+      const bad = await registerPasskey(createSoftAuthenticator(), UID.b, { origin, platform: "ios" });
+      assert.equal(bad.status, 400, `ios: WebView origin ${origin} refused`);
+    }
+    const r = await registerPasskey(authIos, UID.b, { origin: "https://descall.com", platform: "ios" });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(r.body.passkey.platform, "ios");
+    assert.equal(r.body.passkey.provider, "iCloud Keychain");
+    const s = await signIn(authIos, { origin: "https://descall.com", platform: "ios" });
+    assert.equal(s.status, 200, JSON.stringify(s.body));
+    assert.equal(s.body.token.split(":")[1], UID.b);
+    const wrong = await signIn(authIos, { origin: "capacitor://localhost", platform: "ios" });
+    assert.equal(wrong.status, 401, "an assertion made for the WebView origin is refused");
+  }
+
   // Sign-in with user verification: a session, method passkey.
   {
     const r = await signIn(authA);

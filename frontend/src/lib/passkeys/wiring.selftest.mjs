@@ -49,6 +49,12 @@ const readRepo = (p) => readFileSync(join(repo, p), "utf8");
   const ci = readRepo(".github/workflows/ios-build-check.yml");
   assert.match(ci, /DescallPasskeyLogic\.swift selftest\/passkey\/main\.swift/, "CI runs the Swift logic selftest");
   assert.ok(existsSync(join(front, "ios/selftest/passkey/main.swift")));
+  // The JS side loads the plugin boxed: a Capacitor proxy returned from an async function is
+  // adopted as a thenable and never settles (capacitorBridge.selftest.mjs).
+  const client = read("src/lib/passkeys/index.js");
+  assert.match(client, /return \{ plugin: registerPlugin\("DescallPasskey"\) \}/);
+  assert.doesNotMatch(client, /return registerPlugin\(/);
+  assert.doesNotMatch(client, /const plugin = await /, "plugin calls destructure { plugin }");
 }
 
 // ---- Android: plugin registered, Credential Manager deps, R8 rule, assetlinks at build ----------

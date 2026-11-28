@@ -421,8 +421,9 @@ export const PASSKEY_ES = {
     "email": {
       "cap": "Correo de seguridad",
       "title": "Se añadió una nueva llave de acceso a tu cuenta",
-      "body": "\"{name}\"{provider} se añadió el {when} desde {place}. Si no fuiste tú, quítala ya y cambia tu contraseña.",
-      "somewhere": "un lugar desconocido",
+      "body": "\"{name}\"{provider} se añadió el {when} {from}. Si no fuiste tú, quítala ya y cambia tu contraseña.",
+      "fromPlace": "desde {place}",
+      "fromSomewhere": "desde un lugar desconocido",
       "notMe": "No fui yo",
       "itWasMe": "Fui yo",
       "lead": "Este correo llega cuando se añade una llave o se usa desde un lugar nuevo. \"No fui yo\" quita la llave y cierra todas las sesiones.",

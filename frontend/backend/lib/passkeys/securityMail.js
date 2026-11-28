@@ -46,6 +46,16 @@ function placeText(lang, { city, country } = {}) {
   return c || city || bt(lang, "security.pk.unknownPlace");
 }
 
+/**
+ * The whole "from <place>" phrase of the bodies ({from}). Turkish puts a case ending on the
+ * place, so a known place reads "Istanbul, Turkiye konumundan" and an unknown one
+ * "bilinmeyen bir konumdan" (not "bilinmeyen bir konum konumundan").
+ */
+function fromText(lang, place = {}) {
+  const known = Boolean(countryName(lang, place?.country) || place?.city);
+  return known ? bt(lang, "security.pk.fromPlace", { place: placeText(lang, place) }) : bt(lang, "security.pk.fromUnknown");
+}
+
 function whenText(lang, atIso, timeZone) {
   const d = new Date(atIso || Date.now());
   const tz = timeZone || "UTC";
@@ -84,6 +94,7 @@ function buildPasskeySecurityEmail({ kind, lang = "tr", name = "Passkey", provid
     provider: provider ? ` (${provider})` : "",
     when: whenText(lang, at, timeZone),
     place: placeText(lang, place),
+    from: fromText(lang, place),
     sessions,
   };
   const subject = k(`${kind}Subject`, vars);
@@ -137,4 +148,4 @@ function buildPasskeySecurityEmail({ kind, lang = "tr", name = "Passkey", provid
   return { subject, html, text: lines.join("\n") };
 }
 
-module.exports = { buildPasskeySecurityEmail, placeText, whenText, countryName };
+module.exports = { buildPasskeySecurityEmail, placeText, fromText, whenText, countryName };

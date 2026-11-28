@@ -421,8 +421,9 @@ export const PASSKEY_PT_BR = {
     "email": {
       "cap": "E-mail de segurança",
       "title": "Uma nova chave de acesso foi adicionada à sua conta",
-      "body": "\"{name}\"{provider} foi adicionada em {when} a partir de {place}. Se não foi você, remova agora e altere sua senha.",
-      "somewhere": "um local desconhecido",
+      "body": "\"{name}\"{provider} foi adicionada em {when} {from}. Se não foi você, remova agora e altere sua senha.",
+      "fromPlace": "a partir de {place}",
+      "fromSomewhere": "a partir de um local desconhecido",
       "notMe": "Não fui eu",
       "itWasMe": "Fui eu",
       "lead": "Este e-mail chega quando uma chave é adicionada ou usada de um novo local. \"Não fui eu\" remove a chave e encerra todas as sessões.",
